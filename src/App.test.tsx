@@ -1,10 +1,49 @@
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { vi, describe, it, expect, afterEach } from "vitest";
 import { App } from "./App";
 
-describe("App", () => {
-  it("renders the site name", () => {
+const mockUseAuth = vi.fn();
+
+vi.mock("firebase/auth", () => ({
+  onAuthStateChanged: vi.fn(),
+}));
+
+vi.mock("./firebase", () => ({ auth: {} }));
+
+vi.mock("./auth/AuthProvider", () => ({
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useAuth: () => mockUseAuth(),
+}));
+
+describe("App routing integration", () => {
+  afterEach(() => {
+    window.history.pushState({}, "", "/");
+  });
+
+  it("renders the home placeholder for the not-started/logged-out state by default", () => {
+    mockUseAuth.mockReturnValue({ user: null, loading: false });
+    window.history.pushState({}, "", "?debugDate=2026-01-01");
     render(<App />);
-    expect(screen.getByText("#kupatakipucl")).toBeInTheDocument();
+    expect(screen.getByText(/Not started, not logged in/)).toBeInTheDocument();
+  });
+
+  it("navigates to an allowed page via the nav link", () => {
+    // Logged in (not logged-out) so Forum is actually in the NST_LI nav —
+    // NST_NLI hides Forum too per SPEC.md §8, so that combination has no
+    // Forum link to click.
+    mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
+    window.history.pushState({}, "", "?debugDate=2026-01-01");
+    render(<App />);
+    fireEvent.click(screen.getByText("Forum"));
+    expect(screen.getByText("Forum — coming soon.")).toBeInTheDocument();
+  });
+
+  it("shows the blocked message when a disallowed page is reached directly", () => {
+    mockUseAuth.mockReturnValue({ user: null, loading: false });
+    window.history.pushState({}, "", "?debugDate=2026-01-01#/leaderboard");
+    render(<App />);
+    expect(
+      screen.getByText("This section isn't available right now.")
+    ).toBeInTheDocument();
   });
 });
