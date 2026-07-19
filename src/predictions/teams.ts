@@ -1,0 +1,43 @@
+export interface Team {
+  id: string;
+  name: string;
+}
+
+export const TEAMS: Team[] = [
+  { id: "arsenal", name: "Arsenal" },
+  { id: "aston-villa", name: "Aston Villa" },
+  { id: "atalanta", name: "Atalanta" },
+  { id: "atletico-madrid", name: "Atlético Madrid" },
+  { id: "barcelona", name: "Barcelona" },
+  { id: "bayer-leverkusen", name: "Bayer Leverkusen" },
+  { id: "bayern-munich", name: "Bayern Munich" },
+  { id: "benfica", name: "Benfica" },
+  { id: "bologna", name: "Bologna" },
+  { id: "borussia-dortmund", name: "Borussia Dortmund" },
+  { id: "brest", name: "Brest" },
+  { id: "celtic", name: "Celtic" },
+  { id: "club-brugge", name: "Club Brugge" },
+  { id: "dinamo-zagreb", name: "Dinamo Zagreb" },
+  { id: "feyenoord", name: "Feyenoord" },
+  { id: "girona", name: "Girona" },
+  { id: "inter-milan", name: "Inter Milan" },
+  { id: "juventus", name: "Juventus" },
+  { id: "lille", name: "Lille" },
+  { id: "liverpool", name: "Liverpool" },
+  { id: "manchester-city", name: "Manchester City" },
+  { id: "milan", name: "Milan" },
+  { id: "monaco", name: "Monaco" },
+  { id: "paris-saint-germain", name: "Paris Saint-Germain" },
+  { id: "psv-eindhoven", name: "PSV Eindhoven" },
+  { id: "rb-leipzig", name: "RB Leipzig" },
+  { id: "real-madrid", name: "Real Madrid" },
+  { id: "red-bull-salzburg", name: "Red Bull Salzburg" },
+  { id: "red-star-belgrade", name: "Red Star Belgrade" },
+  { id: "shakhtar-donetsk", name: "Shakhtar Donetsk" },
+  { id: "slovan-bratislava", name: "Slovan Bratislava" },
+  { id: "sparta-prague", name: "Sparta Prague" },
+  { id: "sporting-cp", name: "Sporting CP" },
+  { id: "sturm-graz", name: "Sturm Graz" },
+  { id: "vfb-stuttgart", name: "VfB Stuttgart" },
+  { id: "young-boys", name: "Young Boys" },
+];
