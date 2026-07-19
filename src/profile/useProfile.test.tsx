@@ -51,6 +51,43 @@ describe("useProfile", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.profile).toEqual(data);
   });
+
+  it("stops loading and leaves profile null when the read rejects", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetDoc.mockRejectedValue(new Error("permission-denied"));
+    const { result } = renderHook(() => useProfile("uid1"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.profile).toBeNull();
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to load profile", expect.any(Error));
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("does not overwrite state with a stale profile when uid changes before the read resolves", async () => {
+    let resolveFirst: (value: { exists: () => boolean; data: () => unknown }) => void;
+    const firstPromise = new Promise((resolve) => {
+      resolveFirst = resolve;
+    });
+    const secondData = { firstName: "Second", lastName: "User", photoURL: "url2", createdAt: 456 };
+
+    mockGetDoc.mockImplementationOnce(() => firstPromise);
+    mockGetDoc.mockImplementationOnce(() =>
+      Promise.resolve({ exists: () => true, data: () => secondData })
+    );
+
+    const { result, rerender } = renderHook(({ uid }) => useProfile(uid), {
+      initialProps: { uid: "uid1" },
+    });
+
+    rerender({ uid: "uid2" });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.profile).toEqual(secondData);
+
+    // Resolving the stale first promise afterwards must not clobber state.
+    resolveFirst!({ exists: () => true, data: () => ({ firstName: "Stale" }) });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(result.current.profile).toEqual(secondData);
+  });
 });
 
 describe("saveProfile", () => {

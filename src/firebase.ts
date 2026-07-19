@@ -1,8 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-// @ts-ignore - firebase SDK missing type definitions
 import { getFirestore } from "firebase/firestore";
-// @ts-ignore - firebase SDK missing type definitions
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
