@@ -44,6 +44,8 @@ describe("AppShell nav gating", () => {
     expect(screen.queryByText("Chat")).not.toBeInTheDocument();
     expect(screen.queryByText("Forum")).not.toBeInTheDocument();
     expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
+    expect(screen.queryByText("Leaderboard")).not.toBeInTheDocument();
+    expect(screen.queryByText("Stats")).not.toBeInTheDocument();
   });
 
   it("shows predictions, chat and forum when not started but logged in", () => {
@@ -53,6 +55,8 @@ describe("AppShell nav gating", () => {
     expect(screen.getByText("Predictions")).toBeInTheDocument();
     expect(screen.getByText("Chat")).toBeInTheDocument();
     expect(screen.getByText("Forum")).toBeInTheDocument();
+    expect(screen.queryByText("Leaderboard")).not.toBeInTheDocument();
+    expect(screen.queryByText("Stats")).not.toBeInTheDocument();
   });
 
   it("shows leaderboard, stats and forum but not chat when started and not logged in", () => {
@@ -63,6 +67,7 @@ describe("AppShell nav gating", () => {
     expect(screen.getByText("Stats")).toBeInTheDocument();
     expect(screen.getByText("Forum")).toBeInTheDocument();
     expect(screen.queryByText("Chat")).not.toBeInTheDocument();
+    expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
   });
 
   it("shows every link when started and logged in", () => {
