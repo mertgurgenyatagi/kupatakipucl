@@ -9,7 +9,8 @@ export function LoginButton() {
     setError(null);
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
-    } catch {
+    } catch (err) {
+      console.error("Google sign-in failed", err);
       setError("Sign-in didn't go through, try again.");
     }
   }

@@ -2,8 +2,19 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { vi, describe, it, expect, afterEach } from "vitest";
 import { AppShell } from "./AppShell";
+import { isPageAllowed, PageKey } from "../state/pageAccess";
+import { VisibilityState } from "../state/visibilityState";
 
 const mockUseAuth = vi.fn();
+
+const STATE_FIXTURES: { state: VisibilityState; user: { uid: string } | null; debugDate: string }[] = [
+  { state: "NST_NLI", user: null, debugDate: "2026-01-01" },
+  { state: "NST_LI", user: { uid: "1" }, debugDate: "2026-01-01" },
+  { state: "ST_NLI", user: null, debugDate: "2026-09-09" },
+  { state: "ST_LI", user: { uid: "1" }, debugDate: "2026-09-09" },
+];
+
+const GATED_PAGES: PageKey[] = ["predictions", "leaderboard", "chat", "forum", "stats"];
 
 vi.mock("../auth/AuthProvider", () => ({
   useAuth: () => mockUseAuth(),
@@ -88,5 +99,28 @@ describe("AppShell nav gating", () => {
     mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
     renderShell();
     expect(screen.getByText("Sign out")).toBeInTheDocument();
+  });
+});
+
+describe("NAV_LINKS matches PAGE_ACCESS", () => {
+  afterEach(() => {
+    window.history.pushState({}, "", "/");
+  });
+
+  it.each(STATE_FIXTURES)("shows exactly the pages isPageAllowed grants for $state", ({ user, state, debugDate }) => {
+    mockUseAuth.mockReturnValue({ user, loading: false });
+    setDebugDate(debugDate);
+    renderShell();
+
+    const renderedPaths = screen
+      .getAllByRole("link")
+      .map((link) => link.getAttribute("href"))
+      .filter((href): href is string => href !== null && href !== "/");
+
+    for (const page of GATED_PAGES) {
+      const expectedVisible = isPageAllowed(page, state);
+      const isRendered = renderedPaths.includes(`/${page}`);
+      expect(isRendered).toBe(expectedVisible);
+    }
   });
 });
