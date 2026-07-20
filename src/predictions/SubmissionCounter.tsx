@@ -11,11 +11,15 @@ export function SubmissionCounter() {
     Promise.all([
       getCountFromServer(collection(db, "predictions")),
       getCountFromServer(collection(db, "profiles")),
-    ]).then(([predictionsSnapshot, profilesSnapshot]) => {
-      if (cancelled) return;
-      setSubmitted(predictionsSnapshot.data().count);
-      setTotal(profilesSnapshot.data().count);
-    });
+    ])
+      .then(([predictionsSnapshot, profilesSnapshot]) => {
+        if (cancelled) return;
+        setSubmitted(predictionsSnapshot.data().count);
+        setTotal(profilesSnapshot.data().count);
+      })
+      .catch((err) => {
+        console.error("Failed to load submission counts", err);
+      });
     return () => {
       cancelled = true;
     };

@@ -27,4 +27,18 @@ describe("SubmissionCounter", () => {
       expect(screen.getByText("12 / 30 kişi tahminini gönderdi")).toBeInTheDocument()
     );
   });
+
+  it("renders nothing and logs the error when a count query rejects", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetCountFromServer.mockRejectedValue(new Error("network"));
+    const { container } = render(<SubmissionCounter />);
+    await waitFor(() =>
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Failed to load submission counts",
+        expect.any(Error)
+      )
+    );
+    expect(container).toBeEmptyDOMElement();
+    consoleErrorSpy.mockRestore();
+  });
 });

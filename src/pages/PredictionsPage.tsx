@@ -17,6 +17,19 @@ function rankingNames(ranking: string[]): string[] {
   return ranking.map((id) => TEAMS.find((t) => t.id === id)?.name ?? id);
 }
 
+function RankingList({ ranking }: { ranking: string[] }) {
+  return (
+    <div>
+      <h1>Tahmininiz</h1>
+      <ol>
+        {rankingNames(ranking).map((name) => (
+          <li key={name}>{name}</li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 export function PredictionsPage() {
   const { user } = useAuth();
   const state = useVisibilityState();
@@ -40,16 +53,7 @@ export function PredictionsPage() {
     if (!currentPrediction) {
       return <p>Bir tahmin göndermediniz.</p>;
     }
-    return (
-      <div>
-        <h1>Tahmininiz</h1>
-        <ol>
-          {rankingNames(currentPrediction.ranking).map((name) => (
-            <li key={name}>{name}</li>
-          ))}
-        </ol>
-      </div>
-    );
+    return <RankingList ranking={currentPrediction.ranking} />;
   }
 
   // state === "NST_LI" from here down
@@ -136,12 +140,7 @@ export function PredictionsPage() {
   // uiStep === "idle" && currentPrediction exists: read/edit view
   return (
     <div>
-      <h1>Tahmininiz</h1>
-      <ol>
-        {rankingNames(currentPrediction!.ranking).map((name) => (
-          <li key={name}>{name}</li>
-        ))}
-      </ol>
+      <RankingList ranking={currentPrediction!.ranking} />
       <button
         onClick={() => {
           setError(null);
