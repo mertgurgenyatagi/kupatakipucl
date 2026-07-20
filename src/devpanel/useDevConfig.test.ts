@@ -14,7 +14,7 @@ vi.mock("firebase/firestore", () => ({
 
 vi.mock("../firebase", () => ({ db: {} }));
 
-import { useDevConfig, setTournamentActive, setCurrentDateOverride } from "./useDevConfig";
+import { useDevConfig, setTournamentActive, setCurrentDateOverride, setLoggedInOverride } from "./useDevConfig";
 
 type SnapshotCallback = (snapshot: { exists: () => boolean; data: () => unknown }) => void;
 
@@ -31,13 +31,17 @@ describe("useDevConfig", () => {
     });
   });
 
-  it("defaults to tournamentActive=null, currentDateOverride=null before any doc exists", async () => {
+  it("defaults to tournamentActive=null, currentDateOverride=null, loggedInOverride=null before any doc exists", async () => {
     const { result } = renderHook(() => useDevConfig());
     act(() => {
       capturedOnNext({ exists: () => false, data: () => ({}) });
     });
     await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.config).toEqual({ tournamentActive: null, currentDateOverride: null });
+    expect(result.current.config).toEqual({
+      tournamentActive: null,
+      currentDateOverride: null,
+      loggedInOverride: null,
+    });
   });
 
   it("reflects the stored config once the doc arrives", async () => {
@@ -86,5 +90,17 @@ describe("setCurrentDateOverride", () => {
     mockSetDoc.mockResolvedValue(undefined);
     await setCurrentDateOverride("2026-10-01");
     expect(mockSetDoc).toHaveBeenCalledWith(expect.anything(), { currentDateOverride: "2026-10-01" }, { merge: true });
+  });
+});
+
+describe("setLoggedInOverride", () => {
+  beforeEach(() => {
+    mockSetDoc.mockReset();
+  });
+
+  it("writes loggedInOverride with merge:true", async () => {
+    mockSetDoc.mockResolvedValue(undefined);
+    await setLoggedInOverride(true);
+    expect(mockSetDoc).toHaveBeenCalledWith(expect.anything(), { loggedInOverride: true }, { merge: true });
   });
 });

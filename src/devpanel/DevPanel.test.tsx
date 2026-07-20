@@ -4,6 +4,7 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 const mockUseDevConfig = vi.fn();
 const mockSetTournamentActive = vi.fn();
 const mockSetCurrentDateOverride = vi.fn();
+const mockSetLoggedInOverride = vi.fn();
 const mockUseDevMatches = vi.fn();
 const mockSetMatchOutcome = vi.fn();
 
@@ -11,6 +12,7 @@ vi.mock("./useDevConfig", () => ({
   useDevConfig: () => mockUseDevConfig(),
   setTournamentActive: (...args: unknown[]) => mockSetTournamentActive(...args),
   setCurrentDateOverride: (...args: unknown[]) => mockSetCurrentDateOverride(...args),
+  setLoggedInOverride: (...args: unknown[]) => mockSetLoggedInOverride(...args),
 }));
 
 vi.mock("./useDevMatches", () => ({
@@ -25,18 +27,28 @@ describe("DevPanel", () => {
   beforeEach(() => {
     mockSetTournamentActive.mockReset();
     mockSetCurrentDateOverride.mockReset();
+    mockSetLoggedInOverride.mockReset();
     mockSetMatchOutcome.mockReset();
     mockUseDevConfig.mockReturnValue({
-      config: { tournamentActive: null, currentDateOverride: null },
+      config: { tournamentActive: null, currentDateOverride: null, loggedInOverride: null },
       loading: false,
     });
     mockUseDevMatches.mockReturnValue({ outcomes: {}, loading: false, refetch: vi.fn() });
   });
 
   it("renders nothing while config or matches are loading", () => {
-    mockUseDevConfig.mockReturnValue({ config: { tournamentActive: null, currentDateOverride: null }, loading: true });
+    mockUseDevConfig.mockReturnValue({
+      config: { tournamentActive: null, currentDateOverride: null, loggedInOverride: null },
+      loading: true,
+    });
     const { container } = render(<DevPanel />);
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it("calls setLoggedInOverride(true) when 'Giriş yapılmış' is clicked", () => {
+    render(<DevPanel />);
+    fireEvent.click(screen.getByText("Giriş yapılmış"));
+    expect(mockSetLoggedInOverride).toHaveBeenCalledWith(true);
   });
 
   it("renders all 8 matchdays and 144 total match selects", () => {

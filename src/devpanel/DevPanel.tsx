@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FIXTURES } from "./fixtures";
 import { TEAMS } from "../predictions/teams";
-import { useDevConfig, setTournamentActive, setCurrentDateOverride } from "./useDevConfig";
+import { useDevConfig, setTournamentActive, setCurrentDateOverride, setLoggedInOverride } from "./useDevConfig";
 import { useDevMatches, setMatchOutcome } from "./useDevMatches";
 import { MatchOutcome } from "./standings";
 
@@ -55,6 +55,17 @@ export function DevPanel() {
       </button>
       <button onClick={() => setTournamentActive(null)} disabled={config.tournamentActive === null}>
         Otomatik (gerçek tarihe göre)
+      </button>
+
+      <h2>Giriş Durumu</h2>
+      <button onClick={() => setLoggedInOverride(true)} disabled={config.loggedInOverride === true}>
+        Giriş yapılmış
+      </button>
+      <button onClick={() => setLoggedInOverride(false)} disabled={config.loggedInOverride === false}>
+        Giriş yapılmamış
+      </button>
+      <button onClick={() => setLoggedInOverride(null)} disabled={config.loggedInOverride === null}>
+        Otomatik (gerçek oturum)
       </button>
 
       <h2>Güncel Tarih</h2>
