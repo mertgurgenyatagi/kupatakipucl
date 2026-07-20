@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
-import { ForumPost } from "./postTypes";
-
-export interface PostWithId extends ForumPost {
-  id: string;
-}
+import { ForumPost, PostWithId } from "./postTypes";
 
 export function usePosts() {
   const [posts, setPosts] = useState<PostWithId[]>([]);

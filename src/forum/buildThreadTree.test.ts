@@ -1,7 +1,7 @@
 // src/forum/buildThreadTree.test.ts
 import { describe, it, expect } from "vitest";
 import { buildThreadTree } from "./buildThreadTree";
-import { PostWithId } from "./usePosts";
+import { PostWithId } from "./postTypes";
 
 function post(id: string, parentId: string | null, createdAt: number): PostWithId {
   return { id, uid: "uid1", text: `text-${id}`, imageURL: null, parentId, createdAt };

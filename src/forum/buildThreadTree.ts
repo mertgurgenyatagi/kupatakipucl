@@ -1,4 +1,4 @@
-import { PostWithId } from "./usePosts";
+import { PostWithId } from "./postTypes";
 
 export interface ThreadNode {
   post: PostWithId;
