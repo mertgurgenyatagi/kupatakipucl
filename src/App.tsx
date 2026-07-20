@@ -8,6 +8,7 @@ import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { ChatPage } from "./pages/ChatPage";
 import { ForumPage } from "./pages/ForumPage";
 import { StatsPage } from "./pages/StatsPage";
+import { DevPanel } from "./devpanel/DevPanel";
 
 export function App() {
   return (
@@ -22,6 +23,7 @@ export function App() {
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/forum" element={<ForumPage />} />
               <Route path="/stats" element={<StatsPage />} />
+              {import.meta.env.DEV && <Route path="/dev" element={<DevPanel />} />}
             </Routes>
           </AppShell>
         </HashRouter>

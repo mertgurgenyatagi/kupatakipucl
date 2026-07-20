@@ -32,12 +32,25 @@ service cloud.firestore {
 
     // Team results feed the team table and score computation (SPEC.md §3, §8b),
     // shown to signed-out visitors too (SPEC §8's logged-out live rankings).
-    // Manually maintained (no admin UI, SPEC.md §7b) — nobody writes through
-    // the app; updates happen via direct Firestore edits (Mert asking Claude),
-    // same as the no-admin-panel model.
+    // No admin UI (SPEC.md §7b) — normally maintained via direct Firestore
+    // edits. Temporarily opened to any signed-in write pre-launch so the dev
+    // panel (src/devpanel) can push synthetic standings from the browser;
+    // tighten back to `if false` once results automation/admin tooling lands.
     match /results/{teamId} {
       allow read: if true;
-      allow write: if false;
+      allow write: if request.auth != null;
+    }
+
+    // Dev-only tooling (src/devpanel): simulates tournament phase/date and
+    // match outcomes so timing-dependent features can be tested without
+    // waiting on real calendar dates. Pre-launch, no real users yet — same
+    // trust stance as the rest of this file. Remove once results automation
+    // (SPEC.md §7, currently skipped) makes this panel unnecessary.
+    match /devConfig/{docId} {
+      allow read, write: if request.auth != null;
+    }
+    match /devMatches/{fixtureId} {
+      allow read, write: if request.auth != null;
     }
 
     // Chat messages: logged-in only (matches the "chat" page's own gate in
