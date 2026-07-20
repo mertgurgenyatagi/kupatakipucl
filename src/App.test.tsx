@@ -36,15 +36,18 @@ describe("App routing integration", () => {
     expect(await screen.findByText(/Not started, not logged in/)).toBeInTheDocument();
   });
 
-  it("navigates to an allowed page via the nav link", () => {
+  it("navigates to an allowed page via the nav link", async () => {
     // Logged in (not logged-out) so Forum is actually in the NST_LI nav —
     // NST_NLI hides Forum too per SPEC.md §8, so that combination has no
-    // Forum link to click.
+    // Forum link to click. Forum now renders real content (unit 5), so this
+    // asserts on the new-thread PostForm's submit button rather than the
+    // old placeholder text — findByText lets ForumPage's async data hooks
+    // settle first.
     mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
     window.history.pushState({}, "", "?debugDate=2026-01-01");
     render(<App />);
     fireEvent.click(screen.getByText("Forum"));
-    expect(screen.getByText("Forum — coming soon.")).toBeInTheDocument();
+    expect(await screen.findByText("Paylaş")).toBeInTheDocument();
   });
 
   it("shows the blocked message when a disallowed page is reached directly", async () => {
