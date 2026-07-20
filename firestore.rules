@@ -2,10 +2,11 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Profiles: name + photo are shown to other participants (SPEC §8/§4),
-    // so any signed-in user can read them. Only the owner can write their own.
+    // Profiles: name + photo are shown to signed-out visitors too (SPEC §8's
+    // logged-out player list) as well as other participants (SPEC §8/§4), so
+    // read is public. Only the owner can write their own.
     match /profiles/{uid} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write: if request.auth != null && request.auth.uid == uid;
     }
 
@@ -18,21 +19,24 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // Predictions: any signed-in user can read (matches the "trust the
-    // friend group" stance already applied to chat/forum in SPEC §6 — the
-    // app UI hides others' predictions until the tournament starts, but
-    // this project has no adversarial threat model). Only the owner writes.
+    // Predictions: read is public (matches the "trust the friend group"
+    // stance already applied to chat/forum in SPEC §6, and SPEC §8's
+    // requirement that predictions become visible to signed-out visitors
+    // too once the tournament starts — the app UI hides others' predictions
+    // until then; this project has no adversarial threat model). Only the
+    // owner writes.
     match /predictions/{uid} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write: if request.auth != null && request.auth.uid == uid;
     }
 
-    // Team results feed the team table and score computation (SPEC.md §3, §8b).
-    // Manually maintained (no admin UI, SPEC.md §7b) — every signed-in user can
-    // read, nobody can write through the app; updates happen via direct
-    // Firestore edits (Mert asking Claude), same as the no-admin-panel model.
+    // Team results feed the team table and score computation (SPEC.md §3, §8b),
+    // shown to signed-out visitors too (SPEC §8's logged-out live rankings).
+    // Manually maintained (no admin UI, SPEC.md §7b) — nobody writes through
+    // the app; updates happen via direct Firestore edits (Mert asking Claude),
+    // same as the no-admin-panel model.
     match /results/{teamId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write: if false;
     }
   }
