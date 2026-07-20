@@ -18,6 +18,7 @@ const BLURB: Record<VisibilityState, string> = {
 export function HomePage() {
   const state = useVisibilityState();
   const started = state === "ST_NLI" || state === "ST_LI";
+  const loggedIn = state === "NST_LI" || state === "ST_LI";
 
   const { results, loading: resultsLoading } = useResults();
   const { players, loading: playersLoading } = usePlayers();
@@ -31,7 +32,7 @@ export function HomePage() {
       <TeamTable results={results} />
       <PlayerList
         players={players}
-        showFullNames={state !== "NST_NLI"}
+        showFullNames={loggedIn}
         leaderboardEntries={started ? entries : undefined}
       />
       {started && <LeaderboardTable entries={entries} />}

@@ -74,11 +74,11 @@ describe("HomePage", () => {
     expect(screen.queryByText("leaderboard-table")).not.toBeInTheDocument();
   });
 
-  it("ST_NLI: shows the team table, a revealing full-name player list, and the leaderboard", () => {
+  it("ST_NLI: shows the team table, a revealing first-names-only player list (logged out), and the leaderboard", () => {
     mockUseVisibilityState.mockReturnValue("ST_NLI");
     render(<HomePage />);
     expect(screen.getByText("team-table")).toBeInTheDocument();
-    expect(screen.getByText("player-list:true:revealed")).toBeInTheDocument();
+    expect(screen.getByText("player-list:false:revealed")).toBeInTheDocument();
     expect(screen.getByText("leaderboard-table")).toBeInTheDocument();
   });
 
