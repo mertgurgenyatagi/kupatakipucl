@@ -39,5 +39,16 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+
+    // Chat messages: logged-in only (matches the "chat" page's own gate in
+    // pageAccess.ts — SPEC.md §8 shows no chatroom to logged-out visitors in
+    // either state, unlike profiles/predictions/results). A user can only
+    // create a message attributed to their own uid. Permanent scrollback, no
+    // admin panel (SPEC.md §6, §7b) — no edits or deletes, ever, by anyone.
+    match /messages/{messageId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
   }
 }
