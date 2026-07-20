@@ -1,15 +1,31 @@
 // src/pages/LeaderboardPage.test.tsx
 import { render, screen } from "@testing-library/react";
-import { vi, describe, it, expect } from "vitest";
+import { vi, describe, it, expect, beforeEach } from "vitest";
 import { LeaderboardPage } from "./LeaderboardPage";
 
+const mockUseVisibilityState = vi.fn();
 const mockUseLeaderboard = vi.fn();
+
+vi.mock("../state/useVisibilityState", () => ({
+  useVisibilityState: () => mockUseVisibilityState(),
+}));
 
 vi.mock("../leaderboard/useLeaderboard", () => ({
   useLeaderboard: () => mockUseLeaderboard(),
 }));
 
 describe("LeaderboardPage", () => {
+  beforeEach(() => {
+    mockUseVisibilityState.mockReturnValue("ST_LI");
+  });
+
+  it("shows the blocked message when the page isn't allowed for this state", () => {
+    mockUseVisibilityState.mockReturnValue("NST_NLI");
+    mockUseLeaderboard.mockReturnValue({ entries: [], loading: false });
+    render(<LeaderboardPage />);
+    expect(screen.getByText("This section isn't available right now.")).toBeInTheDocument();
+  });
+
   it("renders nothing while the leaderboard is loading", () => {
     mockUseLeaderboard.mockReturnValue({ entries: [], loading: true });
     const { container } = render(<LeaderboardPage />);

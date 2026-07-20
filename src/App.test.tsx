@@ -47,12 +47,15 @@ describe("App routing integration", () => {
     expect(screen.getByText("Forum — coming soon.")).toBeInTheDocument();
   });
 
-  it("shows the blocked message when a disallowed page is reached directly", () => {
+  it("shows the blocked message when a disallowed page is reached directly", async () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
     window.history.pushState({}, "", "?debugDate=2026-01-01#/leaderboard");
     render(<App />);
+    // LeaderboardPage still fires its data hooks even while blocked (Rules of
+    // Hooks) — findByText lets that pending fetch settle before the test
+    // ends, so it doesn't leak an unwrapped state update into a later test.
     expect(
-      screen.getByText("This section isn't available right now.")
+      await screen.findByText("This section isn't available right now.")
     ).toBeInTheDocument();
   });
 });
