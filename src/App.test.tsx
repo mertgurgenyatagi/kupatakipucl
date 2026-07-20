@@ -8,7 +8,12 @@ vi.mock("firebase/auth", () => ({
   onAuthStateChanged: vi.fn(),
 }));
 
-vi.mock("./firebase", () => ({ auth: {} }));
+vi.mock("./firebase", () => ({ auth: {}, db: {} }));
+
+vi.mock("firebase/firestore", () => ({
+  collection: (_db: unknown, name: string) => ({ name }),
+  getDocs: () => Promise.resolve({ docs: [] }),
+}));
 
 vi.mock("./auth/AuthProvider", () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -24,11 +29,11 @@ describe("App routing integration", () => {
     window.history.pushState({}, "", "/");
   });
 
-  it("renders the home placeholder for the not-started/logged-out state by default", () => {
+  it("renders the home placeholder for the not-started/logged-out state by default", async () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
     window.history.pushState({}, "", "?debugDate=2026-01-01");
     render(<App />);
-    expect(screen.getByText(/Not started, not logged in/)).toBeInTheDocument();
+    expect(await screen.findByText(/Not started, not logged in/)).toBeInTheDocument();
   });
 
   it("navigates to an allowed page via the nav link", () => {

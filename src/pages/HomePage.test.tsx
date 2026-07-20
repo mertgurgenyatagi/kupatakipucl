@@ -1,47 +1,92 @@
+// src/pages/HomePage.test.tsx
 import { render, screen } from "@testing-library/react";
-import { vi, describe, it, expect, afterEach } from "vitest";
+import { vi, describe, it, expect, beforeEach } from "vitest";
 import { HomePage } from "./HomePage";
 
-const mockUseAuth = vi.fn();
+const mockUseVisibilityState = vi.fn();
+const mockUseResults = vi.fn();
+const mockUsePlayers = vi.fn();
+const mockUseLeaderboard = vi.fn();
 
-vi.mock("../auth/AuthProvider", () => ({
-  useAuth: () => mockUseAuth(),
+vi.mock("../state/useVisibilityState", () => ({
+  useVisibilityState: () => mockUseVisibilityState(),
 }));
 
-function setDebugDate(date: string) {
-  window.history.pushState({}, "", `?debugDate=${date}`);
-}
+vi.mock("../leaderboard/useResults", () => ({
+  useResults: () => mockUseResults(),
+}));
+
+vi.mock("../leaderboard/usePlayers", () => ({
+  usePlayers: () => mockUsePlayers(),
+}));
+
+vi.mock("../leaderboard/useLeaderboard", () => ({
+  useLeaderboard: () => mockUseLeaderboard(),
+}));
+
+vi.mock("../leaderboard/TeamTable", () => ({
+  TeamTable: () => <div>team-table</div>,
+}));
+
+vi.mock("../leaderboard/PlayerList", () => ({
+  PlayerList: ({ showFullNames, leaderboardEntries }: { showFullNames: boolean; leaderboardEntries?: unknown[] }) => (
+    <div>
+      player-list:{String(showFullNames)}:{leaderboardEntries ? "revealed" : "hidden"}
+    </div>
+  ),
+}));
+
+vi.mock("../leaderboard/LeaderboardTable", () => ({
+  LeaderboardTable: () => <div>leaderboard-table</div>,
+}));
+
+const emptyResults = { results: {}, loading: false };
+const emptyPlayers = { players: [], loading: false };
+const emptyLeaderboard = { entries: [], loading: false };
 
 describe("HomePage", () => {
-  afterEach(() => {
-    window.history.pushState({}, "", "/");
+  beforeEach(() => {
+    mockUseResults.mockReturnValue(emptyResults);
+    mockUsePlayers.mockReturnValue(emptyPlayers);
+    mockUseLeaderboard.mockReturnValue(emptyLeaderboard);
   });
 
-  it("shows the not-started/logged-out placeholder", () => {
-    mockUseAuth.mockReturnValue({ user: null, loading: false });
-    setDebugDate("2026-01-01");
-    render(<HomePage />);
-    expect(screen.getByText(/Not started, not logged in/)).toBeInTheDocument();
+  it("renders nothing while any data source is still loading", () => {
+    mockUseVisibilityState.mockReturnValue("NST_NLI");
+    mockUseResults.mockReturnValue({ results: {}, loading: true });
+    const { container } = render(<HomePage />);
+    expect(container).toBeEmptyDOMElement();
   });
 
-  it("shows the not-started/logged-in placeholder", () => {
-    mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
-    setDebugDate("2026-01-01");
+  it("NST_NLI: shows the team table and a first-names-only player list, no leaderboard", () => {
+    mockUseVisibilityState.mockReturnValue("NST_NLI");
     render(<HomePage />);
-    expect(screen.getByText(/Not started, logged in/)).toBeInTheDocument();
+    expect(screen.getByText("team-table")).toBeInTheDocument();
+    expect(screen.getByText("player-list:false:hidden")).toBeInTheDocument();
+    expect(screen.queryByText("leaderboard-table")).not.toBeInTheDocument();
   });
 
-  it("shows the started/logged-out placeholder", () => {
-    mockUseAuth.mockReturnValue({ user: null, loading: false });
-    setDebugDate("2026-09-09");
+  it("NST_LI: shows the team table and a full-name player list, no leaderboard", () => {
+    mockUseVisibilityState.mockReturnValue("NST_LI");
     render(<HomePage />);
-    expect(screen.getByText(/Started, not logged in/)).toBeInTheDocument();
+    expect(screen.getByText("team-table")).toBeInTheDocument();
+    expect(screen.getByText("player-list:true:hidden")).toBeInTheDocument();
+    expect(screen.queryByText("leaderboard-table")).not.toBeInTheDocument();
   });
 
-  it("shows the started/logged-in placeholder", () => {
-    mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
-    setDebugDate("2026-09-09");
+  it("ST_NLI: shows the team table, a revealing full-name player list, and the leaderboard", () => {
+    mockUseVisibilityState.mockReturnValue("ST_NLI");
     render(<HomePage />);
-    expect(screen.getByText(/Started, logged in/)).toBeInTheDocument();
+    expect(screen.getByText("team-table")).toBeInTheDocument();
+    expect(screen.getByText("player-list:true:revealed")).toBeInTheDocument();
+    expect(screen.getByText("leaderboard-table")).toBeInTheDocument();
+  });
+
+  it("ST_LI: shows the team table, a revealing full-name player list, and the leaderboard", () => {
+    mockUseVisibilityState.mockReturnValue("ST_LI");
+    render(<HomePage />);
+    expect(screen.getByText("team-table")).toBeInTheDocument();
+    expect(screen.getByText("player-list:true:revealed")).toBeInTheDocument();
+    expect(screen.getByText("leaderboard-table")).toBeInTheDocument();
   });
 });
