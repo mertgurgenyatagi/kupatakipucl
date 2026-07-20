@@ -25,6 +25,7 @@ export function PredictionsPage() {
   const [pendingSurvey, setPendingSurvey] = useState<SurveyResponse | null>(null);
   const [pendingOrder, setPendingOrder] = useState<string[] | null>(null);
   const [saved, setSaved] = useState<Prediction | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isPageAllowed("predictions", state)) {
     return <p>This section isn't available right now.</p>;
@@ -58,6 +59,7 @@ export function PredictionsPage() {
       <SurveyForm
         onComplete={(response) => {
           setPendingSurvey(response);
+          setError(null);
           setUiStep("rank");
         }}
       />
@@ -67,23 +69,33 @@ export function PredictionsPage() {
   if (uiStep === "rank") {
     const initialOrder = currentPrediction ? currentPrediction.ranking : TEAMS.map((t) => t.id);
     return (
-      <TeamRanker
-        teams={TEAMS}
-        initialOrder={initialOrder}
-        onSubmit={(order) => {
-          if (currentPrediction) {
-            setPendingOrder(order);
-            setUiStep("confirm-overwrite");
-          } else {
-            void (async () => {
-              await saveSurveyResponse(uid, pendingSurvey!);
-              const result = await savePrediction(uid, order);
-              setSaved(result);
-              setUiStep("idle");
-            })();
-          }
-        }}
-      />
+      <div>
+        <TeamRanker
+          teams={TEAMS}
+          initialOrder={initialOrder}
+          onSubmit={(order) => {
+            if (currentPrediction) {
+              setPendingOrder(order);
+              setError(null);
+              setUiStep("confirm-overwrite");
+            } else {
+              void (async () => {
+                try {
+                  await saveSurveyResponse(uid, pendingSurvey!);
+                  const result = await savePrediction(uid, order);
+                  setSaved(result);
+                  setError(null);
+                  setUiStep("idle");
+                } catch (err) {
+                  console.error("Failed to submit prediction", err);
+                  setError("Tahmininiz kaydedilemedi, tekrar deneyin.");
+                }
+              })();
+            }
+          }}
+        />
+        {error && <p role="alert">{error}</p>}
+      </div>
     );
   }
 
@@ -93,10 +105,16 @@ export function PredictionsPage() {
         <p>Bu tahmini üzerine yazmak istediğinize emin misiniz?</p>
         <button
           onClick={async () => {
-            const result = await savePrediction(uid, pendingOrder);
-            setSaved(result);
-            setPendingOrder(null);
-            setUiStep("idle");
+            try {
+              const result = await savePrediction(uid, pendingOrder);
+              setSaved(result);
+              setPendingOrder(null);
+              setError(null);
+              setUiStep("idle");
+            } catch (err) {
+              console.error("Failed to submit prediction", err);
+              setError("Tahmininiz kaydedilemedi, tekrar deneyin.");
+            }
           }}
         >
           Evet, kaydet
@@ -104,11 +122,13 @@ export function PredictionsPage() {
         <button
           onClick={() => {
             setPendingOrder(null);
+            setError(null);
             setUiStep("idle");
           }}
         >
           Vazgeç
         </button>
+        {error && <p role="alert">{error}</p>}
       </div>
     );
   }
@@ -122,7 +142,14 @@ export function PredictionsPage() {
           <li key={name}>{name}</li>
         ))}
       </ol>
-      <button onClick={() => setUiStep("rank")}>Düzenle</button>
+      <button
+        onClick={() => {
+          setError(null);
+          setUiStep("rank");
+        }}
+      >
+        Düzenle
+      </button>
       <SubmissionCounter />
     </div>
   );

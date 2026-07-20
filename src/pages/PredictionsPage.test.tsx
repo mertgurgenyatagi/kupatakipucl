@@ -93,6 +93,21 @@ describe("PredictionsPage", () => {
     expect(mockSavePrediction).toHaveBeenCalledWith("uid1", ["z", "y", "x"]);
   });
 
+  it("shows an inline error and stays on the ranker when the first-time submission fails", async () => {
+    mockUseVisibilityState.mockReturnValue("NST_LI");
+    mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
+    mockSaveSurveyResponse.mockResolvedValue(undefined);
+    mockSavePrediction.mockRejectedValue(new Error("network"));
+    render(<PredictionsPage />);
+
+    fireEvent.click(screen.getByText("complete-survey"));
+    fireEvent.click(screen.getByText("submit-ranking"));
+
+    await waitFor(() => expect(mockSavePrediction).toHaveBeenCalledWith("uid1", ["z", "y", "x"]));
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("submit-ranking")).toBeInTheDocument();
+  });
+
   it("shows the current ranking with an edit button when a prediction already exists (pre-tournament)", () => {
     mockUseVisibilityState.mockReturnValue("NST_LI");
     mockUsePrediction.mockReturnValue({
@@ -142,6 +157,30 @@ describe("PredictionsPage", () => {
     fireEvent.click(screen.getByText("Evet, kaydet"));
 
     await waitFor(() => expect(mockSavePrediction).toHaveBeenCalledWith("uid1", ["z", "y", "x"]));
+  });
+
+  it("shows an inline error and keeps the confirm dialog open when the overwrite save fails, but Vazgeç still works", async () => {
+    mockUseVisibilityState.mockReturnValue("NST_LI");
+    mockUsePrediction.mockReturnValue({
+      prediction: { ranking: ["arsenal"], submittedAt: 1, updatedAt: 1 },
+      loading: false,
+    });
+    mockSavePrediction.mockRejectedValue(new Error("network"));
+    render(<PredictionsPage />);
+
+    fireEvent.click(screen.getByText("Düzenle"));
+    fireEvent.click(screen.getByText("submit-ranking"));
+    fireEvent.click(screen.getByText("Evet, kaydet"));
+
+    await waitFor(() => expect(mockSavePrediction).toHaveBeenCalledWith("uid1", ["z", "y", "x"]));
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(
+      screen.getByText("Bu tahmini üzerine yazmak istediğinize emin misiniz?")
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Vazgeç"));
+    expect(screen.getByText("Arsenal")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("shows the locked read-only ranking post-tournament", () => {
