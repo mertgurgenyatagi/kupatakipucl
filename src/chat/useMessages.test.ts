@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
 const mockOnSnapshot = vi.fn();
@@ -43,11 +43,13 @@ describe("useMessages", () => {
 
   it("populates messages and clears loading when a snapshot arrives", async () => {
     const { result } = renderHook(() => useMessages());
-    capturedOnNext({
-      docs: [
-        { id: "msg1", data: () => ({ uid: "uid1", text: "Merhaba", createdAt: 100 }) },
-        { id: "msg2", data: () => ({ uid: "uid2", text: "Selam", createdAt: 200 }) },
-      ],
+    act(() => {
+      capturedOnNext({
+        docs: [
+          { id: "msg1", data: () => ({ uid: "uid1", text: "Merhaba", createdAt: 100 }) },
+          { id: "msg2", data: () => ({ uid: "uid2", text: "Selam", createdAt: 200 }) },
+        ],
+      });
     });
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.messages).toEqual([
@@ -58,13 +60,17 @@ describe("useMessages", () => {
 
   it("updates messages when a second snapshot arrives", async () => {
     const { result } = renderHook(() => useMessages());
-    capturedOnNext({ docs: [{ id: "msg1", data: () => ({ uid: "uid1", text: "İlk", createdAt: 100 }) }] });
+    act(() => {
+      capturedOnNext({ docs: [{ id: "msg1", data: () => ({ uid: "uid1", text: "İlk", createdAt: 100 }) }] });
+    });
     await waitFor(() => expect(result.current.messages).toHaveLength(1));
-    capturedOnNext({
-      docs: [
-        { id: "msg1", data: () => ({ uid: "uid1", text: "İlk", createdAt: 100 }) },
-        { id: "msg2", data: () => ({ uid: "uid2", text: "İkinci", createdAt: 200 }) },
-      ],
+    act(() => {
+      capturedOnNext({
+        docs: [
+          { id: "msg1", data: () => ({ uid: "uid1", text: "İlk", createdAt: 100 }) },
+          { id: "msg2", data: () => ({ uid: "uid2", text: "İkinci", createdAt: 200 }) },
+        ],
+      });
     });
     await waitFor(() => expect(result.current.messages).toHaveLength(2));
   });
@@ -72,9 +78,13 @@ describe("useMessages", () => {
   it("stops loading and keeps prior messages when the listener errors", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { result } = renderHook(() => useMessages());
-    capturedOnNext({ docs: [{ id: "msg1", data: () => ({ uid: "uid1", text: "İlk", createdAt: 100 }) }] });
+    act(() => {
+      capturedOnNext({ docs: [{ id: "msg1", data: () => ({ uid: "uid1", text: "İlk", createdAt: 100 }) }] });
+    });
     await waitFor(() => expect(result.current.loading).toBe(false));
-    capturedOnError(new Error("listener failed"));
+    act(() => {
+      capturedOnError(new Error("listener failed"));
+    });
     await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to load messages", expect.any(Error)));
     expect(result.current.messages).toHaveLength(1);
     consoleErrorSpy.mockRestore();
