@@ -50,5 +50,15 @@ service cloud.firestore {
       allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
       allow update, delete: if false;
     }
+
+    // Forum posts: public read (pageAccess.ts allows the logged-out ST_NLI
+    // state to view the forum — unlike chat, which is logged-in only in
+    // every state). A user can only create a post attributed to their own
+    // uid. Immutable, no admin panel (SPEC.md §6, §7b) — no edits/deletes.
+    match /forumPosts/{postId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
   }
 }

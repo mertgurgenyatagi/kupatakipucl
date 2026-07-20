@@ -12,5 +12,17 @@ service firebase.storage {
                    && request.resource.size < 5 * 1024 * 1024
                    && request.resource.contentType.matches('image/.*');
     }
+
+    // Forum post images: public read (matches forum posts' own public
+    // visibility). Any signed-in user can upload, capped at 5MB, restricted
+    // to PNG/JPEG/WebP (SPEC.md §6: "image uploads only, no video/gif" —
+    // an explicit allowlist is simpler than expressing "any image except
+    // gif" as a rule condition).
+    match /forum-images/{imageId} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType in ['image/png', 'image/jpeg', 'image/webp'];
+    }
   }
 }
