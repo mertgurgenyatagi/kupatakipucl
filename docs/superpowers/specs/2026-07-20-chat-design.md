@@ -51,7 +51,7 @@ The single shared, live, real-time chatroom from `SPEC.md` §6: one room for eve
 
 - `useMessages`'s `onSnapshot` error callback logs and stops `loading` (matching every other read hook's `.catch` convention), leaving whatever messages were already loaded on screen rather than clearing them — a transient listener error shouldn't blank out history the user was already reading.
 - `sendMessage` rejection: `ChatRoom` catches it, shows an inline Turkish error (matching `PredictionsPage.tsx`'s established pattern for write failures), and leaves the user's typed text in the input so nothing is lost and they can retry.
-- Empty/whitespace-only submissions are rejected client-side before any write is attempted (button disabled + defensive check in `sendMessage`).
+- Empty/whitespace-only submissions are rejected client-side before any write is attempted — `ChatRoom`'s submit handler no-ops on blank input, and `sendMessage` repeats the same trim guard as a second, independent layer (not a disabled button; two defensive checks instead).
 
 ## Security Rules
 
