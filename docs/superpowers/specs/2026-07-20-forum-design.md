@@ -49,7 +49,7 @@ The 4chan-style threaded forum from `SPEC.md` §6: top-level posts act as thread
 
 ## Data Flow
 
-`usePosts` (flat list) + `usePlayers` (name lookup) feed `Forum`, which calls `buildThreadTree` once to shape the data, then recursively renders `ThreadNode`s. Creating a post (new thread or reply) goes through `createPost` → Storage upload (if image) → Firestore write; the page doesn't auto-refresh after a successful post (no real-time listener, per the one-time-read decision above) — a bare-skeleton acceptable gap, noted as a follow-up.
+`usePosts` (flat list) + `usePlayers` (name lookup) feed `Forum`, which calls `buildThreadTree` once to shape the data, then recursively renders `ThreadNode`s. Creating a post (new thread or reply) goes through `createPost` → Storage upload (if image) → Firestore write. `usePosts` exposes a `refetch()` alongside `posts`/`loading` (a small addition beyond a bare one-time fetch — re-runs the same query, not a live listener), which `PostForm` calls on a successful post so the poster immediately sees their own new post without a manual page reload. This doesn't contradict the no-`onSnapshot` decision above: it's a self-triggered refresh of your own action, not a cross-user live feed — another participant's reply still won't appear until the next natural page load, which stays the accepted bare-skeleton gap.
 
 ## Error Handling
 
