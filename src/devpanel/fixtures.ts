@@ -1,0 +1,182 @@
+// Real 2025-26 UCL league phase schedule, relabeled to 2026-27 (SPEC.md §7's
+// "swap in the real list, don't block on the actual confirmed one" shortcut,
+// applied to fixtures/dates too, since the actual 2026-27 calendar isn't
+// published yet). Kickoff times converted from the source's primary listing
+// zone (CEST/UTC+2 through Matchday 3, CET/UTC+1 from Matchday 4 onward,
+// matching the real EU DST transition date) to Turkish local time (UTC+3,
+// fixed year-round, see tournamentPhase.ts), then stored here as UTC.
+//
+// `order` is the authoritative sequential index (1-144) the dev panel uses
+// to enforce "can't decide a later match before all earlier ones are
+// decided" — it is NOT necessarily the same as calendar order within a
+// single matchday's two match-days, just the fixed order these are listed.
+export interface Fixture {
+  id: string;
+  matchday: number;
+  order: number;
+  homeTeamId: string;
+  awayTeamId: string;
+  kickoffUtc: string;
+}
+
+export const FIXTURES: Fixture[] = [
+  // Matchday 1 (16-18 September 2026)
+  { id: "md1-athletic-club-arsenal", matchday: 1, order: 1, homeTeamId: "athletic-club", awayTeamId: "arsenal", kickoffUtc: "2026-09-16T16:45:00Z" },
+  { id: "md1-psv-eindhoven-union-saint-gilloise", matchday: 1, order: 2, homeTeamId: "psv-eindhoven", awayTeamId: "union-saint-gilloise", kickoffUtc: "2026-09-16T16:45:00Z" },
+  { id: "md1-juventus-borussia-dortmund", matchday: 1, order: 3, homeTeamId: "juventus", awayTeamId: "borussia-dortmund", kickoffUtc: "2026-09-16T19:00:00Z" },
+  { id: "md1-real-madrid-marseille", matchday: 1, order: 4, homeTeamId: "real-madrid", awayTeamId: "marseille", kickoffUtc: "2026-09-16T19:00:00Z" },
+  { id: "md1-benfica-qarabag", matchday: 1, order: 5, homeTeamId: "benfica", awayTeamId: "qarabag", kickoffUtc: "2026-09-16T19:00:00Z" },
+  { id: "md1-tottenham-hotspur-villarreal", matchday: 1, order: 6, homeTeamId: "tottenham-hotspur", awayTeamId: "villarreal", kickoffUtc: "2026-09-16T19:00:00Z" },
+  { id: "md1-olympiacos-pafos", matchday: 1, order: 7, homeTeamId: "olympiacos", awayTeamId: "pafos", kickoffUtc: "2026-09-17T16:45:00Z" },
+  { id: "md1-slavia-prague-bodo-glimt", matchday: 1, order: 8, homeTeamId: "slavia-prague", awayTeamId: "bodo-glimt", kickoffUtc: "2026-09-17T16:45:00Z" },
+  { id: "md1-ajax-inter-milan", matchday: 1, order: 9, homeTeamId: "ajax", awayTeamId: "inter-milan", kickoffUtc: "2026-09-17T19:00:00Z" },
+  { id: "md1-bayern-munich-chelsea", matchday: 1, order: 10, homeTeamId: "bayern-munich", awayTeamId: "chelsea", kickoffUtc: "2026-09-17T19:00:00Z" },
+  { id: "md1-liverpool-atletico-madrid", matchday: 1, order: 11, homeTeamId: "liverpool", awayTeamId: "atletico-madrid", kickoffUtc: "2026-09-17T19:00:00Z" },
+  { id: "md1-paris-saint-germain-atalanta", matchday: 1, order: 12, homeTeamId: "paris-saint-germain", awayTeamId: "atalanta", kickoffUtc: "2026-09-17T19:00:00Z" },
+  { id: "md1-club-brugge-monaco", matchday: 1, order: 13, homeTeamId: "club-brugge", awayTeamId: "monaco", kickoffUtc: "2026-09-18T16:45:00Z" },
+  { id: "md1-copenhagen-bayer-leverkusen", matchday: 1, order: 14, homeTeamId: "copenhagen", awayTeamId: "bayer-leverkusen", kickoffUtc: "2026-09-18T16:45:00Z" },
+  { id: "md1-eintracht-frankfurt-galatasaray", matchday: 1, order: 15, homeTeamId: "eintracht-frankfurt", awayTeamId: "galatasaray", kickoffUtc: "2026-09-18T19:00:00Z" },
+  { id: "md1-manchester-city-napoli", matchday: 1, order: 16, homeTeamId: "manchester-city", awayTeamId: "napoli", kickoffUtc: "2026-09-18T19:00:00Z" },
+  { id: "md1-newcastle-united-barcelona", matchday: 1, order: 17, homeTeamId: "newcastle-united", awayTeamId: "barcelona", kickoffUtc: "2026-09-18T19:00:00Z" },
+  { id: "md1-sporting-cp-kairat-almaty", matchday: 1, order: 18, homeTeamId: "sporting-cp", awayTeamId: "kairat-almaty", kickoffUtc: "2026-09-18T19:00:00Z" },
+
+  // Matchday 2 (30 September - 1 October 2026)
+  { id: "md2-atalanta-club-brugge", matchday: 2, order: 19, homeTeamId: "atalanta", awayTeamId: "club-brugge", kickoffUtc: "2026-09-30T16:45:00Z" },
+  { id: "md2-kairat-almaty-real-madrid", matchday: 2, order: 20, homeTeamId: "kairat-almaty", awayTeamId: "real-madrid", kickoffUtc: "2026-09-30T16:45:00Z" },
+  { id: "md2-atletico-madrid-eintracht-frankfurt", matchday: 2, order: 21, homeTeamId: "atletico-madrid", awayTeamId: "eintracht-frankfurt", kickoffUtc: "2026-09-30T19:00:00Z" },
+  { id: "md2-chelsea-benfica", matchday: 2, order: 22, homeTeamId: "chelsea", awayTeamId: "benfica", kickoffUtc: "2026-09-30T19:00:00Z" },
+  { id: "md2-inter-milan-slavia-prague", matchday: 2, order: 23, homeTeamId: "inter-milan", awayTeamId: "slavia-prague", kickoffUtc: "2026-09-30T19:00:00Z" },
+  { id: "md2-bodo-glimt-tottenham-hotspur", matchday: 2, order: 24, homeTeamId: "bodo-glimt", awayTeamId: "tottenham-hotspur", kickoffUtc: "2026-09-30T19:00:00Z" },
+  { id: "md2-galatasaray-liverpool", matchday: 2, order: 25, homeTeamId: "galatasaray", awayTeamId: "liverpool", kickoffUtc: "2026-09-30T19:00:00Z" },
+  { id: "md2-marseille-ajax", matchday: 2, order: 26, homeTeamId: "marseille", awayTeamId: "ajax", kickoffUtc: "2026-09-30T19:00:00Z" },
+  { id: "md2-pafos-bayern-munich", matchday: 2, order: 27, homeTeamId: "pafos", awayTeamId: "bayern-munich", kickoffUtc: "2026-09-30T19:00:00Z" },
+  { id: "md2-qarabag-copenhagen", matchday: 2, order: 28, homeTeamId: "qarabag", awayTeamId: "copenhagen", kickoffUtc: "2026-10-01T16:45:00Z" },
+  { id: "md2-union-saint-gilloise-newcastle-united", matchday: 2, order: 29, homeTeamId: "union-saint-gilloise", awayTeamId: "newcastle-united", kickoffUtc: "2026-10-01T16:45:00Z" },
+  { id: "md2-arsenal-olympiacos", matchday: 2, order: 30, homeTeamId: "arsenal", awayTeamId: "olympiacos", kickoffUtc: "2026-10-01T19:00:00Z" },
+  { id: "md2-monaco-manchester-city", matchday: 2, order: 31, homeTeamId: "monaco", awayTeamId: "manchester-city", kickoffUtc: "2026-10-01T19:00:00Z" },
+  { id: "md2-bayer-leverkusen-psv-eindhoven", matchday: 2, order: 32, homeTeamId: "bayer-leverkusen", awayTeamId: "psv-eindhoven", kickoffUtc: "2026-10-01T19:00:00Z" },
+  { id: "md2-borussia-dortmund-athletic-club", matchday: 2, order: 33, homeTeamId: "borussia-dortmund", awayTeamId: "athletic-club", kickoffUtc: "2026-10-01T19:00:00Z" },
+  { id: "md2-barcelona-paris-saint-germain", matchday: 2, order: 34, homeTeamId: "barcelona", awayTeamId: "paris-saint-germain", kickoffUtc: "2026-10-01T19:00:00Z" },
+  { id: "md2-napoli-sporting-cp", matchday: 2, order: 35, homeTeamId: "napoli", awayTeamId: "sporting-cp", kickoffUtc: "2026-10-01T19:00:00Z" },
+  { id: "md2-villarreal-juventus", matchday: 2, order: 36, homeTeamId: "villarreal", awayTeamId: "juventus", kickoffUtc: "2026-10-01T19:00:00Z" },
+
+  // Matchday 3 (21-22 October 2026)
+  { id: "md3-barcelona-olympiacos", matchday: 3, order: 37, homeTeamId: "barcelona", awayTeamId: "olympiacos", kickoffUtc: "2026-10-21T16:45:00Z" },
+  { id: "md3-kairat-almaty-pafos", matchday: 3, order: 38, homeTeamId: "kairat-almaty", awayTeamId: "pafos", kickoffUtc: "2026-10-21T16:45:00Z" },
+  { id: "md3-arsenal-atletico-madrid", matchday: 3, order: 39, homeTeamId: "arsenal", awayTeamId: "atletico-madrid", kickoffUtc: "2026-10-21T19:00:00Z" },
+  { id: "md3-bayer-leverkusen-paris-saint-germain", matchday: 3, order: 40, homeTeamId: "bayer-leverkusen", awayTeamId: "paris-saint-germain", kickoffUtc: "2026-10-21T19:00:00Z" },
+  { id: "md3-copenhagen-borussia-dortmund", matchday: 3, order: 41, homeTeamId: "copenhagen", awayTeamId: "borussia-dortmund", kickoffUtc: "2026-10-21T19:00:00Z" },
+  { id: "md3-newcastle-united-benfica", matchday: 3, order: 42, homeTeamId: "newcastle-united", awayTeamId: "benfica", kickoffUtc: "2026-10-21T19:00:00Z" },
+  { id: "md3-psv-eindhoven-napoli", matchday: 3, order: 43, homeTeamId: "psv-eindhoven", awayTeamId: "napoli", kickoffUtc: "2026-10-21T19:00:00Z" },
+  { id: "md3-union-saint-gilloise-inter-milan", matchday: 3, order: 44, homeTeamId: "union-saint-gilloise", awayTeamId: "inter-milan", kickoffUtc: "2026-10-21T19:00:00Z" },
+  { id: "md3-villarreal-manchester-city", matchday: 3, order: 45, homeTeamId: "villarreal", awayTeamId: "manchester-city", kickoffUtc: "2026-10-21T19:00:00Z" },
+  { id: "md3-athletic-club-qarabag", matchday: 3, order: 46, homeTeamId: "athletic-club", awayTeamId: "qarabag", kickoffUtc: "2026-10-22T16:45:00Z" },
+  { id: "md3-galatasaray-bodo-glimt", matchday: 3, order: 47, homeTeamId: "galatasaray", awayTeamId: "bodo-glimt", kickoffUtc: "2026-10-22T16:45:00Z" },
+  { id: "md3-monaco-tottenham-hotspur", matchday: 3, order: 48, homeTeamId: "monaco", awayTeamId: "tottenham-hotspur", kickoffUtc: "2026-10-22T19:00:00Z" },
+  { id: "md3-atalanta-slavia-prague", matchday: 3, order: 49, homeTeamId: "atalanta", awayTeamId: "slavia-prague", kickoffUtc: "2026-10-22T19:00:00Z" },
+  { id: "md3-chelsea-ajax", matchday: 3, order: 50, homeTeamId: "chelsea", awayTeamId: "ajax", kickoffUtc: "2026-10-22T19:00:00Z" },
+  { id: "md3-eintracht-frankfurt-liverpool", matchday: 3, order: 51, homeTeamId: "eintracht-frankfurt", awayTeamId: "liverpool", kickoffUtc: "2026-10-22T19:00:00Z" },
+  { id: "md3-bayern-munich-club-brugge", matchday: 3, order: 52, homeTeamId: "bayern-munich", awayTeamId: "club-brugge", kickoffUtc: "2026-10-22T19:00:00Z" },
+  { id: "md3-real-madrid-juventus", matchday: 3, order: 53, homeTeamId: "real-madrid", awayTeamId: "juventus", kickoffUtc: "2026-10-22T19:00:00Z" },
+  { id: "md3-sporting-cp-marseille", matchday: 3, order: 54, homeTeamId: "sporting-cp", awayTeamId: "marseille", kickoffUtc: "2026-10-22T19:00:00Z" },
+
+  // Matchday 4 (4-5 November 2026)
+  { id: "md4-slavia-prague-arsenal", matchday: 4, order: 55, homeTeamId: "slavia-prague", awayTeamId: "arsenal", kickoffUtc: "2026-11-04T17:45:00Z" },
+  { id: "md4-napoli-eintracht-frankfurt", matchday: 4, order: 56, homeTeamId: "napoli", awayTeamId: "eintracht-frankfurt", kickoffUtc: "2026-11-04T17:45:00Z" },
+  { id: "md4-atletico-madrid-union-saint-gilloise", matchday: 4, order: 57, homeTeamId: "atletico-madrid", awayTeamId: "union-saint-gilloise", kickoffUtc: "2026-11-04T20:00:00Z" },
+  { id: "md4-bodo-glimt-monaco", matchday: 4, order: 58, homeTeamId: "bodo-glimt", awayTeamId: "monaco", kickoffUtc: "2026-11-04T20:00:00Z" },
+  { id: "md4-juventus-sporting-cp", matchday: 4, order: 59, homeTeamId: "juventus", awayTeamId: "sporting-cp", kickoffUtc: "2026-11-04T20:00:00Z" },
+  { id: "md4-liverpool-real-madrid", matchday: 4, order: 60, homeTeamId: "liverpool", awayTeamId: "real-madrid", kickoffUtc: "2026-11-04T20:00:00Z" },
+  { id: "md4-olympiacos-psv-eindhoven", matchday: 4, order: 61, homeTeamId: "olympiacos", awayTeamId: "psv-eindhoven", kickoffUtc: "2026-11-04T20:00:00Z" },
+  { id: "md4-paris-saint-germain-bayern-munich", matchday: 4, order: 62, homeTeamId: "paris-saint-germain", awayTeamId: "bayern-munich", kickoffUtc: "2026-11-04T20:00:00Z" },
+  { id: "md4-tottenham-hotspur-copenhagen", matchday: 4, order: 63, homeTeamId: "tottenham-hotspur", awayTeamId: "copenhagen", kickoffUtc: "2026-11-04T20:00:00Z" },
+  { id: "md4-pafos-villarreal", matchday: 4, order: 64, homeTeamId: "pafos", awayTeamId: "villarreal", kickoffUtc: "2026-11-05T17:45:00Z" },
+  { id: "md4-qarabag-chelsea", matchday: 4, order: 65, homeTeamId: "qarabag", awayTeamId: "chelsea", kickoffUtc: "2026-11-05T17:45:00Z" },
+  { id: "md4-ajax-galatasaray", matchday: 4, order: 66, homeTeamId: "ajax", awayTeamId: "galatasaray", kickoffUtc: "2026-11-05T20:00:00Z" },
+  { id: "md4-club-brugge-barcelona", matchday: 4, order: 67, homeTeamId: "club-brugge", awayTeamId: "barcelona", kickoffUtc: "2026-11-05T20:00:00Z" },
+  { id: "md4-inter-milan-kairat-almaty", matchday: 4, order: 68, homeTeamId: "inter-milan", awayTeamId: "kairat-almaty", kickoffUtc: "2026-11-05T20:00:00Z" },
+  { id: "md4-manchester-city-borussia-dortmund", matchday: 4, order: 69, homeTeamId: "manchester-city", awayTeamId: "borussia-dortmund", kickoffUtc: "2026-11-05T20:00:00Z" },
+  { id: "md4-newcastle-united-athletic-club", matchday: 4, order: 70, homeTeamId: "newcastle-united", awayTeamId: "athletic-club", kickoffUtc: "2026-11-05T20:00:00Z" },
+  { id: "md4-marseille-atalanta", matchday: 4, order: 71, homeTeamId: "marseille", awayTeamId: "atalanta", kickoffUtc: "2026-11-05T20:00:00Z" },
+  { id: "md4-benfica-bayer-leverkusen", matchday: 4, order: 72, homeTeamId: "benfica", awayTeamId: "bayer-leverkusen", kickoffUtc: "2026-11-05T20:00:00Z" },
+
+  // Matchday 5 (25-26 November 2026)
+  { id: "md5-ajax-benfica", matchday: 5, order: 73, homeTeamId: "ajax", awayTeamId: "benfica", kickoffUtc: "2026-11-25T17:45:00Z" },
+  { id: "md5-galatasaray-union-saint-gilloise", matchday: 5, order: 74, homeTeamId: "galatasaray", awayTeamId: "union-saint-gilloise", kickoffUtc: "2026-11-25T17:45:00Z" },
+  { id: "md5-borussia-dortmund-villarreal", matchday: 5, order: 75, homeTeamId: "borussia-dortmund", awayTeamId: "villarreal", kickoffUtc: "2026-11-25T20:00:00Z" },
+  { id: "md5-chelsea-barcelona", matchday: 5, order: 76, homeTeamId: "chelsea", awayTeamId: "barcelona", kickoffUtc: "2026-11-25T20:00:00Z" },
+  { id: "md5-bodo-glimt-juventus", matchday: 5, order: 77, homeTeamId: "bodo-glimt", awayTeamId: "juventus", kickoffUtc: "2026-11-25T20:00:00Z" },
+  { id: "md5-manchester-city-bayer-leverkusen", matchday: 5, order: 78, homeTeamId: "manchester-city", awayTeamId: "bayer-leverkusen", kickoffUtc: "2026-11-25T20:00:00Z" },
+  { id: "md5-marseille-newcastle-united", matchday: 5, order: 79, homeTeamId: "marseille", awayTeamId: "newcastle-united", kickoffUtc: "2026-11-25T20:00:00Z" },
+  { id: "md5-slavia-prague-athletic-club", matchday: 5, order: 80, homeTeamId: "slavia-prague", awayTeamId: "athletic-club", kickoffUtc: "2026-11-25T20:00:00Z" },
+  { id: "md5-napoli-qarabag", matchday: 5, order: 81, homeTeamId: "napoli", awayTeamId: "qarabag", kickoffUtc: "2026-11-25T20:00:00Z" },
+  { id: "md5-copenhagen-kairat-almaty", matchday: 5, order: 82, homeTeamId: "copenhagen", awayTeamId: "kairat-almaty", kickoffUtc: "2026-11-26T17:45:00Z" },
+  { id: "md5-pafos-monaco", matchday: 5, order: 83, homeTeamId: "pafos", awayTeamId: "monaco", kickoffUtc: "2026-11-26T17:45:00Z" },
+  { id: "md5-arsenal-bayern-munich", matchday: 5, order: 84, homeTeamId: "arsenal", awayTeamId: "bayern-munich", kickoffUtc: "2026-11-26T20:00:00Z" },
+  { id: "md5-atletico-madrid-inter-milan", matchday: 5, order: 85, homeTeamId: "atletico-madrid", awayTeamId: "inter-milan", kickoffUtc: "2026-11-26T20:00:00Z" },
+  { id: "md5-eintracht-frankfurt-atalanta", matchday: 5, order: 86, homeTeamId: "eintracht-frankfurt", awayTeamId: "atalanta", kickoffUtc: "2026-11-26T20:00:00Z" },
+  { id: "md5-liverpool-psv-eindhoven", matchday: 5, order: 87, homeTeamId: "liverpool", awayTeamId: "psv-eindhoven", kickoffUtc: "2026-11-26T20:00:00Z" },
+  { id: "md5-olympiacos-real-madrid", matchday: 5, order: 88, homeTeamId: "olympiacos", awayTeamId: "real-madrid", kickoffUtc: "2026-11-26T20:00:00Z" },
+  { id: "md5-paris-saint-germain-tottenham-hotspur", matchday: 5, order: 89, homeTeamId: "paris-saint-germain", awayTeamId: "tottenham-hotspur", kickoffUtc: "2026-11-26T20:00:00Z" },
+  { id: "md5-sporting-cp-club-brugge", matchday: 5, order: 90, homeTeamId: "sporting-cp", awayTeamId: "club-brugge", kickoffUtc: "2026-11-26T20:00:00Z" },
+
+  // Matchday 6 (9-10 December 2026)
+  { id: "md6-kairat-almaty-olympiacos", matchday: 6, order: 91, homeTeamId: "kairat-almaty", awayTeamId: "olympiacos", kickoffUtc: "2026-12-09T15:30:00Z" },
+  { id: "md6-bayern-munich-sporting-cp", matchday: 6, order: 92, homeTeamId: "bayern-munich", awayTeamId: "sporting-cp", kickoffUtc: "2026-12-09T17:45:00Z" },
+  { id: "md6-monaco-galatasaray", matchday: 6, order: 93, homeTeamId: "monaco", awayTeamId: "galatasaray", kickoffUtc: "2026-12-09T20:00:00Z" },
+  { id: "md6-atalanta-chelsea", matchday: 6, order: 94, homeTeamId: "atalanta", awayTeamId: "chelsea", kickoffUtc: "2026-12-09T20:00:00Z" },
+  { id: "md6-barcelona-eintracht-frankfurt", matchday: 6, order: 95, homeTeamId: "barcelona", awayTeamId: "eintracht-frankfurt", kickoffUtc: "2026-12-09T20:00:00Z" },
+  { id: "md6-inter-milan-liverpool", matchday: 6, order: 96, homeTeamId: "inter-milan", awayTeamId: "liverpool", kickoffUtc: "2026-12-09T20:00:00Z" },
+  { id: "md6-psv-eindhoven-atletico-madrid", matchday: 6, order: 97, homeTeamId: "psv-eindhoven", awayTeamId: "atletico-madrid", kickoffUtc: "2026-12-09T20:00:00Z" },
+  { id: "md6-union-saint-gilloise-marseille", matchday: 6, order: 98, homeTeamId: "union-saint-gilloise", awayTeamId: "marseille", kickoffUtc: "2026-12-09T20:00:00Z" },
+  { id: "md6-tottenham-hotspur-slavia-prague", matchday: 6, order: 99, homeTeamId: "tottenham-hotspur", awayTeamId: "slavia-prague", kickoffUtc: "2026-12-09T20:00:00Z" },
+  { id: "md6-qarabag-ajax", matchday: 6, order: 100, homeTeamId: "qarabag", awayTeamId: "ajax", kickoffUtc: "2026-12-10T17:45:00Z" },
+  { id: "md6-villarreal-copenhagen", matchday: 6, order: 101, homeTeamId: "villarreal", awayTeamId: "copenhagen", kickoffUtc: "2026-12-10T17:45:00Z" },
+  { id: "md6-athletic-club-paris-saint-germain", matchday: 6, order: 102, homeTeamId: "athletic-club", awayTeamId: "paris-saint-germain", kickoffUtc: "2026-12-10T20:00:00Z" },
+  { id: "md6-bayer-leverkusen-newcastle-united", matchday: 6, order: 103, homeTeamId: "bayer-leverkusen", awayTeamId: "newcastle-united", kickoffUtc: "2026-12-10T20:00:00Z" },
+  { id: "md6-borussia-dortmund-bodo-glimt", matchday: 6, order: 104, homeTeamId: "borussia-dortmund", awayTeamId: "bodo-glimt", kickoffUtc: "2026-12-10T20:00:00Z" },
+  { id: "md6-club-brugge-arsenal", matchday: 6, order: 105, homeTeamId: "club-brugge", awayTeamId: "arsenal", kickoffUtc: "2026-12-10T20:00:00Z" },
+  { id: "md6-juventus-pafos", matchday: 6, order: 106, homeTeamId: "juventus", awayTeamId: "pafos", kickoffUtc: "2026-12-10T20:00:00Z" },
+  { id: "md6-real-madrid-manchester-city", matchday: 6, order: 107, homeTeamId: "real-madrid", awayTeamId: "manchester-city", kickoffUtc: "2026-12-10T20:00:00Z" },
+  { id: "md6-benfica-napoli", matchday: 6, order: 108, homeTeamId: "benfica", awayTeamId: "napoli", kickoffUtc: "2026-12-10T20:00:00Z" },
+
+  // Matchday 7 (20-21 January 2027)
+  { id: "md7-kairat-almaty-club-brugge", matchday: 7, order: 109, homeTeamId: "kairat-almaty", awayTeamId: "club-brugge", kickoffUtc: "2027-01-20T15:30:00Z" },
+  { id: "md7-bodo-glimt-manchester-city", matchday: 7, order: 110, homeTeamId: "bodo-glimt", awayTeamId: "manchester-city", kickoffUtc: "2027-01-20T17:45:00Z" },
+  { id: "md7-copenhagen-napoli", matchday: 7, order: 111, homeTeamId: "copenhagen", awayTeamId: "napoli", kickoffUtc: "2027-01-20T20:00:00Z" },
+  { id: "md7-inter-milan-arsenal", matchday: 7, order: 112, homeTeamId: "inter-milan", awayTeamId: "arsenal", kickoffUtc: "2027-01-20T20:00:00Z" },
+  { id: "md7-olympiacos-bayer-leverkusen", matchday: 7, order: 113, homeTeamId: "olympiacos", awayTeamId: "bayer-leverkusen", kickoffUtc: "2027-01-20T20:00:00Z" },
+  { id: "md7-real-madrid-monaco", matchday: 7, order: 114, homeTeamId: "real-madrid", awayTeamId: "monaco", kickoffUtc: "2027-01-20T20:00:00Z" },
+  { id: "md7-sporting-cp-paris-saint-germain", matchday: 7, order: 115, homeTeamId: "sporting-cp", awayTeamId: "paris-saint-germain", kickoffUtc: "2027-01-20T20:00:00Z" },
+  { id: "md7-tottenham-hotspur-borussia-dortmund", matchday: 7, order: 116, homeTeamId: "tottenham-hotspur", awayTeamId: "borussia-dortmund", kickoffUtc: "2027-01-20T20:00:00Z" },
+  { id: "md7-villarreal-ajax", matchday: 7, order: 117, homeTeamId: "villarreal", awayTeamId: "ajax", kickoffUtc: "2027-01-20T20:00:00Z" },
+  { id: "md7-galatasaray-atletico-madrid", matchday: 7, order: 118, homeTeamId: "galatasaray", awayTeamId: "atletico-madrid", kickoffUtc: "2027-01-21T17:45:00Z" },
+  { id: "md7-qarabag-eintracht-frankfurt", matchday: 7, order: 119, homeTeamId: "qarabag", awayTeamId: "eintracht-frankfurt", kickoffUtc: "2027-01-21T17:45:00Z" },
+  { id: "md7-atalanta-athletic-club", matchday: 7, order: 120, homeTeamId: "atalanta", awayTeamId: "athletic-club", kickoffUtc: "2027-01-21T20:00:00Z" },
+  { id: "md7-chelsea-pafos", matchday: 7, order: 121, homeTeamId: "chelsea", awayTeamId: "pafos", kickoffUtc: "2027-01-21T20:00:00Z" },
+  { id: "md7-bayern-munich-union-saint-gilloise", matchday: 7, order: 122, homeTeamId: "bayern-munich", awayTeamId: "union-saint-gilloise", kickoffUtc: "2027-01-21T20:00:00Z" },
+  { id: "md7-juventus-benfica", matchday: 7, order: 123, homeTeamId: "juventus", awayTeamId: "benfica", kickoffUtc: "2027-01-21T20:00:00Z" },
+  { id: "md7-newcastle-united-psv-eindhoven", matchday: 7, order: 124, homeTeamId: "newcastle-united", awayTeamId: "psv-eindhoven", kickoffUtc: "2027-01-21T20:00:00Z" },
+  { id: "md7-marseille-liverpool", matchday: 7, order: 125, homeTeamId: "marseille", awayTeamId: "liverpool", kickoffUtc: "2027-01-21T20:00:00Z" },
+  { id: "md7-slavia-prague-barcelona", matchday: 7, order: 126, homeTeamId: "slavia-prague", awayTeamId: "barcelona", kickoffUtc: "2027-01-21T20:00:00Z" },
+
+  // Matchday 8 (28 January 2027)
+  { id: "md8-ajax-olympiacos", matchday: 8, order: 127, homeTeamId: "ajax", awayTeamId: "olympiacos", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-arsenal-kairat-almaty", matchday: 8, order: 128, homeTeamId: "arsenal", awayTeamId: "kairat-almaty", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-monaco-juventus", matchday: 8, order: 129, homeTeamId: "monaco", awayTeamId: "juventus", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-athletic-club-sporting-cp", matchday: 8, order: 130, homeTeamId: "athletic-club", awayTeamId: "sporting-cp", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-atletico-madrid-bodo-glimt", matchday: 8, order: 131, homeTeamId: "atletico-madrid", awayTeamId: "bodo-glimt", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-bayer-leverkusen-villarreal", matchday: 8, order: 132, homeTeamId: "bayer-leverkusen", awayTeamId: "villarreal", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-borussia-dortmund-inter-milan", matchday: 8, order: 133, homeTeamId: "borussia-dortmund", awayTeamId: "inter-milan", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-club-brugge-marseille", matchday: 8, order: 134, homeTeamId: "club-brugge", awayTeamId: "marseille", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-eintracht-frankfurt-tottenham-hotspur", matchday: 8, order: 135, homeTeamId: "eintracht-frankfurt", awayTeamId: "tottenham-hotspur", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-barcelona-copenhagen", matchday: 8, order: 136, homeTeamId: "barcelona", awayTeamId: "copenhagen", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-liverpool-qarabag", matchday: 8, order: 137, homeTeamId: "liverpool", awayTeamId: "qarabag", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-manchester-city-galatasaray", matchday: 8, order: 138, homeTeamId: "manchester-city", awayTeamId: "galatasaray", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-pafos-slavia-prague", matchday: 8, order: 139, homeTeamId: "pafos", awayTeamId: "slavia-prague", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-paris-saint-germain-newcastle-united", matchday: 8, order: 140, homeTeamId: "paris-saint-germain", awayTeamId: "newcastle-united", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-psv-eindhoven-bayern-munich", matchday: 8, order: 141, homeTeamId: "psv-eindhoven", awayTeamId: "bayern-munich", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-union-saint-gilloise-atalanta", matchday: 8, order: 142, homeTeamId: "union-saint-gilloise", awayTeamId: "atalanta", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-benfica-real-madrid", matchday: 8, order: 143, homeTeamId: "benfica", awayTeamId: "real-madrid", kickoffUtc: "2027-01-28T20:00:00Z" },
+  { id: "md8-napoli-chelsea", matchday: 8, order: 144, homeTeamId: "napoli", awayTeamId: "chelsea", kickoffUtc: "2027-01-28T20:00:00Z" },
+];
