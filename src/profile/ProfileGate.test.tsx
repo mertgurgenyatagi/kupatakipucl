@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect } from "vitest";
 import { ProfileGate } from "./ProfileGate";
 
@@ -14,7 +14,22 @@ vi.mock("./useProfile", () => ({
 }));
 
 vi.mock("./ProfileForm", () => ({
-  ProfileForm: ({ uid }: { uid: string }) => <div>profile-form:{uid}</div>,
+  ProfileForm: ({
+    uid,
+    onSaved,
+  }: {
+    uid: string;
+    onSaved: (profile: { firstName: string; lastName: string; photoURL: string; createdAt: number }) => void;
+  }) => (
+    <div>
+      <span>profile-form:{uid}</span>
+      <button
+        onClick={() => onSaved({ firstName: "X", lastName: "Y", photoURL: "url", createdAt: 1 })}
+      >
+        save
+      </button>
+    </div>
+  ),
 }));
 
 describe("ProfileGate", () => {
@@ -63,5 +78,28 @@ describe("ProfileGate", () => {
       </ProfileGate>
     );
     expect(screen.getByText("app-content")).toBeInTheDocument();
+  });
+
+  it("does not leak a saved profile across a different user after a uid change", () => {
+    mockUseAuth.mockReturnValue({ user: { uid: "uid1" }, loading: false });
+    mockUseProfile.mockReturnValue({ profile: null, loading: false });
+    const { rerender } = render(
+      <ProfileGate>
+        <div>app-content</div>
+      </ProfileGate>
+    );
+
+    fireEvent.click(screen.getByText("save"));
+    expect(screen.getByText("app-content")).toBeInTheDocument();
+
+    mockUseAuth.mockReturnValue({ user: { uid: "uid2" }, loading: false });
+    mockUseProfile.mockReturnValue({ profile: null, loading: false });
+    rerender(
+      <ProfileGate>
+        <div>app-content</div>
+      </ProfileGate>
+    );
+
+    expect(screen.getByText("profile-form:uid2")).toBeInTheDocument();
   });
 });
