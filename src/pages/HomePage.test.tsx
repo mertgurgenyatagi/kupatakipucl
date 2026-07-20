@@ -16,7 +16,7 @@ vi.mock("../leaderboard/useResults", () => ({
   useResults: () => mockUseResults(),
 }));
 
-vi.mock("../leaderboard/usePlayers", () => ({
+vi.mock("../profile/usePlayers", () => ({
   usePlayers: () => mockUsePlayers(),
 }));
 

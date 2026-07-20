@@ -1,7 +1,8 @@
+// src/profile/usePlayers.ts
 import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
-import { Profile } from "../profile/profileTypes";
+import { Profile } from "./profileTypes";
 
 export interface Player extends Profile {
   uid: string;

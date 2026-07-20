@@ -2,7 +2,7 @@
 import { useVisibilityState } from "../state/useVisibilityState";
 import { VisibilityState } from "../state/visibilityState";
 import { useResults } from "../leaderboard/useResults";
-import { usePlayers } from "../leaderboard/usePlayers";
+import { usePlayers } from "../profile/usePlayers";
 import { useLeaderboard } from "../leaderboard/useLeaderboard";
 import { TeamTable } from "../leaderboard/TeamTable";
 import { PlayerList } from "../leaderboard/PlayerList";

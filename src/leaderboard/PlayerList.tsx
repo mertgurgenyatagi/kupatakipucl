@@ -1,4 +1,4 @@
-import { Player } from "./usePlayers";
+import { Player } from "../profile/usePlayers";
 import { LeaderboardEntry } from "./leaderboardTypes";
 import { TEAMS } from "../predictions/teams";
 
