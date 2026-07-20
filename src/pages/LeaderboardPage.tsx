@@ -1,5 +1,9 @@
-import { PlaceholderPage } from "./PlaceholderPage";
+// src/pages/LeaderboardPage.tsx
+import { useLeaderboard } from "../leaderboard/useLeaderboard";
+import { LeaderboardTable } from "../leaderboard/LeaderboardTable";
 
 export function LeaderboardPage() {
-  return <PlaceholderPage page="leaderboard" label="Leaderboard" />;
+  const { entries, loading } = useLeaderboard();
+  if (loading) return null;
+  return <LeaderboardTable entries={entries} />;
 }
