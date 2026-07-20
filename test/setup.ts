@@ -6,6 +6,5 @@ if (typeof ResizeObserver === "undefined") {
     unobserve() {}
     disconnect() {}
   }
-  // @ts-expect-error jsdom has no ResizeObserver
   global.ResizeObserver = ResizeObserverMock;
 }
