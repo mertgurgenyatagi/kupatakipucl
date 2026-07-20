@@ -15,6 +15,10 @@ vi.mock("./auth/AuthProvider", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+vi.mock("./profile/ProfileGate", () => ({
+  ProfileGate: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 describe("App routing integration", () => {
   afterEach(() => {
     window.history.pushState({}, "", "/");
