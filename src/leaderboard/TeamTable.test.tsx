@@ -40,4 +40,37 @@ describe("TeamTable", () => {
     const rows = screen.getAllByRole("row").slice(1);
     expect(rows[0]).toHaveTextContent(TEAMS[0].name); // 9 points, now first
   });
+
+  it("places teams without a result after teams with a result, for every sort key", () => {
+    const withResults = [TEAMS[5], TEAMS[10], TEAMS[20]];
+    const results = {
+      [TEAMS[5].id]: { position: 3, points: 12, goalDifference: 2, goalsFor: 10, goalsAgainst: 8 },
+      [TEAMS[10].id]: { position: 1, points: 20, goalDifference: 10, goalsFor: 15, goalsAgainst: 5 },
+      [TEAMS[20].id]: { position: 2, points: 15, goalDifference: 5, goalsFor: 12, goalsAgainst: 7 },
+    };
+    render(<TeamTable results={results} />);
+
+    const withResultNames = withResults.map((t) => t.name);
+    const rows = screen.getAllByRole("row").slice(1);
+    expect(rows).toHaveLength(TEAMS.length);
+
+    const firstThreeNames = rows.slice(0, 3).map((r) => r.textContent);
+    withResultNames.forEach((name) => {
+      expect(firstThreeNames.some((text) => text?.includes(name))).toBe(true);
+    });
+    rows.slice(3).forEach((row) => {
+      expect(row).toHaveTextContent("-");
+    });
+
+    // re-sort by a non-position column; the with-result teams must still lead
+    fireEvent.click(screen.getByText("Puan"));
+    const rowsAfterSort = screen.getAllByRole("row").slice(1);
+    const firstThreeAfterSort = rowsAfterSort.slice(0, 3).map((r) => r.textContent);
+    withResultNames.forEach((name) => {
+      expect(firstThreeAfterSort.some((text) => text?.includes(name))).toBe(true);
+    });
+    rowsAfterSort.slice(3).forEach((row) => {
+      expect(row).toHaveTextContent("-");
+    });
+  });
 });

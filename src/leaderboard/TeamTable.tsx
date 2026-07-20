@@ -44,7 +44,9 @@ export function TeamTable({ results }: TeamTableProps) {
   const sorted = [...TEAMS].sort((a, b) => {
     const ra = results[a.id];
     const rb = results[b.id];
-    if (!ra || !rb) return 0;
+    if (!ra && !rb) return 0;
+    if (!ra) return 1;
+    if (!rb) return -1;
     if (sortKey === "position") return ra.position - rb.position;
     return rb[sortKey] - ra[sortKey];
   });
