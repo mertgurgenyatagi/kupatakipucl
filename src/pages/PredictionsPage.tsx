@@ -1,5 +1,129 @@
-import { PlaceholderPage } from "./PlaceholderPage";
+import { useState } from "react";
+import { useAuth } from "../auth/AuthProvider";
+import { useVisibilityState } from "../state/useVisibilityState";
+import { isPageAllowed } from "../state/pageAccess";
+import { usePrediction, savePrediction } from "../predictions/usePrediction";
+import { saveSurveyResponse } from "../predictions/useSurveyResponse";
+import { SurveyForm } from "../predictions/SurveyForm";
+import { TeamRanker } from "../predictions/TeamRanker";
+import { SubmissionCounter } from "../predictions/SubmissionCounter";
+import { TEAMS } from "../predictions/teams";
+import { SurveyResponse } from "../predictions/surveyTypes";
+import { Prediction } from "../predictions/predictionTypes";
+
+type UiStep = "idle" | "rank" | "confirm-overwrite";
+
+function rankingNames(ranking: string[]): string[] {
+  return ranking.map((id) => TEAMS.find((t) => t.id === id)?.name ?? id);
+}
 
 export function PredictionsPage() {
-  return <PlaceholderPage page="predictions" label="Predictions" />;
+  const { user } = useAuth();
+  const state = useVisibilityState();
+  const { prediction, loading } = usePrediction(user?.uid ?? null);
+  const [uiStep, setUiStep] = useState<UiStep>("idle");
+  const [pendingSurvey, setPendingSurvey] = useState<SurveyResponse | null>(null);
+  const [pendingOrder, setPendingOrder] = useState<string[] | null>(null);
+  const [saved, setSaved] = useState<Prediction | null>(null);
+
+  if (!isPageAllowed("predictions", state)) {
+    return <p>This section isn't available right now.</p>;
+  }
+
+  if (loading) return null;
+
+  const currentPrediction = saved ?? prediction;
+  const uid = user!.uid;
+
+  if (state === "ST_LI") {
+    if (!currentPrediction) {
+      return <p>Bir tahmin göndermediniz.</p>;
+    }
+    return (
+      <div>
+        <h1>Tahmininiz</h1>
+        <ol>
+          {rankingNames(currentPrediction.ranking).map((name) => (
+            <li key={name}>{name}</li>
+          ))}
+        </ol>
+      </div>
+    );
+  }
+
+  // state === "NST_LI" from here down
+
+  if (!currentPrediction && uiStep === "idle") {
+    return (
+      <SurveyForm
+        onComplete={(response) => {
+          setPendingSurvey(response);
+          setUiStep("rank");
+        }}
+      />
+    );
+  }
+
+  if (uiStep === "rank") {
+    const initialOrder = currentPrediction ? currentPrediction.ranking : TEAMS.map((t) => t.id);
+    return (
+      <TeamRanker
+        teams={TEAMS}
+        initialOrder={initialOrder}
+        onSubmit={(order) => {
+          if (currentPrediction) {
+            setPendingOrder(order);
+            setUiStep("confirm-overwrite");
+          } else {
+            void (async () => {
+              await saveSurveyResponse(uid, pendingSurvey!);
+              const result = await savePrediction(uid, order);
+              setSaved(result);
+              setUiStep("idle");
+            })();
+          }
+        }}
+      />
+    );
+  }
+
+  if (uiStep === "confirm-overwrite" && pendingOrder) {
+    return (
+      <div role="dialog">
+        <p>Bu tahmini üzerine yazmak istediğinize emin misiniz?</p>
+        <button
+          onClick={async () => {
+            const result = await savePrediction(uid, pendingOrder);
+            setSaved(result);
+            setPendingOrder(null);
+            setUiStep("idle");
+          }}
+        >
+          Evet, kaydet
+        </button>
+        <button
+          onClick={() => {
+            setPendingOrder(null);
+            setUiStep("idle");
+          }}
+        >
+          Vazgeç
+        </button>
+      </div>
+    );
+  }
+
+  // uiStep === "idle" && currentPrediction exists: read/edit view
+  return (
+    <div>
+      <h1>Tahmininiz</h1>
+      <ol>
+        {rankingNames(currentPrediction!.ranking).map((name) => (
+          <li key={name}>{name}</li>
+        ))}
+      </ol>
+      <button onClick={() => setUiStep("rank")}>Düzenle</button>
+      <SubmissionCounter />
+    </div>
+  );
 }
