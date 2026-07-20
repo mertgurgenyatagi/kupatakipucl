@@ -13,6 +13,12 @@ vi.mock("./firebase", () => ({ auth: {}, db: {} }));
 vi.mock("firebase/firestore", () => ({
   collection: (_db: unknown, name: string) => ({ name }),
   getDocs: () => Promise.resolve({ docs: [] }),
+  doc: (_db: unknown, collection: string, id: string) => ({ collection, id }),
+  onSnapshot: (_ref: unknown, onNext: (snapshot: { exists: () => boolean; data: () => unknown }) => void) => {
+    onNext({ exists: () => false, data: () => ({}) });
+    return () => {};
+  },
+  setDoc: () => Promise.resolve(undefined),
 }));
 
 vi.mock("./auth/AuthProvider", () => ({
