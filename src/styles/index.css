@@ -152,6 +152,28 @@
   .font-display { font-family: var(--font-display); }
   .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 
+  /* Horizontal nav strip stays scrollable on mobile without a visible
+     scrollbar chrome (DESIGN-SPEC §39 always-visible nav, §53 clarity). */
+  .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+
+  /* Diffuse, navy-tinted elevation — a frame settling onto the ground,
+     not a hard 2014 card shadow (DESIGN-SPEC §4, The Cottony Rule). */
+  .shadow-frame {
+    box-shadow:
+      0 1px 2px oklch(0.235 0.076 264 / 0.05),
+      0 14px 34px -18px oklch(0.235 0.076 264 / 0.22);
+  }
+
+  /* The crowd, radiating around (DESIGN-SPEC §34) — an all-but-invisible
+     warmth behind the frames. Chroma stays near-zero so the ground never
+     reads as a nameable cream (§48, the Paper-Mill Rule). */
+  .ground-radiance {
+    background-image:
+      radial-gradient(120% 90% at 82% -10%, oklch(0.235 0.076 264 / 0.05), transparent 60%),
+      radial-gradient(90% 70% at 6% 108%, oklch(0.745 0.062 76 / 0.045), transparent 55%);
+  }
+
   /* --- Motion: fade-y, floaty, cottony (DESIGN-SPEC §43, §50) -------- */
   @keyframes cotton-rise {
     from { opacity: 0; transform: translateY(0.6rem); }

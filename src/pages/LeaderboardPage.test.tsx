@@ -38,7 +38,25 @@ describe("LeaderboardPage", () => {
       loading: false,
     });
     render(<LeaderboardPage />);
-    expect(screen.getByText(/Ada Lovelace/)).toBeInTheDocument();
+    // The name now appears in both the standings row and the leader cell.
+    expect(screen.getAllByText(/Ada Lovelace/).length).toBeGreaterThan(0);
     expect(screen.getByText("9")).toBeInTheDocument();
+  });
+
+  it("shows the live participant count and current leader", () => {
+    mockUseLeaderboard.mockReturnValue({
+      entries: [
+        { uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", points: 9, ranking: [] },
+        { uid: "uid2", firstName: "Alan", lastName: "Turing", photoURL: "b.png", points: 6, ranking: [] },
+      ],
+      loading: false,
+    });
+    render(<LeaderboardPage />);
+    expect(screen.getByText("Lider")).toBeInTheDocument();
+    // Also a table column header, so more than one match is expected.
+    expect(screen.getAllByText("Katılımcı").length).toBeGreaterThan(0);
+    // Live count, not a hard-coded masthead figure.
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText("9 puan")).toBeInTheDocument();
   });
 });

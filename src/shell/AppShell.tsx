@@ -37,7 +37,9 @@ const NAV_LINKS: Record<VisibilityState, NavLink[]> = {
 };
 
 /** A quiet press-box clock — the room is lit, it's 9:30 PM somewhere
- *  (DESIGN-SPEC §18). Minute resolution, not a ticking gimmick. */
+ *  (DESIGN-SPEC §18). Minute resolution, not a ticking gimmick.
+ *  (Color eased to muted-foreground so it stays legible on the light
+ *  top bar — the previous navy-only token failed contrast on press-white.) */
 function PressClock() {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -47,7 +49,7 @@ function PressClock() {
   const hh = String(now.getHours()).padStart(2, "0");
   const mm = String(now.getMinutes()).padStart(2, "0");
   return (
-    <span className="font-mono text-[0.7rem] tracking-[0.2em] text-navy-muted tnum">
+    <span className="font-mono text-[0.7rem] tracking-[0.2em] text-muted-foreground tnum">
       {hh}:{mm}
     </span>
   );
@@ -61,95 +63,83 @@ export function AppShell({ children }: { children: ReactNode }) {
   const links = NAV_LINKS[state];
 
   return (
-    <div className="flex min-h-dvh flex-col bg-background lg:h-dvh lg:min-h-0 lg:flex-row lg:overflow-hidden">
-      {/* --- The navy masthead: identity, nav, chrono (all pages) ----- */}
-      <header
-        className={cn(
-          "relative flex flex-col bg-navy text-navy-ink",
-          "px-6 pt-6 pb-5",
-          "lg:h-full lg:w-[38%] lg:min-w-[320px] lg:max-w-[520px]",
-          "lg:px-9 lg:pt-9 lg:pb-8"
-        )}
-      >
-        {/* silver seam between navy and the ledger sheet */}
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-silver/40 lg:inset-y-0 lg:left-auto lg:right-0 lg:h-auto lg:w-px lg:animate-[seam-breathe_6s_ease-in-out_infinite]"
-        />
-
-        {/* Nameplate — set between medium and huge (DESIGN-SPEC §19) */}
-        <div className="animate-cotton-fade">
+    <div className="flex min-h-dvh flex-col bg-background lg:h-dvh lg:min-h-0 lg:overflow-hidden">
+      {/* --- Top bar: identity, nav, chrono, account (all pages) --------
+          Light-touch — press-white ground, navy as text/accent, not a
+          full-bleed slab (DESIGN-SPEC §0b). Fixed to the top; the content
+          region below fills the rest of the fixed viewport. */}
+      <header className="relative shrink-0 border-b border-border/80 bg-background px-5 py-3.5 sm:px-7 lg:px-9">
+        <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-3">
+          {/* Nameplate — real weight (§19), no static count in the copy so
+              nothing here can drift from the live figures shown in-page. */}
           <Link
             to="/"
-            className="group block w-fit rounded-sm leading-none no-underline outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-silver"
+            className="group order-1 mr-auto flex items-baseline gap-3 rounded-sm leading-none no-underline outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-navy lg:mr-0"
           >
-            <span className="block font-display text-4xl font-semibold tracking-[-0.01em] text-navy-ink lg:text-6xl">
+            <span className="font-display text-2xl font-semibold tracking-[-0.01em] text-navy sm:text-[1.7rem]">
               KUPATAKIP
             </span>
-            <span className="mt-2 flex items-center gap-3">
-              <span className="h-px w-8 bg-brass/70" />
-              <span className="font-mono text-xs tracking-[0.45em] text-navy-muted">
+            <span className="hidden items-center gap-2 sm:flex">
+              <span className="h-3.5 w-px bg-border" />
+              <span className="font-mono text-[0.6rem] tracking-[0.34em] text-muted-foreground">
                 UCL · 2026/27
               </span>
             </span>
           </Link>
-          <p className="mt-5 font-mono text-[0.68rem] leading-relaxed tracking-[0.22em] text-navy-muted lg:mt-7">
-            50 KATILIMCI · 36 TAKIM · TEK KUPA
-          </p>
-        </div>
 
-        {/* Navigation — pinned, always visible (DESIGN-SPEC §39).
-            Editorial section labels, not a menu component. */}
-        <nav
-          aria-label="Ana gezinme"
-          className="mt-6 flex flex-wrap gap-x-5 gap-y-2 lg:mt-12 lg:flex-1 lg:flex-col lg:gap-y-1.5"
-        >
-          {links.map((link) => {
-            const active =
-              link.path === "/"
-                ? location.pathname === "/"
-                : location.pathname.startsWith(link.path);
-            return (
-              <Link
-                key={link.path}
-                to={link.path}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "group relative w-fit rounded-sm font-mono text-[0.78rem] uppercase tracking-[0.16em] no-underline transition-colors duration-300 ease-[var(--ease-cotton)] outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-silver",
-                  active ? "text-navy-ink" : "text-navy-muted hover:text-navy-ink"
-                )}
-              >
-                <span
-                  aria-hidden
+          {/* Navigation — pinned, always visible (DESIGN-SPEC §39). One row
+              on desktop; wraps to its own scrollable line on mobile so no
+              link is ever hidden behind a menu (§53). */}
+          <nav
+            aria-label="Ana gezinme"
+            lang="en"
+            className="no-scrollbar order-3 -mx-1 flex w-full items-center gap-x-1 overflow-x-auto px-1 lg:order-2 lg:mx-0 lg:w-auto lg:flex-1 lg:justify-center lg:overflow-visible lg:px-0"
+          >
+            {links.map((link) => {
+              const active =
+                link.path === "/"
+                  ? location.pathname === "/"
+                  : location.pathname.startsWith(link.path);
+              return (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
-                    "absolute top-1/2 -left-4 hidden h-px -translate-y-1/2 bg-brass transition-all duration-300 ease-[var(--ease-cotton)] lg:block",
-                    active ? "w-3 opacity-100" : "w-0 opacity-0 group-hover:w-2 group-hover:opacity-60"
+                    "relative shrink-0 rounded-md px-3 py-1.5 font-mono text-[0.72rem] uppercase tracking-[0.14em] no-underline transition-colors duration-300 ease-[var(--ease-cotton)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy",
+                    active
+                      ? "text-navy"
+                      : "text-muted-foreground hover:text-navy"
                   )}
-                />
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
+                >
+                  {link.label}
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "absolute inset-x-3 -bottom-px h-[2px] rounded-full bg-brass transition-all duration-300 ease-[var(--ease-cotton)]",
+                      active ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                </Link>
+              );
+            })}
+          </nav>
 
-        {/* Chrono / account — the room, lit, after dark */}
-        <div className="mt-6 flex items-center justify-between gap-4 border-t border-navy-line/70 pt-4 lg:mt-0">
-          <div className="flex items-center gap-3">
+          {/* Chrono + account slot */}
+          <div className="order-2 flex items-center gap-3 lg:order-3 sm:gap-4">
             <PressClock />
-            <span className="hidden font-mono text-[0.62rem] tracking-[0.22em] text-navy-muted/70 sm:inline">
-              PRESS BOX
-            </span>
+            <span aria-hidden className="hidden h-4 w-px bg-border sm:block" />
+            {!loading && (
+              <div lang="en" className="account-slot [&_button]:cursor-pointer [&_button]:rounded-md [&_button]:border [&_button]:border-border [&_button]:bg-transparent [&_button]:px-3 [&_button]:py-1.5 [&_button]:font-mono [&_button]:text-[0.72rem] [&_button]:tracking-[0.02em] [&_button]:text-navy [&_button]:transition-colors [&_button]:duration-300 hover:[&_button]:border-brass hover:[&_button]:text-navy [&_button]:outline-none focus-visible:[&_button]:outline-2 focus-visible:[&_button]:outline-offset-2 focus-visible:[&_button]:outline-navy [&_[role=alert]]:mt-2 [&_[role=alert]]:text-[0.68rem] [&_[role=alert]]:text-destructive">
+                {user ? <LogoutButton /> : <LoginButton />}
+              </div>
+            )}
           </div>
-          {!loading && (
-            <div className="account-slot [&_button]:cursor-pointer [&_button]:rounded-sm [&_button]:border [&_button]:border-navy-line [&_button]:bg-transparent [&_button]:px-3 [&_button]:py-1.5 [&_button]:font-mono [&_button]:text-[0.68rem] [&_button]:uppercase [&_button]:tracking-[0.14em] [&_button]:text-navy-muted [&_button]:transition-colors [&_button]:duration-300 hover:[&_button]:border-silver hover:[&_button]:text-navy-ink [&_button]:outline-none focus-visible:[&_button]:outline-2 focus-visible:[&_button]:outline-offset-2 focus-visible:[&_button]:outline-silver [&_[role=alert]]:mt-2 [&_[role=alert]]:text-[0.68rem] [&_[role=alert]]:text-brass">
-              {user ? <LogoutButton /> : <LoginButton />}
-            </div>
-          )}
         </div>
       </header>
 
-      {/* --- The ledger sheet: routed pages live here ----------------- */}
-      <main className="flex min-h-0 flex-1 flex-col bg-background lg:overflow-hidden">
+      {/* --- Content region: routed pages compose their own framed cells -- */}
+      <main className="ground-radiance flex min-h-0 flex-1 flex-col lg:overflow-hidden">
         <div
           key={location.pathname}
           className="flex min-h-0 flex-1 flex-col animate-cotton-fade"
