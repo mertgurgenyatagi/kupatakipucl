@@ -26,10 +26,10 @@ describe("LeaderboardPage", () => {
     expect(screen.getByText("This section isn't available right now.")).toBeInTheDocument();
   });
 
-  it("renders nothing while the leaderboard is loading", () => {
+  it("shows a skeleton placeholder while the leaderboard is loading", () => {
     mockUseLeaderboard.mockReturnValue({ entries: [], loading: true });
-    const { container } = render(<LeaderboardPage />);
-    expect(container).toBeEmptyDOMElement();
+    render(<LeaderboardPage />);
+    expect(screen.getByTestId("leaderboard-skeleton")).toBeInTheDocument();
   });
 
   it("renders the leaderboard table once loaded", () => {
@@ -39,6 +39,6 @@ describe("LeaderboardPage", () => {
     });
     render(<LeaderboardPage />);
     expect(screen.getByText(/Ada Lovelace/)).toBeInTheDocument();
-    expect(screen.getByText(/9 puan/)).toBeInTheDocument();
+    expect(screen.getByText("9")).toBeInTheDocument();
   });
 });

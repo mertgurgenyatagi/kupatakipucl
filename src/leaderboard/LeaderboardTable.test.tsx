@@ -17,10 +17,27 @@ describe("LeaderboardTable", () => {
         ]}
       />
     );
-    const items = screen.getAllByRole("listitem");
-    expect(items[0]).toHaveTextContent("Ada Lovelace");
-    expect(items[0]).toHaveTextContent("9 puan");
-    expect(items[1]).toHaveTextContent("Alan Turing");
-    expect(items[1]).toHaveTextContent("6 puan");
+    // Body rows only (skip the header row).
+    const rows = screen.getAllByRole("row").slice(1);
+    expect(rows[0]).toHaveTextContent("Ada Lovelace");
+    expect(rows[0]).toHaveTextContent("9");
+    expect(rows[1]).toHaveTextContent("Alan Turing");
+    expect(rows[1]).toHaveTextContent("6");
+  });
+
+  it("assigns a shared rank to tied points and renders it padded", () => {
+    render(
+      <LeaderboardTable
+        entries={[
+          { uid: "a", firstName: "Ada", lastName: "L", photoURL: "", points: 9, ranking: [] },
+          { uid: "b", firstName: "Alan", lastName: "T", photoURL: "", points: 9, ranking: [] },
+          { uid: "c", firstName: "Grace", lastName: "H", photoURL: "", points: 4, ranking: [] },
+        ]}
+      />
+    );
+    const rows = screen.getAllByRole("row").slice(1);
+    expect(rows[0]).toHaveTextContent("01");
+    expect(rows[1]).toHaveTextContent("01");
+    expect(rows[2]).toHaveTextContent("03");
   });
 });
