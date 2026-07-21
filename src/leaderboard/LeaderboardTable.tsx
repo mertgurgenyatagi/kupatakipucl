@@ -1,5 +1,8 @@
+import { PreviewCard } from "@base-ui/react/preview-card";
 import { LeaderboardEntry } from "./leaderboardTypes";
+import { TeamResult } from "./teamResultTypes";
 import { assignRanks } from "./ranking";
+import { PickCorrectnessCard } from "./PickCorrectnessCard";
 import {
   Table,
   TableBody,
@@ -20,6 +23,11 @@ import { cn } from "@/lib/utils";
 
 interface LeaderboardTableProps {
   entries: LeaderboardEntry[];
+  /** Live team results — only needed for the correctness reveal. */
+  results?: Record<string, TeamResult>;
+  /** Gate for the hover reveal — true once the tournament has started
+   *  (DESIGN-SPEC: the brief's "only active after starting"). */
+  revealCorrectness?: boolean;
 }
 
 function initials(firstName: string, lastName: string) {
@@ -32,12 +40,20 @@ function initials(firstName: string, lastName: string) {
  * editorial serif, points aligned right, dotted leaders carrying the eye
  * across (§52, the Ledger Rule). The record scrolls inside the frame; the
  * frame itself never makes the document scroll (§55).
+ *
+ * Once the tournament is under way, hovering a participant reveals which of
+ * their picks are currently landing — quiet, factual, brass-marked (see
+ * PickCorrectnessCard). Before that, no dead hover state exists at all.
  */
-export function LeaderboardTable({ entries }: LeaderboardTableProps) {
+export function LeaderboardTable({
+  entries,
+  results = {},
+  revealCorrectness = false,
+}: LeaderboardTableProps) {
   const ranked = assignRanks(entries);
 
   return (
-    <Frame className="h-full animate-cotton-rise">
+    <Frame className="h-full animate-cotton-rise border-navy-line/35">
       <FrameHeader tone="navy">
         <FrameTitle className="text-navy-ink">Sıralama</FrameTitle>
         <FrameMeta className="text-navy-muted">Sezon 2026/27</FrameMeta>
@@ -70,6 +86,7 @@ export function LeaderboardTable({ entries }: LeaderboardTableProps) {
               <TableBody>
                 {ranked.map(({ entry, rank }, index) => {
                   const leader = rank === 1;
+                  const canReveal = revealCorrectness && entry.ranking.length > 0;
                   return (
                     <TableRow
                       key={entry.uid}
@@ -97,23 +114,54 @@ export function LeaderboardTable({ entries }: LeaderboardTableProps) {
                       <TableCell className="py-2 pr-0 pl-0 align-middle">
                         <Avatar className="size-8 opacity-90 grayscale transition duration-500 ease-[var(--ease-cotton)] group-hover:opacity-100 group-hover:grayscale-0">
                           <AvatarImage src={entry.photoURL} alt="" />
-                          <AvatarFallback className="bg-secondary font-mono text-[0.6rem] text-navy">
+                          <AvatarFallback className="bg-secondary font-mono text-[0.6rem] text-navy-text">
                             {initials(entry.firstName, entry.lastName)}
                           </AvatarFallback>
                         </Avatar>
                       </TableCell>
 
-                      {/* Name + dotted leader — the ledger signature */}
+                      {/* Name + dotted leader — the ledger signature. Once the
+                          tournament is live, this is the correctness-reveal
+                          trigger; before that it's a plain cell. */}
                       <TableCell className="w-full py-3 align-middle">
-                        <span className="flex min-w-0 items-baseline gap-3">
-                          <span className="truncate font-display text-[1.05rem] font-medium text-ink">
-                            {entry.firstName} {entry.lastName}
+                        {canReveal ? (
+                          <PreviewCard.Root>
+                            <PreviewCard.Trigger
+                              render={<span />}
+                              className="flex min-w-0 cursor-default items-baseline gap-3 outline-none"
+                            >
+                              <span className="truncate font-display text-[1.05rem] font-medium text-ink underline decoration-dotted decoration-silver/40 underline-offset-[6px] transition-colors duration-300 group-hover:decoration-brass/70 data-[popup-open]:decoration-brass">
+                                {entry.firstName} {entry.lastName}
+                              </span>
+                              <span
+                                aria-hidden
+                                className="hidden h-px flex-1 translate-y-[-0.28em] border-b border-dotted border-silver/50 sm:block"
+                              />
+                            </PreviewCard.Trigger>
+                            <PreviewCard.Portal>
+                              <PreviewCard.Positioner
+                                side="left"
+                                align="center"
+                                sideOffset={14}
+                                collisionPadding={16}
+                              >
+                                <PreviewCard.Popup className="origin-[var(--transform-origin)] transition-[transform,opacity] duration-200 ease-[var(--ease-cotton)] data-[ending-style]:scale-[0.98] data-[ending-style]:opacity-0 data-[starting-style]:scale-[0.98] data-[starting-style]:opacity-0">
+                                  <PickCorrectnessCard entry={entry} results={results} />
+                                </PreviewCard.Popup>
+                              </PreviewCard.Positioner>
+                            </PreviewCard.Portal>
+                          </PreviewCard.Root>
+                        ) : (
+                          <span className="flex min-w-0 items-baseline gap-3">
+                            <span className="truncate font-display text-[1.05rem] font-medium text-ink">
+                              {entry.firstName} {entry.lastName}
+                            </span>
+                            <span
+                              aria-hidden
+                              className="hidden h-px flex-1 translate-y-[-0.28em] border-b border-dotted border-silver/50 sm:block"
+                            />
                           </span>
-                          <span
-                            aria-hidden
-                            className="hidden h-px flex-1 translate-y-[-0.28em] border-b border-dotted border-silver/50 sm:block"
-                          />
-                        </span>
+                        )}
                       </TableCell>
 
                       {/* Points — aligned right, tabular (the Ledger Rule) */}
@@ -121,7 +169,7 @@ export function LeaderboardTable({ entries }: LeaderboardTableProps) {
                         <span
                           className={cn(
                             "font-mono text-base tracking-tight tnum",
-                            leader ? "font-semibold text-brass" : "font-medium text-navy"
+                            leader ? "font-semibold text-brass" : "font-medium text-navy-text"
                           )}
                         >
                           {entry.points}

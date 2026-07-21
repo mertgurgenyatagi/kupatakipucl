@@ -5,6 +5,8 @@ import { LeaderboardPage } from "./LeaderboardPage";
 
 const mockUseVisibilityState = vi.fn();
 const mockUseLeaderboard = vi.fn();
+const mockUseResults = vi.fn();
+const mockUseTournamentPhase = vi.fn();
 
 vi.mock("../state/useVisibilityState", () => ({
   useVisibilityState: () => mockUseVisibilityState(),
@@ -14,9 +16,19 @@ vi.mock("../leaderboard/useLeaderboard", () => ({
   useLeaderboard: () => mockUseLeaderboard(),
 }));
 
+vi.mock("../leaderboard/useResults", () => ({
+  useResults: () => mockUseResults(),
+}));
+
+vi.mock("../tournament/useTournamentPhase", () => ({
+  useTournamentPhase: () => mockUseTournamentPhase(),
+}));
+
 describe("LeaderboardPage", () => {
   beforeEach(() => {
     mockUseVisibilityState.mockReturnValue("ST_LI");
+    mockUseResults.mockReturnValue({ results: {}, loading: false });
+    mockUseTournamentPhase.mockReturnValue("pre");
   });
 
   it("shows the blocked message when the page isn't allowed for this state", () => {
@@ -38,25 +50,18 @@ describe("LeaderboardPage", () => {
       loading: false,
     });
     render(<LeaderboardPage />);
-    // The name now appears in both the standings row and the leader cell.
-    expect(screen.getAllByText(/Ada Lovelace/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
     expect(screen.getByText("9")).toBeInTheDocument();
   });
 
-  it("shows the live participant count and current leader", () => {
+  it("composes the team table and three stat widgets alongside the standings, once loaded", () => {
     mockUseLeaderboard.mockReturnValue({
-      entries: [
-        { uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", points: 9, ranking: [] },
-        { uid: "uid2", firstName: "Alan", lastName: "Turing", photoURL: "b.png", points: 6, ranking: [] },
-      ],
+      entries: [{ uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", points: 9, ranking: [] }],
       loading: false,
     });
     render(<LeaderboardPage />);
-    expect(screen.getByText("Lider")).toBeInTheDocument();
-    // Also a table column header, so more than one match is expected.
-    expect(screen.getAllByText("Katılımcı").length).toBeGreaterThan(0);
-    // Live count, not a hard-coded masthead figure.
-    expect(screen.getByText("2")).toBeInTheDocument();
-    expect(screen.getByText("9 puan")).toBeInTheDocument();
+    // The team table (its frame title) and the three honestly-empty stat widgets.
+    expect(screen.getByText("Puan Durumu")).toBeInTheDocument();
+    expect(screen.getAllByTestId("stat-widget")).toHaveLength(3);
   });
 });
