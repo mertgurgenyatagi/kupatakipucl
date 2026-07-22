@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
 import { LeaderboardTable } from "./LeaderboardTable";
 
 describe("LeaderboardTable", () => {
@@ -39,5 +39,44 @@ describe("LeaderboardTable", () => {
     expect(rows[0]).toHaveTextContent("01");
     expect(rows[1]).toHaveTextContent("01");
     expect(rows[2]).toHaveTextContent("03");
+  });
+
+  it("does not select a row on click before correctness is revealable", () => {
+    const onSelectEntry = vi.fn();
+    render(
+      <LeaderboardTable
+        entries={[{ uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", points: 9, ranking: ["arsenal"] }]}
+        revealCorrectness={false}
+        onSelectEntry={onSelectEntry}
+      />
+    );
+    fireEvent.click(screen.getAllByRole("row").slice(1)[0]);
+    expect(onSelectEntry).not.toHaveBeenCalled();
+  });
+
+  it("selects a row by uid on click once correctness is revealable", () => {
+    const onSelectEntry = vi.fn();
+    render(
+      <LeaderboardTable
+        entries={[{ uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", points: 9, ranking: ["arsenal"] }]}
+        revealCorrectness
+        onSelectEntry={onSelectEntry}
+      />
+    );
+    fireEvent.click(screen.getAllByRole("row").slice(1)[0]);
+    expect(onSelectEntry).toHaveBeenCalledWith("uid1");
+  });
+
+  it("selects a row via the keyboard (Enter)", () => {
+    const onSelectEntry = vi.fn();
+    render(
+      <LeaderboardTable
+        entries={[{ uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", points: 9, ranking: ["arsenal"] }]}
+        revealCorrectness
+        onSelectEntry={onSelectEntry}
+      />
+    );
+    fireEvent.keyDown(screen.getAllByRole("row").slice(1)[0], { key: "Enter" });
+    expect(onSelectEntry).toHaveBeenCalledWith("uid1");
   });
 });

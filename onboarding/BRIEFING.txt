@@ -1,0 +1,148 @@
+PROJECT: KUPA TAKIP UCL
+
+
+CHAPTER ZERO: HOW THE USER INTERACTS WITH CLAUDE CODE
+
+
+Mert runs about a dozen active repos that span two very different registers. On one side: serious engineering — a JAX-based GPU reinforcement-learning environment for a custom card game, a real-estate CRM (konutrota) with a live dev database, a statistical bracket-simulation tool, and EventPortal, a scraping/aggregation pipeline that fetches, dedupes, and prices hundreds of events across nine Turkish ticketing sites. On the other: personal, low-stakes projects for friends — a World Cup prediction-pool site (Kupatakip) and a trivia app — written with Turkish mixed into the English, and clearly built for fun rather than production rigor.
+
+His communication style is terse and imperative once a task is underway: "Go ahead," "Commit and push," "Argentina won. Log it," "Probe B then report back." Frustration and enthusiasm both come through directly and colloquially — "Now. Go get Biletino, tiger. I don't care what it takes," "Holy shit. Paraguay won. Log it," "Look Claude. This is what I want. It's really not that difficult." He isn't precious about phrasing; he wants forward motion.
+
+But that terseness is earned, not default. For ambiguous or high-stakes decisions he explicitly gates the assistant before any action: "DO NOT GET STARTED. simply inquire," "tell me, don't do anything yet," "don't code or plan, just suggest." For big or unfamiliar builds he sets up his own iterative process — e.g. a self-designed 10-question requirement questionnaire, repeated round after round, with an explicit ask to keep questions non-technical because he's not an ML expert — and he invokes plan mode deliberately for large scoped work, wanting proposals and rated tradeoffs before implementation begins.
+
+Autonomy is calibrated per repo, not globally, and he expects those calibrations to persist as standing rules across sessions and compactions. In his personal site repo: "push after every change," no need to ask each time. In the CRM touching a live database: "never run git commands unless explicitly asked" — stated as a "golden rule" he repeats and expects remembered. He treats git/deploy risk as contextual to what's actually at stake in each repo, not a fixed policy.
+
+He's also a hands-on verifier, not a rubber-stamper: on EventPortal he personally spot-checked roughly half of a 262-event price export against live pages, and when he hands back corrections he wants root-cause fixes to the methodology, not individual rows patched — a code-only "tested against live data" claim has burned him before. He's comfortable with long sessions and background/async work, monitoring scraper and batch-scoring jobs mid-conversation while other work continues.
+
+Finally, he treats Claude as a reasoning partner, not just an executor — he'll push back on conclusions ("I respectfully disagree... am I going crazy? I mean, you're an AI") and expects a substantive response, not deference.
+
+
+
+CHAPTER ONE: INTRODUCTION
+
+
+This is another installment of a previous project of mine called "#kupatakip". For the sake of a fresh start, the previous repo was not included. 
+
+The main mission statement of this project is this:
+
+The UEFA Champions League starts at September 8. The teams to participate in the league phase will be determined by August 26. The tool must be ready by that date.
+
+Between August 26 and September 8, a number of participants (was 19 at the previous edition, expected to be around 30 this time) will submit their guesses for how the league phase rankings will turn out. After September 8, the submissions will be closed. Depending on how the league phase actually turned out at the end, the participants will be scored. The scoring logic is as follows:
+
+We go through every team and if the absolute difference between the predicted position of that team and actual position of that team is less than 3, the participant gets 3 points.
+
+The league phase will be concluded at January 27. We skip the RO16 playoffs. The draw for the RO16 will take place on February 26. The RO16 will begin on March 9. Between February 26 and March 9, the second round of submissions will be open. These predictions will be completely seperate from the first round, meaning participants will use the confirmed bracket for the RO16 and onwards. At March 9, the submissions will be closed. Depending on how the knockout system progresses, the participants will be scored. The scoring logic is as follows:
+
+For every team a participant has correctly predicted to be in the quarter finals, they earn 3 points. For every team a participant has correctly predicted to be in the semi finals, they earn 4 points. For every team a participant has correctly predicted to be in the final, they earn 5 points. If a participant correctly predicted the champion, they earn 6 points.
+
+
+
+CHAPTER TWO: USER EXPERIENCE & SUBMISSION FLOWS
+
+The website will be all Turkish.
+
+Mobile and desktop versions of the website will be different. For the first kupatakip, the desktop version was developed with a mobile-first approach, and the desktop version was essentially horizontally squished. This worked fine, but it's incredibly limiting and I want to pivot away from that approach.
+
+When the user first enters the website for the very very first time, a cool onboarding animated brief sequence will welcome them, but it won't be overbearing. Then they will land. Now, I'm not a great web designer, so I will simply tell you some stuff (emphasis on "some". Some things will naturally don't come to my mind) that I want and expect you to fill in the gaps and perhaps introduce new things.
+
+- The user will need to log in via Google in order to participate.
+- There are four possibilities:
+
+1. The tournament is not underway (pre-sept8) and the user is not logged in but can log in and can sign up (NST-NLI).
+2. The tournament is not underway (pre-sept8) and the user is logged in (NST-LI).
+3. The tournament is underway (post-sept8) and the user is not logged in and can log in but can't sign up (ST-NLI).
+4. The tournament is underway (post-sept8) and the user is logged in (ST-LI).
+
+Let's talk about NST-NLI first [THE FOLLOWING SECTIONS DETAILING WHAT THE USERS CAN AND CANNOT SEE DURING VARIOUS STAGES AND POSSIBILITIES ARE HOPELESSLY INCOMPLETE BECAUSE I CANNOT DEFINITIVELY REMEMBER OR DECIDE ON WHAT I WANT AT THIS VERY MOMENT. BROAD STROKES.]:
+
+- The user will be succintly made aware of the mission of the website. Not a block of text, more like a brief paragraph.
+- The user will be able to see how much time there is to sign up.
+- The user will be able to see the custom alphabetically ranked UCL league rankings where they're all 0 points.
+- The user will be able to see the signed up players, their first names, their profile pictures and how many there are. Not their predictions (if they have made any).
+- The user will not be able to see the chatroom.
+- The user will not be able to see the forum section.
+
+NST-LI
+
+- The user will be succintly made aware of the two stages of prediction, how the scoring works, etc.
+- The user will be able to see how much time there is to submit their predictions.
+- The user will be able to see the custom alphabetically ranked UCL league rankings where they're all 0 points.
+- The user will be able to see all players and their full names and their profile pictures etc. Not their predictions.
+- The user will be able to engage in the chatroom and the forum sections.
+
+ST-NLI
+
+- The user will be succintly made aware of the mission of the website. Not a block of text, more like a brief paragraph.
+- The user will be made aware that signing up is no longer possible.
+- The user will be able to see the team rankings.
+- The user will be able to see how many match days remain.
+- The user will be able to see the participant rankings.
+- The user will be able to see all the interesting stats (placement progression through time, some other stuff idk)
+- The user will be able to see all the first names of the participants and their predictions and profile pictures.
+- The user will not be able to see the chatroom.
+- The user will be able to see the forum section.
+
+ST-LI
+
+Yeah, you get the drill.
+
+---
+
+When signing up, only three things are asked for and are also mandatory: profile picture, first name and last name.
+
+Okay. Now for the submission of predictions. It will not be asked of them the moment they sign up, but a big button they click to submit their predictions. Before they do, however, they will be asked some questions. These are for the sake of data analysis later. The questions are:
+
+Kaç yaşındasınız?
+[input integer]
+
+Futbola olan hakimiyetinizi nasıl değerlendirirsiniz?
+
+1. Futbolla alakam yok
+2. Öyle büyük maçları izliyorum, çok takip etmiyorum ya
+3. Deli gibi izlediğimi söyleyemem ama futbolculara, takımlara hakimim
+4. Futbolla baya ilgileniyorum ve izlemeye değer maçları seyrediyorum
+5. Milan derbisi olunca açıp doksan dakika izliyorum
+6. YouTube'da analizler, futbol podcastleri, Rennes wonderkidleri
+7. Taktik dehası. Ne zaman alan markajı yapılacağını, ne zaman orta blok savunması yapılacağını bilir.
+
+Messi mi Ronaldo mu?
+
+1. Messi
+2. Ronaldo
+3. Yorum yok
+
+Süper Lig'de hangi takımı tutuyorsun?
+
+1. Galatasaray
+2. Fenerbahçe
+3. Beşiktaş
+4. Trabzonspor
+5. Anadolu takımı
+6. Tutmuyorum
+
+Şampiyonlar Ligi'nde tuttuğun bir takım var mı?
+
+1. Var. [input text]
+2. Yok.
+
+Bu siteyi genellikle telefonda mı masaüstünde mi kullanacaksın?
+
+1. Telefon
+2. Masaüstü
+3. Yarı yarıya
+
+By the way, these questions are shown one by one. At the top there's a little progress bar. After it's done, a little animation plays for a second before they're sent to the ranking prediction. There, they shuffle the alphabetic teams around before finally submitting their answers. They are able to go back and edit before the final date. They can't see the other predictions until the tournament starts.
+
+CHAPTER THREE: EARLY CLOSURE
+
+There are a lot, a lot, a lot, a lot of things still to cover, but I am honestly a bit burnt out and would rather continue filling in the gaps via filling out questionnaires. Don't worry about what that means yet, I will make it clear to you via chat.
+
+
+
+
+
+
+
+
+
+

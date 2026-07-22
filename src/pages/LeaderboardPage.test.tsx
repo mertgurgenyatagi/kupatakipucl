@@ -2,6 +2,7 @@
 import { render, screen } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { LeaderboardPage } from "./LeaderboardPage";
+import { TEAMS } from "../predictions/teams";
 
 const mockUseVisibilityState = vi.fn();
 const mockUseLeaderboard = vi.fn();
@@ -46,22 +47,23 @@ describe("LeaderboardPage", () => {
 
   it("renders the leaderboard table once loaded", () => {
     mockUseLeaderboard.mockReturnValue({
-      entries: [{ uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", points: 9, ranking: [] }],
+      entries: [{ uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", points: 42, ranking: [] }],
       loading: false,
     });
     render(<LeaderboardPage />);
     expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
-    expect(screen.getByText("9")).toBeInTheDocument();
+    expect(screen.getByText("42")).toBeInTheDocument();
   });
 
-  it("composes the team table and three stat widgets alongside the standings, once loaded", () => {
+  it("composes the team table and the hero carousel alongside the standings, once loaded", () => {
     mockUseLeaderboard.mockReturnValue({
       entries: [{ uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", points: 9, ranking: [] }],
       loading: false,
     });
     render(<LeaderboardPage />);
-    // The team table (its frame title) and the three honestly-empty stat widgets.
-    expect(screen.getByText("Puan Durumu")).toBeInTheDocument();
-    expect(screen.getAllByTestId("stat-widget")).toHaveLength(3);
+    // The team table (no frame header of its own anymore, just its rows) and
+    // the hero carousel that replaced the stat widgets in this column.
+    expect(screen.getAllByText(TEAMS[0].shortName).length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId("hero-image").length).toBeGreaterThan(0);
   });
 });

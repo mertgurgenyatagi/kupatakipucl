@@ -34,7 +34,12 @@ const frameHeaderVariants = cva(
         /** Press-white band with a hairline foot — the light default. */
         plain: "border-b border-border/70 py-3.5 text-ink",
         /** The navy mat: navy carries real surface area here, per-frame
-         *  rather than as one full-bleed field (DESIGN-SPEC §0b, §3). */
+         *  rather than as one full-bleed field (DESIGN-SPEC §0b, §3). A
+         *  touch taller than a plain header — Mert's "slightly more
+         *  dominant" note, a nudge not a reversal. Trimmed from py-5 to
+         *  py-4 when the leaderboard's real (chrome-subtracted) viewport
+         *  turned out far shorter than assumed — every fixed pixel here
+         *  is a pixel not available to the team table's 18 flexible rows. */
         navy: "bg-navy py-4 text-navy-ink",
       },
     },
@@ -62,7 +67,7 @@ function FrameTitle({ className, ...props }: React.ComponentProps<"h2">) {
     <h2
       data-slot="frame-title"
       className={cn(
-        "font-display text-xl leading-none font-semibold tracking-[-0.01em] sm:text-2xl",
+        "font-display text-lg leading-none font-semibold tracking-[-0.01em] sm:text-xl",
         className
       )}
       {...props}

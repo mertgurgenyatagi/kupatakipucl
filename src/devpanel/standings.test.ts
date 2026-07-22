@@ -48,6 +48,20 @@ describe("computeStandings", () => {
     expect(results[fixture.awayTeamId].points).toBe(0);
   });
 
+  it("counts matchesPlayed for both sides on any decided outcome, and not at all when notplayed", () => {
+    const fixture = FIXTURES[0];
+    const decided = computeStandings({ [fixture.id]: "draw" });
+    expect(decided[fixture.homeTeamId].matchesPlayed).toBe(1);
+    expect(decided[fixture.awayTeamId].matchesPlayed).toBe(1);
+
+    const undecided = computeStandings({ [fixture.id]: "notplayed" });
+    expect(undecided[fixture.homeTeamId].matchesPlayed).toBe(0);
+    expect(undecided[fixture.awayTeamId].matchesPlayed).toBe(0);
+
+    const untouched = computeStandings({});
+    expect(untouched[fixture.homeTeamId].matchesPlayed).toBe(0);
+  });
+
   it("ranks a team with more points higher", () => {
     // Give athletic-club a win (via md1) and leave everyone else at 0.
     const fixture = FIXTURES[0];

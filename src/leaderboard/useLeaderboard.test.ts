@@ -49,7 +49,7 @@ describe("useLeaderboard", () => {
     const { result } = renderHook(() => useLeaderboard());
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.entries).toEqual([
-      { uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", points: 3, ranking: ["arsenal"] },
+      { uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", points: 3, ranking: ["arsenal"], submittedAt: 1 },
     ]);
   });
 

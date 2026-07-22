@@ -17,6 +17,43 @@ Two isolated jokes would be noise. Two structurally identical warnings, in conse
 
 ---
 
+## 0b. Second course correction (2026-07-21) — DECIDED, overrides §2, §10, §16/§20's "Press Box"/masthead framing, and the first shadcn build's layout
+
+The first shadcn build (navy left masthead, editorial/Telegraph-serif ledger, `frontend-shadcn` branch commit `723d589`) was reviewed live and rejected on sight, in his exact words:
+
+1. *"I'm not a fan of the left panel approach. Top panel to me is always better."* — the full-height navy side masthead is out. Navigation and identity move to a **top bar**.
+2. *"I think we've leaned too far on the Telegraph/professional/news site aesthetic. It feels too serious and unwelcoming."* — §1's "stats tool, all the way" and §11/§16's paper/print-credibility material world are not wrong in substance, but the execution read as severe rather than warm. §0's warning ("don't let the fun get away") applies here directly — this build is the concrete case §0 predicted.
+3. *"I really like the idea of frames. Basically, we have the leaderboard in a frame/scrollable-cell/oblong, and there are other cells which we can populate with other stuff."* — a new structural device: distinct framed cells (an oblong for the leaderboard, other cells for other content — think a loose bento/grid composition, not one monolithic page-filling table). This is the compositional idea to build the next attempt around.
+4. *"Seriously. This is way too corporate."* — said with real frustration; treat as the headline verdict on the whole first attempt, not a note on one detail.
+
+**Explicitly still true, confirmed unprompted in the same breath:** shadcn/ui stays the component/styling foundation — *"Still use shadcn. This is not an excuse to steer away from it."* The correction is about composition, layout, and warmth, not about abandoning the shadcn-centric approach from §0's build era.
+
+**Working synthesis for the rebuild:** keep the navy/white/brass palette and serif/mono type pairing (§3/§4, still DECIDED, not what was rejected) but stop expressing them through a severe editorial-newspaper composition. Move identity/nav into a top bar (lighter touch, not full-bleed navy). Compose the page as a set of distinct framed cells/panels rather than one dense ledger sheet — the leaderboard becomes one prominent frame among others, each frame allowed its own internal scroll (consistent with §55's no-document-scroll rule, now realized as scrolling *within cells* rather than within one ledger region). Warmth should come from generous framing, rounder/softer edges on the frames themselves, and restraint on how much navy/gravitas is applied per element — not from abandoning the color or type identity.
+
+---
+
+## 0c. Base confirmed, first refinement pass (2026-07-21) — DECIDED
+
+The top-bar/frames rebuild landed: *"I actually like it! There are definitely some things we are going to adjust but we have finally found our base."* First real approval since design work started. Overrides §4's serif-led typography — after a live, in-layout font trial (50 fonts, then narrowed to 15 condensed/narrow candidates), he picked **Archivo Narrow** as a single base face carrying both display and body, replacing the Bodoni Moda / Geist pairing. Not a hedge — "found our base" is meant literally.
+
+Same message, three concrete adjustments, all "very desktop oriented":
+
+1. *"I want breathing room... oblong little window widgets that cover a very small portion of the screen. For the leaderboard, do this: have the leaderboard on the left as a tall widget, and have 6 small widgets to the right of it. Empty."* — a structural flip from the first frames build (which put small cells left, ledger right): now the standings is the tall anchor frame on the left, and six deliberately empty widget frames sit to its right in a 2-wide grid. "Empty" taken literally — no placeholder content, no data crammed in early. The two content cells from the first pass (live participant count, current leader) are shelved, not deleted (`src/leaderboard/LeaderboardCells.tsx` stays in the tree, unused, pending a decision on which widgets get filled with what).
+2. *"I want the middle portion (not the top bar) to be constrained horizontally, so everything exists in the middle. Compactness, baby."* — the content region below the top bar now sits in a centered, width-capped column (1100px); the top bar itself stays full width, unconstrained, as called out explicitly.
+3. *"Maybe lighten the blue a tiny tiny tiny bit, and also make it slightly more dominant."* — `--navy` nudged from `oklch(0.235 0.076 264)` to `oklch(0.255 0.086 264)` (a touch lighter, a touch more saturated), plus a slightly taller navy header band on frames and a whisper of navy tint on the standings frame's own border. Small, reversible dial-up — not a return to the full-bleed severity §0b moved away from.
+
+His closing line — *"we'll see where we go"* — means this is a checkpoint, not a final sign-off. Treat the empty widgets and the exact navy balance as still open for the next round.
+
+---
+
+## 0d. Dark mode tried, discarded (2026-07-21) — DECIDED
+
+A same-day detour: *"Crazy idea: Darkish blue background, even darker blue top bar and all title bars."* Built as a real, populated `.dark` theme with a dev-only toggle (same throwaway-widget pattern as the font trial), revised once with a second exact set of colors (`#031f38` bars/titles, `#005eb4` background, `#f2f3f4` widget interiors — genuinely close to real UEFA branding). Both versions worked and were shown live.
+
+Verdict: *"Eh, discard the dark mode entirely, keep the light version. Just make the top bar dark blue as well."* Dark mode itself — as a whole, toggleable second theme — is back to ruled out (reaffirming §9). The one piece that survived: the top bar is now permanently navy, matching every frame's navy title band, in the single light system. `--navy-text` (the token that let navy work as legible text on both a light and a dark bar) stays in the codebase since it's still needed for points values / avatar initials on light card surfaces — just no longer has a dark-mode counterpart to serve.
+
+---
+
 ## 1. Register & tone — DECIDED
 
 "Stats tool, all the way." Overrides an earlier hedge toward "hybrid" from an unstructured pre-questionnaire conversation — round 1 resolved it decisively. Serious, credible, data-forward. Personality lives in the design system (color, type, motion), not in copy or marketing-style sections.

@@ -34,6 +34,7 @@ export function useLeaderboard() {
             photoURL: profile.photoURL,
             points: computeScore(prediction.ranking, results),
             ranking: prediction.ranking,
+            submittedAt: prediction.submittedAt,
           });
         });
         next.sort((a, b) => b.points - a.points);

@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useTournamentPhase } from "../tournament/useTournamentPhase";
@@ -36,25 +36,6 @@ const NAV_LINKS: Record<VisibilityState, NavLink[]> = {
   ],
 };
 
-/** A quiet press-box clock — the room is lit, it's 9:30 PM somewhere
- *  (DESIGN-SPEC §18). Minute resolution, not a ticking gimmick.
- *  (Color eased to muted-foreground so it stays legible on the light
- *  top bar — the previous navy-only token failed contrast on press-white.) */
-function PressClock() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 15_000);
-    return () => clearInterval(id);
-  }, []);
-  const hh = String(now.getHours()).padStart(2, "0");
-  const mm = String(now.getMinutes()).padStart(2, "0");
-  return (
-    <span className="font-mono text-[0.7rem] tracking-[0.2em] text-muted-foreground tnum">
-      {hh}:{mm}
-    </span>
-  );
-}
-
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const phase = useTournamentPhase();
@@ -64,26 +45,28 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-dvh flex-col bg-background lg:h-dvh lg:min-h-0 lg:overflow-hidden">
-      {/* --- Top bar: identity, nav, chrono, account (all pages) --------
-          Light-touch — press-white ground, navy as text/accent, not a
-          full-bleed slab (DESIGN-SPEC §0b). Fixed to the top; the content
-          region below fills the rest of the fixed viewport. */}
-      <header className="relative shrink-0 border-b border-border/80 bg-background px-5 py-3.5 sm:px-7 lg:px-9">
+      {/* --- Top bar: identity, nav, account (all pages) -----------------
+          Navy, matching every frame's title band (DESIGN-SPEC §0d — dark
+          mode as a whole was tried and discarded; this one change from it,
+          a permanently navy top bar, stayed). Fixed to the top; the
+          content region below fills the rest of the fixed viewport. */}
+      <header className="relative shrink-0 border-b border-navy-line/50 bg-navy px-5 py-2.5 sm:px-7 lg:px-9">
         <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-3">
           {/* Nameplate — real weight (§19), no static count in the copy so
               nothing here can drift from the live figures shown in-page. */}
           <Link
             to="/"
-            className="group order-1 mr-auto flex items-baseline gap-3 rounded-sm leading-none no-underline outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-navy lg:mr-0"
+            className="group order-1 mr-auto flex items-center gap-2.5 rounded-sm leading-none no-underline outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-navy-ink lg:mr-0"
           >
-            <span className="font-display text-2xl font-semibold tracking-[-0.01em] text-navy sm:text-[1.7rem]">
-              KUPATAKIP
-            </span>
-            <span className="hidden items-center gap-2 sm:flex">
-              <span className="h-3.5 w-px bg-border" />
-              <span className="font-mono text-[0.6rem] tracking-[0.34em] text-muted-foreground">
-                UCL · 2026/27
-              </span>
+            <img
+              src="/brand/kupatakip-logo-white.svg"
+              alt=""
+              aria-hidden
+              className="size-6 shrink-0 sm:size-7"
+            />
+            <span className="font-display text-xl tracking-[-0.01em] text-navy-ink sm:text-[1.55rem]">
+              <span className="font-[450]">#kupatakip</span>
+              <span className="font-thin">ucl</span>
             </span>
           </Link>
 
@@ -106,10 +89,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                   to={link.path}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "relative shrink-0 rounded-md px-3 py-1.5 font-mono text-[0.72rem] uppercase tracking-[0.14em] no-underline transition-colors duration-300 ease-[var(--ease-cotton)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy",
+                    "relative shrink-0 rounded-md px-3 py-1.5 font-mono text-[0.72rem] uppercase tracking-[0.14em] no-underline transition-colors duration-300 ease-[var(--ease-cotton)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-ink",
                     active
-                      ? "text-navy"
-                      : "text-muted-foreground hover:text-navy"
+                      ? "text-navy-ink"
+                      : "text-navy-muted hover:text-navy-ink"
                   )}
                 >
                   {link.label}
@@ -125,12 +108,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          {/* Chrono + account slot */}
+          {/* Account slot */}
           <div className="order-2 flex items-center gap-3 lg:order-3 sm:gap-4">
-            <PressClock />
-            <span aria-hidden className="hidden h-4 w-px bg-border sm:block" />
             {!loading && (
-              <div lang="en" className="account-slot [&_button]:cursor-pointer [&_button]:rounded-md [&_button]:border [&_button]:border-border [&_button]:bg-transparent [&_button]:px-3 [&_button]:py-1.5 [&_button]:font-mono [&_button]:text-[0.72rem] [&_button]:tracking-[0.02em] [&_button]:text-navy [&_button]:transition-colors [&_button]:duration-300 hover:[&_button]:border-brass hover:[&_button]:text-navy [&_button]:outline-none focus-visible:[&_button]:outline-2 focus-visible:[&_button]:outline-offset-2 focus-visible:[&_button]:outline-navy [&_[role=alert]]:mt-2 [&_[role=alert]]:text-[0.68rem] [&_[role=alert]]:text-destructive">
+              <div lang="en" className="account-slot [&_button]:cursor-pointer [&_button]:rounded-md [&_button]:border [&_button]:border-navy-line [&_button]:bg-transparent [&_button]:px-3 [&_button]:py-1.5 [&_button]:font-mono [&_button]:text-[0.72rem] [&_button]:tracking-[0.02em] [&_button]:text-navy-ink [&_button]:transition-colors [&_button]:duration-300 hover:[&_button]:border-brass [&_button]:outline-none focus-visible:[&_button]:outline-2 focus-visible:[&_button]:outline-offset-2 focus-visible:[&_button]:outline-navy-ink [&_[role=alert]]:mt-2 [&_[role=alert]]:text-[0.68rem] [&_[role=alert]]:text-destructive">
                 {user ? <LogoutButton /> : <LoginButton />}
               </div>
             )}
@@ -139,10 +120,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       {/* --- Content region: routed pages compose their own framed cells -- */}
-      <main className="ground-radiance flex min-h-0 flex-1 flex-col lg:overflow-hidden">
+      <main className="ground-radiance flex min-h-0 min-w-0 flex-1 flex-col lg:overflow-hidden">
         <div
           key={location.pathname}
-          className="flex min-h-0 flex-1 flex-col animate-cotton-fade"
+          className="flex min-h-0 min-w-0 flex-1 flex-col animate-cotton-fade"
         >
           {children}
         </div>

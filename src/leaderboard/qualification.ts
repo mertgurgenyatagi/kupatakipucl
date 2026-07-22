@@ -16,13 +16,3 @@ export function qualificationBand(position: number): QualificationBand {
   if (position <= 24) return "playoff";
   return "eliminated";
 }
-
-export const QUALIFICATION_LEGEND: {
-  band: QualificationBand;
-  label: string;
-  range: string;
-}[] = [
-  { band: "direct", label: "Son 16 (doğrudan)", range: "1–8" },
-  { band: "playoff", label: "Play-off turu", range: "9–24" },
-  { band: "eliminated", label: "Eleme", range: "25–36" },
-];

@@ -29,7 +29,7 @@ export function ParticipantCountCell({
         <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-brass" />
       </FrameHeader>
       <div className="flex flex-1 items-baseline gap-3 px-5 py-5 sm:px-6">
-        <span className="font-display text-5xl leading-none font-semibold tracking-[-0.02em] text-navy tnum sm:text-6xl">
+        <span className="font-display text-5xl leading-none font-semibold tracking-[-0.02em] text-ink tnum sm:text-6xl">
           {entries.length}
         </span>
         <span className="pb-1 font-mono text-[0.62rem] leading-relaxed tracking-[0.16em] text-muted-foreground uppercase">

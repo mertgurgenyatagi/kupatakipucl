@@ -11,13 +11,17 @@ description: A friend-group UEFA Champions League prediction pool — an editori
 
 **Creative North Star: "The Press Box"**
 
-A press box is where this system lives: elevated, glassed-off, a little cold, unmistakably serious about the numbers — and close enough to hear the crowd the whole time. That's the tension this system is built to hold, named directly by Mert across two separate questionnaire rounds when he worried the design was drifting too corporate: the surface is editorial and precise (The Telegraph, "a news website," "bank statement, but light," "cold hard facts"), but the substance underneath has to stay a game people play with their friends, not an institution ("don't let the fun get away," "I'm trying to warn you against creating an FBI recruitment program, this is a game"). The material world reads like a press box's own objects — an executive pen for writing the report, an engraved plaque for what's earned, paper card stock for the stat sheet — plus one deliberate human counterweight: cotton, the material of a fan's own jersey, and a crowd that "radiates around" the whole site rather than living in one corner of it.
+A press box is where this system lives: elevated, close to the numbers, and close enough to hear the crowd the whole time. That's the tension this system is built to hold, named directly by Mert across multiple questionnaire rounds when he worried the design was drifting too corporate — and then confirmed in the flesh, when the first real build of this North Star (full navy masthead, Telegraph-serif ledger) was rejected on sight as *"way too corporate"* and *"too serious and unwelcoming"* (DESIGN-SPEC.md §0b). The lesson from that build: the editorial/precise half of the tension (The Telegraph, "cold hard facts") is real and should stay in the palette and type, but it cannot be the thing a visitor feels first. What they should feel first is the warmth — the substance underneath is a game people play with their friends, not an institution ("don't let the fun get away," "I'm trying to warn you against creating an FBI recruitment program, this is a game"). The material world reads like a press box's own objects — an executive pen for writing the report, an engraved plaque for what's earned, paper card stock for the stat sheet — plus one deliberate human counterweight: cotton, the material of a fan's own jersey, and a crowd that "radiates around" the whole site rather than living in one corner of it.
 
-This system explicitly rejects: a warm-cream/sand "AI default" background (the near-white here carries only the faintest paper-mill warmth, not a cream or parchment cast); a stiff, humorless corporate register (see DESIGN-SPEC.md §0 — this overrides everything else if a decision ever reads that way); static, undecorated pages ("definitely not a static HTML" — motion is expected, not optional); and anything that obscures information for the sake of style, especially on mobile, where the intuitiveness bar is explicitly *higher* than on desktop, not lower.
+**Compositional device, added after the first build's rejection (§0b):** the page is not one dense, page-filling ledger. It's a set of distinct **framed cells** — an oblong frame for the leaderboard, other frames for other content — each one its own small, self-contained object with room around it, closer to a well-composed bento layout than a newspaper page. Identity and navigation live in a **top bar**, not a full-height side masthead; nothing on the page should feel like it's wearing an institutional uniform.
+
+This system explicitly rejects: a warm-cream/sand "AI default" background (the near-white here carries only the faintest paper-mill warmth, not a cream or parchment cast); a stiff, humorless corporate register (see DESIGN-SPEC.md §0 and §0b — this overrides everything else if a decision ever reads that way, and it already has once); static, undecorated pages ("definitely not a static HTML" — motion is expected, not optional); and anything that obscures information for the sake of style, especially on mobile, where the intuitiveness bar is explicitly *higher* than on desktop, not lower.
 
 **Key characteristics:**
-- Editorial-serious surface (Telegraph-adjacent, sharp/thin serif-led type) over a genuinely warm, football-loving substance
-- A real, structural navy/white split (~50/50), not a light UI with a navy accent
+- Warmth and welcome felt first; editorial precision (sharp/thin serif-led type, navy/white identity) as an undertone, not the headline impression
+- Composed as framed cells/panels — the leaderboard as one prominent oblong frame among others, not one page-filling table
+- Navigation and identity in a top bar, light-touch — not a full-height navy side panel
+- A real, structural navy/white presence, expressed per-frame rather than as one dominant full-bleed field
 - Motion that's present and felt everywhere — floaty, soft, "cottony" — never a static document
 - A blunt, factual, unsentimental voice ("Done.", "Kuzey has taken your spot.") that is never cold-hearted — restraint, not indifference
 - Real player photography, slightly muted, not full-saturation or black-and-white
@@ -41,10 +45,7 @@ The palette strategy is **Committed**, not Restrained: navy carries real, struct
 
 ## 3. Typography
 
-**Display/body face direction:** a sharp, thin, modern editorial serif (Telegraph-adjacent) carries most of the system — headlines, key numbers, primary content.
-**Secondary face direction:** a clean sans, used situationally for UI chrome, labels, and dense data rather than as an equal partner.
-
-*(Specific font families to be chosen at implementation — this is a pairing direction, not a font selection yet.)*
+**Settled, DECIDED (DESIGN-SPEC.md §0c):** a single base face, **Archivo Narrow**, carries both display and body — chosen live, in the real layout, after a font trial (50 candidates, narrowed to 15 condensed/narrow finalists). This replaces the earlier Bodoni Moda / Geist serif-plus-sans pairing described below, which was this system's *direction* before implementation, not its final choice. One condensed sans instead of a serif/sans pair is a real shift in character — tighter, more contemporary, less overtly "newspaper" — and reads as consistent with §0b's move away from editorial severity.
 
 **Character:** Precise and a little severe at rest (matches the blunt, factual voice — "cold hard facts," "Done."), never soft or rounded in its default state.
 
@@ -70,7 +71,11 @@ Not populated in this seed — no components exist in code yet. Re-run `/impecca
 ## 6. Do's and Don'ts
 
 ### Do:
-- **Do** give navy real structural presence (§2's 50/50 Rule), not accent-only treatment.
+- **Do** compose pages as distinct framed cells/panels (leaderboard as one oblong frame among others) rather than one dense, page-filling sheet (DESIGN-SPEC.md §0b).
+- **Do** leave cells genuinely empty until there's real content for them — an intentional blank frame (mat + border, no data) reads as "not yet," not as broken (DESIGN-SPEC.md §0c).
+- **Do** keep the content region below the top bar width-constrained and centered — compact, not edge-to-edge — while the top bar itself stays full width (DESIGN-SPEC.md §0c).
+- **Do** place navigation and identity in a top bar — not a full-height side masthead (DESIGN-SPEC.md §0b, rejected the left-panel build on sight).
+- **Do** give navy real structural presence (§2's 50/50 Rule), not accent-only treatment — but distribute it per-frame rather than as one dominant full-bleed field, so no single element reads as institutional.
 - **Do** make motion a first-class part of every interaction — transitions, reorders, drag — floaty and soft (§4's Cottony Rule).
 - **Do** use real, muted (not full-color, not black-and-white) player/team photography.
 - **Do** write UI copy the way the voice samples read: short, factual, no exclamation points, no apology ("Done.", "Kuzey has taken your spot.").

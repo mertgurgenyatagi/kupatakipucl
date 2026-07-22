@@ -1,8 +1,5 @@
-import { PreviewCard } from "@base-ui/react/preview-card";
 import { LeaderboardEntry } from "./leaderboardTypes";
-import { TeamResult } from "./teamResultTypes";
 import { assignRanks } from "./ranking";
-import { PickCorrectnessCard } from "./PickCorrectnessCard";
 import {
   Table,
   TableBody,
@@ -16,18 +13,23 @@ import {
   Frame,
   FrameHeader,
   FrameTitle,
-  FrameMeta,
   FrameBody,
 } from "@/components/ui/frame";
 import { cn } from "@/lib/utils";
 
 interface LeaderboardTableProps {
   entries: LeaderboardEntry[];
-  /** Live team results — only needed for the correctness reveal. */
-  results?: Record<string, TeamResult>;
-  /** Gate for the hover reveal — true once the tournament has started
+  /** Gate for the hover highlight — true once the tournament has started
    *  (DESIGN-SPEC: the brief's "only active after starting"). */
   revealCorrectness?: boolean;
+  /** Fires with the hovered participant's uid, or null on hover-out — the
+   *  caller uses this to highlight that participant's currently-correct
+   *  teams on the team table alongside. */
+  onHoverEntry?: (uid: string | null) => void;
+  /** Fires with a participant's uid on click (or Enter/Space) — the caller
+   *  uses this to open that participant's dossier popup. Same gate as the
+   *  hover highlight: only live once correctness is actually revealable. */
+  onSelectEntry?: (uid: string) => void;
 }
 
 function initials(firstName: string, lastName: string) {
@@ -41,14 +43,16 @@ function initials(firstName: string, lastName: string) {
  * across (§52, the Ledger Rule). The record scrolls inside the frame; the
  * frame itself never makes the document scroll (§55).
  *
- * Once the tournament is under way, hovering a participant reveals which of
- * their picks are currently landing — quiet, factual, brass-marked (see
- * PickCorrectnessCard). Before that, no dead hover state exists at all.
+ * Once the tournament is under way, hovering a participant highlights which
+ * of their picks are currently landing directly on the team table alongside
+ * (a faint green wash on those rows) rather than popping up a separate card.
+ * Before that, no dead hover state exists at all.
  */
 export function LeaderboardTable({
   entries,
-  results = {},
   revealCorrectness = false,
+  onHoverEntry,
+  onSelectEntry,
 }: LeaderboardTableProps) {
   const ranked = assignRanks(entries);
 
@@ -56,7 +60,6 @@ export function LeaderboardTable({
     <Frame className="h-full animate-cotton-rise border-navy-line/35">
       <FrameHeader tone="navy">
         <FrameTitle className="text-navy-ink">Sıralama</FrameTitle>
-        <FrameMeta className="text-navy-muted">Sezon 2026/27</FrameMeta>
       </FrameHeader>
 
       <FrameBody>
@@ -67,8 +70,8 @@ export function LeaderboardTable({
             </p>
           </div>
         ) : (
-          <div className="min-h-0 flex-1 px-2 sm:px-3 lg:overflow-y-auto">
-            <Table className="text-base">
+          <div className="no-scrollbar min-h-0 flex-1 px-2 sm:px-3 lg:overflow-y-auto">
+            <Table className="text-sm">
               <TableHeader className="sticky top-0 z-10 bg-card [&_tr]:border-b [&_tr]:border-border">
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="h-10 w-14 pl-3 font-mono text-[0.6rem] font-medium tracking-[0.22em] text-muted-foreground uppercase">
@@ -91,9 +94,25 @@ export function LeaderboardTable({
                     <TableRow
                       key={entry.uid}
                       style={{ animationDelay: `${Math.min(index * 45, 900)}ms` }}
+                      onMouseEnter={canReveal ? () => onHoverEntry?.(entry.uid) : undefined}
+                      onMouseLeave={canReveal ? () => onHoverEntry?.(null) : undefined}
+                      onClick={canReveal ? () => onSelectEntry?.(entry.uid) : undefined}
+                      onKeyDown={
+                        canReveal
+                          ? (e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                onSelectEntry?.(entry.uid);
+                              }
+                            }
+                          : undefined
+                      }
+                      tabIndex={canReveal ? 0 : undefined}
+                      aria-haspopup={canReveal ? "dialog" : undefined}
                       className={cn(
                         "group animate-cotton-rise border-b border-border/60 transition-colors duration-300 ease-[var(--ease-cotton)] hover:bg-accent",
-                        leader && "bg-brass/[0.07]"
+                        leader && "bg-brass/[0.07]",
+                        canReveal && "cursor-pointer outline-none focus-visible:bg-accent focus-visible:ring-1 focus-visible:ring-ring/50 focus-visible:ring-inset"
                       )}
                     >
                       {/* Rank — brass only for rank 01, the one earned
@@ -101,7 +120,7 @@ export function LeaderboardTable({
                       <TableCell className="py-3 pl-3 align-middle">
                         <span
                           className={cn(
-                            "font-mono text-sm tracking-tight tnum",
+                            "font-mono text-xs tracking-tight tnum",
                             leader ? "text-brass" : "text-muted-foreground"
                           )}
                         >
@@ -109,10 +128,10 @@ export function LeaderboardTable({
                         </span>
                       </TableCell>
 
-                      {/* Photo — real, muted at rest, warms on hover
-                          (the crowd radiating in, §26/§27/§34) */}
+                      {/* Photo — full saturation by default (Mert: "no
+                          need to hover"). */}
                       <TableCell className="py-2 pr-0 pl-0 align-middle">
-                        <Avatar className="size-8 opacity-90 grayscale transition duration-500 ease-[var(--ease-cotton)] group-hover:opacity-100 group-hover:grayscale-0">
+                        <Avatar className="size-8">
                           <AvatarImage src={entry.photoURL} alt="" />
                           <AvatarFallback className="bg-secondary font-mono text-[0.6rem] text-navy-text">
                             {initials(entry.firstName, entry.lastName)}
@@ -120,56 +139,28 @@ export function LeaderboardTable({
                         </Avatar>
                       </TableCell>
 
-                      {/* Name + dotted leader — the ledger signature. Once the
-                          tournament is live, this is the correctness-reveal
-                          trigger; before that it's a plain cell. */}
+                      {/* Name — the ledger signature. When canReveal, the
+                          row's hover (above) drives a highlight on the team
+                          table instead of popping up a card here. */}
                       <TableCell className="w-full py-3 align-middle">
-                        {canReveal ? (
-                          <PreviewCard.Root>
-                            <PreviewCard.Trigger
-                              render={<span />}
-                              className="flex min-w-0 cursor-default items-baseline gap-3 outline-none"
-                            >
-                              <span className="truncate font-display text-[1.05rem] font-medium text-ink underline decoration-dotted decoration-silver/40 underline-offset-[6px] transition-colors duration-300 group-hover:decoration-brass/70 data-[popup-open]:decoration-brass">
-                                {entry.firstName} {entry.lastName}
-                              </span>
-                              <span
-                                aria-hidden
-                                className="hidden h-px flex-1 translate-y-[-0.28em] border-b border-dotted border-silver/50 sm:block"
-                              />
-                            </PreviewCard.Trigger>
-                            <PreviewCard.Portal>
-                              <PreviewCard.Positioner
-                                side="left"
-                                align="center"
-                                sideOffset={14}
-                                collisionPadding={16}
-                              >
-                                <PreviewCard.Popup className="origin-[var(--transform-origin)] transition-[transform,opacity] duration-200 ease-[var(--ease-cotton)] data-[ending-style]:scale-[0.98] data-[ending-style]:opacity-0 data-[starting-style]:scale-[0.98] data-[starting-style]:opacity-0">
-                                  <PickCorrectnessCard entry={entry} results={results} />
-                                </PreviewCard.Popup>
-                              </PreviewCard.Positioner>
-                            </PreviewCard.Portal>
-                          </PreviewCard.Root>
-                        ) : (
-                          <span className="flex min-w-0 items-baseline gap-3">
-                            <span className="truncate font-display text-[1.05rem] font-medium text-ink">
-                              {entry.firstName} {entry.lastName}
-                            </span>
-                            <span
-                              aria-hidden
-                              className="hidden h-px flex-1 translate-y-[-0.28em] border-b border-dotted border-silver/50 sm:block"
-                            />
+                        <span className="flex min-w-0 items-baseline gap-3">
+                          <span
+                            className={cn(
+                              "truncate font-display text-sm font-medium text-ink",
+                              canReveal && "cursor-default"
+                            )}
+                          >
+                            {entry.firstName} {entry.lastName}
                           </span>
-                        )}
+                        </span>
                       </TableCell>
 
                       {/* Points — aligned right, tabular (the Ledger Rule) */}
                       <TableCell className="py-3 pr-4 text-right align-middle">
                         <span
                           className={cn(
-                            "font-mono text-base tracking-tight tnum",
-                            leader ? "font-semibold text-brass" : "font-medium text-navy-text"
+                            "font-mono text-sm tracking-tight tnum",
+                            leader ? "font-semibold text-brass" : "font-medium text-ink"
                           )}
                         >
                           {entry.points}
