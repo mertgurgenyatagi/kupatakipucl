@@ -11,6 +11,12 @@ describe("TEAMS", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it("has unique short names, each short enough for a compact column", () => {
+    const shortNames = TEAMS.map((t) => t.shortName);
+    expect(new Set(shortNames).size).toBe(shortNames.length);
+    shortNames.forEach((s) => expect(s.length).toBeLessThanOrEqual(4));
+  });
+
   it("is sorted alphabetically by name", () => {
     const sorted = [...TEAMS].sort((a, b) => a.name.localeCompare(b.name));
     expect(TEAMS.map((t) => t.name)).toEqual(sorted.map((t) => t.name));

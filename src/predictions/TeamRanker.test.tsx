@@ -4,9 +4,9 @@ import { TeamRanker } from "./TeamRanker";
 import { Team } from "./teams";
 
 const teams: Team[] = [
-  { id: "a", name: "Alpha" },
-  { id: "b", name: "Beta" },
-  { id: "c", name: "Gamma" },
+  { id: "a", name: "Alpha", shortName: "ALP" },
+  { id: "b", name: "Beta", shortName: "BET" },
+  { id: "c", name: "Gamma", shortName: "GAM" },
 ];
 
 describe("TeamRanker", () => {

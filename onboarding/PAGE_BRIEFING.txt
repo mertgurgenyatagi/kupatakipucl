@@ -1,0 +1,201 @@
+I'm just going to explicitly write what I want on each screen in no particular order, so you can space the widgets in the future accordingly, even if we aren't able to populate them yet. YOU ARE HIGHLY ENCOURAGED TO ADD YOUR OWN IDEAS AND ESPECIALLY SMALL DETAILS THAT SIMPLY MUST BE SHOWN (this is an incredibly important detail and must be the cause of much deliberation on your part) BECAUSE I CAN'T THINK OF EVERYTHING OFF THE TOP OF MY HEAD. JUST ADD THEM, IF I DON'T LIKE IT I'LL JUST REMOVE IT.
+
+(don't think about anything post-league phase for now)
+
+(also, radical decision: do not even think about the mobile version. I've decided that after I'm done with desktop, I'll go back to it)
+
+
+
+
+
+
+
+
+HOME - not logged in, not started
+
+
+[this will be the only page in this circumstance. Very modern layout, you can let go on the intuitiveness and widget approach completely here. This is meant to be cool and slick. Think back to huts.org, or any sort of award winning website.]
+
+- "X kişi katıldı.", with three of them shown profile pictures as circles that are like stacked but horizontally, and after three it's kind of like an after thought.
+
+- mission statement
+
+- curvy boundaries, closing areas colored our existing dark blue or our white.
+
+- cool small animations
+
+- time left to sign up
+
+- big pictures at the edges of each boundary. not fading, curvy border also
+
+- massively incentivize signing up, big ol' google sign up button
+
+- anything else you might want to add
+
+
+
+
+
+
+
+
+
+HOME - logged in, not started
+
+[honestly, very similar philosophically to the homenotloggedin view, because information is not quite available yet so we can make aesthetic, bold choices. not as wide and volumeous, though.]
+
+- urging predict
+
+- time left to predict
+
+- how many people have made their predictions
+
+- chatbox (will never be it's own page)
+
+- recent forum posts
+
+- very personal section at the top or top left or something. maybe a "Hoş geldin, Mert [bold].".
+
+- neither the predictions nor the quiz answers of other people can be viewed.
+
+- anything else you might want to add.
+
+
+
+
+
+
+
+HOME - notloggedin, started
+
+- this will be the only page in this circumstance.
+
+- don't let people know they've missed the boat, just don't mention it.
+
+- full team table
+
+- full leaderboard
+
+- predictions can be viewed.
+
+- quiz answers cannot be viewed.
+
+- anything else you might want to add.
+
+- small hero card widget that rolls through various images and small text.
+
+- anything else you might want to add.
+
+
+
+
+
+
+
+HOME - logged in, started
+
+- very personalized section at the top, showing profile picture, welcome message, ranking.
+
+- upcoming 5 or 3 matches. see previous kupatakip
+
+- full team table, though perhapsed more compact. teams within predicted interval highlighted green.
+
+- ranking of 5 users, up two and down two from our own user
+
+- small hero card widget that rolls through various images and small text.
+
+- chatbox
+
+- recent forum posts
+
+- anything else you might want to add.
+
+
+
+
+LEADERBOARD - identical for started and not started
+
+
+
+- we are essentially rolling team table, stats and leaderboard all into one page. no i am not crazy. maybe a little crazy.
+
+- full detailed team table
+
+- 3 stats widgets:
+
+1. best players by rating
+2. top scorers
+3. top assisters
+
+- full leaderboard table. hovering above any player shows which teams they are currently getting right (only active after starting). also, form.
+
+- anything else you might want to add.
+
+
+
+
+
+
+
+TEAM POPUP - identical for started and not started
+
+- profile section at the top with manager's name under the team name
+
+- ranking
+
+- form
+
+- full match history (needs to be tucked away somehow)
+
+- most common 11
+
+- top scorer
+
+- top assister
+
+- anything else you might want to add.
+
+
+
+
+
+
+
+PARTICIPANT POPUP - nA for not started, this is for started
+
+- profile section at the top
+
+- predicted champion
+
+- ranking
+
+- league prediction
+
+- quiz answers
+
+- place on the leaderboard throughout time (increments of matches on the timeline, not real time) see previous kupatakip
+
+- anything else you might want to add.
+
+
+
+
+
+FORUM - identical for started and not started
+
+
+
+- just a forum. im tired. you design it.
+
+
+
+
+
+PROFILE EDIT SCREEN
+
+
+just profile edit screen. you design it.
+
+
+
+golden rule: it is impossible for this document to be 100 percent prescriptive. you must treat it as general directions. your own architectural skills are vastly needed.

@@ -1,0 +1,224 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+/* Inter — one family, every text on the site (Mert's explicit call).
+   Replaces Martel Sans. Variable font, one file covers the full weight
+   range (100-900) plus italics, registered as "Inter Variable". */
+@import "@fontsource-variable/inter";
+
+/* This system is single-theme — permanently dark now (reworked to reflect
+   cursor.com/home's dark mode), but still just one fixed theme regardless
+   of the visitor's OS setting. Kept only so shadcn's own components
+   (button.tsx, avatar.tsx etc. ship with built-in dark: classes) scope
+   dark: to a .dark ancestor class that's never set anywhere, rather than
+   falling back to Tailwind's default prefers-color-scheme media query —
+   without this, a visitor's OS *light* mode would restyle those
+   components even though nothing here should ever change with the
+   system theme. */
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    /* One family, every text on the site (Mert's explicit call) — display,
+       heading, body and the mono/label role all point at the same face. */
+    --font-display: 'Inter Variable', sans-serif;
+    --font-heading: 'Inter Variable', sans-serif;
+    --font-sans: 'Inter Variable', sans-serif;
+    --font-mono: 'Inter Variable', sans-serif;
+
+    /* Press-box object world — surfaced as named tokens */
+    --color-navy: var(--navy);
+    --color-navy-text: var(--navy-text);
+    --color-navy-ink: var(--navy-ink);
+    --color-navy-muted: var(--navy-muted);
+    --color-navy-line: var(--navy-line);
+    --color-silver: var(--silver);
+    --color-brass: var(--brass);
+    --color-press-white: var(--press-white);
+    --color-ink: var(--ink);
+
+    --ease-cotton: var(--ease-cotton);
+
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+    /* --- Reworked to reflect cursor.com/home's actual dark theme ------
+       Not eyeballed — pulled live via getComputedStyle() against the real
+       site with prefers-color-scheme: dark forced. Confirmed values:
+       body bg #14120B, body/heading/nav text #EDECEC, primary button
+       (inverted pill) bg #EDECEC on #14120B, secondary/outline button
+       border = #EDECEC at 20% opacity, muted timestamp text = #EDECEC at
+       40%, elevated panel surface (their own "bg-theme-product-editor"
+       class) #1B1913, diff/success green #1F8A65, error red #CF2D56.
+       Every token below keeps its original *name*; only values change. */
+    --navy: #1B1913;                                                  /* their elevated panel surface */
+    --navy-text: var(--navy);
+    --navy-ink: #EDECEC;                                              /* text on navy */
+    --navy-muted: color-mix(in oklch, #EDECEC 55%, transparent);      /* dimmer text on navy */
+    --navy-line: color-mix(in oklch, #EDECEC 20%, transparent);       /* their own button-border alpha */
+    --silver: color-mix(in oklch, #EDECEC 55%, transparent);
+    --brass: #1F8A65;                                                 /* their "positive" green, standing in for the earned/gold accent */
+    --press-white: #14120B;                                           /* the ground */
+    --ink: #EDECEC;
+
+    --ease-cotton: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+    /* --- shadcn semantic tokens, re-mapped onto the palette ---------- */
+    --background: var(--press-white);
+    --foreground: var(--ink);
+    --card: #1B1913;
+    --card-foreground: var(--ink);
+    --popover: var(--press-white);
+    --popover-foreground: var(--ink);
+    --primary: var(--navy);
+    --primary-foreground: var(--navy-ink);
+    --secondary: #1B1913;
+    --secondary-foreground: #EDECEC;
+    --muted: #1B1913;
+    --muted-foreground: color-mix(in oklch, #EDECEC 55%, transparent);
+    --accent: color-mix(in oklch, #EDECEC 8%, transparent);
+    --accent-foreground: #EDECEC;
+    --destructive: #CF2D56;
+    --border: color-mix(in oklch, #EDECEC 20%, transparent);
+    --input: color-mix(in oklch, #EDECEC 20%, transparent);
+    --ring: color-mix(in oklch, #EDECEC 60%, transparent);
+    --chart-1: var(--navy);
+    --chart-2: color-mix(in oklch, #EDECEC 35%, transparent);
+    --chart-3: color-mix(in oklch, #EDECEC 25%, transparent);
+    --chart-4: var(--silver);
+    --chart-5: var(--brass);
+    --radius: 0.35rem;
+    --sidebar: var(--navy);
+    --sidebar-foreground: var(--navy-ink);
+    --sidebar-primary: var(--navy-ink);
+    --sidebar-primary-foreground: var(--navy);
+    --sidebar-accent: color-mix(in oklch, #EDECEC 15%, transparent);
+    --sidebar-accent-foreground: var(--navy-ink);
+    --sidebar-border: var(--navy-line);
+    --sidebar-ring: var(--silver);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Desktop is a fixed-viewport app shell: the document itself never
+     scrolls; regions that overflow get their own internal scroll
+     container (DESIGN-SPEC §55). Mobile scrolls normally (§53). */
+  @media (min-width: 1024px) {
+    html, body, #root {
+      height: 100%;
+      overflow: hidden;
+    }
+  }
+}
+
+@layer utilities {
+  .font-display { font-family: var(--font-display); }
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+  /* Horizontal nav strip stays scrollable on mobile without a visible
+     scrollbar chrome (DESIGN-SPEC §39 always-visible nav, §53 clarity). */
+  .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+
+  /* A southeast-offset shadow (45°, equal x/y), dialed back from the first
+     pass (Mert: "you went too far, drop the opacity and go a bit easier on
+     the hardness") — some blur instead of a near-hard edge, lower alpha. */
+  .shadow-frame {
+    box-shadow: 6px 6px 10px rgba(0, 0, 0, 0.4);
+  }
+
+  /* The crowd, radiating around (DESIGN-SPEC §34) — an all-but-invisible
+     warmth behind the frames. Chroma stays near-zero so the ground never
+     reads as a nameable cream (§48, the Paper-Mill Rule). */
+  .ground-radiance {
+    background-image:
+      radial-gradient(120% 90% at 82% -10%, rgba(27, 25, 19, 0.5), transparent 60%),
+      radial-gradient(90% 70% at 6% 108%, rgba(237, 236, 236, 0.03), transparent 55%);
+  }
+
+  /* --- Motion: fade-y, floaty, cottony (DESIGN-SPEC §43, §50) -------- */
+  @keyframes cotton-rise {
+    from { opacity: 0; transform: translateY(0.6rem); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes cotton-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes seam-breathe {
+    0%, 100% { opacity: 0.55; }
+    50%      { opacity: 1; }
+  }
+
+  .animate-cotton-rise {
+    opacity: 0;
+    animation: cotton-rise 0.62s var(--ease-cotton) forwards;
+  }
+  .animate-cotton-fade {
+    opacity: 0;
+    animation: cotton-fade 0.7s var(--ease-cotton) forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-cotton-rise,
+    .animate-cotton-fade {
+      opacity: 1;
+      animation: none !important;
+      transform: none !important;
+    }
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}

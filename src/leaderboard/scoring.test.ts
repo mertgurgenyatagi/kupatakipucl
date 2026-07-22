@@ -1,10 +1,32 @@
 import { describe, it, expect } from "vitest";
-import { computeScore } from "./scoring";
+import { computeScore, isPickCorrect, evaluatePicks } from "./scoring";
 import { TeamResult } from "./teamResultTypes";
 
 function result(position: number): TeamResult {
   return { position, points: 0, goalDifference: 0, goalsFor: 0, goalsAgainst: 0 };
 }
+
+describe("isPickCorrect", () => {
+  it("is true when the prediction is within two places", () => {
+    expect(isPickCorrect(1, 1)).toBe(true);
+    expect(isPickCorrect(1, 3)).toBe(true);
+    expect(isPickCorrect(5, 3)).toBe(true);
+  });
+
+  it("is false at a delta of exactly 3 (boundary excluded) or more", () => {
+    expect(isPickCorrect(1, 4)).toBe(false);
+    expect(isPickCorrect(10, 1)).toBe(false);
+  });
+});
+
+describe("evaluatePicks", () => {
+  it("marks placed picks correct/incorrect and carries unplaced picks as null", () => {
+    const evals = evaluatePicks(["a", "b", "c"], { a: result(1), c: result(20) });
+    expect(evals[0]).toMatchObject({ teamId: "a", predictedPosition: 1, actualPosition: 1, correct: true });
+    expect(evals[1]).toMatchObject({ teamId: "b", predictedPosition: 2, actualPosition: null, correct: false });
+    expect(evals[2]).toMatchObject({ teamId: "c", predictedPosition: 3, actualPosition: 20, correct: false });
+  });
+});
 
 describe("computeScore", () => {
   it("awards 3 points for an exact position match", () => {
