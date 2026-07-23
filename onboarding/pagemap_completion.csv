@@ -1,0 +1,9 @@
+page,loggedout_notstarted,loggedin_notstarted,loggedout_leaguephase,loggedin_leaguephase,loggedout_preknockout,loggedin_preknockout,loggedout_knockout,loggedin_knockout
+home,4/5 -- blurb text is placeholder,2/5 -- no popup/chat/forum embed yet,"2/5 -- missing stats subset, predictions list, nav shrink","2/5 -- missing chat, carousel, popups, reminder",2/5 -- same gaps as league phase,2/5 -- same gaps as league phase,2/5 -- same gaps as league phase,"1/5 -- same gaps, plus no bracket view"
+leaderboard,N/A,N/A,N/A -- folds into Home,5/5 -- fully built,N/A -- folds into Home,5/5 -- fully built,N/A -- folds into Home,"5/5 -- fully built, no extra work needed"
+stats,N/A,N/A,N/A -- folds into Home,4/5 -- 1 widget still placeholder,N/A -- folds into Home,4/5 -- 1 widget still placeholder,N/A -- folds into Home,2/5 -- knockout widget swap not built
+forum,N/A,3/5 -- unstyled,N/A,3/5 -- unstyled,N/A,3/5 -- unstyled,N/A,3/5 -- unstyled
+teampopup,5/5 -- placeholder state is the spec,5/5 -- placeholder state is the spec,5/5 -- built; squad data placeholder (out of scope),5/5 -- built; squad data placeholder (out of scope),5/5 -- built; squad data placeholder (out of scope),5/5 -- built; squad data placeholder (out of scope),5/5 -- built; squad data placeholder (out of scope),5/5 -- built; squad data placeholder (out of scope)
+participantpopup,N/A,N/A,N/A -- see Home's inline list,5/5 -- fully built,N/A -- see Home's inline list,3/5 -- knockout pick not shown yet,N/A -- see Home's inline list,3/5 -- knockout pick not shown yet
+matchup_popup,N/A -- no match content pre-start,N/A -- no match content pre-start,0/5 -- doesn't exist,0/5 -- doesn't exist,0/5 -- doesn't exist,0/5 -- doesn't exist,0/5 -- doesn't exist,0/5 -- doesn't exist
+profile,N/A,0/5 -- no page built (hooks exist),N/A,0/5 -- no page built (hooks exist),N/A,0/5 -- no page built (hooks exist),N/A,0/5 -- no page built (hooks exist)
