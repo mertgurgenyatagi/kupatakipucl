@@ -89,7 +89,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   to={link.path}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "relative shrink-0 rounded-md px-3 py-1.5 font-mono text-[0.72rem] uppercase tracking-[0.14em] no-underline transition-colors duration-300 ease-[var(--ease-cotton)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-ink",
+                    "relative shrink-0 rounded-md px-3 py-1.5 font-mono text-[0.72rem] uppercase tracking-[0.14em] no-underline transition-colors duration-150 ease-[var(--ease-cotton)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-ink",
                     active
                       ? "text-navy-ink"
                       : "text-navy-muted hover:text-navy-ink"
@@ -110,8 +110,19 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           {/* Account slot */}
           <div className="order-2 flex items-center gap-3 lg:order-3 sm:gap-4">
+            {/* Dev-only shortcut to /dev — Mert: "ill remove it way before
+                launch," so it's gated on the DEV build flag rather than
+                anything more permanent. */}
+            {import.meta.env.DEV && (
+              <Link
+                to="/dev"
+                className="rounded-md border border-navy-line px-3 py-1.5 font-mono text-[0.72rem] tracking-[0.02em] text-navy-ink no-underline transition-colors duration-150 hover:border-brass"
+              >
+                Dev Panel
+              </Link>
+            )}
             {!loading && (
-              <div lang="en" className="account-slot [&_button]:cursor-pointer [&_button]:rounded-md [&_button]:border [&_button]:border-navy-line [&_button]:bg-transparent [&_button]:px-3 [&_button]:py-1.5 [&_button]:font-mono [&_button]:text-[0.72rem] [&_button]:tracking-[0.02em] [&_button]:text-navy-ink [&_button]:transition-colors [&_button]:duration-300 hover:[&_button]:border-brass [&_button]:outline-none focus-visible:[&_button]:outline-2 focus-visible:[&_button]:outline-offset-2 focus-visible:[&_button]:outline-navy-ink [&_[role=alert]]:mt-2 [&_[role=alert]]:text-[0.68rem] [&_[role=alert]]:text-destructive">
+              <div lang="en" className="account-slot [&_button]:cursor-pointer [&_button]:rounded-md [&_button]:border [&_button]:border-navy-line [&_button]:bg-transparent [&_button]:px-3 [&_button]:py-1.5 [&_button]:font-mono [&_button]:text-[0.72rem] [&_button]:tracking-[0.02em] [&_button]:text-navy-ink [&_button]:transition-colors [&_button]:duration-150 hover:[&_button]:border-brass [&_button]:outline-none focus-visible:[&_button]:outline-2 focus-visible:[&_button]:outline-offset-2 focus-visible:[&_button]:outline-navy-ink [&_[role=alert]]:mt-2 [&_[role=alert]]:text-[0.68rem] [&_[role=alert]]:text-destructive">
                 {user ? <LogoutButton /> : <LoginButton />}
               </div>
             )}

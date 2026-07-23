@@ -1,8 +1,24 @@
-import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const mockGetDocs = vi.fn();
+const mockGetDoc = vi.fn();
+const mockCollection = vi.fn((_db: unknown, name: string) => ({ name }));
+const mockDoc = vi.fn((_db: unknown, collection: string, id: string) => ({ collection, id }));
+
+vi.mock("firebase/firestore", () => ({
+  collection: (...args: unknown[]) => mockCollection(...(args as [unknown, string])),
+  getDocs: (...args: unknown[]) => mockGetDocs(...args),
+  doc: (...args: unknown[]) => mockDoc(...(args as [unknown, string, string])),
+  getDoc: (...args: unknown[]) => mockGetDoc(...args),
+}));
+
+vi.mock("../firebase", () => ({ db: {} }));
+
 import { ParticipantPopup } from "./ParticipantPopup";
 import { TEAMS } from "../predictions/teams";
 import { LeaderboardEntry } from "./leaderboardTypes";
+import { TeamResult } from "./teamResultTypes";
 
 const baseEntry: LeaderboardEntry = {
   uid: "uid1",
@@ -14,97 +30,161 @@ const baseEntry: LeaderboardEntry = {
   submittedAt: Date.UTC(2026, 7, 20),
 };
 
+const otherEntry: LeaderboardEntry = {
+  uid: "uid2",
+  firstName: "Alan",
+  lastName: "Turing",
+  photoURL: "b.png",
+  points: 6,
+  ranking: [TEAMS[2].id],
+};
+
+const results: Record<string, TeamResult> = {
+  [TEAMS[0].id]: { position: 1, points: 15, goalDifference: 6, goalsFor: 10, goalsAgainst: 4, matchesPlayed: 5 },
+};
+
 describe("ParticipantPopup", () => {
-  it("renders nothing when there is no selected participant", () => {
+  beforeEach(() => {
+    mockGetDocs.mockReset();
+    mockGetDoc.mockReset();
+    mockGetDocs.mockResolvedValue({ docs: [] }); // devMatches: nothing decided by default
+    mockGetDoc.mockResolvedValue({ exists: () => false, data: () => undefined }); // no survey by default
+  });
+
+  it("renders nothing when there is no selected participant", async () => {
     render(
-      <ParticipantPopup ranked={null} results={{}} revealCorrectness={false} onOpenChange={() => {}} />
+      <ParticipantPopup ranked={null} entries={[baseEntry]} results={{}} onOpenChange={() => {}} />
     );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await waitFor(() => expect(mockGetDocs).toHaveBeenCalled());
   });
 
-  it("shows the participant's name, rank and points", () => {
+  it("shows the participant's name, rank and points, single-digit ranks unpadded", async () => {
     render(
       <ParticipantPopup
         ranked={{ entry: baseEntry, rank: 3 }}
+        entries={[baseEntry, otherEntry]}
         results={{}}
-        revealCorrectness={false}
         onOpenChange={() => {}}
       />
     );
-    expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
-    expect(screen.getByText(/Sıra 03/)).toBeInTheDocument();
-    expect(screen.getByText(/9 puan/)).toBeInTheDocument();
+    expect(await screen.findByText("Ada Lovelace")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.queryByText("03")).not.toBeInTheDocument();
+    expect(screen.getByText("9")).toBeInTheDocument();
   });
 
-  it("lists the full predicted order in order, with no correctness shown before reveal", () => {
+  it("lists the full predicted order with the team table's own stat columns (O/A/Y/AV/P)", async () => {
     render(
       <ParticipantPopup
         ranked={{ entry: baseEntry, rank: 3 }}
-        results={{}}
-        revealCorrectness={false}
-        onOpenChange={() => {}}
-      />
-    );
-    expect(screen.getByText(TEAMS[0].name)).toBeInTheDocument();
-    expect(screen.getByText(TEAMS[1].name)).toBeInTheDocument();
-    expect(screen.queryByText(/isabetli/)).not.toBeInTheDocument();
-  });
-
-  it("shows pick correctness once revealCorrectness is true", () => {
-    const results = {
-      [TEAMS[0].id]: { position: 1, points: 0, goalDifference: 0, goalsFor: 0, goalsAgainst: 0 },
-      [TEAMS[1].id]: { position: 30, points: 0, goalDifference: 0, goalsFor: 0, goalsAgainst: 0 },
-    };
-    render(
-      <ParticipantPopup
-        ranked={{ entry: baseEntry, rank: 3 }}
+        entries={[baseEntry, otherEntry]}
         results={results}
-        revealCorrectness
         onOpenChange={() => {}}
       />
     );
-    expect(screen.getByText("1/2 isabetli")).toBeInTheDocument();
+    expect(await screen.findByText(TEAMS[0].shortName)).toBeInTheDocument();
+    expect(screen.getByText(TEAMS[1].shortName)).toBeInTheDocument();
+    // TEAMS[0]'s real stat line from `results`.
+    expect(screen.getByText("15")).toBeInTheDocument(); // points
+    expect(screen.getByText("+6")).toBeInTheDocument(); // goal difference, signed
+    // TEAMS[1] has no result yet — stat cells fall back to "-".
+    expect(screen.getAllByText("-").length).toBeGreaterThan(0);
   });
 
-  it("shows the submission date when available", () => {
+  it("shows survey answers once loaded", async () => {
+    mockGetDoc.mockResolvedValue({
+      exists: () => true,
+      data: () => ({
+        age: 25,
+        footballKnowledge: 6,
+        messiOrRonaldo: "messi",
+        superLigTeam: "Galatasaray",
+        uclTeam: "Arsenal",
+        device: "phone",
+        submittedAt: 123,
+      }),
+    });
     render(
       <ParticipantPopup
         ranked={{ entry: baseEntry, rank: 3 }}
+        entries={[baseEntry, otherEntry]}
         results={{}}
-        revealCorrectness={false}
         onOpenChange={() => {}}
       />
     );
-    expect(screen.getByText(/Tahmin gönderildi/)).toBeInTheDocument();
+    // Every answer gets a trailing period, even ones that didn't have one.
+    expect(await screen.findByText("Galatasaray.")).toBeInTheDocument();
+    expect(screen.getByText("Messi.")).toBeInTheDocument();
+    expect(screen.getByText("6 / 7.")).toBeInTheDocument();
+    expect(screen.getByText("Süper Lig'de tuttuğunuz takım")).toBeInTheDocument();
   });
 
-  it("shows the reserved champion/timeline sections as honest placeholders, never quiz answers", () => {
+  it("distinguishes a real read failure from a participant who simply never took the survey", async () => {
+    mockGetDoc.mockRejectedValue(new Error("permission-denied"));
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     render(
       <ParticipantPopup
         ranked={{ entry: baseEntry, rank: 3 }}
+        entries={[baseEntry, otherEntry]}
         results={{}}
-        revealCorrectness={false}
         onOpenChange={() => {}}
       />
     );
-    expect(screen.getByText("Şampiyon Tahmini")).toBeInTheDocument();
-    expect(screen.getByText("Zaman İçinde Sıralama")).toBeInTheDocument();
-    expect(screen.queryByText(/[Aa]nket/)).not.toBeInTheDocument();
+    expect(await screen.findByText("Anket cevapları görüntülenemiyor.")).toBeInTheDocument();
+    consoleErrorSpy.mockRestore();
   });
 
-  it("calls onOpenChange(false) when the close button is activated", () => {
+  it("shows a distinct, non-alarming message when the participant has no survey doc at all", async () => {
+    render(
+      <ParticipantPopup
+        ranked={{ entry: baseEntry, rank: 3 }}
+        entries={[baseEntry, otherEntry]}
+        results={{}}
+        onOpenChange={() => {}}
+      />
+    );
+    expect(await screen.findByText("Bu katılımcı anketi doldurmamış.")).toBeInTheDocument();
+  });
+
+  it("shows the rank-over-time fallback when there isn't enough history yet", async () => {
+    render(
+      <ParticipantPopup
+        ranked={{ entry: baseEntry, rank: 3 }}
+        entries={[baseEntry, otherEntry]}
+        results={{}}
+        onOpenChange={() => {}}
+      />
+    );
+    expect(
+      await screen.findByText("Yeterli maç oynanmadan gösterilmez.")
+    ).toBeInTheDocument();
+  });
+
+  it("never shows a predicted-champion section (dropped from the new 4-widget spec)", async () => {
+    render(
+      <ParticipantPopup
+        ranked={{ entry: baseEntry, rank: 3 }}
+        entries={[baseEntry, otherEntry]}
+        results={{}}
+        onOpenChange={() => {}}
+      />
+    );
+    await waitFor(() => expect(mockGetDocs).toHaveBeenCalled());
+    expect(screen.queryByText("Şampiyon Tahmini")).not.toBeInTheDocument();
+  });
+
+  it("calls onOpenChange(false) when the close button is activated", async () => {
     const onOpenChange = vi.fn();
     render(
       <ParticipantPopup
         ranked={{ entry: baseEntry, rank: 3 }}
+        entries={[baseEntry, otherEntry]}
         results={{}}
-        revealCorrectness={false}
         onOpenChange={onOpenChange}
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "Kapat" }));
-    // base-ui passes a second eventDetails argument alongside `open` — only
-    // the boolean matters to callers, so match just the first arg.
-    expect(onOpenChange).toHaveBeenCalledWith(false, expect.anything());
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false, expect.anything()));
   });
 });

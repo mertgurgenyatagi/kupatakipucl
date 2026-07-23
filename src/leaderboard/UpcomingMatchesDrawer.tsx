@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type MouseEvent,
+  type UIEvent,
+} from "react";
 import { ChevronUp, ChevronDown, Loader2 } from "lucide-react";
 import { getUpcomingFixtures } from "./upcomingFixtures";
 import { resolveNow } from "../tournament/now";
@@ -45,6 +53,20 @@ function place(results: Record<string, TeamResult>, teamId: string): string {
 /** Clickable, but intentionally does nothing yet — Mert's own spec: "clickable
  *  but does nothing." Reserved for a future match-detail view. */
 function handleMatchClick() {}
+function handleMatchKeyDown(e: KeyboardEvent) {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    handleMatchClick();
+  }
+}
+
+/** The crest+name for one side of a fixture, its own clickable target broken
+ *  out of the match row's big clickable zone (stops propagation) — one
+ *  object per Mert's spec, so the name underlines whenever any part of it,
+ *  crest included, is hovered. */
+function handleTeamClick(e: MouseEvent) {
+  e.stopPropagation();
+}
 
 /**
  * The hero carousel's bottom drawer. Collapsed, it's a full-width bar peeking
@@ -84,7 +106,7 @@ export function UpcomingMatchesDrawer({
   const hasMore = visibleCount < allUpcoming.length;
   const shown = allUpcoming.slice(0, visibleCount);
 
-  function handleScroll(e: React.UIEvent<HTMLDivElement>) {
+  function handleScroll(e: UIEvent<HTMLDivElement>) {
     if (loadingMore || !hasMore) return;
     const el = e.currentTarget;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
@@ -109,7 +131,7 @@ export function UpcomingMatchesDrawer({
         aria-controls={PANEL_ID}
         aria-label={open ? "Yaklaşan maçları kapat" : "Yaklaşan maçları göster"}
         onClick={() => setOpen((o) => !o)}
-        className="flex h-12 w-full shrink-0 cursor-pointer items-center justify-center rounded-t-[var(--radius-4xl)] border-t border-border/70 bg-card text-muted-foreground shadow-frame transition-colors duration-300 ease-[var(--ease-cotton)] hover:text-ink"
+        className="flex h-12 w-full shrink-0 cursor-pointer items-center justify-center rounded-t-[var(--radius-4xl)] border-t border-border/70 bg-card text-muted-foreground shadow-frame transition-colors duration-150 ease-[var(--ease-cotton)] hover:text-ink"
       >
         {open ? <ChevronDown className="size-4" /> : <ChevronUp className="size-4" />}
       </button>
@@ -118,15 +140,9 @@ export function UpcomingMatchesDrawer({
         id={PANEL_ID}
         className="flex min-h-0 flex-1 flex-col bg-card"
       >
-        <div className="border-t border-border/70 px-4 pt-2">
-          <span className="font-mono text-[0.58rem] tracking-[0.22em] text-muted-foreground uppercase">
-            Yaklaşan Maçlar
-          </span>
-        </div>
-
         <div
           onScroll={handleScroll}
-          className="no-scrollbar min-h-0 flex-1 overflow-y-auto"
+          className="no-scrollbar min-h-0 flex-1 overflow-y-auto border-t border-border/70 pt-2"
         >
           {shown.map((fixture) => {
             const home = TEAM_BY_ID[fixture.homeTeamId];
@@ -134,21 +150,29 @@ export function UpcomingMatchesDrawer({
             const kickoff = new Date(fixture.kickoffUtc);
             return (
               <div key={fixture.id} className="h-24 px-2">
-                <button
-                  type="button"
+                {/* A div, not a <button> — a real <button> can't contain the
+                    home/away crest+name buttons below (invalid nesting). */}
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={handleMatchClick}
-                  className="grid h-full w-full cursor-pointer items-center gap-1.5 rounded-lg px-2 transition-colors duration-300 ease-[var(--ease-cotton)] hover:bg-accent"
+                  onKeyDown={handleMatchKeyDown}
+                  className="grid h-full w-full cursor-pointer items-center gap-1.5 rounded-lg px-2 transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-accent focus-visible:bg-accent"
                   style={{ gridTemplateColumns: ROW_GRID_COLUMNS }}
                 >
                   <span className="font-mono text-xs text-muted-foreground tnum">
                     {place(results, home.id)}
                   </span>
-                  <span className="flex flex-col items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handleTeamClick}
+                    className="group flex cursor-pointer flex-col items-center gap-1"
+                  >
                     <TeamCrest teamId={home.id} className="size-7" />
-                    <span className="truncate font-display text-sm font-medium text-ink">
+                    <span className="truncate font-display text-sm font-medium text-ink group-hover:underline">
                       {home.shortName}
                     </span>
-                  </span>
+                  </button>
 
                   <span className="flex flex-col items-center justify-center leading-tight">
                     <span className="font-mono text-sm text-ink tnum">
@@ -159,16 +183,20 @@ export function UpcomingMatchesDrawer({
                     </span>
                   </span>
 
-                  <span className="flex flex-col items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handleTeamClick}
+                    className="group flex cursor-pointer flex-col items-center gap-1"
+                  >
                     <TeamCrest teamId={away.id} className="size-7" />
-                    <span className="truncate font-display text-sm font-medium text-ink">
+                    <span className="truncate font-display text-sm font-medium text-ink group-hover:underline">
                       {away.shortName}
                     </span>
-                  </span>
+                  </button>
                   <span className="font-mono text-xs text-muted-foreground tnum">
                     {place(results, away.id)}
                   </span>
-                </button>
+                </div>
               </div>
             );
           })}

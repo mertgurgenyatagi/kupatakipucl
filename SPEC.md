@@ -58,7 +58,7 @@ If someone signs up but never submits a prediction, they still appear in the par
 - No prize on the line — bragging rights only. Fine to say so in the copy.
 - **Real first + last name only — no nicknames/handles.**
 - Email address (from Google login) is **never shown to other users** — only name + photo are public.
-- **No per-profile survey flair** — background-survey answers (Süper Lig team, Messi/Ronaldo, etc.) stay purely aggregated (§8d) and are never attached to an individual's public name/profile.
+- ~~No per-profile survey flair~~ **REVERSED 2026-07-23**: background-survey answers (Süper Lig team, Messi/Ronaldo, etc.) are now shown per-participant in the leaderboard's participant popup, visible to any signed-in participant — not aggregate-only as originally decided across Rounds 5/8. Mert's explicit call. `surveyResponses/{uid}` read access loosened to `if request.auth != null` accordingly (firestore.rules).
 - **Profile pictures: unmoderated** — same trust-the-friend-group stance as chat/forum (§6).
 - **Clean fresh start** — no references anywhere to the previous #kupatakip edition (no "season 2," no returning-player callouts), even though Claude may borrow *functional* feature ideas from it (see §3, §8d) — borrowing UI concepts is fine, branding/history references are not.
 

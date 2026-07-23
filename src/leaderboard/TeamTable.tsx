@@ -48,6 +48,10 @@ function signed(n: number): string {
   return n > 0 ? `+${n}` : String(n);
 }
 
+/** Clickable, but intentionally does nothing yet — reserved for future
+ *  team-detail views. */
+function handleTeamRowClick() {}
+
 /**
  * One 18-row half of the split table (1-18 left, 19-36 right), built as a
  * CSS Grid "table" (role="table"/"row"/"columnheader"/"cell" on plain divs)
@@ -105,7 +109,7 @@ function TeamTableHalf({
               onClick={() => onSort("position")}
               aria-pressed={sortKey === "position"}
               className={cn(
-                "absolute inset-0 flex items-center gap-1 pl-3 font-mono text-[0.6rem] font-medium tracking-[0.18em] uppercase transition-colors duration-300 ease-[var(--ease-cotton)] outline-none hover:bg-accent focus-visible:text-ink",
+                "absolute inset-0 flex items-center gap-1 pl-3 font-mono text-[0.6rem] font-medium tracking-[0.18em] uppercase transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-accent focus-visible:text-ink",
                 sortKey === "position"
                   ? "text-ink"
                   : "text-muted-foreground hover:text-ink"
@@ -134,7 +138,7 @@ function TeamTableHalf({
                   onClick={() => onSort(col.key)}
                   aria-pressed={active}
                   className={cn(
-                    "absolute inset-0 flex items-center justify-end gap-0.5 px-1 font-mono text-[0.6rem] font-medium tracking-[0.18em] uppercase transition-colors duration-300 ease-[var(--ease-cotton)] outline-none hover:bg-accent focus-visible:text-ink",
+                    "absolute inset-0 flex items-center justify-end gap-0.5 px-1 font-mono text-[0.6rem] font-medium tracking-[0.18em] uppercase transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-accent focus-visible:text-ink",
                     active ? "text-ink" : "text-muted-foreground hover:text-ink"
                   )}
                 >
@@ -153,7 +157,7 @@ function TeamTableHalf({
           const band = result ? qualificationBand(result.position) : null;
           const highlighted = highlightedTeamIds?.has(team.id) ?? false;
           const cell = cn(
-            "flex items-center border-b border-border/50 py-1 transition-colors duration-300 ease-[var(--ease-cotton)] animate-cotton-rise group-hover:bg-accent",
+            "flex items-center border-b border-border/50 py-1 transition-colors duration-150 ease-[var(--ease-cotton)] animate-cotton-rise group-hover:bg-accent",
             !result && "opacity-55",
             highlighted && "bg-brass/[0.12]"
           );
@@ -162,7 +166,8 @@ function TeamTableHalf({
             <div
               key={team.id}
               role="row"
-              className="group contents"
+              onClick={handleTeamRowClick}
+              className="group contents cursor-pointer"
               style={{ animationDelay: `${Math.min(index * 16, 500)}ms` }}
             >
               {/* Sıra — a hard-left/rounded-right oblong to the numeral's
@@ -298,13 +303,14 @@ export function TeamTable({ results, highlightedTeamIds }: TeamTableProps) {
                 <div role="rowgroup" className="contents">
                   {half.map((team, index) => {
                     const cell = cn(
-                      "flex items-center border-b border-border/50 py-1 transition-colors duration-300 ease-[var(--ease-cotton)] animate-cotton-rise group-hover:bg-accent"
+                      "flex items-center border-b border-border/50 py-1 transition-colors duration-150 ease-[var(--ease-cotton)] animate-cotton-rise group-hover:bg-accent"
                     );
                     return (
                       <div
                         key={team.id}
                         role="row"
-                        className="group contents"
+                        onClick={handleTeamRowClick}
+                        className="group contents cursor-pointer"
                         style={{ animationDelay: `${Math.min(index * 16, 500)}ms` }}
                       >
                         <div role="cell" className={cn(cell, "min-w-0 pl-3")}>
