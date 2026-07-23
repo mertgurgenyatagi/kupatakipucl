@@ -176,6 +176,7 @@ export function LeaderboardPage() {
         results={results}
         onOpenChange={handleTeamPopupOpenChange}
         onSelectParticipant={handleSelectParticipant}
+        onSelectTeam={handleSelectTeam}
       />
     </div>
   );

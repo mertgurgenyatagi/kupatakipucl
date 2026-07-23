@@ -5,7 +5,6 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
-  type MouseEvent,
 } from "react";
 import { XIcon } from "lucide-react";
 import { TEAM_BY_ID, teamCrestSrc } from "../predictions/teams";
@@ -43,6 +42,9 @@ interface TeamPopupProps {
    *  dossiers cross-link (TeamTable.tsx and ParticipantPopup.tsx's own
    *  predictions grid both already lead here via `onSelectTeam`). */
   onSelectParticipant: (uid: string) => void;
+  /** Clicking a team in match history re-opens this same popup for that
+   *  other team. */
+  onSelectTeam: (teamId: string) => void;
   /** Overrides for the tunable layout constants (column widths, row sizes,
    *  marker size, etc.) — defaults to the exact shipped look
    *  (DEFAULT_TEAM_POPUP_TUNING) when omitted, which is every real call
@@ -135,20 +137,14 @@ function handleMatchupKeyDown(e: KeyboardEvent) {
   }
 }
 
-/** The crest+code for one side, its own clickable target broken out of the
- *  row's big clickable zone (stops propagation) — same "one object, name
- *  underlines whenever any part of it is hovered" spec as
- *  UpcomingMatchesDrawer's own team buttons. */
-function handleMatchTeamClick(e: MouseEvent) {
-  e.stopPropagation();
-}
-
 /** One match row — copied from UpcomingMatchesDrawer's own construct
  *  (crest-over-code stacked, centered date/time, the whole row and each
  *  side's crest+code independently clickable) and reworked for this
  *  context: literal home/away like the source, each side's own goal tally
  *  on the outer edges instead of live-table place, and the time swaps for
- *  a result dot once the fixture is decided. */
+ *  a result dot once the fixture is decided. Unlike UpcomingMatchesDrawer's
+ *  team buttons (which do nothing yet), these actually navigate — clicking
+ *  either side re-opens this popup for that team. */
 function MatchRow({
   homeId,
   awayId,
@@ -157,6 +153,7 @@ function MatchRow({
   kickoffUtc,
   result,
   t,
+  onSelectTeam,
 }: {
   homeId: string;
   awayId: string;
@@ -165,6 +162,7 @@ function MatchRow({
   kickoffUtc: string;
   result: ResultLetter | null;
   t: TeamPopupTuning;
+  onSelectTeam: (teamId: string) => void;
 }) {
   const home = TEAM_BY_ID[homeId];
   const away = TEAM_BY_ID[awayId];
@@ -186,7 +184,10 @@ function MatchRow({
       <span className="text-right font-mono text-[0.65rem] text-muted-foreground tnum">{homeGoals ?? ""}</span>
       <button
         type="button"
-        onClick={handleMatchTeamClick}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelectTeam(homeId);
+        }}
         className="group flex min-w-0 cursor-pointer flex-col items-center gap-1"
       >
         <TeamCrest teamId={homeId} style={crestStyle} />
@@ -206,7 +207,10 @@ function MatchRow({
 
       <button
         type="button"
-        onClick={handleMatchTeamClick}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelectTeam(awayId);
+        }}
         className="group flex min-w-0 cursor-pointer flex-col items-center gap-1"
       >
         <TeamCrest teamId={awayId} style={crestStyle} />
@@ -455,6 +459,7 @@ export const TeamPopup = memo(function TeamPopup({
   results,
   onOpenChange,
   onSelectParticipant,
+  onSelectTeam,
   tuning,
 }: TeamPopupProps) {
   const t: TeamPopupTuning = { ...DEFAULT_TEAM_POPUP_TUNING, ...tuning };
@@ -583,13 +588,13 @@ export const TeamPopup = memo(function TeamPopup({
 
                 <div className="flex min-h-0 flex-col gap-3">
                   <div className={cn(WIDGET_BLOCK, "min-h-0 flex-1")}>
-                    <StatList label="Gol Krallığı" rows={dossier.topScorers} badge={false} t={t} />
+                    <StatList label="GOL" rows={dossier.topScorers} badge={false} t={t} />
                   </div>
                   <div className={cn(WIDGET_BLOCK, "min-h-0 flex-1")}>
-                    <StatList label="Asist Krallığı" rows={dossier.topAssisters} badge={false} t={t} />
+                    <StatList label="ASİST" rows={dossier.topAssisters} badge={false} t={t} />
                   </div>
                   <div className={cn(WIDGET_BLOCK, "min-h-0 flex-1")}>
-                    <StatList label="En İyiler" rows={dossier.topRated} badge={true} t={t} />
+                    <StatList label="PERFORMANS" rows={dossier.topRated} badge={true} t={t} />
                   </div>
                 </div>
 
@@ -660,6 +665,7 @@ export const TeamPopup = memo(function TeamPopup({
                           kickoffUtc={nextMatch.kickoffUtc}
                           result={null}
                           t={t}
+                          onSelectTeam={onSelectTeam}
                         />
                       </div>
                     ) : (
@@ -683,6 +689,7 @@ export const TeamPopup = memo(function TeamPopup({
                               kickoffUtc={m.kickoffUtc}
                               result={m.result}
                               t={t}
+                              onSelectTeam={onSelectTeam}
                             />
                           </div>
                         ))

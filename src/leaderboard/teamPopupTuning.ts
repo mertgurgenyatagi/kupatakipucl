@@ -53,7 +53,7 @@ export const DEFAULT_TEAM_POPUP_TUNING: TeamPopupTuning = {
   markerFontSize: 15,
   pitchFill: "#1E5631",
   rowAvatar: 1.9,
-  rowPy: 0.54,
+  rowPy: 0.281,
   rowGap: 0.76,
   fsName: 0.8,
   fsValue: 0.92,

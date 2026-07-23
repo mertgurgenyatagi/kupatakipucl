@@ -178,6 +178,7 @@ export function TeamPopupTuner() {
           results={FAKE_RESULTS}
           onOpenChange={() => {}}
           onSelectParticipant={() => {}}
+          onSelectTeam={() => {}}
           tuning={tuning}
         />
       </div>

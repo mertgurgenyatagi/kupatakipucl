@@ -61,6 +61,7 @@ describe("TeamPopup", () => {
         results={{}}
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
+        onSelectTeam={() => {}}
       />
     );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -75,6 +76,7 @@ describe("TeamPopup", () => {
         results={results}
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
+        onSelectTeam={() => {}}
       />
     );
     expect(await screen.findByText(TEAM.name)).toBeInTheDocument();
@@ -91,6 +93,7 @@ describe("TeamPopup", () => {
         results={{}}
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
+        onSelectTeam={() => {}}
       />
     );
     expect(await screen.findByRole("img", { name: /Muhtemel 11/ })).toBeInTheDocument();
@@ -104,11 +107,12 @@ describe("TeamPopup", () => {
         results={{}}
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
+        onSelectTeam={() => {}}
       />
     );
-    expect(await screen.findByText("Gol Krallığı")).toBeInTheDocument();
-    expect(screen.getByText("Asist Krallığı")).toBeInTheDocument();
-    expect(screen.getByText("En İyiler")).toBeInTheDocument();
+    expect(await screen.findByText("GOL")).toBeInTheDocument();
+    expect(screen.getByText("ASİST")).toBeInTheDocument();
+    expect(screen.getByText("PERFORMANS")).toBeInTheDocument();
   });
 
   it("lists participants who predicted this team and calls onSelectParticipant when one is clicked", async () => {
@@ -120,6 +124,7 @@ describe("TeamPopup", () => {
         results={{}}
         onOpenChange={() => {}}
         onSelectParticipant={onSelectParticipant}
+        onSelectTeam={() => {}}
       />
     );
     const adaButton = (await screen.findByText("Ada Lovelace")).closest("button")!;
@@ -135,6 +140,7 @@ describe("TeamPopup", () => {
         results={{}}
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
+        onSelectTeam={() => {}}
       />
     );
     expect(await screen.findByText("Bu takımı tahmin eden katılımcı yok.")).toBeInTheDocument();
@@ -152,6 +158,7 @@ describe("TeamPopup", () => {
         results={{}}
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
+        onSelectTeam={() => {}}
       />
     );
     const nextOpponent = TEAM_BY_ID_SHORT(TEAM_FIXTURES[1].homeTeamId === TEAM.id ? TEAM_FIXTURES[1].awayTeamId : TEAM_FIXTURES[1].homeTeamId);
@@ -169,6 +176,26 @@ describe("TeamPopup", () => {
     expect(screen.getByRole("img", { name: expectedResult })).toBeInTheDocument();
   });
 
+  it("clicking a team in match history calls onSelectTeam with that team's id", async () => {
+    const onSelectTeam = vi.fn();
+    render(
+      <TeamPopup
+        teamId={TEAM.id}
+        entries={[entryA]}
+        results={{}}
+        onOpenChange={() => {}}
+        onSelectParticipant={() => {}}
+        onSelectTeam={onSelectTeam}
+      />
+    );
+    const nextOpponentId =
+      TEAM_FIXTURES[0].homeTeamId === TEAM.id ? TEAM_FIXTURES[0].awayTeamId : TEAM_FIXTURES[0].homeTeamId;
+    const nextOpponentCode = TEAM_BY_ID_SHORT(nextOpponentId);
+    const opponentButton = (await screen.findByText(nextOpponentCode)).closest("button")!;
+    fireEvent.click(opponentButton);
+    expect(onSelectTeam).toHaveBeenCalledWith(nextOpponentId);
+  });
+
   it("calls onOpenChange(false) when the close button is activated", async () => {
     const onOpenChange = vi.fn();
     render(
@@ -178,6 +205,7 @@ describe("TeamPopup", () => {
         results={{}}
         onOpenChange={onOpenChange}
         onSelectParticipant={() => {}}
+        onSelectTeam={() => {}}
       />
     );
     fireEvent.click(await screen.findByRole("button", { name: "Kapat" }));
@@ -192,6 +220,7 @@ describe("TeamPopup", () => {
         results={{}}
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
+        onSelectTeam={() => {}}
       />
     );
     await screen.findByText(TEAM.name);
