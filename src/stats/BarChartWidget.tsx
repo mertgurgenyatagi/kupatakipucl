@@ -6,7 +6,7 @@ export interface BarDatum {
 export function BarChartWidget({ label, bars }: { label: string; bars: BarDatum[] }) {
   const max = Math.max(1, ...bars.map((bar) => bar.count));
   return (
-    <div className="flex min-h-0 flex-col">
+    <div className="flex flex-col">
       <span className="border-b border-border/40 pb-2 font-mono text-[0.68rem] tracking-[0.18em] text-muted-foreground uppercase">
         {label}
       </span>

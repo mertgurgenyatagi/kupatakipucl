@@ -22,7 +22,7 @@ function initials(name: string): string {
 
 export function RankedStatList({ label, rows }: { label: string; rows: RankedRow[] }) {
   return (
-    <div className="flex min-h-0 flex-col">
+    <div className="flex flex-col">
       <span className="border-b border-border/40 pb-2 font-mono text-[0.68rem] tracking-[0.18em] text-muted-foreground uppercase">
         {label}
       </span>
