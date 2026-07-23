@@ -38,16 +38,16 @@ export interface StatsPageTuning {
 
 // Tuned live via StatsPageTuner.tsx and pasted back in.
 export const DEFAULT_STATS_PAGE_TUNING: StatsPageTuning = {
-  columnGap: 1.25,
-  widgetGap: 1,
-  gridPadding: 1,
-  labelFontSize: 0.68,
-  rowAvatar: 1.75,
-  rowPy: 0.375,
-  rowFontSize: 0.8125,
-  barHeight: 0.75,
-  barRowGap: 0.5,
-  barFontSize: 0.75,
+  columnGap: 0.9,
+  widgetGap: 1.05,
+  gridPadding: 1.8,
+  labelFontSize: 0.58,
+  rowAvatar: 1.15,
+  rowPy: 0.34,
+  rowFontSize: 0.78,
+  barHeight: 0.55,
+  barRowGap: 0.1,
+  barFontSize: 0.62,
   barFill: "#1F8A65",
-  numberFontSize: 2.25,
+  numberFontSize: 3,
 };
