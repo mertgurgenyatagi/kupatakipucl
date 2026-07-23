@@ -17,76 +17,75 @@ import { useTournamentPhase } from "./useTournamentPhase";
 
 type SnapshotCallback = (snapshot: { exists: () => boolean; data: () => unknown }) => void;
 
-function setDebugDate(date: string) {
-  window.history.pushState({}, "", `?debugDate=${date}`);
-}
-
 describe("useTournamentPhase", () => {
-  let capturedOnNext: SnapshotCallback | undefined;
+  let callbacks: Record<string, SnapshotCallback>;
 
   beforeEach(() => {
     mockOnSnapshot.mockReset();
     mockUnsubscribe.mockReset();
-    capturedOnNext = undefined;
-    mockOnSnapshot.mockImplementation((_doc: unknown, onNext: SnapshotCallback) => {
-      capturedOnNext = onNext;
+    callbacks = {};
+    mockOnSnapshot.mockImplementation((docRef: { collection: string; id: string }, onNext: SnapshotCallback) => {
+      callbacks[`${docRef.collection}/${docRef.id}`] = onNext;
       return mockUnsubscribe;
     });
   });
 
   afterEach(() => {
-    window.history.pushState({}, "", "/");
-    vi.useRealTimers();
     vi.unstubAllEnvs();
   });
 
-  it("reports pre before the cutoff via debug override", () => {
-    setDebugDate("2026-01-01");
+  function fireTournamentState(data: unknown) {
+    act(() => {
+      callbacks["tournamentState/current"]({ exists: () => true, data: () => data });
+    });
+  }
+
+  function fireDevConfig(data: unknown) {
+    act(() => {
+      callbacks["devConfig/state"]({ exists: () => true, data: () => data });
+    });
+  }
+
+  it("defaults to notstarted before the tournamentState doc arrives", () => {
     const { result } = renderHook(() => useTournamentPhase());
-    expect(result.current).toBe("pre");
+    expect(result.current).toBe("notstarted");
   });
 
-  it("reports post at/after the cutoff via debug override", () => {
-    setDebugDate("2026-09-08");
+  it("defaults to notstarted when the tournamentState doc doesn't exist", () => {
     const { result } = renderHook(() => useTournamentPhase());
-    expect(result.current).toBe("post");
+    act(() => {
+      callbacks["tournamentState/current"]({ exists: () => false, data: () => ({}) });
+    });
+    expect(result.current).toBe("notstarted");
   });
 
-  it("ignores debug override when DEV is false", () => {
-    vi.useFakeTimers({ now: new Date("2026-01-01T00:00:00Z") });
+  it("reflects the real phase once the tournamentState doc loads", () => {
+    const { result } = renderHook(() => useTournamentPhase());
+    fireTournamentState({ phase: "knockout" });
+    expect(result.current).toBe("knockout");
+  });
+
+  it("dev panel override forces a different phase even when the real doc says otherwise", () => {
+    const { result } = renderHook(() => useTournamentPhase());
+    fireTournamentState({ phase: "leaguephase" });
+    expect(result.current).toBe("leaguephase");
+    fireDevConfig({ phaseOverride: "preknockout" });
+    expect(result.current).toBe("preknockout");
+  });
+
+  it("ignores the dev override when DEV is false", () => {
     vi.stubEnv("DEV", false);
-    setDebugDate("2026-09-08");
     const { result } = renderHook(() => useTournamentPhase());
-    // With DEV false, debug override is ignored, real Date is used (frozen before cutoff)
-    expect(result.current).toBe("pre");
+    fireTournamentState({ phase: "leaguephase" });
+    // useDevConfig itself never subscribes to devConfig/state when DEV is
+    // false, so there's no override callback to fire here at all.
+    expect(result.current).toBe("leaguephase");
   });
 
-  it("dev panel override forces post even when debugDate says pre", async () => {
-    setDebugDate("2026-01-01");
+  it("falls back to the real doc when the dev config has no explicit override", () => {
     const { result } = renderHook(() => useTournamentPhase());
-    expect(result.current).toBe("pre");
-    act(() => {
-      capturedOnNext!({ exists: () => true, data: () => ({ tournamentActive: true, currentDateOverride: null }) });
-    });
-    expect(result.current).toBe("post");
-  });
-
-  it("dev panel override forces pre even when debugDate says post", async () => {
-    setDebugDate("2026-09-08");
-    const { result } = renderHook(() => useTournamentPhase());
-    expect(result.current).toBe("post");
-    act(() => {
-      capturedOnNext!({ exists: () => true, data: () => ({ tournamentActive: false, currentDateOverride: null }) });
-    });
-    expect(result.current).toBe("pre");
-  });
-
-  it("falls back to debugDate when the dev config has no explicit override", () => {
-    setDebugDate("2026-09-08");
-    const { result } = renderHook(() => useTournamentPhase());
-    act(() => {
-      capturedOnNext!({ exists: () => true, data: () => ({ tournamentActive: null, currentDateOverride: null }) });
-    });
-    expect(result.current).toBe("post");
+    fireTournamentState({ phase: "preknockout" });
+    fireDevConfig({ phaseOverride: null });
+    expect(result.current).toBe("preknockout");
   });
 });

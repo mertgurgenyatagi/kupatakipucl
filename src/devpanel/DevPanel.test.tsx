@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
 const mockUseDevConfig = vi.fn();
-const mockSetTournamentActive = vi.fn();
+const mockSetPhaseOverride = vi.fn();
 const mockSetCurrentDateOverride = vi.fn();
 const mockSetLoggedInOverride = vi.fn();
 const mockUseDevMatches = vi.fn();
@@ -10,7 +10,7 @@ const mockSetMatchOutcome = vi.fn();
 
 vi.mock("./useDevConfig", () => ({
   useDevConfig: () => mockUseDevConfig(),
-  setTournamentActive: (...args: unknown[]) => mockSetTournamentActive(...args),
+  setPhaseOverride: (...args: unknown[]) => mockSetPhaseOverride(...args),
   setCurrentDateOverride: (...args: unknown[]) => mockSetCurrentDateOverride(...args),
   setLoggedInOverride: (...args: unknown[]) => mockSetLoggedInOverride(...args),
 }));
@@ -25,12 +25,12 @@ import { FIXTURES } from "./fixtures";
 
 describe("DevPanel", () => {
   beforeEach(() => {
-    mockSetTournamentActive.mockReset();
+    mockSetPhaseOverride.mockReset();
     mockSetCurrentDateOverride.mockReset();
     mockSetLoggedInOverride.mockReset();
     mockSetMatchOutcome.mockReset();
     mockUseDevConfig.mockReturnValue({
-      config: { tournamentActive: null, currentDateOverride: null, loggedInOverride: null },
+      config: { phaseOverride: null, currentDateOverride: null, loggedInOverride: null },
       loading: false,
     });
     mockUseDevMatches.mockReturnValue({ outcomes: {}, loading: false, refetch: vi.fn() });
@@ -38,7 +38,7 @@ describe("DevPanel", () => {
 
   it("renders nothing while config or matches are loading", () => {
     mockUseDevConfig.mockReturnValue({
-      config: { tournamentActive: null, currentDateOverride: null, loggedInOverride: null },
+      config: { phaseOverride: null, currentDateOverride: null, loggedInOverride: null },
       loading: true,
     });
     const { container } = render(<DevPanel />);
@@ -59,10 +59,10 @@ describe("DevPanel", () => {
     expect(screen.getAllByRole("combobox")).toHaveLength(144);
   });
 
-  it("calls setTournamentActive(true) when 'Başladı' is clicked", () => {
+  it("calls setPhaseOverride('leaguephase') when 'Lig Aşaması' is clicked", () => {
     render(<DevPanel />);
-    fireEvent.click(screen.getByText("Başladı"));
-    expect(mockSetTournamentActive).toHaveBeenCalledWith(true);
+    fireEvent.click(screen.getByText("Lig Aşaması"));
+    expect(mockSetPhaseOverride).toHaveBeenCalledWith("leaguephase");
   });
 
   it("shows the auto-derived current date as 'not played yet' when nothing is decided", () => {

@@ -14,7 +14,7 @@ vi.mock("firebase/firestore", () => ({
 
 vi.mock("../firebase", () => ({ db: {} }));
 
-import { useDevConfig, setTournamentActive, setCurrentDateOverride, setLoggedInOverride } from "./useDevConfig";
+import { useDevConfig, setPhaseOverride, setCurrentDateOverride, setLoggedInOverride } from "./useDevConfig";
 
 type SnapshotCallback = (snapshot: { exists: () => boolean; data: () => unknown }) => void;
 
@@ -31,14 +31,14 @@ describe("useDevConfig", () => {
     });
   });
 
-  it("defaults to tournamentActive=null, currentDateOverride=null, loggedInOverride=null before any doc exists", async () => {
+  it("defaults to phaseOverride=null, currentDateOverride=null, loggedInOverride=null before any doc exists", async () => {
     const { result } = renderHook(() => useDevConfig());
     act(() => {
       capturedOnNext({ exists: () => false, data: () => ({}) });
     });
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.config).toEqual({
-      tournamentActive: null,
+      phaseOverride: null,
       currentDateOverride: null,
       loggedInOverride: null,
     });
@@ -47,18 +47,18 @@ describe("useDevConfig", () => {
   it("reflects the stored config once the doc arrives", async () => {
     const { result } = renderHook(() => useDevConfig());
     act(() => {
-      capturedOnNext({ exists: () => true, data: () => ({ tournamentActive: true, currentDateOverride: "2026-10-01" }) });
+      capturedOnNext({ exists: () => true, data: () => ({ phaseOverride: "knockout", currentDateOverride: "2026-10-01" }) });
     });
-    await waitFor(() => expect(result.current.config.tournamentActive).toBe(true));
+    await waitFor(() => expect(result.current.config.phaseOverride).toBe("knockout"));
     expect(result.current.config.currentDateOverride).toBe("2026-10-01");
   });
 
   it("fills in missing fields with defaults when the doc is partial", async () => {
     const { result } = renderHook(() => useDevConfig());
     act(() => {
-      capturedOnNext({ exists: () => true, data: () => ({ tournamentActive: false }) });
+      capturedOnNext({ exists: () => true, data: () => ({ phaseOverride: "leaguephase" }) });
     });
-    await waitFor(() => expect(result.current.config.tournamentActive).toBe(false));
+    await waitFor(() => expect(result.current.config.phaseOverride).toBe("leaguephase"));
     expect(result.current.config.currentDateOverride).toBeNull();
   });
 
@@ -69,15 +69,15 @@ describe("useDevConfig", () => {
   });
 });
 
-describe("setTournamentActive", () => {
+describe("setPhaseOverride", () => {
   beforeEach(() => {
     mockSetDoc.mockReset();
   });
 
-  it("writes tournamentActive with merge:true", async () => {
+  it("writes phaseOverride with merge:true", async () => {
     mockSetDoc.mockResolvedValue(undefined);
-    await setTournamentActive(true);
-    expect(mockSetDoc).toHaveBeenCalledWith(expect.anything(), { tournamentActive: true }, { merge: true });
+    await setPhaseOverride("knockout");
+    expect(mockSetDoc).toHaveBeenCalledWith(expect.anything(), { phaseOverride: "knockout" }, { merge: true });
   });
 });
 

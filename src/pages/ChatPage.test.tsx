@@ -36,20 +36,20 @@ describe("ChatPage", () => {
   });
 
   it("shows the blocked message when the page isn't allowed for this state", () => {
-    mockUseVisibilityState.mockReturnValue("NST_NLI");
+    mockUseVisibilityState.mockReturnValue("loggedout_notstarted");
     render(<ChatPage />);
     expect(screen.getByText("This section isn't available right now.")).toBeInTheDocument();
   });
 
   it("renders nothing while messages or players are loading", () => {
-    mockUseVisibilityState.mockReturnValue("NST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUseMessages.mockReturnValue({ messages: [], loading: true });
     const { container } = render(<ChatPage />);
     expect(container).toBeEmptyDOMElement();
   });
 
   it("renders ChatRoom with the current user's uid once loaded", () => {
-    mockUseVisibilityState.mockReturnValue("ST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     render(<ChatPage />);
     expect(screen.getByText("chat-room:uid1")).toBeInTheDocument();
   });

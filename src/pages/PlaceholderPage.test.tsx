@@ -10,13 +10,13 @@ vi.mock("../state/useVisibilityState", () => ({
 
 describe("PlaceholderPage", () => {
   it("shows the coming-soon label when the page is allowed for the current state", () => {
-    mockUseVisibilityState.mockReturnValue("ST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     render(<PlaceholderPage page="leaderboard" label="Leaderboard" />);
     expect(screen.getByText("Leaderboard — coming soon.")).toBeInTheDocument();
   });
 
   it("shows a blocked message when the page is not allowed for the current state", () => {
-    mockUseVisibilityState.mockReturnValue("NST_NLI");
+    mockUseVisibilityState.mockReturnValue("loggedout_notstarted");
     render(<PlaceholderPage page="leaderboard" label="Leaderboard" />);
     expect(
       screen.getByText("This section isn't available right now.")

@@ -49,14 +49,18 @@ export function PredictionsPage() {
   const currentPrediction = saved ?? prediction;
   const uid = user!.uid;
 
-  if (state === "ST_LI") {
+  // Preserves the exact pre-refactor behavior (locked once "started", editable
+  // before) — the nuanced unlock-during-preknockout schedule described in
+  // onboarding/pagemap-questionnaires/pagemap-round-01.md (Q8) is a real,
+  // still-open follow-up, not implemented here.
+  if (state !== "loggedin_notstarted") {
     if (!currentPrediction) {
       return <p>Bir tahmin göndermediniz.</p>;
     }
     return <RankingList ranking={currentPrediction.ranking} />;
   }
 
-  // state === "NST_LI" from here down
+  // state === "loggedin_notstarted" from here down
 
   if (!currentPrediction && uiStep === "idle") {
     return (

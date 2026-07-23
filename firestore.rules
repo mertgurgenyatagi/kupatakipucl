@@ -44,6 +44,18 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    // Tournament phase (src/tournament/useTournamentPhase.ts): the single
+    // manual admin-set value driving notstarted/leaguephase/preknockout/
+    // knockout site-wide (SPEC decision 2026-07-23 — pagemap intake round 1).
+    // Public read (even logged-out visitors need to know the phase to decide
+    // what to show). No admin UI (SPEC.md §7b, same stance as `results`) —
+    // set directly via the Firebase console. Write left open to any signed-in
+    // user for now, same trust-the-friend-group convention as `results`.
+    match /tournamentState/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
     // Dev-only tooling (src/devpanel): simulates tournament phase/date and
     // match outcomes so timing-dependent features can be tested without
     // waiting on real calendar dates. Pre-launch, no real users yet — same

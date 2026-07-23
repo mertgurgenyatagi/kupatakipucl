@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { TournamentPhase } from "../tournament/tournamentPhase";
 
 export interface DevConfig {
-  tournamentActive: boolean | null;
+  phaseOverride: TournamentPhase | null;
   currentDateOverride: string | null;
   loggedInOverride: boolean | null;
 }
 
 const DEFAULT_CONFIG: DevConfig = {
-  tournamentActive: null,
+  phaseOverride: null,
   currentDateOverride: null,
   loggedInOverride: null,
 };
@@ -43,8 +44,8 @@ export function useDevConfig() {
   return { config, loading };
 }
 
-export async function setTournamentActive(active: boolean | null): Promise<void> {
-  await setDoc(doc(db, "devConfig", "state"), { tournamentActive: active }, { merge: true });
+export async function setPhaseOverride(phase: TournamentPhase | null): Promise<void> {
+  await setDoc(doc(db, "devConfig", "state"), { phaseOverride: phase }, { merge: true });
 }
 
 export async function setCurrentDateOverride(date: string | null): Promise<void> {

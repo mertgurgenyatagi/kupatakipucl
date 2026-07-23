@@ -1,13 +1,18 @@
 import { TournamentPhase } from "../tournament/tournamentPhase";
 
-export type VisibilityState = "NST_NLI" | "NST_LI" | "ST_NLI" | "ST_LI";
+// Names match pagemap.xlsx's own column headers literally — no abbreviation
+// scheme layered on top (the old NST_NLI/ST_LI style is exactly what this
+// replaced; see onboarding/pagemap-questionnaires/pagemap-round-01.md).
+export type VisibilityState =
+  | "loggedout_notstarted"
+  | "loggedin_notstarted"
+  | "loggedout_leaguephase"
+  | "loggedin_leaguephase"
+  | "loggedout_preknockout"
+  | "loggedin_preknockout"
+  | "loggedout_knockout"
+  | "loggedin_knockout";
 
-export function getVisibilityState(
-  isLoggedIn: boolean,
-  phase: TournamentPhase
-): VisibilityState {
-  if (phase === "pre") {
-    return isLoggedIn ? "NST_LI" : "NST_NLI";
-  }
-  return isLoggedIn ? "ST_LI" : "ST_NLI";
+export function getVisibilityState(isLoggedIn: boolean, phase: TournamentPhase): VisibilityState {
+  return `${isLoggedIn ? "loggedin" : "loggedout"}_${phase}` as VisibilityState;
 }

@@ -52,38 +52,38 @@ describe("HomePage", () => {
   });
 
   it("renders nothing while any data source is still loading", () => {
-    mockUseVisibilityState.mockReturnValue("NST_NLI");
+    mockUseVisibilityState.mockReturnValue("loggedout_notstarted");
     mockUseResults.mockReturnValue({ results: {}, loading: true });
     const { container } = render(<HomePage />);
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("NST_NLI: shows the team table and a first-names-only player list, no leaderboard", () => {
-    mockUseVisibilityState.mockReturnValue("NST_NLI");
+  it("loggedout_notstarted: shows the team table and a first-names-only player list, no leaderboard", () => {
+    mockUseVisibilityState.mockReturnValue("loggedout_notstarted");
     render(<HomePage />);
     expect(screen.getByText("team-table")).toBeInTheDocument();
     expect(screen.getByText("player-list:false:hidden")).toBeInTheDocument();
     expect(screen.queryByText("leaderboard-table")).not.toBeInTheDocument();
   });
 
-  it("NST_LI: shows the team table and a full-name player list, no leaderboard", () => {
-    mockUseVisibilityState.mockReturnValue("NST_LI");
+  it("loggedin_notstarted: shows the team table and a full-name player list, no leaderboard", () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     render(<HomePage />);
     expect(screen.getByText("team-table")).toBeInTheDocument();
     expect(screen.getByText("player-list:true:hidden")).toBeInTheDocument();
     expect(screen.queryByText("leaderboard-table")).not.toBeInTheDocument();
   });
 
-  it("ST_NLI: shows the team table, a revealing first-names-only player list (logged out), and the leaderboard", () => {
-    mockUseVisibilityState.mockReturnValue("ST_NLI");
+  it("loggedout_leaguephase: shows the team table, a revealing first-names-only player list (logged out), and the leaderboard", () => {
+    mockUseVisibilityState.mockReturnValue("loggedout_leaguephase");
     render(<HomePage />);
     expect(screen.getByText("team-table")).toBeInTheDocument();
     expect(screen.getByText("player-list:false:revealed")).toBeInTheDocument();
     expect(screen.getByText("leaderboard-table")).toBeInTheDocument();
   });
 
-  it("ST_LI: shows the team table, a revealing full-name player list, and the leaderboard", () => {
-    mockUseVisibilityState.mockReturnValue("ST_LI");
+  it("loggedin_knockout: shows the team table, a revealing full-name player list, and the leaderboard", () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_knockout");
     render(<HomePage />);
     expect(screen.getByText("team-table")).toBeInTheDocument();
     expect(screen.getByText("player-list:true:revealed")).toBeInTheDocument();

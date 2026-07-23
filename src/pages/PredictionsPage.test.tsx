@@ -58,28 +58,28 @@ describe("PredictionsPage", () => {
   });
 
   it("shows the blocked message when the page isn't allowed for this state", () => {
-    mockUseVisibilityState.mockReturnValue("NST_NLI");
+    mockUseVisibilityState.mockReturnValue("loggedout_notstarted");
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
     render(<PredictionsPage />);
     expect(screen.getByText("This section isn't available right now.")).toBeInTheDocument();
   });
 
   it("renders nothing while the prediction is loading", () => {
-    mockUseVisibilityState.mockReturnValue("NST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({ prediction: null, loading: true });
     const { container } = render(<PredictionsPage />);
     expect(container).toBeEmptyDOMElement();
   });
 
   it("shows the survey first when there's no existing prediction (pre-tournament)", () => {
-    mockUseVisibilityState.mockReturnValue("NST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
     render(<PredictionsPage />);
     expect(screen.getByText("complete-survey")).toBeInTheDocument();
   });
 
   it("moves to the ranker after the survey completes, then saves survey+prediction on submit", async () => {
-    mockUseVisibilityState.mockReturnValue("NST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
     mockSavePrediction.mockResolvedValue({ ranking: ["z", "y", "x"], submittedAt: 1, updatedAt: 1 });
     render(<PredictionsPage />);
@@ -94,7 +94,7 @@ describe("PredictionsPage", () => {
   });
 
   it("shows an inline error and stays on the ranker when the first-time submission fails", async () => {
-    mockUseVisibilityState.mockReturnValue("NST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
     mockSaveSurveyResponse.mockResolvedValue(undefined);
     mockSavePrediction.mockRejectedValue(new Error("network"));
@@ -109,7 +109,7 @@ describe("PredictionsPage", () => {
   });
 
   it("shows the current ranking with an edit button when a prediction already exists (pre-tournament)", () => {
-    mockUseVisibilityState.mockReturnValue("NST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({
       prediction: { ranking: ["arsenal"], submittedAt: 1, updatedAt: 1 },
       loading: false,
@@ -121,7 +121,7 @@ describe("PredictionsPage", () => {
   });
 
   it("editing skips the survey, requires overwrite confirmation, and discarding leaves the original unchanged", () => {
-    mockUseVisibilityState.mockReturnValue("NST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({
       prediction: { ranking: ["arsenal"], submittedAt: 1, updatedAt: 1 },
       loading: false,
@@ -144,7 +144,7 @@ describe("PredictionsPage", () => {
   });
 
   it("confirming the overwrite saves the new ranking", async () => {
-    mockUseVisibilityState.mockReturnValue("NST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({
       prediction: { ranking: ["arsenal"], submittedAt: 1, updatedAt: 1 },
       loading: false,
@@ -160,7 +160,7 @@ describe("PredictionsPage", () => {
   });
 
   it("shows an inline error and keeps the confirm dialog open when the overwrite save fails, but Vazgeç still works", async () => {
-    mockUseVisibilityState.mockReturnValue("NST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({
       prediction: { ranking: ["arsenal"], submittedAt: 1, updatedAt: 1 },
       loading: false,
@@ -184,7 +184,7 @@ describe("PredictionsPage", () => {
   });
 
   it("shows the locked read-only ranking post-tournament", () => {
-    mockUseVisibilityState.mockReturnValue("ST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     mockUsePrediction.mockReturnValue({
       prediction: { ranking: ["arsenal"], submittedAt: 1, updatedAt: 1 },
       loading: false,
@@ -195,7 +195,7 @@ describe("PredictionsPage", () => {
   });
 
   it("shows a not-submitted message post-tournament when there's no prediction", () => {
-    mockUseVisibilityState.mockReturnValue("ST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
     render(<PredictionsPage />);
     expect(screen.getByText("Bir tahmin göndermediniz.")).toBeInTheDocument();

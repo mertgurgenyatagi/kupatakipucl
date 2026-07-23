@@ -1,23 +1,31 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { vi, describe, it, expect, afterEach } from "vitest";
+import { vi, describe, it, expect } from "vitest";
 import { AppShell } from "./AppShell";
 import { isPageAllowed, PageKey } from "../state/pageAccess";
-import { VisibilityState } from "../state/visibilityState";
+import { VisibilityState, getVisibilityState } from "../state/visibilityState";
+import { TournamentPhase } from "../tournament/tournamentPhase";
 
 const mockUseAuth = vi.fn();
+const mockUseTournamentPhase = vi.fn();
 
-const STATE_FIXTURES: { state: VisibilityState; user: { uid: string } | null; debugDate: string }[] = [
-  { state: "NST_NLI", user: null, debugDate: "2026-01-01" },
-  { state: "NST_LI", user: { uid: "1" }, debugDate: "2026-01-01" },
-  { state: "ST_NLI", user: null, debugDate: "2026-09-09" },
-  { state: "ST_LI", user: { uid: "1" }, debugDate: "2026-09-09" },
+const STATE_FIXTURES: { state: VisibilityState; user: { uid: string } | null; phase: TournamentPhase }[] = [
+  { state: "loggedout_notstarted", user: null, phase: "notstarted" },
+  { state: "loggedin_notstarted", user: { uid: "1" }, phase: "notstarted" },
+  { state: "loggedout_leaguephase", user: null, phase: "leaguephase" },
+  { state: "loggedin_leaguephase", user: { uid: "1" }, phase: "leaguephase" },
+  { state: "loggedout_preknockout", user: null, phase: "preknockout" },
+  { state: "loggedin_knockout", user: { uid: "1" }, phase: "knockout" },
 ];
 
 const GATED_PAGES: PageKey[] = ["predictions", "leaderboard", "chat", "forum", "stats"];
 
 vi.mock("../auth/AuthProvider", () => ({
   useAuth: () => mockUseAuth(),
+}));
+
+vi.mock("../tournament/useTournamentPhase", () => ({
+  useTournamentPhase: () => mockUseTournamentPhase(),
 }));
 
 vi.mock("../auth/LoginButton", () => ({
@@ -27,10 +35,6 @@ vi.mock("../auth/LoginButton", () => ({
 vi.mock("../auth/LogoutButton", () => ({
   LogoutButton: () => <button>Sign out</button>,
 }));
-
-function setDebugDate(date: string) {
-  window.history.pushState({}, "", `?debugDate=${date}`);
-}
 
 function renderShell() {
   render(
@@ -43,13 +47,9 @@ function renderShell() {
 }
 
 describe("AppShell nav gating", () => {
-  afterEach(() => {
-    window.history.pushState({}, "", "/");
-  });
-
   it("shows only Home when not started and not logged in", () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
-    setDebugDate("2026-01-01");
+    mockUseTournamentPhase.mockReturnValue("notstarted");
     renderShell();
     expect(screen.getByText("Home")).toBeInTheDocument();
     expect(screen.queryByText("Chat")).not.toBeInTheDocument();
@@ -61,7 +61,7 @@ describe("AppShell nav gating", () => {
 
   it("shows predictions, chat and forum when not started but logged in", () => {
     mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
-    setDebugDate("2026-01-01");
+    mockUseTournamentPhase.mockReturnValue("notstarted");
     renderShell();
     expect(screen.getByText("Predictions")).toBeInTheDocument();
     expect(screen.getByText("Chat")).toBeInTheDocument();
@@ -70,29 +70,31 @@ describe("AppShell nav gating", () => {
     expect(screen.queryByText("Stats")).not.toBeInTheDocument();
   });
 
-  it("shows leaderboard and forum but not stats or chat when started and not logged in", () => {
+  it("shows leaderboard but not forum, stats or chat when started and not logged in", () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
-    setDebugDate("2026-09-09");
+    mockUseTournamentPhase.mockReturnValue("leaguephase");
     renderShell();
     expect(screen.getByText("Leaderboard")).toBeInTheDocument();
-    expect(screen.getByText("Forum")).toBeInTheDocument();
+    expect(screen.queryByText("Forum")).not.toBeInTheDocument();
     expect(screen.queryByText("Stats")).not.toBeInTheDocument();
     expect(screen.queryByText("Chat")).not.toBeInTheDocument();
     expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
   });
 
-  it("shows every link when started and logged in", () => {
+  it("shows every link when started (any of the three phases) and logged in", () => {
     mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
-    setDebugDate("2026-09-09");
-    renderShell();
-    for (const label of ["Predictions", "Leaderboard", "Chat", "Forum", "Stats"]) {
-      expect(screen.getByText(label)).toBeInTheDocument();
+    for (const phase of ["leaguephase", "preknockout", "knockout"] as TournamentPhase[]) {
+      mockUseTournamentPhase.mockReturnValue(phase);
+      renderShell();
+      for (const label of ["Predictions", "Leaderboard", "Chat", "Forum", "Stats"]) {
+        expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+      }
     }
   });
 
   it("shows LoginButton when logged out and LogoutButton when logged in", () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
-    setDebugDate("2026-01-01");
+    mockUseTournamentPhase.mockReturnValue("notstarted");
     renderShell();
     expect(screen.getByText("Sign in with Google")).toBeInTheDocument();
 
@@ -103,13 +105,10 @@ describe("AppShell nav gating", () => {
 });
 
 describe("NAV_LINKS matches PAGE_ACCESS", () => {
-  afterEach(() => {
-    window.history.pushState({}, "", "/");
-  });
-
-  it.each(STATE_FIXTURES)("shows exactly the pages isPageAllowed grants for $state", ({ user, state, debugDate }) => {
+  it.each(STATE_FIXTURES)("shows exactly the pages isPageAllowed grants for $state", ({ user, phase, state }) => {
+    expect(getVisibilityState(user !== null, phase)).toBe(state);
     mockUseAuth.mockReturnValue({ user, loading: false });
-    setDebugDate(debugDate);
+    mockUseTournamentPhase.mockReturnValue(phase);
     renderShell();
 
     const renderedPaths = screen

@@ -78,25 +78,25 @@ describe("StatsPage", () => {
     });
   });
 
-  it("blocks a page-not-allowed state, including logged-out visitors after the tournament has started (ST_NLI)", () => {
-    mockUseVisibilityState.mockReturnValue("NST_NLI");
+  it("blocks a page-not-allowed state, including logged-out visitors after the tournament has started", () => {
+    mockUseVisibilityState.mockReturnValue("loggedout_notstarted");
     const { rerender } = render(<StatsPage />);
     expect(screen.getByText("This section isn't available right now.")).toBeInTheDocument();
 
-    mockUseVisibilityState.mockReturnValue("ST_NLI");
+    mockUseVisibilityState.mockReturnValue("loggedout_leaguephase");
     rerender(<StatsPage />);
     expect(screen.getByText("This section isn't available right now.")).toBeInTheDocument();
   });
 
   it("renders nothing while any data source is still loading", () => {
-    mockUseVisibilityState.mockReturnValue("ST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     mockUsePlayers.mockReturnValue({ players: [], loading: true });
     const { container } = render(<StatsPage />);
     expect(container).toBeEmptyDOMElement();
   });
 
   it("renders all 7 tournament-stat widgets and 6 participant-stat widgets with computed data once loaded", () => {
-    mockUseVisibilityState.mockReturnValue("ST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     render(<StatsPage />);
 
     // Left: 3 existing dummy widgets, always 3 rows each.

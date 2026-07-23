@@ -24,19 +24,21 @@ describe("ForumPage", () => {
   });
 
   it("shows the blocked message when the page isn't allowed for this state", () => {
-    mockUseVisibilityState.mockReturnValue("NST_NLI");
+    mockUseVisibilityState.mockReturnValue("loggedout_notstarted");
     render(<ForumPage />);
     expect(screen.getByText("This section isn't available right now.")).toBeInTheDocument();
   });
 
-  it("renders Forum with uid=null when logged out but allowed (ST_NLI)", () => {
-    mockUseVisibilityState.mockReturnValue("ST_NLI");
+  it("shows the blocked message for a logged-out visitor even once the tournament's started", () => {
+    // Forum is logged-in-only in every phase now (pagemap round 1, Q3) —
+    // previously ST_NLI was allowed; that combination is blocked today.
+    mockUseVisibilityState.mockReturnValue("loggedout_leaguephase");
     render(<ForumPage />);
-    expect(screen.getByText("forum:null")).toBeInTheDocument();
+    expect(screen.getByText("This section isn't available right now.")).toBeInTheDocument();
   });
 
   it("renders Forum with the current uid when logged in", () => {
-    mockUseVisibilityState.mockReturnValue("NST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUseAuth.mockReturnValue({ user: { uid: "uid1" } });
     render(<ForumPage />);
     expect(screen.getByText("forum:uid1")).toBeInTheDocument();

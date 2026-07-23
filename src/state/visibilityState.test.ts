@@ -1,20 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { getVisibilityState } from "./visibilityState";
+import { TournamentPhase } from "../tournament/tournamentPhase";
+
+const PHASES: TournamentPhase[] = ["notstarted", "leaguephase", "preknockout", "knockout"];
 
 describe("getVisibilityState", () => {
-  it("returns NST_NLI when pre-tournament and logged out", () => {
-    expect(getVisibilityState(false, "pre")).toBe("NST_NLI");
+  it.each(PHASES)("returns loggedout_%s when logged out", (phase) => {
+    expect(getVisibilityState(false, phase)).toBe(`loggedout_${phase}`);
   });
 
-  it("returns NST_LI when pre-tournament and logged in", () => {
-    expect(getVisibilityState(true, "pre")).toBe("NST_LI");
-  });
-
-  it("returns ST_NLI when post-tournament and logged out", () => {
-    expect(getVisibilityState(false, "post")).toBe("ST_NLI");
-  });
-
-  it("returns ST_LI when post-tournament and logged in", () => {
-    expect(getVisibilityState(true, "post")).toBe("ST_LI");
+  it.each(PHASES)("returns loggedin_%s when logged in", (phase) => {
+    expect(getVisibilityState(true, phase)).toBe(`loggedin_${phase}`);
   });
 });

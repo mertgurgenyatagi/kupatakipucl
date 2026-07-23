@@ -27,13 +27,13 @@ vi.mock("../tournament/useTournamentPhase", () => ({
 
 describe("LeaderboardPage", () => {
   beforeEach(() => {
-    mockUseVisibilityState.mockReturnValue("ST_LI");
+    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     mockUseResults.mockReturnValue({ results: {}, loading: false });
-    mockUseTournamentPhase.mockReturnValue("pre");
+    mockUseTournamentPhase.mockReturnValue("notstarted");
   });
 
   it("shows the blocked message when the page isn't allowed for this state", () => {
-    mockUseVisibilityState.mockReturnValue("NST_NLI");
+    mockUseVisibilityState.mockReturnValue("loggedout_notstarted");
     mockUseLeaderboard.mockReturnValue({ entries: [], loading: false });
     render(<LeaderboardPage />);
     expect(screen.getByText("This section isn't available right now.")).toBeInTheDocument();

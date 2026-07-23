@@ -158,7 +158,7 @@ export function LeaderboardPage() {
         <LeaderboardHero results={results} />
         <LeaderboardTable
           entries={entries}
-          revealCorrectness={phase === "post"}
+          revealCorrectness={phase !== "notstarted"}
           onHoverEntry={setHoveredUid}
           onSelectEntry={handleSelectParticipant}
         />

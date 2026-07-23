@@ -1,9 +1,9 @@
-// Turkey (Europe/Istanbul) has used a fixed UTC+3 offset with no DST since 2016,
-// so the cutoff can be a static UTC instant rather than needing a timezone library.
-const TOURNAMENT_START_UTC = new Date("2026-09-07T21:00:00Z"); // Sept 8, 2026 00:00 Istanbul
+// Four real phases, replacing the old date-driven "pre"/"post" split now
+// that the pagemap distinguishes league phase / pre-knockout / knockout —
+// see onboarding/pagemap-questionnaires/pagemap-round-01.md, Q1. Driven
+// entirely by a manually-set production value (tournament/useTournamentPhase.ts
+// reads it from Firestore), not a calendar cutoff — the real transition
+// dates aren't something the app can compute on its own.
+export type TournamentPhase = "notstarted" | "leaguephase" | "preknockout" | "knockout";
 
-export type TournamentPhase = "pre" | "post";
-
-export function getTournamentPhase(now: Date): TournamentPhase {
-  return now.getTime() >= TOURNAMENT_START_UTC.getTime() ? "post" : "pre";
-}
+export const STARTED_PHASES: readonly TournamentPhase[] = ["leaguephase", "preknockout", "knockout"];

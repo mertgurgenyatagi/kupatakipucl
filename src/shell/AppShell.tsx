@@ -12,27 +12,39 @@ interface NavLink {
   label: string;
 }
 
+// No nav distinction yet between league phase / pre-knockout / knockout —
+// all three started phases share the same link set per login state.
+const NOTSTARTED_LOGGEDOUT_LINKS: NavLink[] = [{ path: "/", label: "Home" }];
+const NOTSTARTED_LOGGEDIN_LINKS: NavLink[] = [
+  { path: "/", label: "Home" },
+  { path: "/predictions", label: "Predictions" },
+  { path: "/chat", label: "Chat" },
+  { path: "/forum", label: "Forum" },
+];
+// Forum dropped for logged-out visitors here (previously included) — round-1
+// pagemap answer: forum is logged-in-only in every phase now, no exceptions.
+const STARTED_LOGGEDOUT_LINKS: NavLink[] = [
+  { path: "/", label: "Home" },
+  { path: "/leaderboard", label: "Leaderboard" },
+];
+const STARTED_LOGGEDIN_LINKS: NavLink[] = [
+  { path: "/", label: "Home" },
+  { path: "/predictions", label: "Predictions" },
+  { path: "/leaderboard", label: "Leaderboard" },
+  { path: "/chat", label: "Chat" },
+  { path: "/forum", label: "Forum" },
+  { path: "/stats", label: "Stats" },
+];
+
 const NAV_LINKS: Record<VisibilityState, NavLink[]> = {
-  NST_NLI: [{ path: "/", label: "Home" }],
-  NST_LI: [
-    { path: "/", label: "Home" },
-    { path: "/predictions", label: "Predictions" },
-    { path: "/chat", label: "Chat" },
-    { path: "/forum", label: "Forum" },
-  ],
-  ST_NLI: [
-    { path: "/", label: "Home" },
-    { path: "/leaderboard", label: "Leaderboard" },
-    { path: "/forum", label: "Forum" },
-  ],
-  ST_LI: [
-    { path: "/", label: "Home" },
-    { path: "/predictions", label: "Predictions" },
-    { path: "/leaderboard", label: "Leaderboard" },
-    { path: "/chat", label: "Chat" },
-    { path: "/forum", label: "Forum" },
-    { path: "/stats", label: "Stats" },
-  ],
+  loggedout_notstarted: NOTSTARTED_LOGGEDOUT_LINKS,
+  loggedin_notstarted: NOTSTARTED_LOGGEDIN_LINKS,
+  loggedout_leaguephase: STARTED_LOGGEDOUT_LINKS,
+  loggedin_leaguephase: STARTED_LOGGEDIN_LINKS,
+  loggedout_preknockout: STARTED_LOGGEDOUT_LINKS,
+  loggedin_preknockout: STARTED_LOGGEDIN_LINKS,
+  loggedout_knockout: STARTED_LOGGEDOUT_LINKS,
+  loggedin_knockout: STARTED_LOGGEDIN_LINKS,
 };
 
 export function AppShell({ children }: { children: ReactNode }) {
