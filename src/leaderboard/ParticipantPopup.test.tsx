@@ -53,7 +53,13 @@ describe("ParticipantPopup", () => {
 
   it("renders nothing when there is no selected participant", async () => {
     render(
-      <ParticipantPopup ranked={null} entries={[baseEntry]} results={{}} onOpenChange={() => {}} />
+      <ParticipantPopup
+        ranked={null}
+        entries={[baseEntry]}
+        results={{}}
+        onOpenChange={() => {}}
+        onSelectTeam={() => {}}
+      />
     );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     await waitFor(() => expect(mockGetDocs).toHaveBeenCalled());
@@ -66,6 +72,7 @@ describe("ParticipantPopup", () => {
         entries={[baseEntry, otherEntry]}
         results={{}}
         onOpenChange={() => {}}
+        onSelectTeam={() => {}}
       />
     );
     expect(await screen.findByText("Ada Lovelace")).toBeInTheDocument();
@@ -81,6 +88,7 @@ describe("ParticipantPopup", () => {
         entries={[baseEntry, otherEntry]}
         results={results}
         onOpenChange={() => {}}
+        onSelectTeam={() => {}}
       />
     );
     expect(await screen.findByText(TEAMS[0].shortName)).toBeInTheDocument();
@@ -90,6 +98,22 @@ describe("ParticipantPopup", () => {
     expect(screen.getByText("+6")).toBeInTheDocument(); // goal difference, signed
     // TEAMS[1] has no result yet — stat cells fall back to "-".
     expect(screen.getAllByText("-").length).toBeGreaterThan(0);
+  });
+
+  it("calls onSelectTeam with the clicked row's team id", async () => {
+    const onSelectTeam = vi.fn();
+    render(
+      <ParticipantPopup
+        ranked={{ entry: baseEntry, rank: 3 }}
+        entries={[baseEntry, otherEntry]}
+        results={results}
+        onOpenChange={() => {}}
+        onSelectTeam={onSelectTeam}
+      />
+    );
+    const row = (await screen.findByText(TEAMS[0].shortName)).closest('[role="row"]')!;
+    fireEvent.click(row);
+    expect(onSelectTeam).toHaveBeenCalledWith(TEAMS[0].id);
   });
 
   it("shows survey answers once loaded", async () => {
@@ -111,6 +135,7 @@ describe("ParticipantPopup", () => {
         entries={[baseEntry, otherEntry]}
         results={{}}
         onOpenChange={() => {}}
+        onSelectTeam={() => {}}
       />
     );
     // Every answer gets a trailing period, even ones that didn't have one.
@@ -129,6 +154,7 @@ describe("ParticipantPopup", () => {
         entries={[baseEntry, otherEntry]}
         results={{}}
         onOpenChange={() => {}}
+        onSelectTeam={() => {}}
       />
     );
     expect(await screen.findByText("Anket cevapları görüntülenemiyor.")).toBeInTheDocument();
@@ -142,6 +168,7 @@ describe("ParticipantPopup", () => {
         entries={[baseEntry, otherEntry]}
         results={{}}
         onOpenChange={() => {}}
+        onSelectTeam={() => {}}
       />
     );
     expect(await screen.findByText("Bu katılımcı anketi doldurmamış.")).toBeInTheDocument();
@@ -154,6 +181,7 @@ describe("ParticipantPopup", () => {
         entries={[baseEntry, otherEntry]}
         results={{}}
         onOpenChange={() => {}}
+        onSelectTeam={() => {}}
       />
     );
     expect(
@@ -168,6 +196,7 @@ describe("ParticipantPopup", () => {
         entries={[baseEntry, otherEntry]}
         results={{}}
         onOpenChange={() => {}}
+        onSelectTeam={() => {}}
       />
     );
     await waitFor(() => expect(mockGetDocs).toHaveBeenCalled());
@@ -182,6 +211,7 @@ describe("ParticipantPopup", () => {
         entries={[baseEntry, otherEntry]}
         results={{}}
         onOpenChange={onOpenChange}
+        onSelectTeam={() => {}}
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "Kapat" }));

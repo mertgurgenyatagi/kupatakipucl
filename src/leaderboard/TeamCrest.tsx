@@ -1,3 +1,4 @@
+import { CSSProperties } from "react";
 import { Shield } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { teamCrestSrc } from "../predictions/teams";
@@ -8,13 +9,20 @@ import { cn } from "@/lib/utils";
  * quiet shield placeholder if a badge ever fails to load. Real club badge
  * SVGs (public/club-badges/), randomly assigned per team — see
  * teamCrestSrc in predictions/teams.ts.
+ *
+ * `style` is forwarded (not just `className`) so callers that need a
+ * runtime-computed size — TeamPopup.tsx's tunable crest/row-avatar sizes —
+ * can set width/height directly rather than needing a matching Tailwind
+ * class to exist ahead of time.
  */
 export function TeamCrest({
   teamId,
   className,
+  style,
 }: {
   teamId: string;
   className?: string;
+  style?: CSSProperties;
 }) {
   return (
     <Avatar
@@ -22,6 +30,7 @@ export function TeamCrest({
         "size-7 shrink-0 rounded-sm after:rounded-sm after:border-transparent",
         className
       )}
+      style={style}
     >
       <AvatarImage
         src={teamCrestSrc(teamId)}
