@@ -30,12 +30,19 @@ describe("computeMessiRonaldoDistribution", () => {
 });
 
 describe("computeSuperLigDistribution", () => {
-  it("omits teams with zero votes and sorts by count descending", () => {
+  it("omits teams with zero votes, sorts by count descending, and abbreviates known teams", () => {
     expect(computeSuperLigDistribution([])).toEqual([]);
     const out = computeSuperLigDistribution(["Galatasaray", "Fenerbahçe", "Galatasaray", "Galatasaray"]);
     expect(out).toEqual([
-      { label: "Galatasaray", count: 3 },
-      { label: "Fenerbahçe", count: 1 },
+      { label: "GS", count: 3 },
+      { label: "FB", count: 1 },
     ]);
+  });
+
+  it("shows an answer that isn't one of the known 6 options as-is", () => {
+    // Real production data has legacy free-text answers pre-dating the
+    // fixed dropdown — there's no abbreviation to look up for those.
+    const out = computeSuperLigDistribution(["Manevi olarak Alanyasporluyum"]);
+    expect(out).toEqual([{ label: "Manevi olarak Alanyasporluyum", count: 1 }]);
   });
 });

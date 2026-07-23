@@ -36,12 +36,27 @@ export function computeMessiRonaldoDistribution(picks: MessiOrRonaldo[]): CountB
   }));
 }
 
+// Abbreviations for SurveyForm.tsx's fixed 6-option dropdown (SUPER_LIG_TEAMS)
+// — bars need short labels to stay comparable at a narrow, fixed label-column
+// width. Counting itself still happens on the raw answer, so this only
+// affects display; an answer that isn't one of these 6 (e.g. real
+// production data has legacy/edge-case free-text entries pre-dating the
+// fixed dropdown) is shown as-is and just truncates like anything else.
+const SUPER_LIG_ABBREVIATIONS: Record<string, string> = {
+  Galatasaray: "GS",
+  Fenerbahçe: "FB",
+  Beşiktaş: "BJK",
+  Trabzonspor: "TS",
+  "Anadolu takımı": "Anadolu",
+  Yok: "Yok",
+};
+
 export function computeSuperLigDistribution(teams: string[]): CountBar[] {
   const counts = new Map<string, number>();
   teams.forEach((team) => {
     counts.set(team, (counts.get(team) ?? 0) + 1);
   });
   return Array.from(counts.entries())
-    .map(([label, count]) => ({ label, count }))
+    .map(([team, count]) => ({ label: SUPER_LIG_ABBREVIATIONS[team] ?? team, count }))
     .sort((a, b) => b.count - a.count);
 }

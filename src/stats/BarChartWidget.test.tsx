@@ -25,4 +25,23 @@ describe("BarChartWidget", () => {
     render(<BarChartWidget label="Yaş" bars={[]} />);
     expect(screen.getByText("Henüz hesaplanabilecek veri yok.")).toBeInTheDocument();
   });
+
+  it("gives every label column the same fixed width regardless of text length", () => {
+    // A short label and a very long one must still share the same track
+    // width, or bars stop being comparable to each other (this is the bug a
+    // real, long free-text survey answer exposed — see statsPageTuning.ts's
+    // barLabelWidth doc comment).
+    render(
+      <BarChartWidget
+        label="Süper Lig Takımı"
+        bars={[
+          { label: "Yok", count: 5 },
+          { label: "Manevi olarak Alanyasporluyum", count: 5 },
+        ]}
+      />
+    );
+    const short = screen.getByText("Yok");
+    const long = screen.getByText("Manevi olarak Alanyasporluyum");
+    expect(short.style.width).toBe(long.style.width);
+  });
 });

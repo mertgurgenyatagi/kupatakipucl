@@ -33,8 +33,9 @@ export function BarChartWidget({
           {bars.map((bar) => (
             <div key={bar.label} className="flex items-center gap-2">
               <span
-                className="shrink-0 whitespace-nowrap font-display text-ink"
-                style={fontStyle}
+                className="shrink-0 truncate font-display text-ink"
+                style={{ ...fontStyle, width: `${t.barLabelWidth}%` }}
+                title={bar.label}
               >
                 {bar.label}
               </span>

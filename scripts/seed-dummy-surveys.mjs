@@ -12,6 +12,9 @@ import { execSync } from "node:child_process";
 const PROJECT_ID = "kupatakipucl";
 const BASE_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 
+// Must match SurveyForm.tsx's SUPER_LIG_TEAMS exactly — this is a fixed
+// dropdown in the real form, not free text, so seeding an option the form
+// doesn't actually offer produces data the real app could never generate.
 const SUPER_LIG_TEAMS = [
   "Galatasaray",
   "Fenerbahçe",
@@ -19,8 +22,6 @@ const SUPER_LIG_TEAMS = [
   "Trabzonspor",
   "Anadolu takımı",
   "Yok",
-  "Hepsi, tarafsızım",
-  "Manevi olarak Alanyasporluyum",
 ];
 
 // Free text ("varsa yazın") — the one field with real room for nonsense.
