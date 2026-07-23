@@ -1,5 +1,5 @@
 // src/pages/LeaderboardPage.tsx
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useVisibilityState } from "../state/useVisibilityState";
 import { isPageAllowed } from "../state/pageAccess";
 import { useLeaderboard } from "../leaderboard/useLeaderboard";
@@ -11,7 +11,7 @@ import { LeaderboardHero } from "../leaderboard/LeaderboardHero";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { evaluatePicks } from "../leaderboard/scoring";
 import { assignRanks } from "../leaderboard/ranking";
-import { Frame, FrameHeader } from "@/components/ui/frame";
+import { Frame } from "@/components/ui/frame";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
@@ -52,10 +52,7 @@ function LedgerSkeleton() {
     <div className={PAGE_SHELL} aria-hidden data-testid="leaderboard-skeleton">
       <div className={MAIN_ROW}>
         <Frame className="min-h-0 lg:h-full">
-          <FrameHeader tone="navy">
-            <Skeleton className="h-5 w-32 rounded-sm bg-navy-line/40" />
-          </FrameHeader>
-          <div className="min-h-0 flex-1 px-4 py-2">
+          <div className="min-h-0 flex-1 px-4 py-3">
             {Array.from({ length: 9 }).map((_, i) => (
               <div
                 key={i}
@@ -70,10 +67,7 @@ function LedgerSkeleton() {
         </Frame>
         <Frame className="min-h-[128px] lg:h-full" />
         <Frame className="min-h-0 lg:h-full">
-          <FrameHeader tone="navy">
-            <Skeleton className="h-5 w-32 rounded-sm bg-navy-line/40" />
-          </FrameHeader>
-          <div className="min-h-0 flex-1 px-4 py-2">
+          <div className="min-h-0 flex-1 px-4 py-3">
             {Array.from({ length: 9 }).map((_, i) => (
               <div
                 key={i}
@@ -118,6 +112,12 @@ export function LeaderboardPage() {
   const rankedEntries = useMemo(() => assignRanks(entries), [entries]);
   const selectedRanked = rankedEntries.find((r) => r.entry.uid === selectedUid) ?? null;
 
+  // Stable identity — ParticipantPopup is memoized, and an inline arrow
+  // function here would defeat that on every hover-driven re-render.
+  const handlePopupOpenChange = useCallback((open: boolean) => {
+    if (!open) setSelectedUid(null);
+  }, []);
+
   if (!isPageAllowed("leaderboard", state)) {
     return (
       <div className="flex h-full flex-1 items-center px-5 sm:px-8 lg:px-12">
@@ -144,11 +144,9 @@ export function LeaderboardPage() {
       </div>
       <ParticipantPopup
         ranked={selectedRanked}
+        entries={entries}
         results={results}
-        revealCorrectness={phase === "post"}
-        onOpenChange={(open) => {
-          if (!open) setSelectedUid(null);
-        }}
+        onOpenChange={handlePopupOpenChange}
       />
     </div>
   );

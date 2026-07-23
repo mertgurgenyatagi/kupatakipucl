@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { LeaderboardEntry } from "./leaderboardTypes";
 import { assignRanks } from "./ranking";
 import {
@@ -9,12 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Frame,
-  FrameHeader,
-  FrameTitle,
-  FrameBody,
-} from "@/components/ui/frame";
+import { Frame, FrameBody } from "@/components/ui/frame";
 import { cn } from "@/lib/utils";
 
 interface LeaderboardTableProps {
@@ -37,18 +33,24 @@ function initials(firstName: string, lastName: string) {
 }
 
 /**
- * The standings, as one prominent oblong frame (DESIGN-SPEC §0b). A navy
- * header band tops a press-white record: rank numerals left, names in the
- * editorial serif, points aligned right, dotted leaders carrying the eye
- * across (§52, the Ledger Rule). The record scrolls inside the frame; the
- * frame itself never makes the document scroll (§55).
+ * The standings, as one prominent oblong frame (DESIGN-SPEC §0b) — no title
+ * band (Mert's golden rule: no widget on this page carries a label). Rank
+ * numerals left, names in the editorial serif, points aligned right, dotted
+ * leaders carrying the eye across (§52, the Ledger Rule). The record scrolls
+ * inside the frame; the frame itself never makes the document scroll (§55).
  *
  * Once the tournament is under way, hovering a participant highlights which
  * of their picks are currently landing directly on the team table alongside
  * (a faint green wash on those rows) rather than popping up a separate card.
  * Before that, no dead hover state exists at all.
+ *
+ * Wrapped in `memo`: entries/revealCorrectness/onHoverEntry/onSelectEntry
+ * are all stable references from LeaderboardPage, so without this, every
+ * hover-driven re-render there (a state update just to inform TeamTable
+ * which teams to highlight) was needlessly re-rendering this component's
+ * full 50-row table too.
  */
-export function LeaderboardTable({
+export const LeaderboardTable = memo(function LeaderboardTable({
   entries,
   revealCorrectness = false,
   onHoverEntry,
@@ -58,10 +60,6 @@ export function LeaderboardTable({
 
   return (
     <Frame className="h-full animate-cotton-rise border-navy-line/35">
-      <FrameHeader tone="navy">
-        <FrameTitle className="text-navy-ink">Sıralama</FrameTitle>
-      </FrameHeader>
-
       <FrameBody>
         {entries.length === 0 ? (
           <div className="flex flex-1 items-center px-6 py-12">
@@ -110,7 +108,7 @@ export function LeaderboardTable({
                       tabIndex={canReveal ? 0 : undefined}
                       aria-haspopup={canReveal ? "dialog" : undefined}
                       className={cn(
-                        "group animate-cotton-rise border-b border-border/60 transition-colors duration-300 ease-[var(--ease-cotton)] hover:bg-accent",
+                        "group animate-cotton-rise border-b border-border/60 transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-accent",
                         leader && "bg-brass/[0.07]",
                         canReveal && "cursor-pointer outline-none focus-visible:bg-accent focus-visible:ring-1 focus-visible:ring-ring/50 focus-visible:ring-inset"
                       )}
@@ -144,12 +142,7 @@ export function LeaderboardTable({
                           table instead of popping up a card here. */}
                       <TableCell className="w-full py-3 align-middle">
                         <span className="flex min-w-0 items-baseline gap-3">
-                          <span
-                            className={cn(
-                              "truncate font-display text-sm font-medium text-ink",
-                              canReveal && "cursor-default"
-                            )}
-                          >
+                          <span className="truncate font-display text-sm font-medium text-ink">
                             {entry.firstName} {entry.lastName}
                           </span>
                         </span>
@@ -176,4 +169,4 @@ export function LeaderboardTable({
       </FrameBody>
     </Frame>
   );
-}
+});

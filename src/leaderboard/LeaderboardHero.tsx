@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { Frame } from "@/components/ui/frame";
 import { UpcomingMatchesDrawer } from "./UpcomingMatchesDrawer";
 import { TeamResult } from "./teamResultTypes";
@@ -21,8 +21,13 @@ const FADE_MS = 1500;
  * Carries the upcoming-fixtures drawer (UpcomingMatchesDrawer) docked to its
  * bottom edge — results are threaded through only for that drawer's "current
  * place" column, the carousel itself doesn't use them.
+ *
+ * Wrapped in `memo`: `results` is a stable reference from LeaderboardPage,
+ * so without this, hovering a leaderboard row elsewhere on the page (a
+ * state update unrelated to this component) needlessly re-rendered the
+ * drawer's own open/scroll state along with it.
  */
-export function LeaderboardHero({
+export const LeaderboardHero = memo(function LeaderboardHero({
   results,
 }: {
   results: Record<string, TeamResult>;
@@ -51,4 +56,4 @@ export function LeaderboardHero({
       <UpcomingMatchesDrawer results={results} />
     </Frame>
   );
-}
+});
