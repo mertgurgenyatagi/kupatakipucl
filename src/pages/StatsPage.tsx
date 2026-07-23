@@ -19,13 +19,16 @@ import { RankedStatList, RankedRow } from "../stats/RankedStatList";
 import { BarChartWidget } from "../stats/BarChartWidget";
 import { NumberBox } from "../stats/NumberBox";
 import { STAT_WIDGETS } from "../leaderboard/StatWidget";
+import { StatsPageTuning, DEFAULT_STATS_PAGE_TUNING } from "../stats/statsPageTuning";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
 
 const PAGE_SHELL =
   "relative mx-auto flex w-full max-w-[1100px] min-w-0 flex-col gap-4 p-4 sm:p-6 lg:h-full lg:min-h-0 lg:flex-1 lg:gap-5 lg:p-6";
+// gap is tunable (columnGap), applied via inline style below.
 const MAIN_ROW =
-  "relative z-10 grid min-w-0 gap-4 lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-2 lg:gap-5 [&>*]:min-h-0 [&>*]:min-w-0";
-const WIDGET_GRID = "grid min-h-0 flex-1 grid-cols-2 content-start gap-4 overflow-y-auto p-4";
+  "relative z-10 grid min-w-0 lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-2 [&>*]:min-h-0 [&>*]:min-w-0";
+// gap/padding are tunable (widgetGap/gridPadding), applied via inline style below.
+const WIDGET_GRID = "grid min-h-0 flex-1 grid-cols-2 content-start overflow-y-auto";
 
 // UCL supported-team survey answer is still free text (about to become a
 // select — see docs/superpowers/specs/2026-07-23-stats-page-design.md's
@@ -48,6 +51,7 @@ interface StatsPageViewProps {
   results: Record<string, TeamResult>;
   players: Player[];
   responses: SurveyResponseEntry[];
+  tuning?: Partial<StatsPageTuning>;
 }
 
 /**
@@ -58,7 +62,8 @@ interface StatsPageViewProps {
  * preview is guaranteed pixel-identical to the real page by construction,
  * not by rebuilding a lookalike.
  */
-export function StatsPageView({ entries, results, players, responses }: StatsPageViewProps) {
+export function StatsPageView({ entries, results, players, responses, tuning }: StatsPageViewProps) {
+  const t: StatsPageTuning = { ...DEFAULT_STATS_PAGE_TUNING, ...tuning };
   const rankings = entries.map((entry) => entry.ranking);
 
   const bias = computeTeamBias(rankings, results);
@@ -99,38 +104,41 @@ export function StatsPageView({ entries, results, players, responses }: StatsPag
   const messiRonaldoBars = computeMessiRonaldoDistribution(responses.map((r) => r.messiOrRonaldo));
   const superLigBars = computeSuperLigDistribution(responses.map((r) => r.superLigTeam));
 
+  const gridStyle = { gap: `${t.widgetGap}rem`, padding: `${t.gridPadding}rem` };
+
   return (
     <div className={PAGE_SHELL}>
-      <div className={MAIN_ROW}>
+      <div className={MAIN_ROW} style={{ gap: `${t.columnGap}rem` }}>
         <Frame className="min-h-0 lg:h-full">
           <FrameHeader tone="navy">
             <FrameTitle className="text-navy-ink">Turnuva İstatistikleri</FrameTitle>
           </FrameHeader>
-          <FrameBody className={WIDGET_GRID}>
+          <FrameBody className={WIDGET_GRID} style={gridStyle}>
             {STAT_WIDGETS.map((spec) => (
               <RankedStatList
                 key={spec.key}
                 label={spec.title}
                 rows={spec.rows.map((row, i) => ({ key: `${spec.key}-${i}`, ...row }))}
+                tuning={tuning}
               />
             ))}
-            <RankedStatList label="Beklenti Üstü" rows={overperformerRows} />
-            <RankedStatList label="Beklenti Altı" rows={underperformerRows} />
-            <RankedStatList label="Hemfikir Olunanlar" rows={agreedRows} />
-            <RankedStatList label="Tartışmalı Takımlar" rows={disagreedRows} />
+            <RankedStatList label="Beklenti Üstü" rows={overperformerRows} tuning={tuning} />
+            <RankedStatList label="Beklenti Altı" rows={underperformerRows} tuning={tuning} />
+            <RankedStatList label="Hemfikir Olunanlar" rows={agreedRows} tuning={tuning} />
+            <RankedStatList label="Tartışmalı Takımlar" rows={disagreedRows} tuning={tuning} />
           </FrameBody>
         </Frame>
         <Frame className="min-h-0 lg:h-full">
           <FrameHeader tone="navy">
             <FrameTitle className="text-navy-ink">Katılımcı İstatistikleri</FrameTitle>
           </FrameHeader>
-          <FrameBody className={WIDGET_GRID}>
-            <NumberBox label="Katılımcı Sayısı" value={players.length} />
-            <BarChartWidget label="Yaş" bars={ageBars} />
-            <BarChartWidget label="Futbol Bilgisi" bars={knowledgeBars} />
-            <BarChartWidget label="Messi mi Ronaldo mu?" bars={messiRonaldoBars} />
-            <BarChartWidget label="Süper Lig Takımı" bars={superLigBars} />
-            <BarChartWidget label="UCL Takımı" bars={UCL_TEAM_PLACEHOLDER} />
+          <FrameBody className={WIDGET_GRID} style={gridStyle}>
+            <NumberBox label="Katılımcı Sayısı" value={players.length} tuning={tuning} />
+            <BarChartWidget label="Yaş" bars={ageBars} tuning={tuning} />
+            <BarChartWidget label="Futbol Bilgisi" bars={knowledgeBars} tuning={tuning} />
+            <BarChartWidget label="Messi mi Ronaldo mu?" bars={messiRonaldoBars} tuning={tuning} />
+            <BarChartWidget label="Süper Lig Takımı" bars={superLigBars} tuning={tuning} />
+            <BarChartWidget label="UCL Takımı" bars={UCL_TEAM_PLACEHOLDER} tuning={tuning} />
           </FrameBody>
         </Frame>
       </div>
