@@ -34,8 +34,15 @@ const FAKE_RESULTS: Record<string, TeamResult> = Object.fromEntries(
   ])
 );
 
+// Must match SurveyForm.tsx's real SUPER_LIG_TEAMS exactly — this is a
+// fixed dropdown, not free text, so a fake option that couldn't actually be
+// submitted would misrepresent the real widget.
 const SUPER_LIG_OPTIONS = ["Galatasaray", "Fenerbahçe", "Beşiktaş", "Trabzonspor", "Anadolu takımı", "Yok"];
 const MESSI_RONALDO_OPTIONS: MessiOrRonaldo[] = ["messi", "ronaldo", "no-opinion"];
+// Cycled rather than a wide range so all 5 age buckets (<18, 18-20, 21-25,
+// 26-30, >30 — see stats/ageBuckets.ts) get real coverage regardless of
+// participant count, instead of leaving the youngest bucket empty.
+const AGE_SAMPLES = [15, 17, 18, 19, 20, 22, 24, 25, 27, 30, 32, 35];
 
 // Participant count is the actual variable that exposed the row-collapse
 // bug: the right column's bar widgets only get tall enough to collide with
@@ -45,7 +52,7 @@ const MESSI_RONALDO_OPTIONS: MessiOrRonaldo[] = ["messi", "ronaldo", "no-opinion
 function generateResponses(count: number): SurveyResponseEntry[] {
   return Array.from({ length: count }, (_, i) => ({
     uid: `fake-response-${i}`,
-    age: 18 + (i % 15),
+    age: AGE_SAMPLES[i % AGE_SAMPLES.length],
     footballKnowledge: (i % 7) + 1,
     messiOrRonaldo: MESSI_RONALDO_OPTIONS[i % MESSI_RONALDO_OPTIONS.length],
     superLigTeam: SUPER_LIG_OPTIONS[i % SUPER_LIG_OPTIONS.length],
@@ -77,6 +84,7 @@ function fieldsOf() {
     { group: "Çubuk grafik", key: "barHeight", label: "Çubuk kalınlığı", min: 0.25, max: 2, step: 0.05, unit: "rem" },
     { group: "Çubuk grafik", key: "barRowGap", label: "Çubuklar arası boşluk", min: 0.1, max: 1.5, step: 0.02, unit: "rem" },
     { group: "Çubuk grafik", key: "barFontSize", label: "Etiket yazı boyutu", min: 0.5, max: 1.2, step: 0.02, unit: "rem" },
+    { group: "Çubuk grafik", key: "barLabelWidth", label: "Etiket sütunu genişliği (satırın yüzdesi)", min: 10, max: 50, step: 1, unit: "%" },
     { group: "Sayı kutusu", key: "numberFontSize", label: "Büyük sayı boyutu", min: 1, max: 4.5, step: 0.1, unit: "rem" },
   ] as const;
 }

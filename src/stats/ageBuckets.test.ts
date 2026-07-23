@@ -2,25 +2,27 @@ import { describe, it, expect } from "vitest";
 import { AGE_BUCKETS, bucketAge, computeAgeDistribution } from "./ageBuckets";
 
 describe("bucketAge", () => {
-  it("buckets below 20 and above 27 into the overflow buckets, and 20-27 into their exact bucket", () => {
-    expect(bucketAge(15)).toBe("<20");
-    expect(bucketAge(19)).toBe("<20");
-    expect(bucketAge(20)).toBe("20");
-    expect(bucketAge(23)).toBe("23");
-    expect(bucketAge(27)).toBe("27");
-    expect(bucketAge(28)).toBe(">27");
-    expect(bucketAge(40)).toBe(">27");
+  it("buckets ages into the right range, including exact boundaries", () => {
+    expect(bucketAge(17)).toBe("<18");
+    expect(bucketAge(18)).toBe("18-20");
+    expect(bucketAge(20)).toBe("18-20");
+    expect(bucketAge(21)).toBe("21-25");
+    expect(bucketAge(25)).toBe("21-25");
+    expect(bucketAge(26)).toBe("26-30");
+    expect(bucketAge(30)).toBe("26-30");
+    expect(bucketAge(31)).toBe(">30");
   });
 });
 
 describe("computeAgeDistribution", () => {
-  it("always returns all 10 buckets in fixed order and counts ages correctly", () => {
+  it("always returns all 5 buckets in fixed order and counts ages correctly", () => {
     expect(computeAgeDistribution([]).map((b) => b.label)).toEqual(AGE_BUCKETS);
 
-    const out = computeAgeDistribution([19, 20, 20, 30]);
-    expect(out.find((b) => b.label === "<20")?.count).toBe(1);
-    expect(out.find((b) => b.label === "20")?.count).toBe(2);
-    expect(out.find((b) => b.label === ">27")?.count).toBe(1);
-    expect(out.find((b) => b.label === "21")?.count).toBe(0);
+    const out = computeAgeDistribution([17, 18, 19, 30, 31]);
+    expect(out.find((b) => b.label === "<18")?.count).toBe(1);
+    expect(out.find((b) => b.label === "18-20")?.count).toBe(2);
+    expect(out.find((b) => b.label === "26-30")?.count).toBe(1);
+    expect(out.find((b) => b.label === ">30")?.count).toBe(1);
+    expect(out.find((b) => b.label === "21-25")?.count).toBe(0);
   });
 });

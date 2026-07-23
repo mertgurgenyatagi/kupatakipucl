@@ -1,9 +1,11 @@
-export const AGE_BUCKETS = ["<20", "20", "21", "22", "23", "24", "25", "26", "27", ">27"];
+export const AGE_BUCKETS = ["<18", "18-20", "21-25", "26-30", ">30"];
 
 export function bucketAge(age: number): string {
-  if (age < 20) return "<20";
-  if (age > 27) return ">27";
-  return String(age);
+  if (age < 18) return "<18";
+  if (age <= 20) return "18-20";
+  if (age <= 25) return "21-25";
+  if (age <= 30) return "26-30";
+  return ">30";
 }
 
 export interface AgeBucketCount {

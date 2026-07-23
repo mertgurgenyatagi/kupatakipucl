@@ -20,13 +20,20 @@ import { BarChartWidget } from "../stats/BarChartWidget";
 import { NumberBox } from "../stats/NumberBox";
 import { STAT_WIDGETS } from "../leaderboard/StatWidget";
 import { StatsPageTuning, DEFAULT_STATS_PAGE_TUNING } from "../stats/statsPageTuning";
+import { StatsHero } from "../stats/StatsHero";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
 
+// Widened past the site's default 1100px cap for the same reason
+// LeaderboardPage.tsx widens to 1400px — a third (hero) column genuinely
+// needs the room, same three-section shape as that page.
 const PAGE_SHELL =
-  "relative mx-auto flex w-full max-w-[1100px] min-w-0 flex-col gap-4 p-4 sm:p-6 lg:h-full lg:min-h-0 lg:flex-1 lg:gap-5 lg:p-6";
-// gap is tunable (columnGap), applied via inline style below.
+  "relative mx-auto flex w-full max-w-[1400px] min-w-0 flex-col gap-4 p-4 sm:p-6 lg:h-full lg:min-h-0 lg:flex-1 lg:gap-5 lg:p-6";
+// gap is tunable (columnGap), applied via inline style below. Third column
+// is a fixed 300px for the hero section, matching LeaderboardPage's own
+// hero-column width. First two columns split the remaining space equally
+// (tournament stats / participant stats).
 const MAIN_ROW =
-  "relative z-10 grid min-w-0 lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-2 [&>*]:min-h-0 [&>*]:min-w-0";
+  "relative z-10 grid min-w-0 lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-[1fr_1fr_300px] [&>*]:min-h-0 [&>*]:min-w-0";
 // gap/padding are tunable (widgetGap/gridPadding), applied via inline style below.
 const WIDGET_GRID = "grid min-h-0 flex-1 grid-cols-2 content-start overflow-y-auto";
 
@@ -34,12 +41,14 @@ const WIDGET_GRID = "grid min-h-0 flex-1 grid-cols-2 content-start overflow-y-au
 // select — see docs/superpowers/specs/2026-07-23-stats-page-design.md's
 // follow-ups); no real read is wired up for it yet, so this widget runs on
 // placeholder data, same spirit as StatWidget.tsx's existing dummy rows.
+// Labels use the real teams' own shortName codes (predictions/teams.ts),
+// same abbreviation convention as computeSuperLigDistribution's real teams.
 const UCL_TEAM_PLACEHOLDER = [
-  { label: "Real Madrid", count: 9 },
-  { label: "Barcelona", count: 7 },
-  { label: "Arsenal", count: 5 },
-  { label: "Galatasaray", count: 4 },
-  { label: "Liverpool", count: 2 },
+  { label: "RMA", count: 9 },
+  { label: "BAR", count: 7 },
+  { label: "ARS", count: 5 },
+  { label: "GS", count: 4 },
+  { label: "LIV", count: 2 },
 ];
 
 function formatSigned(value: number): string {
@@ -141,6 +150,7 @@ export function StatsPageView({ entries, results, players, responses, tuning }: 
             <BarChartWidget label="UCL Takımı" bars={UCL_TEAM_PLACEHOLDER} tuning={tuning} />
           </FrameBody>
         </Frame>
+        <StatsHero />
       </div>
     </div>
   );

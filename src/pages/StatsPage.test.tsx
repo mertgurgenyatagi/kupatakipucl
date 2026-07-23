@@ -116,12 +116,14 @@ describe("StatsPage", () => {
     // Right: straight number box counts every signed-up profile, not just predictors.
     expect(screen.getByText("Katılımcı Sayısı:3")).toBeInTheDocument();
     // Right: age/knowledge/messi-ronaldo always show every fixed bucket/level/option.
-    expect(screen.getByText("Yaş:10")).toBeInTheDocument();
+    expect(screen.getByText("Yaş:5")).toBeInTheDocument();
     expect(screen.getByText("Futbol Bilgisi:7")).toBeInTheDocument();
     expect(screen.getByText("Messi mi Ronaldo mu?:3")).toBeInTheDocument();
     // Right: Süper Lig only shows the 2 teams actually picked (zero-vote omitted).
     expect(screen.getByText("Süper Lig Takımı:2")).toBeInTheDocument();
     // Right: UCL is placeholder data — constant regardless of responses.
     expect(screen.getByText("UCL Takımı:5")).toBeInTheDocument();
+    // Third section: the same hero carousel as the leaderboard page, minus its drawer.
+    expect(screen.getAllByTestId("hero-image").length).toBeGreaterThan(0);
   });
 });
