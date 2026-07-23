@@ -10,6 +10,7 @@ import { ForumPage } from "./pages/ForumPage";
 import { StatsPage } from "./pages/StatsPage";
 import { DevPanel } from "./devpanel/DevPanel";
 import { TeamPopupTuner } from "./devpanel/TeamPopupTuner";
+import { StatsPageTuner } from "./devpanel/StatsPageTuner";
 
 export function App() {
   return (
@@ -27,6 +28,9 @@ export function App() {
               {import.meta.env.DEV && <Route path="/dev" element={<DevPanel />} />}
               {import.meta.env.DEV && (
                 <Route path="/dev/team-popup-tuner" element={<TeamPopupTuner />} />
+              )}
+              {import.meta.env.DEV && (
+                <Route path="/dev/stats-tuner" element={<StatsPageTuner />} />
               )}
             </Routes>
           </AppShell>

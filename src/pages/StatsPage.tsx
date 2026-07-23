@@ -3,8 +3,10 @@ import { useVisibilityState } from "../state/useVisibilityState";
 import { isPageAllowed } from "../state/pageAccess";
 import { useLeaderboard } from "../leaderboard/useLeaderboard";
 import { useResults } from "../leaderboard/useResults";
-import { usePlayers } from "../profile/usePlayers";
-import { useSurveyResponses } from "../predictions/useSurveyResponses";
+import { usePlayers, Player } from "../profile/usePlayers";
+import { useSurveyResponses, SurveyResponseEntry } from "../predictions/useSurveyResponses";
+import { LeaderboardEntry } from "../leaderboard/leaderboardTypes";
+import { TeamResult } from "../leaderboard/teamResultTypes";
 import { computeTeamBias } from "../stats/teamBias";
 import { computeTeamAgreement } from "../stats/teamAgreement";
 import { computeAgeDistribution } from "../stats/ageBuckets";
@@ -41,25 +43,22 @@ function formatSigned(value: number): string {
   return (value > 0 ? "+" : "") + value.toFixed(1);
 }
 
-export function StatsPage() {
-  const state = useVisibilityState();
-  const { entries, loading: leaderboardLoading } = useLeaderboard();
-  const { results, loading: resultsLoading } = useResults();
-  const { players, loading: playersLoading } = usePlayers();
-  const { responses, loading: responsesLoading } = useSurveyResponses();
+interface StatsPageViewProps {
+  entries: LeaderboardEntry[];
+  results: Record<string, TeamResult>;
+  players: Player[];
+  responses: SurveyResponseEntry[];
+}
 
-  if (!isPageAllowed("stats", state)) {
-    return (
-      <div className="flex h-full flex-1 items-center px-5 sm:px-8 lg:px-12">
-        <p className="font-display text-2xl text-muted-foreground italic">
-          This section isn't available right now.
-        </p>
-      </div>
-    );
-  }
-
-  if (leaderboardLoading || resultsLoading || playersLoading || responsesLoading) return null;
-
+/**
+ * The actual page composition, taking its data as props rather than
+ * fetching it — same split as TeamPopup/ParticipantPopup (hooks live in
+ * the routed page, the view itself is just props in, JSX out). This is
+ * what devpanel/StatsPageTuner.tsx renders directly with fake data, so a
+ * preview is guaranteed pixel-identical to the real page by construction,
+ * not by rebuilding a lookalike.
+ */
+export function StatsPageView({ entries, results, players, responses }: StatsPageViewProps) {
   const rankings = entries.map((entry) => entry.ranking);
 
   const bias = computeTeamBias(rankings, results);
@@ -137,4 +136,26 @@ export function StatsPage() {
       </div>
     </div>
   );
+}
+
+export function StatsPage() {
+  const state = useVisibilityState();
+  const { entries, loading: leaderboardLoading } = useLeaderboard();
+  const { results, loading: resultsLoading } = useResults();
+  const { players, loading: playersLoading } = usePlayers();
+  const { responses, loading: responsesLoading } = useSurveyResponses();
+
+  if (!isPageAllowed("stats", state)) {
+    return (
+      <div className="flex h-full flex-1 items-center px-5 sm:px-8 lg:px-12">
+        <p className="font-display text-2xl text-muted-foreground italic">
+          This section isn't available right now.
+        </p>
+      </div>
+    );
+  }
+
+  if (leaderboardLoading || resultsLoading || playersLoading || responsesLoading) return null;
+
+  return <StatsPageView entries={entries} results={results} players={players} responses={responses} />;
 }
