@@ -9,6 +9,7 @@ import { LeaderboardTable } from "../leaderboard/LeaderboardTable";
 import { TeamTable } from "../leaderboard/TeamTable";
 import { LeaderboardHero } from "../leaderboard/LeaderboardHero";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
+import { TeamPopup } from "../leaderboard/TeamPopup";
 import { evaluatePicks } from "../leaderboard/scoring";
 import { assignRanks } from "../leaderboard/ranking";
 import { Frame } from "@/components/ui/frame";
@@ -93,6 +94,7 @@ export function LeaderboardPage() {
   const phase = useTournamentPhase();
   const [hoveredUid, setHoveredUid] = useState<string | null>(null);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
 
   // The hovered participant's currently-correct teams — recomputed only
   // when the hover target or the live results change, not on every render.
@@ -112,10 +114,25 @@ export function LeaderboardPage() {
   const rankedEntries = useMemo(() => assignRanks(entries), [entries]);
   const selectedRanked = rankedEntries.find((r) => r.entry.uid === selectedUid) ?? null;
 
-  // Stable identity — ParticipantPopup is memoized, and an inline arrow
-  // function here would defeat that on every hover-driven re-render.
+  // Stable identity — ParticipantPopup/TeamPopup are both memoized, and an
+  // inline arrow function here would defeat that on every hover-driven
+  // re-render. The two popups are mutually exclusive: selecting one clears
+  // the other, since they cross-link into each other (a team's predictors
+  // list opens a participant; a participant's predictions grid opens a
+  // team) and stacking two Dialogs isn't worth the backdrop/z-index mess.
   const handlePopupOpenChange = useCallback((open: boolean) => {
     if (!open) setSelectedUid(null);
+  }, []);
+  const handleTeamPopupOpenChange = useCallback((open: boolean) => {
+    if (!open) setSelectedTeamId(null);
+  }, []);
+  const handleSelectParticipant = useCallback((uid: string) => {
+    setSelectedUid(uid);
+    setSelectedTeamId(null);
+  }, []);
+  const handleSelectTeam = useCallback((teamId: string) => {
+    setSelectedTeamId(teamId);
+    setSelectedUid(null);
   }, []);
 
   if (!isPageAllowed("leaderboard", state)) {
@@ -133,13 +150,17 @@ export function LeaderboardPage() {
   return (
     <div className={PAGE_SHELL}>
       <div className={MAIN_ROW}>
-        <TeamTable results={results} highlightedTeamIds={highlightedTeamIds} />
+        <TeamTable
+          results={results}
+          highlightedTeamIds={highlightedTeamIds}
+          onSelectTeam={handleSelectTeam}
+        />
         <LeaderboardHero results={results} />
         <LeaderboardTable
           entries={entries}
           revealCorrectness={phase === "post"}
           onHoverEntry={setHoveredUid}
-          onSelectEntry={setSelectedUid}
+          onSelectEntry={handleSelectParticipant}
         />
       </div>
       <ParticipantPopup
@@ -147,6 +168,14 @@ export function LeaderboardPage() {
         entries={entries}
         results={results}
         onOpenChange={handlePopupOpenChange}
+        onSelectTeam={handleSelectTeam}
+      />
+      <TeamPopup
+        teamId={selectedTeamId}
+        entries={entries}
+        results={results}
+        onOpenChange={handleTeamPopupOpenChange}
+        onSelectParticipant={handleSelectParticipant}
       />
     </div>
   );

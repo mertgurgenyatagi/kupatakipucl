@@ -14,6 +14,11 @@ interface TeamTableProps {
   /** Team ids to wash faint green — driven by hovering a participant on the
    *  standings alongside (their currently-correct picks). */
   highlightedTeamIds?: ReadonlySet<string>;
+  /** Fires with a team's id when its row is clicked — opens that team's
+   *  dossier popup (TeamPopup.tsx). No phase gate, unlike the participant
+   *  leaderboard's own row click: PAGE_BRIEFING.txt's team popup is
+   *  "identical for started and not started." */
+  onSelectTeam?: (teamId: string) => void;
 }
 
 // O · A · Y · AV · P — the standard compact Turkish league-table header set
@@ -48,10 +53,6 @@ function signed(n: number): string {
   return n > 0 ? `+${n}` : String(n);
 }
 
-/** Clickable, but intentionally does nothing yet — reserved for future
- *  team-detail views. */
-function handleTeamRowClick() {}
-
 /**
  * One 18-row half of the split table (1-18 left, 19-36 right), built as a
  * CSS Grid "table" (role="table"/"row"/"columnheader"/"cell" on plain divs)
@@ -77,12 +78,14 @@ function TeamTableHalf({
   sortKey,
   onSort,
   highlightedTeamIds,
+  onSelectTeam,
 }: {
   teams: Team[];
   results: Record<string, TeamResult>;
   sortKey: SortKey;
   onSort: (key: SortKey) => void;
   highlightedTeamIds?: ReadonlySet<string>;
+  onSelectTeam?: (teamId: string) => void;
 }) {
   return (
     <div
@@ -166,7 +169,7 @@ function TeamTableHalf({
             <div
               key={team.id}
               role="row"
-              onClick={handleTeamRowClick}
+              onClick={() => onSelectTeam?.(team.id)}
               className="group contents cursor-pointer"
               style={{ animationDelay: `${Math.min(index * 16, 500)}ms` }}
             >
@@ -248,7 +251,7 @@ function TeamTableHalf({
  * both halves. Before any result exists it degrades to an honest, quiet
  * roster of all 36 teams.
  */
-export function TeamTable({ results, highlightedTeamIds }: TeamTableProps) {
+export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("position");
   const hasResults = Object.keys(results).length > 0;
 
@@ -309,7 +312,7 @@ export function TeamTable({ results, highlightedTeamIds }: TeamTableProps) {
                       <div
                         key={team.id}
                         role="row"
-                        onClick={handleTeamRowClick}
+                        onClick={() => onSelectTeam?.(team.id)}
                         className="group contents cursor-pointer"
                         style={{ animationDelay: `${Math.min(index * 16, 500)}ms` }}
                       >
@@ -370,6 +373,7 @@ export function TeamTable({ results, highlightedTeamIds }: TeamTableProps) {
                 sortKey={sortKey}
                 onSort={setSortKey}
                 highlightedTeamIds={highlightedTeamIds}
+                onSelectTeam={onSelectTeam}
               />
             </div>
             <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto border-l border-border/50 pl-3">
@@ -379,6 +383,7 @@ export function TeamTable({ results, highlightedTeamIds }: TeamTableProps) {
                 sortKey={sortKey}
                 onSort={setSortKey}
                 highlightedTeamIds={highlightedTeamIds}
+                onSelectTeam={onSelectTeam}
               />
             </div>
           </div>

@@ -37,6 +37,10 @@ interface ParticipantPopupProps {
    *  highlight on the team table itself. */
   results: Record<string, TeamResult>;
   onOpenChange: (open: boolean) => void;
+  /** Selecting a team from the predictions grid closes this popup and opens
+   *  that team's own dossier (TeamPopup.tsx) — the cross-link this grid's
+   *  row/crest/name click affordances were built for. */
+  onSelectTeam: (teamId: string) => void;
 }
 
 function initials(firstName: string, lastName: string) {
@@ -53,10 +57,6 @@ function ensurePeriod(s: string): string {
   const trimmed = s.trim();
   return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
 }
-
-/** Clickable, but intentionally does nothing yet — same pattern as
- *  TeamTable.tsx. */
-function handlePredictionRowClick() {}
 
 const MESSI_RONALDO_LABEL: Record<MessiOrRonaldo, string> = {
   messi: "Messi",
@@ -187,7 +187,9 @@ function RankHistoryChart({
  * Predictions use the *exact* team-table column set (O/A/Y/AV/P), row-
  * ordered by prediction, with a green wash on rows currently landing
  * correct — the same `isPickCorrect` check and the same accent as the
- * standings-hover highlight on the real team table.
+ * standings-hover highlight on the real team table. Each row is clickable
+ * (`onSelectTeam`) and opens that team's own dossier (TeamPopup.tsx) —
+ * closing this popup, not stacking on top of it.
  *
  * Quiz answers are a real, deliberate reversal of SPEC.md §4/§8d's original
  * "survey stays aggregate-only" decision — see useSurveyResponse.ts and
@@ -213,6 +215,7 @@ export const ParticipantPopup = memo(function ParticipantPopup({
   entries,
   results,
   onOpenChange,
+  onSelectTeam,
 }: ParticipantPopupProps) {
   // Keep rendering the last real participant while the dialog animates
   // closed — `ranked` goes null the instant the parent clears selection,
@@ -363,7 +366,7 @@ export const ParticipantPopup = memo(function ParticipantPopup({
                             <div
                               key={teamId}
                               role="row"
-                              onClick={handlePredictionRowClick}
+                              onClick={() => onSelectTeam(teamId)}
                               className="group contents cursor-pointer"
                             >
                               <div role="cell" className={cn(cell, "gap-1 pl-1")}>

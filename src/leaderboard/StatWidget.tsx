@@ -8,7 +8,10 @@ import {
 } from "@/components/ui/frame";
 import { cn } from "@/lib/utils";
 
-interface StatRow {
+/** Exported for reuse by TeamPopup.tsx's own per-team scorer/assister/rating
+ *  lists — same row shape (rank, solid-fill avatar, name, value), just
+ *  populated per-team instead of from this file's fixed global rows. */
+export interface StatRow {
   name: string;
   value: string;
   fill: string;
