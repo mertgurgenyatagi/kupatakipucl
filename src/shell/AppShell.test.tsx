@@ -70,13 +70,13 @@ describe("AppShell nav gating", () => {
     expect(screen.queryByText("Stats")).not.toBeInTheDocument();
   });
 
-  it("shows leaderboard, stats and forum but not chat when started and not logged in", () => {
+  it("shows leaderboard and forum but not stats or chat when started and not logged in", () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
     setDebugDate("2026-09-09");
     renderShell();
     expect(screen.getByText("Leaderboard")).toBeInTheDocument();
-    expect(screen.getByText("Stats")).toBeInTheDocument();
     expect(screen.getByText("Forum")).toBeInTheDocument();
+    expect(screen.queryByText("Stats")).not.toBeInTheDocument();
     expect(screen.queryByText("Chat")).not.toBeInTheDocument();
     expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
   });

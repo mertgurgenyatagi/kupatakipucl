@@ -18,10 +18,10 @@ describe("isPageAllowed", () => {
     expect(isPageAllowed("stats", "NST_LI")).toBe(false);
   });
 
-  it("allows leaderboard, stats and forum but not chat or predictions for ST_NLI", () => {
+  it("allows leaderboard and forum but not stats, chat or predictions for ST_NLI", () => {
     expect(isPageAllowed("leaderboard", "ST_NLI")).toBe(true);
-    expect(isPageAllowed("stats", "ST_NLI")).toBe(true);
     expect(isPageAllowed("forum", "ST_NLI")).toBe(true);
+    expect(isPageAllowed("stats", "ST_NLI")).toBe(false);
     expect(isPageAllowed("chat", "ST_NLI")).toBe(false);
     expect(isPageAllowed("predictions", "ST_NLI")).toBe(false);
   });

@@ -23,7 +23,6 @@ const NAV_LINKS: Record<VisibilityState, NavLink[]> = {
   ST_NLI: [
     { path: "/", label: "Home" },
     { path: "/leaderboard", label: "Leaderboard" },
-    { path: "/stats", label: "Stats" },
     { path: "/forum", label: "Forum" },
   ],
   ST_LI: [

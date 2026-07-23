@@ -7,7 +7,7 @@ const PAGE_ACCESS: Record<PageKey, VisibilityState[]> = {
   leaderboard: ["ST_NLI", "ST_LI"],
   chat: ["NST_LI", "ST_LI"],
   forum: ["NST_LI", "ST_NLI", "ST_LI"],
-  stats: ["ST_NLI", "ST_LI"],
+  stats: ["ST_LI"],
 };
 
 export function isPageAllowed(page: PageKey, state: VisibilityState): boolean {
