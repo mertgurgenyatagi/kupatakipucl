@@ -3,8 +3,10 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useTournamentPhase } from "../tournament/useTournamentPhase";
 import { getVisibilityState, VisibilityState } from "../state/visibilityState";
+import { useProfile } from "../profile/useProfile";
 import { LoginButton } from "../auth/LoginButton";
 import { LogoutButton } from "../auth/LogoutButton";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 interface NavLink {
@@ -53,6 +55,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const state = getVisibilityState(Boolean(user), phase);
   const links = NAV_LINKS[state];
+  const { profile } = useProfile(user?.uid ?? null);
 
   return (
     <div className="flex min-h-dvh flex-col bg-background lg:h-dvh lg:min-h-0 lg:overflow-hidden">
@@ -130,6 +133,21 @@ export function AppShell({ children }: { children: ReactNode }) {
                 className="rounded-md border border-navy-line px-3 py-1.5 font-mono text-[0.72rem] tracking-[0.02em] text-navy-ink no-underline transition-colors duration-150 hover:border-brass"
               >
                 Dev Panel
+              </Link>
+            )}
+            {!loading && user && profile && (
+              <Link
+                to="/profile"
+                className="flex items-center gap-2 rounded-md px-2 py-1 no-underline outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-ink"
+              >
+                <Avatar size="sm">
+                  <AvatarImage src={profile.photoURL} alt="" />
+                  <AvatarFallback className="font-mono text-[0.65rem] text-navy-ink">
+                    {profile.firstName.charAt(0)}
+                    {profile.lastName.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="font-mono text-[0.72rem] text-navy-ink">{profile.firstName}</span>
               </Link>
             )}
             {!loading && (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, deleteDoc, getDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../firebase";
 import { Profile } from "./profileTypes";
@@ -49,4 +49,21 @@ export async function saveProfile(
   const profile: Profile = { firstName, lastName, photoURL, createdAt: Date.now() };
   await setDoc(doc(db, "profiles", uid), profile);
   return profile;
+}
+
+export async function updateProfilePhoto(
+  uid: string,
+  current: Profile,
+  photoFile: File
+): Promise<Profile> {
+  const photoRef = ref(storage, `profile-photos/${uid}`);
+  await uploadBytes(photoRef, photoFile);
+  const photoURL = await getDownloadURL(photoRef);
+  const profile: Profile = { ...current, photoURL };
+  await setDoc(doc(db, "profiles", uid), profile);
+  return profile;
+}
+
+export async function deleteProfile(uid: string): Promise<void> {
+  await deleteDoc(doc(db, "profiles", uid));
 }

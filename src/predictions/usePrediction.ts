@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, deleteDoc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { Prediction } from "./predictionTypes";
 
@@ -43,4 +43,8 @@ export async function savePrediction(uid: string, ranking: string[]): Promise<Pr
   const prediction: Prediction = { ranking, submittedAt, updatedAt: now };
   await setDoc(doc(db, "predictions", uid), prediction);
   return prediction;
+}
+
+export async function deletePrediction(uid: string): Promise<void> {
+  await deleteDoc(doc(db, "predictions", uid));
 }

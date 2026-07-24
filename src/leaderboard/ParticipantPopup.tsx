@@ -8,8 +8,8 @@ import { isPickCorrect } from "./scoring";
 import { computeRankHistory, RankCheckpoint } from "./rankHistory";
 import { useDevMatches } from "../devpanel/useDevMatches";
 import { useSurveyResponse } from "../predictions/useSurveyResponse";
-import { MessiOrRonaldo, Device } from "../predictions/surveyTypes";
 import { TEAM_BY_ID } from "../predictions/teams";
+import { MESSI_RONALDO_LABEL, DEVICE_LABEL, ensurePeriod } from "../predictions/surveyLabels";
 import { TeamCrest } from "./TeamCrest";
 import {
   Dialog,
@@ -50,24 +50,6 @@ function initials(firstName: string, lastName: string) {
 function signed(n: number): string {
   return n > 0 ? `+${n}` : String(n);
 }
-
-/** Every answer reads as a full sentence, even the one-word ones — appends a
- *  period unless the string already ends in sentence-ending punctuation. */
-function ensurePeriod(s: string): string {
-  const trimmed = s.trim();
-  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
-}
-
-const MESSI_RONALDO_LABEL: Record<MessiOrRonaldo, string> = {
-  messi: "Messi",
-  ronaldo: "Ronaldo",
-  "no-opinion": "Fikrim yok",
-};
-const DEVICE_LABEL: Record<Device, string> = {
-  phone: "Telefon",
-  desktop: "Bilgisayar",
-  both: "İkisi de",
-};
 
 // No title/label bar on any widget block (Mert's golden rule) — the
 // color-distinct background + border alone marks the boundary; content

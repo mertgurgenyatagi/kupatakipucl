@@ -37,4 +37,23 @@ describe("isPageAllowed", () => {
       expect(isPageAllowed("stats", state)).toBe(true);
     }
   });
+
+  it("allows profile for every logged-in state and blocks it for every logged-out state", () => {
+    for (const state of [
+      "loggedin_notstarted",
+      "loggedin_leaguephase",
+      "loggedin_preknockout",
+      "loggedin_knockout",
+    ] as const) {
+      expect(isPageAllowed("profile", state)).toBe(true);
+    }
+    for (const state of [
+      "loggedout_notstarted",
+      "loggedout_leaguephase",
+      "loggedout_preknockout",
+      "loggedout_knockout",
+    ] as const) {
+      expect(isPageAllowed("profile", state)).toBe(false);
+    }
+  });
 });

@@ -3,17 +3,19 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 
 const mockGetDoc = vi.fn();
 const mockSetDoc = vi.fn();
+const mockDeleteDoc = vi.fn();
 const mockDoc = vi.fn((_db: unknown, collection: string, id: string) => ({ collection, id }));
 
 vi.mock("firebase/firestore", () => ({
   doc: (...args: unknown[]) => mockDoc(...(args as [unknown, string, string])),
   getDoc: (...args: unknown[]) => mockGetDoc(...args),
   setDoc: (...args: unknown[]) => mockSetDoc(...args),
+  deleteDoc: (...args: unknown[]) => mockDeleteDoc(...args),
 }));
 
 vi.mock("../firebase", () => ({ db: {} }));
 
-import { usePrediction, savePrediction } from "./usePrediction";
+import { usePrediction, savePrediction, deletePrediction } from "./usePrediction";
 
 describe("usePrediction", () => {
   beforeEach(() => {
@@ -108,5 +110,18 @@ describe("savePrediction", () => {
     const result = await savePrediction("uid1", ["a"]);
 
     expect(result.submittedAt).toBe(result.updatedAt);
+  });
+});
+
+describe("deletePrediction", () => {
+  beforeEach(() => {
+    mockDeleteDoc.mockReset();
+  });
+
+  it("deletes the prediction doc for the given uid", async () => {
+    mockDeleteDoc.mockResolvedValue(undefined);
+    await deletePrediction("uid1");
+    expect(mockDeleteDoc).toHaveBeenCalledTimes(1);
+    expect(mockDeleteDoc).toHaveBeenCalledWith({ collection: "predictions", id: "uid1" });
   });
 });

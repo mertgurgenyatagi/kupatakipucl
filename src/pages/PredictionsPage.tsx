@@ -8,27 +8,11 @@ import { SurveyForm } from "../predictions/SurveyForm";
 import { TeamRanker } from "../predictions/TeamRanker";
 import { SubmissionCounter } from "../predictions/SubmissionCounter";
 import { TEAMS } from "../predictions/teams";
+import { RankingList } from "../predictions/RankingList";
 import { SurveyResponse } from "../predictions/surveyTypes";
 import { Prediction } from "../predictions/predictionTypes";
 
 type UiStep = "idle" | "rank" | "confirm-overwrite";
-
-function rankingNames(ranking: string[]): string[] {
-  return ranking.map((id) => TEAMS.find((t) => t.id === id)?.name ?? id);
-}
-
-function RankingList({ ranking }: { ranking: string[] }) {
-  return (
-    <div>
-      <h1>Tahmininiz</h1>
-      <ol>
-        {rankingNames(ranking).map((name) => (
-          <li key={name}>{name}</li>
-        ))}
-      </ol>
-    </div>
-  );
-}
 
 export function PredictionsPage() {
   const { user } = useAuth();

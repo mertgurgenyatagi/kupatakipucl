@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { vi, describe, it, expect } from "vitest";
+import { vi, describe, it, expect, beforeEach } from "vitest";
 import { AppShell } from "./AppShell";
 import { isPageAllowed, PageKey } from "../state/pageAccess";
 import { VisibilityState, getVisibilityState } from "../state/visibilityState";
@@ -8,6 +8,7 @@ import { TournamentPhase } from "../tournament/tournamentPhase";
 
 const mockUseAuth = vi.fn();
 const mockUseTournamentPhase = vi.fn();
+const mockUseProfile = vi.fn();
 
 const STATE_FIXTURES: { state: VisibilityState; user: { uid: string } | null; phase: TournamentPhase }[] = [
   { state: "loggedout_notstarted", user: null, phase: "notstarted" },
@@ -28,6 +29,10 @@ vi.mock("../tournament/useTournamentPhase", () => ({
   useTournamentPhase: () => mockUseTournamentPhase(),
 }));
 
+vi.mock("../profile/useProfile", () => ({
+  useProfile: (uid: string | null) => mockUseProfile(uid),
+}));
+
 vi.mock("../auth/LoginButton", () => ({
   LoginButton: () => <button>Sign in with Google</button>,
 }));
@@ -45,6 +50,10 @@ function renderShell() {
     </MemoryRouter>
   );
 }
+
+beforeEach(() => {
+  mockUseProfile.mockReturnValue({ profile: null, loading: false });
+});
 
 describe("AppShell nav gating", () => {
   it("shows only Home when not started and not logged in", () => {
@@ -121,5 +130,34 @@ describe("NAV_LINKS matches PAGE_ACCESS", () => {
       const isRendered = renderedPaths.includes(`/${page}`);
       expect(isRendered).toBe(expectedVisible);
     }
+  });
+});
+
+describe("account-slot avatar/name link", () => {
+  it("renders a link to /profile with the user's avatar and first name when logged in with a profile", () => {
+    mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
+    mockUseTournamentPhase.mockReturnValue("notstarted");
+    mockUseProfile.mockReturnValue({
+      profile: { firstName: "Mert", lastName: "G", photoURL: "photo-url", createdAt: 1 },
+      loading: false,
+    });
+    renderShell();
+    const link = screen.getByText("Mert").closest("a");
+    expect(link).toHaveAttribute("href", "/profile");
+  });
+
+  it("does not render the avatar/name link when logged out", () => {
+    mockUseAuth.mockReturnValue({ user: null, loading: false });
+    mockUseTournamentPhase.mockReturnValue("notstarted");
+    renderShell();
+    expect(screen.queryAllByRole("link").map((l) => l.getAttribute("href"))).not.toContain("/profile");
+  });
+
+  it("does not render the avatar/name link when logged in but no profile exists yet", () => {
+    mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
+    mockUseTournamentPhase.mockReturnValue("notstarted");
+    mockUseProfile.mockReturnValue({ profile: null, loading: false });
+    renderShell();
+    expect(screen.queryAllByRole("link").map((l) => l.getAttribute("href"))).not.toContain("/profile");
   });
 });

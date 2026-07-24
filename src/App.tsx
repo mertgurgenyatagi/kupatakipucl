@@ -8,6 +8,7 @@ import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { ChatPage } from "./pages/ChatPage";
 import { ForumPage } from "./pages/ForumPage";
 import { StatsPage } from "./pages/StatsPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { DevPanel } from "./devpanel/DevPanel";
 import { TeamPopupTuner } from "./devpanel/TeamPopupTuner";
 import { StatsPageTuner } from "./devpanel/StatsPageTuner";
@@ -25,6 +26,7 @@ export function App() {
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/forum" element={<ForumPage />} />
               <Route path="/stats" element={<StatsPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
               {import.meta.env.DEV && <Route path="/dev" element={<DevPanel />} />}
               {import.meta.env.DEV && (
                 <Route path="/dev/team-popup-tuner" element={<TeamPopupTuner />} />
