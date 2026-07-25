@@ -5,7 +5,22 @@ import { useEffect, useState } from "react";
 // (object-cover, no mask/fade at the edges), cross-fading between the
 // three — not stacked, one slot, one image visible at a time. 7s each
 // (Mert's explicit spec).
-const HERO_IMAGES = ["/hero/harry_kane.webp", "/hero/mbappe.webp", "/hero/dembele.webp"];
+// Exported so other pages that want one static frame instead of the
+// crossfading loop (e.g. src/home/HomeLandingLoggedOut.tsx's split-band
+// sections) share this same source list rather than duplicating the paths.
+export const HERO_IMAGES = ["/hero/harry_kane.webp", "/hero/mbappe.webp", "/hero/dembele.webp"];
+
+// Per-image object-position bias for object-cover — THIS is what to tweak
+// if a head gets cropped out in a given spot. Every place that renders one
+// of these photos (this carousel, src/home/SplitBand.tsx) reads from this
+// same map so there's one place to adjust per image, not one per usage.
+// "50% 50%" (dead center) is the default for anything not listed here.
+export const HERO_IMAGE_POSITIONS: Record<string, string> = {
+  "/hero/harry_kane.webp": "50% 20%",
+  "/hero/mbappe.webp": "50% 15%",
+  "/hero/dembele.webp": "50% 20%",
+};
+
 const CYCLE_MS = 7000;
 const FADE_MS = 1500;
 
@@ -33,7 +48,11 @@ export function HeroCarousel() {
           alt=""
           data-testid="hero-image"
           className="absolute inset-0 size-full object-cover transition-opacity ease-linear"
-          style={{ opacity: i === active ? 1 : 0, transitionDuration: `${FADE_MS}ms` }}
+          style={{
+            opacity: i === active ? 1 : 0,
+            transitionDuration: `${FADE_MS}ms`,
+            objectPosition: HERO_IMAGE_POSITIONS[src] ?? "50% 50%",
+          }}
         />
       ))}
     </>

@@ -32,7 +32,9 @@ The first shadcn build (navy left masthead, editorial/Telegraph-serif ledger, `f
 
 ---
 
-## 0c. Base confirmed, first refinement pass (2026-07-21) — DECIDED
+## 0c. Base confirmed, first refinement pass (2026-07-21) — SUPERSEDED, see §0e
+
+**Correction added 2026-07-25:** Archivo Narrow did not survive as the shipped typeface — see §0e. Left below as the historical record of that round's conversation, not as a description of the current system.
 
 The top-bar/frames rebuild landed: *"I actually like it! There are definitely some things we are going to adjust but we have finally found our base."* First real approval since design work started. Overrides §4's serif-led typography — after a live, in-layout font trial (50 fonts, then narrowed to 15 condensed/narrow candidates), he picked **Archivo Narrow** as a single base face carrying both display and body, replacing the Bodoni Moda / Geist pairing. Not a hedge — "found our base" is meant literally.
 
@@ -46,11 +48,27 @@ His closing line — *"we'll see where we go"* — means this is a checkpoint, n
 
 ---
 
-## 0d. Dark mode tried, discarded (2026-07-21) — DECIDED
+## 0d. Dark mode tried, discarded (2026-07-21) — SUPERSEDED, see §0e
+
+**Correction added 2026-07-25:** this section's verdict did not survive either — the site shipped permanently dark. Left below as the historical record of that round's conversation, not as a description of the current system.
 
 A same-day detour: *"Crazy idea: Darkish blue background, even darker blue top bar and all title bars."* Built as a real, populated `.dark` theme with a dev-only toggle (same throwaway-widget pattern as the font trial), revised once with a second exact set of colors (`#031f38` bars/titles, `#005eb4` background, `#f2f3f4` widget interiors — genuinely close to real UEFA branding). Both versions worked and were shown live.
 
 Verdict: *"Eh, discard the dark mode entirely, keep the light version. Just make the top bar dark blue as well."* Dark mode itself — as a whole, toggleable second theme — is back to ruled out (reaffirming §9). The one piece that survived: the top bar is now permanently navy, matching every frame's navy title band, in the single light system. `--navy-text` (the token that let navy work as legible text on both a light and a dark bar) stays in the codebase since it's still needed for points values / avatar initials on light card surfaces — just no longer has a dark-mode counterpart to serve.
+
+---
+
+## 0e. What actually shipped — DECIDED (this is the real current system)
+
+**Added 2026-07-25**, discovered while starting the Home-page build: §0c and §0d describe decisions that were real in the moment but did not survive to what's actually on `main`. Both sections' text and the CSS that contradicts them were committed together in the same commit (`0c1c1f8`, "Finish the leaderboard page"), which means the session kept going *after* §0c/§0d were written and reversed both calls again — without ever coming back to correct the doc. `HANDOVER_2.md` (that session's own end-of-work handoff) documents the later, final state plainly, with no mention of reverting it; the live app matches `HANDOVER_2.md`, not §0c/§0d. Confirmed by reading `src/styles/index.css` directly and by screenshotting the running site, not by inference.
+
+**What's actually true, as of this correction:**
+- **Typeface: Inter** (`@fontsource-variable/inter`), one variable family for every role (display/heading/body/mono all point at it) — not Archivo Narrow. §4's serif-led pairing and §0c's Archivo Narrow pick are both historical, not current.
+- **Theme: permanently dark**, one fixed theme (not toggleable, same "no dark-mode toggle" spirit §9/§0d intended) — but dark as the *base*, not light-with-a-navy-top-bar. Ground `#14120B`, elevated/navy surfaces `#1B1913`, text `#EDECEC`, sourced by live-extracting cursor.com's own dark-mode computed colors via Playwright (`getComputedStyle()`), not eyeballed. §0d's "keep light, top bar navy only" verdict is historical, not current.
+- **Named tokens keep their §3/§16 names** (`--navy`, `--press-white`, `--silver`, `--brass`, etc.) but several now hold values that don't match their name's original intent — most notably `--press-white` (originally "near-white, very very slightly beige," §48) now holds a near-*black* value, and `--brass` (originally the plaque/gold accent, §16) now holds a green (`#1F8A65`, standing in for a "positive/earned" signal). Read token *values* from `src/styles/index.css` directly; don't infer a value from what a token's name implied back in §2/§3/§16/§48 — those sections describe the pre-pivot intent, not the shipped mapping.
+- §2/§3's "50/50 Rule" (navy occupying real structural surface area, balanced against white) is superseded by the above — there is no white surface in the shipped system, structural balance instead comes from the small ground/elevated tonal step plus the brass-green accent.
+
+**Why this is the version to build against:** confirmed directly with Mert 2026-07-25, when this contradiction blocked starting the Home page build — see that conversation for the explicit call ("what's live" over "what the doc says").
 
 ---
 

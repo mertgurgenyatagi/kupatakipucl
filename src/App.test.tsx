@@ -36,13 +36,14 @@ describe("App routing integration", () => {
     window.history.pushState({}, "", "/");
   });
 
-  it("renders the home placeholder for the not-started/logged-out state by default", async () => {
+  it("renders the logged-out landing page for the not-started state by default", async () => {
     // Tournament phase now comes from the tournamentState Firestore doc (see
     // tournament/useTournamentPhase.ts); the generic onSnapshot mock above
     // always reports "doesn't exist", so phase defaults to notstarted here.
+    // src/home/HomeLandingLoggedOut.tsx renders for this exact state.
     mockUseAuth.mockReturnValue({ user: null, loading: false });
     render(<App />);
-    expect(await screen.findByText(/Not started, not logged in/)).toBeInTheDocument();
+    expect(await screen.findByText(/Şampiyonlar Ligi nasıl ilerleyecek/)).toBeInTheDocument();
   });
 
   it("navigates to an allowed page via the nav link", async () => {

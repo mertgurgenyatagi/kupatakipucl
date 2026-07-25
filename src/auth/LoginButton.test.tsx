@@ -19,14 +19,14 @@ describe("LoginButton", () => {
   it("calls signInWithPopup when clicked", async () => {
     mockSignIn.mockResolvedValue(undefined);
     render(<LoginButton />);
-    fireEvent.click(screen.getByText("Sign in with Google"));
+    fireEvent.click(screen.getByText("Google ile giriş yap"));
     await waitFor(() => expect(mockSignIn).toHaveBeenCalledTimes(1));
   });
 
   it("shows an inline error when sign-in fails", async () => {
     mockSignIn.mockRejectedValue(new Error("popup-closed-by-user"));
     render(<LoginButton />);
-    fireEvent.click(screen.getByText("Sign in with Google"));
+    fireEvent.click(screen.getByText("Google ile giriş yap"));
     await waitFor(() =>
       expect(screen.getByRole("alert")).toHaveTextContent(
         "Sign-in didn't go through, try again."
