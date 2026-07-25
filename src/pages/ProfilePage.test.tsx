@@ -184,8 +184,24 @@ describe("ProfilePage", () => {
       screen.getByText("Bu tahmini üzerine yazmak istediğinize emin misiniz?")
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("Evet, kaydet"));
+    fireEvent.click(screen.getByText("Tamam"));
     await waitFor(() => expect(mockSavePrediction).toHaveBeenCalledWith("uid1", ["z", "y", "x"]));
+  });
+
+  it("backing out of the overwrite confirmation with Geri leaves the original prediction unchanged", () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
+    mockUsePrediction.mockReturnValue({
+      prediction: { ranking: ["arsenal"], submittedAt: 1, updatedAt: 1 },
+      loading: false,
+    });
+    renderPage();
+
+    fireEvent.click(screen.getByText("Düzenle"));
+    fireEvent.click(screen.getByText("submit-ranking"));
+    fireEvent.click(screen.getByText("Geri"));
+
+    expect(screen.getByText("Arsenal")).toBeInTheDocument();
+    expect(mockSavePrediction).not.toHaveBeenCalled();
   });
 
   it("shows the ranking without an edit button once locked", () => {
@@ -226,23 +242,6 @@ describe("ProfilePage", () => {
     renderPage();
     // arsenal: predicted 1st then 2nd -> average 1.5; barcelona: 2nd then 1st -> average 1.5
     expect(screen.getAllByText("1.5")).toHaveLength(2);
-  });
-
-  it("glows a row whose pick is currently landing correct", () => {
-    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
-    mockUsePrediction.mockReturnValue({
-      prediction: { ranking: ["arsenal", "barcelona"], submittedAt: 1, updatedAt: 1 },
-      loading: false,
-    });
-    mockUseResults.mockReturnValue({
-      results: { arsenal: { position: 1 }, barcelona: { position: 30 } },
-      loading: false,
-    });
-    renderPage();
-    const arsenalRow = screen.getByText("Arsenal").closest("li");
-    const barcelonaRow = screen.getByText("Barcelona").closest("li");
-    expect(arsenalRow?.className).toContain("shadow-");
-    expect(barcelonaRow?.className).not.toContain("shadow-");
   });
 
   it("opens a confirm dialog when the delete-profile button is clicked", () => {

@@ -6,6 +6,9 @@ import { cn } from "@/lib/utils";
 interface ParticipantStatusListProps {
   players: Player[];
   submitterUids: Set<string>;
+  /** Opens that player's participant popup — omitted wherever the caller
+   *  hasn't wired one up, in which case rows are plain, non-interactive. */
+  onSelectPlayer?: (uid: string) => void;
 }
 
 function initials(firstName: string, lastName: string) {
@@ -21,7 +24,7 @@ function initials(firstName: string, lastName: string) {
  * ParticipantPopup), not the site's --brass token (which reads green despite
  * its name, a leftover from the dark-theme rework).
  */
-export function ParticipantStatusList({ players, submitterUids }: ParticipantStatusListProps) {
+export function ParticipantStatusList({ players, submitterUids, onSelectPlayer }: ParticipantStatusListProps) {
   const sorted = [...players].sort((a, b) =>
     `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "tr")
   );
@@ -46,7 +49,11 @@ export function ParticipantStatusList({ players, submitterUids }: ParticipantSta
           {sorted.map((player) => {
             const submitted = submitterUids.has(player.uid);
             return (
-              <li key={player.uid} className="flex items-center gap-3 py-2.5">
+              <li
+                key={player.uid}
+                onClick={onSelectPlayer ? () => onSelectPlayer(player.uid) : undefined}
+                className={cn("flex items-center gap-3 py-2.5", onSelectPlayer && "cursor-pointer")}
+              >
                 <Avatar className="size-8 shrink-0">
                   <AvatarImage src={player.photoURL} alt="" />
                   <AvatarFallback className="font-mono text-[0.6rem] text-muted-foreground">

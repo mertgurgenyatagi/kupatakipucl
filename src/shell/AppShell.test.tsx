@@ -19,7 +19,7 @@ const STATE_FIXTURES: { state: VisibilityState; user: { uid: string } | null; ph
   { state: "loggedin_knockout", user: { uid: "1" }, phase: "knockout" },
 ];
 
-const GATED_PAGES: PageKey[] = ["predictions", "leaderboard", "forum", "stats"];
+const GATED_PAGES: PageKey[] = ["leaderboard", "forum", "stats"];
 
 vi.mock("../auth/AuthProvider", () => ({
   useAuth: () => mockUseAuth(),
@@ -67,12 +67,12 @@ describe("AppShell nav gating", () => {
     expect(screen.queryByText("Stats")).not.toBeInTheDocument();
   });
 
-  it("shows predictions and forum when not started but logged in", () => {
+  it("shows forum (but never a Predictions link) when not started but logged in", () => {
     mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
     mockUseTournamentPhase.mockReturnValue("notstarted");
     renderShell();
-    expect(screen.getByText("Predictions")).toBeInTheDocument();
     expect(screen.getByText("Forum")).toBeInTheDocument();
+    expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
     expect(screen.queryByText("Leaderboard")).not.toBeInTheDocument();
     expect(screen.queryByText("Stats")).not.toBeInTheDocument();
   });
@@ -87,14 +87,15 @@ describe("AppShell nav gating", () => {
     expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
   });
 
-  it("shows every link when started (any of the three phases) and logged in", () => {
+  it("shows every started link when logged in, but never a Predictions link, in any of the three phases", () => {
     mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
     for (const phase of ["leaguephase", "preknockout", "knockout"] as TournamentPhase[]) {
       mockUseTournamentPhase.mockReturnValue(phase);
       renderShell();
-      for (const label of ["Predictions", "Leaderboard", "Forum", "Stats"]) {
+      for (const label of ["Leaderboard", "Forum", "Stats"]) {
         expect(screen.getAllByText(label).length).toBeGreaterThan(0);
       }
+      expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
     }
   });
 

@@ -180,6 +180,7 @@ export function TeamPopupTuner() {
           onSelectParticipant={() => {}}
           onSelectTeam={() => {}}
           tuning={tuning}
+          tournamentStarted={true}
         />
       </div>
     </div>

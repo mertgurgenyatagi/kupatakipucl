@@ -112,7 +112,7 @@ function MessageRow({
           type="button"
           onClick={() => onDelete(message.id)}
           aria-label="Mesajı sil"
-          className="shrink-0 rounded-full p-1 text-muted-foreground opacity-0 outline-none transition-opacity duration-150 hover:text-destructive focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass group-hover:opacity-100"
+          className="shrink-0 cursor-pointer rounded-full p-1 text-muted-foreground opacity-0 outline-none transition-opacity duration-150 hover:text-destructive focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass group-hover:opacity-100"
         >
           <Trash2 className="size-3" aria-hidden />
         </button>
