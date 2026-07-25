@@ -20,7 +20,6 @@ const NOTSTARTED_LOGGEDOUT_LINKS: NavLink[] = [{ path: "/", label: "Home" }];
 const NOTSTARTED_LOGGEDIN_LINKS: NavLink[] = [
   { path: "/", label: "Home" },
   { path: "/predictions", label: "Predictions" },
-  { path: "/chat", label: "Chat" },
   { path: "/forum", label: "Forum" },
 ];
 // Forum dropped for logged-out visitors here (previously included) — round-1
@@ -33,7 +32,6 @@ const STARTED_LOGGEDIN_LINKS: NavLink[] = [
   { path: "/", label: "Home" },
   { path: "/predictions", label: "Predictions" },
   { path: "/leaderboard", label: "Leaderboard" },
-  { path: "/chat", label: "Chat" },
   { path: "/forum", label: "Forum" },
   { path: "/stats", label: "Stats" },
 ];

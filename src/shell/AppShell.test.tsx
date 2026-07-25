@@ -19,7 +19,7 @@ const STATE_FIXTURES: { state: VisibilityState; user: { uid: string } | null; ph
   { state: "loggedin_knockout", user: { uid: "1" }, phase: "knockout" },
 ];
 
-const GATED_PAGES: PageKey[] = ["predictions", "leaderboard", "chat", "forum", "stats"];
+const GATED_PAGES: PageKey[] = ["predictions", "leaderboard", "forum", "stats"];
 
 vi.mock("../auth/AuthProvider", () => ({
   useAuth: () => mockUseAuth(),
@@ -61,32 +61,29 @@ describe("AppShell nav gating", () => {
     mockUseTournamentPhase.mockReturnValue("notstarted");
     renderShell();
     expect(screen.getByText("Home")).toBeInTheDocument();
-    expect(screen.queryByText("Chat")).not.toBeInTheDocument();
     expect(screen.queryByText("Forum")).not.toBeInTheDocument();
     expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
     expect(screen.queryByText("Leaderboard")).not.toBeInTheDocument();
     expect(screen.queryByText("Stats")).not.toBeInTheDocument();
   });
 
-  it("shows predictions, chat and forum when not started but logged in", () => {
+  it("shows predictions and forum when not started but logged in", () => {
     mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
     mockUseTournamentPhase.mockReturnValue("notstarted");
     renderShell();
     expect(screen.getByText("Predictions")).toBeInTheDocument();
-    expect(screen.getByText("Chat")).toBeInTheDocument();
     expect(screen.getByText("Forum")).toBeInTheDocument();
     expect(screen.queryByText("Leaderboard")).not.toBeInTheDocument();
     expect(screen.queryByText("Stats")).not.toBeInTheDocument();
   });
 
-  it("shows leaderboard but not forum, stats or chat when started and not logged in", () => {
+  it("shows leaderboard but not forum, stats or predictions when started and not logged in", () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
     mockUseTournamentPhase.mockReturnValue("leaguephase");
     renderShell();
     expect(screen.getByText("Leaderboard")).toBeInTheDocument();
     expect(screen.queryByText("Forum")).not.toBeInTheDocument();
     expect(screen.queryByText("Stats")).not.toBeInTheDocument();
-    expect(screen.queryByText("Chat")).not.toBeInTheDocument();
     expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
   });
 
@@ -95,7 +92,7 @@ describe("AppShell nav gating", () => {
     for (const phase of ["leaguephase", "preknockout", "knockout"] as TournamentPhase[]) {
       mockUseTournamentPhase.mockReturnValue(phase);
       renderShell();
-      for (const label of ["Predictions", "Leaderboard", "Chat", "Forum", "Stats"]) {
+      for (const label of ["Predictions", "Leaderboard", "Forum", "Stats"]) {
         expect(screen.getAllByText(label).length).toBeGreaterThan(0);
       }
     }
