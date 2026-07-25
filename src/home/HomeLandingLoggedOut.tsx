@@ -9,13 +9,9 @@ import { SplitBand } from "./SplitBand";
 import { SlotNumber } from "./SlotNumber";
 import { useCountdown } from "./useCountdown";
 import { useIrregularCounter } from "./useIrregularCounter";
+import { TOURNAMENT_START_ISO } from "./deadlines";
 import type { Player } from "../profile/usePlayers";
 import type { TeamResult } from "../leaderboard/teamResultTypes";
-
-// League phase starts (and sign-up closes) Sept 8 2026, Europe/Istanbul,
-// fixed UTC+3 (see SPEC.md's hard-dates table; PAGEMAP_SPEC §2 — sign-up
-// stays open the entire notstarted phase, this is the deadline it's racing).
-const SIGNUP_DEADLINE = "2026-09-08T00:00:00+03:00";
 
 // What it is, how scoring works, when it happens — in that order, kept
 // deliberately brief and non-technical (no |predicted-actual|<3 formula
@@ -94,7 +90,7 @@ interface HomeLandingLoggedOutProps {
  * that every page avoid one.
  */
 export function HomeLandingLoggedOut({ players, results }: HomeLandingLoggedOutProps) {
-  const countdown = useCountdown(SIGNUP_DEADLINE);
+  const countdown = useCountdown(TOURNAMENT_START_ISO);
   const liveCount = useIrregularCounter(players.length);
   const reduceMotion = useReducedMotion();
   const initial = reduceMotion ? "visible" : "hidden";

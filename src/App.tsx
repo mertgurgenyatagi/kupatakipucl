@@ -5,13 +5,13 @@ import { AppShell } from "./shell/AppShell";
 import { HomePage } from "./pages/HomePage";
 import { PredictionsPage } from "./pages/PredictionsPage";
 import { LeaderboardPage } from "./pages/LeaderboardPage";
-import { ChatPage } from "./pages/ChatPage";
 import { ForumPage } from "./pages/ForumPage";
 import { StatsPage } from "./pages/StatsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { DevPanel } from "./devpanel/DevPanel";
 import { TeamPopupTuner } from "./devpanel/TeamPopupTuner";
 import { StatsPageTuner } from "./devpanel/StatsPageTuner";
+import { HomeLoggedInTuner } from "./devpanel/HomeLoggedInTuner";
 
 export function App() {
   return (
@@ -23,7 +23,6 @@ export function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/predictions" element={<PredictionsPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
-              <Route path="/chat" element={<ChatPage />} />
               <Route path="/forum" element={<ForumPage />} />
               <Route path="/stats" element={<StatsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
@@ -33,6 +32,9 @@ export function App() {
               )}
               {import.meta.env.DEV && (
                 <Route path="/dev/stats-tuner" element={<StatsPageTuner />} />
+              )}
+              {import.meta.env.DEV && (
+                <Route path="/dev/home-loggedin-tuner" element={<HomeLoggedInTuner />} />
               )}
             </Routes>
           </AppShell>

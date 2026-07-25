@@ -46,6 +46,10 @@ vi.mock("../home/HomeLandingLoggedOut", () => ({
   ),
 }));
 
+vi.mock("../home/LoggedInHome", () => ({
+  LoggedInHome: ({ players }: { players: unknown[] }) => <div>logged-in-home:{players.length}</div>,
+}));
+
 const emptyResults = { results: {}, loading: false };
 const emptyPlayers = { players: [], loading: false };
 const emptyLeaderboard = { entries: [], loading: false };
@@ -73,11 +77,12 @@ describe("HomePage", () => {
     expect(screen.queryByText("leaderboard-table")).not.toBeInTheDocument();
   });
 
-  it("loggedin_notstarted: shows the team table and a full-name player list, no leaderboard", () => {
+  it("loggedin_notstarted: renders the dedicated logged-in landing page instead of the shared skeleton", () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
+    mockUsePlayers.mockReturnValue({ players: [{ uid: "a" }, { uid: "b" }, { uid: "c" }], loading: false });
     render(<HomePage />);
-    expect(screen.getByText("team-table")).toBeInTheDocument();
-    expect(screen.getByText("player-list:true:hidden")).toBeInTheDocument();
+    expect(screen.getByText("logged-in-home:3")).toBeInTheDocument();
+    expect(screen.queryByText("team-table")).not.toBeInTheDocument();
     expect(screen.queryByText("leaderboard-table")).not.toBeInTheDocument();
   });
 
