@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
 import { ParticipantStatusList } from "./ParticipantStatusList";
 import { Player } from "../profile/usePlayers";
 
@@ -26,5 +26,19 @@ describe("ParticipantStatusList", () => {
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
     expect(screen.getByLabelText("Tahminini gönderdi")).toBeInTheDocument();
     expect(screen.getByLabelText("Henüz göndermedi")).toBeInTheDocument();
+  });
+
+  it("calls onSelectPlayer with the clicked participant's uid when provided", () => {
+    const onSelectPlayer = vi.fn();
+    render(
+      <ParticipantStatusList players={players} submitterUids={new Set()} onSelectPlayer={onSelectPlayer} />
+    );
+    fireEvent.click(screen.getByText("Ada Lovelace"));
+    expect(onSelectPlayer).toHaveBeenCalledWith("a1");
+  });
+
+  it("is not clickable when onSelectPlayer isn't provided", () => {
+    render(<ParticipantStatusList players={players} submitterUids={new Set()} />);
+    expect(screen.getByText("Ada Lovelace").closest("li")).not.toHaveClass("cursor-pointer");
   });
 });

@@ -19,7 +19,6 @@ interface NavLink {
 const NOTSTARTED_LOGGEDOUT_LINKS: NavLink[] = [{ path: "/", label: "Home" }];
 const NOTSTARTED_LOGGEDIN_LINKS: NavLink[] = [
   { path: "/", label: "Home" },
-  { path: "/predictions", label: "Predictions" },
   { path: "/forum", label: "Forum" },
 ];
 // Forum dropped for logged-out visitors here (previously included) — round-1
@@ -30,7 +29,6 @@ const STARTED_LOGGEDOUT_LINKS: NavLink[] = [
 ];
 const STARTED_LOGGEDIN_LINKS: NavLink[] = [
   { path: "/", label: "Home" },
-  { path: "/predictions", label: "Predictions" },
   { path: "/leaderboard", label: "Leaderboard" },
   { path: "/forum", label: "Forum" },
   { path: "/stats", label: "Stats" },
@@ -56,7 +54,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { profile } = useProfile(user?.uid ?? null);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-background lg:h-dvh lg:min-h-0 lg:overflow-hidden">
+    <div className="flex min-h-dvh cursor-default flex-col bg-background lg:h-dvh lg:min-h-0 lg:overflow-hidden">
+      {/* Cursorify (DESIGN.md §6): set once here since AppShell wraps every
+          page — no I-beam anywhere by default, individual interactive
+          elements opt back into `cursor-pointer` themselves. */}
       {/* --- Top bar: identity, nav, account (all pages) -----------------
           Navy, matching every frame's title band (DESIGN-SPEC §0d — dark
           mode as a whole was tried and discarded; this one change from it,

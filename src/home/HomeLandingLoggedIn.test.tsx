@@ -48,8 +48,39 @@ vi.mock("../forum/RecentPostsPreview", () => ({
   ForumPreviewFooter: () => <div>forum-preview-footer</div>,
 }));
 vi.mock("./ParticipantStatusList", () => ({
-  ParticipantStatusList: ({ players, submitterUids }: { players: unknown[]; submitterUids: Set<string> }) => (
-    <div>participant-status-list:{players.length}:{submitterUids.size}</div>
+  ParticipantStatusList: ({
+    players,
+    submitterUids,
+    onSelectPlayer,
+  }: {
+    players: unknown[];
+    submitterUids: Set<string>;
+    onSelectPlayer?: (uid: string) => void;
+  }) => (
+    <div>
+      <p>
+        participant-status-list:{players.length}:{submitterUids.size}
+      </p>
+      <button onClick={() => onSelectPlayer?.("p2")}>select-p2</button>
+    </div>
+  ),
+}));
+vi.mock("../leaderboard/ParticipantPopup", () => ({
+  ParticipantPopup: ({
+    ranked,
+    tournamentStarted,
+    onOpenChange,
+  }: {
+    ranked: { entry: { uid: string } } | null;
+    tournamentStarted: boolean;
+    onOpenChange: (open: boolean) => void;
+  }) => (
+    <div>
+      <p>
+        participant-popup:{ranked?.entry.uid ?? "none"}:{String(tournamentStarted)}
+      </p>
+      <button onClick={() => onOpenChange(false)}>close-popup</button>
+    </div>
   ),
 }));
 
@@ -94,6 +125,11 @@ describe("HomeLandingLoggedIn", () => {
   it("links the primary CTA to the predictions page", () => {
     renderPage();
     expect(screen.getByRole("link", { name: /Tahminini Yap/ })).toHaveAttribute("href", "/predictions");
+  });
+
+  it("hides the CTA once the user has already submitted a prediction", () => {
+    renderPage({ submitterUids: new Set(["me", "p2"]) });
+    expect(screen.queryByRole("link", { name: /Tahminini Yap/ })).not.toBeInTheDocument();
   });
 
   it("shows the countdown digits when not yet done", () => {
@@ -172,5 +208,20 @@ describe("HomeLandingLoggedIn", () => {
     renderPage({ onLoadOlderMessages });
     fireEvent.click(screen.getByText("load-older"));
     expect(onLoadOlderMessages).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens the participant popup for the clicked player, always as not-tournament-started", () => {
+    renderPage();
+    expect(screen.getByText("participant-popup:none:false")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("select-p2"));
+    expect(screen.getByText("participant-popup:p2:false")).toBeInTheDocument();
+  });
+
+  it("closes the participant popup on request", () => {
+    renderPage();
+    fireEvent.click(screen.getByText("select-p2"));
+    expect(screen.getByText("participant-popup:p2:false")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("close-popup"));
+    expect(screen.getByText("participant-popup:none:false")).toBeInTheDocument();
   });
 });

@@ -45,6 +45,12 @@ interface TeamPopupProps {
   /** Clicking a team in match history re-opens this same popup for that
    *  other team. */
   onSelectTeam: (teamId: string) => void;
+  /** Before the tournament starts, "who predicted this team" is exactly the
+   *  hidden prediction data PAGEMAP_SPEC §5 keeps from everyone (including
+   *  other logged-in participants) until predictions lock — so that widget
+   *  shows a plain "not viewable yet" placeholder instead of the real list,
+   *  same treatment as ParticipantPopup.tsx. */
+  tournamentStarted: boolean;
   /** Overrides for the tunable layout constants (column widths, row sizes,
    *  marker size, etc.) — defaults to the exact shipped look
    *  (DEFAULT_TEAM_POPUP_TUNING) when omitted, which is every real call
@@ -103,6 +109,16 @@ const WIDGET_BLOCK = "flex min-h-0 flex-col rounded-xl bg-background border bord
 // the rank column's fixed width stays a static class; nobody's asked to
 // tune that one.
 const ROW_RANK_W = "w-[0.8rem]";
+
+const NOT_VIEWABLE_MESSAGE = "Turnuva başlamadan bu bilgi görüntülenemez.";
+
+function NotViewablePlaceholder() {
+  return (
+    <p className="flex h-full items-center justify-center px-4 text-center font-display text-sm text-muted-foreground italic">
+      {NOT_VIEWABLE_MESSAGE}
+    </p>
+  );
+}
 
 const RESULT_LABEL: Record<ResultLetter, string> = {
   G: "Galibiyet",
@@ -461,6 +477,7 @@ export const TeamPopup = memo(function TeamPopup({
   onSelectParticipant,
   onSelectTeam,
   tuning,
+  tournamentStarted,
 }: TeamPopupProps) {
   const t: TeamPopupTuning = { ...DEFAULT_TEAM_POPUP_TUNING, ...tuning };
 
@@ -485,8 +502,8 @@ export const TeamPopup = memo(function TeamPopup({
   const nextMatch = useMemo(() => getNextMatch(matchHistory), [matchHistory]);
   const pastMatches = useMemo(() => getPastMatches(matchHistory), [matchHistory]);
   const predictors = useMemo(
-    () => (displayedId ? getTeamPredictors(displayedId, entries, results) : []),
-    [displayedId, entries, results]
+    () => (tournamentStarted && displayedId ? getTeamPredictors(displayedId, entries, results) : []),
+    [tournamentStarted, displayedId, entries, results]
   );
 
   const result = displayedId ? results[displayedId] : undefined;
@@ -606,7 +623,9 @@ export const TeamPopup = memo(function TeamPopup({
                     title="Katılımcıların bu takım için tahmin ettiği sıralamalar, gerçek sıralamalarına göre"
                   >
                     <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-2 py-2">
-                      {predictors.length === 0 ? (
+                      {!tournamentStarted ? (
+                        <NotViewablePlaceholder />
+                      ) : predictors.length === 0 ? (
                         <p className="px-2 py-2 font-display text-sm text-muted-foreground italic">
                           Bu takımı tahmin eden katılımcı yok.
                         </p>

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
@@ -8,6 +9,8 @@ import { ParticipantStatusList } from "./ParticipantStatusList";
 import { HomeHero } from "./HomeHero";
 import { useCountdown } from "./useCountdown";
 import { TOURNAMENT_START_ISO } from "./deadlines";
+import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
+import type { RankedEntry } from "../leaderboard/ranking";
 import type { Player } from "../profile/usePlayers";
 import type { MessageWithId } from "../chat/useMessages";
 import type { PostWithId } from "../forum/postTypes";
@@ -83,6 +86,28 @@ export function HomeLandingLoggedIn({
 }: HomeLandingLoggedInProps) {
   const countdown = useCountdown(TOURNAMENT_START_ISO);
 
+  // Participant popup, notstarted-logged-in edition (round-04): Home's
+  // Katılımcılar list is the only place this state can ever open it from, so
+  // there's no real leaderboard yet to look a rank/points up in — everyone's
+  // tied at 0 pre-start anyway, so that's exactly what's shown. The popup's
+  // own widgets (predictions, quiz, rank-over-time) don't touch this data;
+  // they show their own "not viewable yet" placeholder via `tournamentStarted`.
+  const [selectedPlayerUid, setSelectedPlayerUid] = useState<string | null>(null);
+  const selectedPlayer = players.find((p) => p.uid === selectedPlayerUid) ?? null;
+  const selectedRanked: RankedEntry | null = selectedPlayer
+    ? {
+        entry: {
+          uid: selectedPlayer.uid,
+          firstName: selectedPlayer.firstName,
+          lastName: selectedPlayer.lastName,
+          photoURL: selectedPlayer.photoURL,
+          points: 0,
+          ranking: [],
+        },
+        rank: 1,
+      }
+    : null;
+
   return (
     <div className={PAGE_SHELL}>
       {/* Personal welcome + primary action + countdown — one frame, no
@@ -103,13 +128,18 @@ export function HomeLandingLoggedIn({
           </div>
 
           <div className="flex flex-wrap items-center gap-6 sm:gap-8">
-            <Link
-              to="/predictions"
-              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-ink px-6 py-3 text-sm font-semibold text-background outline-none transition-all duration-150 ease-[var(--ease-cotton)] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass"
-            >
-              Tahminini Yap
-              <ArrowRight className="size-4" aria-hidden />
-            </Link>
+            {/* /predictions is a one-time door (predictions-page-round-02
+                §E) — once submitted, there's nothing left to do there, so
+                the button that leads to it just stops existing. */}
+            {!submitterUids.has(me.uid) && (
+              <Link
+                to="/predictions"
+                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-ink px-6 py-3 text-sm font-semibold text-background outline-none transition-all duration-150 ease-[var(--ease-cotton)] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass"
+              >
+                Tahminini Yap
+                <ArrowRight className="size-4" aria-hidden />
+              </Link>
+            )}
 
             {!countdown.done && (
               <div className="flex items-baseline gap-4 whitespace-nowrap">
@@ -134,7 +164,11 @@ export function HomeLandingLoggedIn({
             <FrameTitle className="text-base text-navy-ink sm:text-lg">Katılımcılar</FrameTitle>
           </FrameHeader>
           <FrameBody>
-            <ParticipantStatusList players={players} submitterUids={submitterUids} />
+            <ParticipantStatusList
+              players={players}
+              submitterUids={submitterUids}
+              onSelectPlayer={setSelectedPlayerUid}
+            />
           </FrameBody>
         </Frame>
 
@@ -182,6 +216,17 @@ export function HomeLandingLoggedIn({
           </FrameBody>
         </Frame>
       </div>
+
+      <ParticipantPopup
+        ranked={selectedRanked}
+        entries={[]}
+        results={{}}
+        onOpenChange={(open) => {
+          if (!open) setSelectedPlayerUid(null);
+        }}
+        onSelectTeam={() => {}}
+        tournamentStarted={false}
+      />
     </div>
   );
 }

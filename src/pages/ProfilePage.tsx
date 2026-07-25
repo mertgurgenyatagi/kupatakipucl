@@ -16,7 +16,6 @@ import { RankingList } from "../predictions/RankingList";
 import { TEAMS } from "../predictions/teams";
 import { useLeaderboard } from "../leaderboard/useLeaderboard";
 import { useResults } from "../leaderboard/useResults";
-import { evaluatePicks } from "../leaderboard/scoring";
 import { assignRanks } from "../leaderboard/ranking";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { TeamPopup } from "../leaderboard/TeamPopup";
@@ -151,11 +150,6 @@ export function ProfilePage() {
   const rankedEntries = assignRanks(entries);
   const myEntry = uid ? rankedEntries.find((r) => r.entry.uid === uid) : undefined;
   const selectedRanked = rankedEntries.find((r) => r.entry.uid === selectedUid) ?? null;
-  const correctness = currentPrediction
-    ? Object.fromEntries(
-        evaluatePicks(currentPrediction.ranking, results).map((p) => [p.teamId, p.correct])
-      )
-    : undefined;
 
   async function handlePhotoChange(file: File) {
     if (!uid || !displayedProfile) return;
@@ -388,9 +382,10 @@ export function ProfilePage() {
             </>
           ) : currentPrediction ? (
             <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+              {/* No `correctness` prop here — Mert's call: skip the
+                  per-team brass glow on this view entirely. */}
               <RankingList
                 ranking={currentPrediction.ranking}
-                correctness={correctness}
                 averagePositions={averagePositions}
                 onSelectTeam={handleSelectTeam}
               />
@@ -430,6 +425,7 @@ export function ProfilePage() {
         results={results}
         onOpenChange={handlePopupOpenChange}
         onSelectTeam={handleSelectTeam}
+        tournamentStarted={predictionLocked}
       />
       <TeamPopup
         teamId={selectedTeamId}
@@ -438,6 +434,7 @@ export function ProfilePage() {
         onOpenChange={handleTeamPopupOpenChange}
         onSelectParticipant={handleSelectParticipant}
         onSelectTeam={handleSelectTeam}
+        tournamentStarted={predictionLocked}
       />
 
       <Dialog
@@ -471,7 +468,7 @@ export function ProfilePage() {
                 setPredictionUiStep("idle");
               }}
             >
-              Vazgeç
+              Geri
             </Button>
             <Button
               onClick={async () => {
@@ -488,7 +485,7 @@ export function ProfilePage() {
                 }
               }}
             >
-              Evet, kaydet
+              Tamam
             </Button>
           </DialogFooter>
         </DialogContent>

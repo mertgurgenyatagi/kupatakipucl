@@ -62,6 +62,7 @@ describe("TeamPopup", () => {
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -77,6 +78,7 @@ describe("TeamPopup", () => {
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     expect(await screen.findByText(TEAM.name)).toBeInTheDocument();
@@ -94,6 +96,7 @@ describe("TeamPopup", () => {
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     expect(await screen.findByRole("img", { name: /Muhtemel 11/ })).toBeInTheDocument();
@@ -108,6 +111,7 @@ describe("TeamPopup", () => {
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     expect(await screen.findByText("GOL")).toBeInTheDocument();
@@ -125,6 +129,7 @@ describe("TeamPopup", () => {
         onOpenChange={() => {}}
         onSelectParticipant={onSelectParticipant}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     const adaButton = (await screen.findByText("Ada Lovelace")).closest("button")!;
@@ -141,6 +146,7 @@ describe("TeamPopup", () => {
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     expect(await screen.findByText("Bu takımı tahmin eden katılımcı yok.")).toBeInTheDocument();
@@ -159,6 +165,7 @@ describe("TeamPopup", () => {
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     const nextOpponent = TEAM_BY_ID_SHORT(TEAM_FIXTURES[1].homeTeamId === TEAM.id ? TEAM_FIXTURES[1].awayTeamId : TEAM_FIXTURES[1].homeTeamId);
@@ -186,6 +193,7 @@ describe("TeamPopup", () => {
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
         onSelectTeam={onSelectTeam}
+        tournamentStarted={true}
       />
     );
     const nextOpponentId =
@@ -206,6 +214,7 @@ describe("TeamPopup", () => {
         onOpenChange={onOpenChange}
         onSelectParticipant={() => {}}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     fireEvent.click(await screen.findByRole("button", { name: "Kapat" }));
@@ -221,10 +230,46 @@ describe("TeamPopup", () => {
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     await screen.findByText(TEAM.name);
     expect(screen.queryByRole("button", { name: /arması/ })).not.toBeInTheDocument();
+  });
+
+  describe("before the tournament starts", () => {
+    it("shows the not-viewable placeholder instead of the predictor list, and never calls onSelectParticipant", async () => {
+      render(
+        <TeamPopup
+          teamId={TEAM.id}
+          entries={[entryA, entryB]}
+          results={results}
+          onOpenChange={() => {}}
+          onSelectParticipant={() => {}}
+          onSelectTeam={() => {}}
+          tournamentStarted={false}
+        />
+      );
+      expect(await screen.findByText("Turnuva başlamadan bu bilgi görüntülenemez.")).toBeInTheDocument();
+      expect(screen.queryByText("Ada Lovelace")).not.toBeInTheDocument();
+      expect(screen.queryByText("Bu takımı tahmin eden katılımcı yok.")).not.toBeInTheDocument();
+    });
+
+    it("still shows the dossier (pitch diagram, stat lists, match history) since that's dummy data, not hidden prediction data", async () => {
+      render(
+        <TeamPopup
+          teamId={TEAM.id}
+          entries={[entryA]}
+          results={{}}
+          onOpenChange={() => {}}
+          onSelectParticipant={() => {}}
+          onSelectTeam={() => {}}
+          tournamentStarted={false}
+        />
+      );
+      expect(await screen.findByRole("img", { name: /Muhtemel 11/ })).toBeInTheDocument();
+      expect(screen.getByText("GOL")).toBeInTheDocument();
+    });
   });
 });
 

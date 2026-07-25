@@ -84,6 +84,7 @@ Not populated in this seed — no components exist in code yet. Re-run `/impecca
 - **Do** build desktop as a fixed-viewport app shell — no document-level vertical scroll, ever (DESIGN-SPEC.md §55, firm decision). The outer frame is 100vh/100dvh; any region with more content than fits (leaderboard body, a forum thread, a stats panel) gets its own internal scroll container instead. Same pattern as Linear/Notion/Discord — not exotic, just needs each page's layout planned around it from the start rather than retrofitted.
 - **Do** surface match-level detail (lineups, top scorers, xG) in a large popup/modal, and give broader tournament-wide stats their own dedicated page (DESIGN-SPEC.md §55a) — not crammed into an existing view.
 - **Do** keep whatever ships at launch looking fully polished, even if the shipped *scope* is intentionally phased (deep stats/xG can come later; the craft on what does ship should not look unfinished).
+- **Do** apply **the Cursorify Rule** wherever a page gets a real pass (first named during the signup/quiz build, reapplied to /predictions): no I-beam text cursor anywhere, no exceptions unless explicitly stated — every clickable/interactive element gets `cursor-pointer`, everything else stays the plain default arrow. Non-interactive text (labels, copy, read-only rows) should never look selectable-by-cursor even if it's technically selectable.
 
 ### Don't:
 - **Don't** let the near-white drift into a nameable cream/sand/parchment tone — see §2's Paper-Mill Rule.

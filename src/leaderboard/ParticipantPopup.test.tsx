@@ -59,6 +59,7 @@ describe("ParticipantPopup", () => {
         results={{}}
         onOpenChange={() => {}}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -73,6 +74,7 @@ describe("ParticipantPopup", () => {
         results={{}}
         onOpenChange={() => {}}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     expect(await screen.findByText("Ada Lovelace")).toBeInTheDocument();
@@ -89,6 +91,7 @@ describe("ParticipantPopup", () => {
         results={results}
         onOpenChange={() => {}}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     expect(await screen.findByText(TEAMS[0].shortName)).toBeInTheDocument();
@@ -109,6 +112,7 @@ describe("ParticipantPopup", () => {
         results={results}
         onOpenChange={() => {}}
         onSelectTeam={onSelectTeam}
+        tournamentStarted={true}
       />
     );
     const row = (await screen.findByText(TEAMS[0].shortName)).closest('[role="row"]')!;
@@ -136,6 +140,7 @@ describe("ParticipantPopup", () => {
         results={{}}
         onOpenChange={() => {}}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     // Every answer gets a trailing period, even ones that didn't have one.
@@ -155,6 +160,7 @@ describe("ParticipantPopup", () => {
         results={{}}
         onOpenChange={() => {}}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     expect(await screen.findByText("Anket cevapları görüntülenemiyor.")).toBeInTheDocument();
@@ -169,6 +175,7 @@ describe("ParticipantPopup", () => {
         results={{}}
         onOpenChange={() => {}}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     expect(await screen.findByText("Bu katılımcı anketi doldurmamış.")).toBeInTheDocument();
@@ -182,6 +189,7 @@ describe("ParticipantPopup", () => {
         results={{}}
         onOpenChange={() => {}}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     expect(
@@ -197,6 +205,7 @@ describe("ParticipantPopup", () => {
         results={{}}
         onOpenChange={() => {}}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     await waitFor(() => expect(mockGetDocs).toHaveBeenCalled());
@@ -212,9 +221,57 @@ describe("ParticipantPopup", () => {
         results={{}}
         onOpenChange={onOpenChange}
         onSelectTeam={() => {}}
+        tournamentStarted={true}
       />
     );
     fireEvent.click(screen.getByRole("button", { name: "Kapat" }));
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false, expect.anything()));
+  });
+
+  describe("before the tournament starts", () => {
+    it("shows a not-viewable placeholder in place of the predictions grid, quiz answers, and rank history", async () => {
+      mockGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => ({
+          age: 25,
+          footballKnowledge: 6,
+          messiOrRonaldo: "messi",
+          superLigTeam: "Galatasaray",
+          uclTeam: "Arsenal",
+          device: "phone",
+          submittedAt: 123,
+        }),
+      });
+      render(
+        <ParticipantPopup
+          ranked={{ entry: baseEntry, rank: 3 }}
+          entries={[baseEntry, otherEntry]}
+          results={results}
+          onOpenChange={() => {}}
+          onSelectTeam={() => {}}
+          tournamentStarted={false}
+        />
+      );
+      expect(await screen.findByText("Ada Lovelace")).toBeInTheDocument();
+      expect(screen.getAllByText("Turnuva başlamadan bu bilgi görüntülenemez.")).toHaveLength(3);
+      expect(screen.queryByText(TEAMS[0].shortName)).not.toBeInTheDocument();
+      expect(screen.queryByText("Galatasaray.")).not.toBeInTheDocument();
+      expect(screen.queryByText("Yeterli maç oynanmadan gösterilmez.")).not.toBeInTheDocument();
+    });
+
+    it("does not fetch the survey or compute rank history at all", async () => {
+      render(
+        <ParticipantPopup
+          ranked={{ entry: baseEntry, rank: 3 }}
+          entries={[baseEntry, otherEntry]}
+          results={results}
+          onOpenChange={() => {}}
+          onSelectTeam={() => {}}
+          tournamentStarted={false}
+        />
+      );
+      await waitFor(() => expect(mockGetDocs).toHaveBeenCalled()); // devMatches still loads
+      expect(mockGetDoc).not.toHaveBeenCalled(); // but the survey read is skipped
+    });
   });
 });

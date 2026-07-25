@@ -1,5 +1,7 @@
 import { TEAMS } from "./teams";
 import { TeamCrest } from "../leaderboard/TeamCrest";
+import { useBoundaryHover } from "./useBoundaryHover";
+import { boundaryBandRole } from "./predictionBoundary";
 import { cn } from "@/lib/utils";
 
 interface RankingListProps {
@@ -20,8 +22,15 @@ interface RankingListProps {
   onSelectTeam?: (teamId: string) => void;
 }
 
+/**
+ * Same hover boundary tint as the ranker and the intro's
+ * ScoringExampleDiagram (predictions-page-round-02 Q14, round-03 points 2-4)
+ * — it explains why a team did or didn't glow green just as well after the
+ * fact as it does while still ranking.
+ */
 export function RankingList({ ranking, correctness, averagePositions, onSelectTeam }: RankingListProps) {
   const teamsById = new Map(TEAMS.map((team) => [team.id, team]));
+  const { activeIndex, handleMouseEnter, handleMouseLeave } = useBoundaryHover();
 
   return (
     <ol className="flex flex-col gap-2">
@@ -29,16 +38,21 @@ export function RankingList({ ranking, correctness, averagePositions, onSelectTe
         const team = teamsById.get(id);
         const isCorrect = correctness?.[id] ?? false;
         const average = averagePositions?.[id];
+        const inBand = activeIndex !== null && boundaryBandRole(index, activeIndex, ranking.length) !== "none";
+        const isOrigin = index === activeIndex;
         return (
           <li
             key={id}
             onClick={onSelectTeam ? () => onSelectTeam(id) : undefined}
+            onMouseEnter={() => handleMouseEnter(index)}
+            onMouseLeave={handleMouseLeave}
             className={cn(
-              "flex items-center gap-3.5 rounded-lg border px-4 py-3 transition-shadow duration-500 ease-[var(--ease-cotton)]",
+              "flex items-center gap-3.5 rounded-lg border px-4 py-3 transition-[background-color,box-shadow] duration-500 ease-[var(--ease-cotton)]",
               onSelectTeam && "cursor-pointer hover:border-border",
               isCorrect
                 ? "border-brass/50 bg-brass/[0.08] shadow-[0_0_18px_rgba(31,138,101,0.4)]"
-                : "border-border/50 bg-background"
+                : "border-border/50 bg-background",
+              inBand && cn("bg-foreground/[0.06]", !isOrigin && "animate-pulse")
             )}
           >
             <TeamCrest teamId={id} className="size-8 shrink-0" />

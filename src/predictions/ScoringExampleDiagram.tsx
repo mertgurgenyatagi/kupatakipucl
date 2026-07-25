@@ -1,0 +1,54 @@
+import { TeamCrest } from "../leaderboard/TeamCrest";
+import { Team } from "./teams";
+import { cn } from "@/lib/utils";
+
+interface ScoringExampleDiagramProps {
+  teams: Team[];
+  centerIndex: number;
+}
+
+/**
+ * Seven rows: the scoring band (the centered team plus two either side) sits
+ * just barely brighter than the page background and pulses like a
+ * heartbeat — except the centered row itself, which stays still so the
+ * team actually being explained doesn't compete for attention with its own
+ * explanation. The two outermost rows match the background exactly, showing
+ * what's just outside the band — a static, one-time illustration of the ±2
+ * rule, distinct from the real ranker's own hover bracket (TeamRanker.tsx)
+ * which explains the same rule live. Only the centered row actually shows a
+ * team (crest + name); every other row is just its rank number, left-blank
+ * otherwise — the point is the shape of the band, not who's in it.
+ */
+export function ScoringExampleDiagram({ teams, centerIndex }: ScoringExampleDiagramProps) {
+  return (
+    <div className="flex w-full max-w-xs flex-col gap-1.5">
+      {teams.map((team, index) => {
+        const inBand = Math.abs(index - centerIndex) <= 2;
+        const isCenter = index === centerIndex;
+        return (
+          <div
+            key={team.id}
+            className={cn(
+              "flex items-center gap-3 rounded-lg border px-3 py-2",
+              inBand
+                ? cn("border-border bg-foreground/[0.06]", !isCenter && "animate-pulse")
+                : "border-border/50 bg-background"
+            )}
+          >
+            <span className="w-5 shrink-0 text-right font-mono text-sm font-bold text-amber-400 tnum">
+              {index + 1}
+            </span>
+            {isCenter && (
+              <>
+                <TeamCrest teamId={team.id} className="size-7 shrink-0" />
+                <span className="min-w-0 flex-1 truncate font-display text-sm font-semibold text-ink">
+                  {team.name}
+                </span>
+              </>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

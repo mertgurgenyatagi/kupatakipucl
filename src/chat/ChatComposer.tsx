@@ -136,7 +136,7 @@ export function ChatComposer({ uid, players }: ChatComposerProps) {
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => pickMention(player)}
                 className={cn(
-                  "block w-full truncate px-3 py-1.5 text-left text-sm",
+                  "block w-full cursor-pointer truncate px-3 py-1.5 text-left text-sm",
                   i === activeSuggestion ? "bg-brass/[0.12] text-brass" : "text-ink hover:bg-muted"
                 )}
               >

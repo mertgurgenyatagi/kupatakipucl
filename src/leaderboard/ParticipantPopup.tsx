@@ -41,6 +41,22 @@ interface ParticipantPopupProps {
    *  that team's own dossier (TeamPopup.tsx) — the cross-link this grid's
    *  row/crest/name click affordances were built for. */
   onSelectTeam: (teamId: string) => void;
+  /** Before the tournament starts, nobody's prediction/quiz/rank-history is
+   *  meaningful yet (predictions aren't even locked — PAGEMAP_SPEC §5's
+   *  visibility rule keeps them hidden from everyone until they are), so
+   *  every widget below shows a plain "not viewable yet" placeholder instead
+   *  of fetching or rendering real content. */
+  tournamentStarted: boolean;
+}
+
+const NOT_VIEWABLE_MESSAGE = "Turnuva başlamadan bu bilgi görüntülenemez.";
+
+function NotViewablePlaceholder() {
+  return (
+    <p className="flex h-full items-center justify-center px-4 text-center font-display text-sm text-muted-foreground italic">
+      {NOT_VIEWABLE_MESSAGE}
+    </p>
+  );
 }
 
 function initials(firstName: string, lastName: string) {
@@ -198,6 +214,7 @@ export const ParticipantPopup = memo(function ParticipantPopup({
   results,
   onOpenChange,
   onSelectTeam,
+  tournamentStarted,
 }: ParticipantPopupProps) {
   // Keep rendering the last real participant while the dialog animates
   // closed — `ranked` goes null the instant the parent clears selection,
@@ -212,12 +229,13 @@ export const ParticipantPopup = memo(function ParticipantPopup({
   const displayedUid = displayed?.entry.uid ?? null;
 
   const { outcomes } = useDevMatches();
-  const { response: survey, loading: surveyLoading, error: surveyError } =
-    useSurveyResponse(displayedUid);
+  const { response: survey, loading: surveyLoading, error: surveyError } = useSurveyResponse(
+    tournamentStarted ? displayedUid : null
+  );
 
   const rankHistory = useMemo(
-    () => (displayedUid ? computeRankHistory(displayedUid, entries, outcomes) : []),
-    [displayedUid, entries, outcomes]
+    () => (tournamentStarted && displayedUid ? computeRankHistory(displayedUid, entries, outcomes) : []),
+    [tournamentStarted, displayedUid, entries, outcomes]
   );
 
   return (
@@ -299,6 +317,9 @@ export const ParticipantPopup = memo(function ParticipantPopup({
               <div className="grid h-56 min-h-0 grid-cols-2 gap-3 sm:h-64">
                 <div className={WIDGET_BLOCK}>
                   <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-2">
+                    {!tournamentStarted ? (
+                      <NotViewablePlaceholder />
+                    ) : (
                     <div
                       role="table"
                       className="grid text-xs"
@@ -395,12 +416,15 @@ export const ParticipantPopup = memo(function ParticipantPopup({
                         })}
                       </div>
                     </div>
+                    )}
                   </div>
                 </div>
 
                 <div className={WIDGET_BLOCK}>
                   <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-2">
-                    {survey ? (
+                    {!tournamentStarted ? (
+                      <NotViewablePlaceholder />
+                    ) : survey ? (
                       <div className="flex flex-col gap-4">
                         {[
                           { question: "Yaşınız", answer: String(survey.age) },
@@ -449,8 +473,12 @@ export const ParticipantPopup = memo(function ParticipantPopup({
               </div>
 
               {/* 4. Rank-over-time — full width, bottom. */}
-              <div className={cn(WIDGET_BLOCK, "shrink-0")}>
-                <RankHistoryChart checkpoints={rankHistory} totalParticipants={entries.length} />
+              <div className={cn(WIDGET_BLOCK, "shrink-0", !tournamentStarted && "h-24")}>
+                {!tournamentStarted ? (
+                  <NotViewablePlaceholder />
+                ) : (
+                  <RankHistoryChart checkpoints={rankHistory} totalParticipants={entries.length} />
+                )}
               </div>
             </FrameBody>
           </Frame>

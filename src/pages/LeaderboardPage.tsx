@@ -169,6 +169,7 @@ export function LeaderboardPage() {
         results={results}
         onOpenChange={handlePopupOpenChange}
         onSelectTeam={handleSelectTeam}
+        tournamentStarted={phase !== "notstarted"}
       />
       <TeamPopup
         teamId={selectedTeamId}
@@ -177,6 +178,7 @@ export function LeaderboardPage() {
         onOpenChange={handleTeamPopupOpenChange}
         onSelectParticipant={handleSelectParticipant}
         onSelectTeam={handleSelectTeam}
+        tournamentStarted={phase !== "notstarted"}
       />
     </div>
   );
