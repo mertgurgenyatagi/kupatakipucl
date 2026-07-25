@@ -2,10 +2,20 @@ import { motion } from "motion/react";
 
 /** One odometer wheel: a 1-digit-tall window over a stacked 0-9 strip,
  *  translated by whole-digit-heights (in %, so it's independent of the
- *  surrounding font-size — no px/em bookkeeping needed). */
+ *  surrounding font-size — no px/em bookkeeping needed).
+ *
+ *  The top-[...] nudge: per the CSS inline-block spec, an element with
+ *  overflow != visible uses its *bottom margin edge* as the baseline for
+ *  vertical-align purposes, not the text baseline of anything inside it —
+ *  overflow-hidden is required here for the clipping effect, so
+ *  align-baseline alone still sits the digit noticeably above the real
+ *  text baseline (by roughly a font's descender height). A relative-
+ *  positioned offset compensates; this isn't derived from Inter's exact
+ *  metrics, it's tuned by eye, so nudge it further if a different digit
+ *  count or font ever makes it drift again. */
 function DigitReel({ digit }: { digit: number }) {
   return (
-    <span className="relative inline-block h-[1em] w-[0.62em] overflow-hidden align-baseline">
+    <span className="relative top-[0.14em] inline-block h-[1em] w-[0.62em] overflow-hidden align-baseline">
       <motion.span
         className="absolute inset-x-0 top-0 flex flex-col"
         animate={{ y: `${-digit * 10}%` }}

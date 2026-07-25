@@ -6,7 +6,6 @@ const mockUseAuth = vi.fn();
 const mockUseVisibilityState = vi.fn();
 const mockUsePrediction = vi.fn();
 const mockSavePrediction = vi.fn();
-const mockSaveSurveyResponse = vi.fn();
 
 vi.mock("../auth/AuthProvider", () => ({
   useAuth: () => mockUseAuth(),
@@ -19,16 +18,6 @@ vi.mock("../state/useVisibilityState", () => ({
 vi.mock("../predictions/usePrediction", () => ({
   usePrediction: (uid: string | null) => mockUsePrediction(uid),
   savePrediction: (...args: unknown[]) => mockSavePrediction(...args),
-}));
-
-vi.mock("../predictions/useSurveyResponse", () => ({
-  saveSurveyResponse: (...args: unknown[]) => mockSaveSurveyResponse(...args),
-}));
-
-vi.mock("../predictions/SurveyForm", () => ({
-  SurveyForm: ({ onComplete }: { onComplete: (r: unknown) => void }) => (
-    <button onClick={() => onComplete({ age: 30 })}>complete-survey</button>
-  ),
 }));
 
 vi.mock("../predictions/TeamRanker", () => ({
@@ -54,7 +43,6 @@ describe("PredictionsPage", () => {
   beforeEach(() => {
     mockUseAuth.mockReturnValue({ user: { uid: "uid1" } });
     mockSavePrediction.mockReset();
-    mockSaveSurveyResponse.mockReset();
   });
 
   it("shows the blocked message when the page isn't allowed for this state", () => {
@@ -71,36 +59,33 @@ describe("PredictionsPage", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("shows the survey first when there's no existing prediction (pre-tournament)", () => {
+  // The survey used to gate this (see PredictionsPage.tsx's comment) — it's
+  // mandatory at sign-up now (ProfileGate/SignupFlow), so reaching this page
+  // with no prediction goes straight to the ranker.
+  it("goes straight to the ranker when there's no existing prediction (pre-tournament)", () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
     render(<PredictionsPage />);
-    expect(screen.getByText("complete-survey")).toBeInTheDocument();
+    expect(screen.getByText("ranker-initial:ajax,arsenal,atalanta,athletic-club,atletico-madrid,barcelona,bayer-leverkusen,bayern-munich,benfica,bodo-glimt,borussia-dortmund,chelsea,club-brugge,copenhagen,eintracht-frankfurt,galatasaray,inter-milan,juventus,kairat-almaty,liverpool,manchester-city,marseille,monaco,napoli,newcastle-united,olympiacos,pafos,paris-saint-germain,psv-eindhoven,qarabag,real-madrid,slavia-prague,sporting-cp,tottenham-hotspur,union-saint-gilloise,villarreal")).toBeInTheDocument();
   });
 
-  it("moves to the ranker after the survey completes, then saves survey+prediction on submit", async () => {
+  it("saves the first-time prediction on submit", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
     mockSavePrediction.mockResolvedValue({ ranking: ["z", "y", "x"], submittedAt: 1, updatedAt: 1 });
     render(<PredictionsPage />);
 
-    fireEvent.click(screen.getByText("complete-survey"));
-    expect(screen.getByText("submit-ranking")).toBeInTheDocument();
-
     fireEvent.click(screen.getByText("submit-ranking"));
 
-    await waitFor(() => expect(mockSaveSurveyResponse).toHaveBeenCalledWith("uid1", { age: 30 }));
-    expect(mockSavePrediction).toHaveBeenCalledWith("uid1", ["z", "y", "x"]);
+    await waitFor(() => expect(mockSavePrediction).toHaveBeenCalledWith("uid1", ["z", "y", "x"]));
   });
 
   it("shows an inline error and stays on the ranker when the first-time submission fails", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
-    mockSaveSurveyResponse.mockResolvedValue(undefined);
     mockSavePrediction.mockRejectedValue(new Error("network"));
     render(<PredictionsPage />);
 
-    fireEvent.click(screen.getByText("complete-survey"));
     fireEvent.click(screen.getByText("submit-ranking"));
 
     await waitFor(() => expect(mockSavePrediction).toHaveBeenCalledWith("uid1", ["z", "y", "x"]));
@@ -120,7 +105,7 @@ describe("PredictionsPage", () => {
     expect(screen.getByText("submission-counter")).toBeInTheDocument();
   });
 
-  it("editing skips the survey, requires overwrite confirmation, and discarding leaves the original unchanged", () => {
+  it("editing requires overwrite confirmation, and discarding leaves the original unchanged", () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({
       prediction: { ranking: ["arsenal"], submittedAt: 1, updatedAt: 1 },
@@ -129,7 +114,6 @@ describe("PredictionsPage", () => {
     render(<PredictionsPage />);
 
     fireEvent.click(screen.getByText("Düzenle"));
-    expect(screen.queryByText("complete-survey")).not.toBeInTheDocument();
     expect(screen.getByText("submit-ranking")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("submit-ranking"));

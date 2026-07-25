@@ -7,8 +7,8 @@ export const MESSI_RONALDO_LABEL: Record<MessiOrRonaldo, string> = {
 };
 export const DEVICE_LABEL: Record<Device, string> = {
   phone: "Telefon",
-  desktop: "Bilgisayar",
-  both: "İkisi de",
+  desktop: "Masaüstü",
+  both: "Yarı yarıya",
 };
 
 /** Every answer reads as a full sentence, even the one-word ones — appends a

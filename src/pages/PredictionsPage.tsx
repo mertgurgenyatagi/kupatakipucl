@@ -3,13 +3,10 @@ import { useAuth } from "../auth/AuthProvider";
 import { useVisibilityState } from "../state/useVisibilityState";
 import { isPageAllowed } from "../state/pageAccess";
 import { usePrediction, savePrediction } from "../predictions/usePrediction";
-import { saveSurveyResponse } from "../predictions/useSurveyResponse";
-import { SurveyForm } from "../predictions/SurveyForm";
 import { TeamRanker } from "../predictions/TeamRanker";
 import { SubmissionCounter } from "../predictions/SubmissionCounter";
 import { TEAMS } from "../predictions/teams";
 import { RankingList } from "../predictions/RankingList";
-import { SurveyResponse } from "../predictions/surveyTypes";
 import { Prediction } from "../predictions/predictionTypes";
 
 type UiStep = "idle" | "rank" | "confirm-overwrite";
@@ -19,7 +16,6 @@ export function PredictionsPage() {
   const state = useVisibilityState();
   const { prediction, loading } = usePrediction(user?.uid ?? null);
   const [uiStep, setUiStep] = useState<UiStep>("idle");
-  const [pendingSurvey, setPendingSurvey] = useState<SurveyResponse | null>(null);
   const [pendingOrder, setPendingOrder] = useState<string[] | null>(null);
   const [saved, setSaved] = useState<Prediction | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,21 +40,11 @@ export function PredictionsPage() {
     return <RankingList ranking={currentPrediction.ranking} />;
   }
 
-  // state === "loggedin_notstarted" from here down
-
-  if (!currentPrediction && uiStep === "idle") {
-    return (
-      <SurveyForm
-        onComplete={(response) => {
-          setPendingSurvey(response);
-          setError(null);
-          setUiStep("rank");
-        }}
-      />
-    );
-  }
-
-  if (uiStep === "rank") {
+  // state === "loggedin_notstarted" from here down. The survey used to be
+  // gated here (first-ever submit) — it's now mandatory at sign-up instead
+  // (ProfileGate/SignupFlow), so reaching this page with no prediction yet
+  // goes straight to ranking, same as re-ranking an existing one.
+  if (uiStep === "rank" || (!currentPrediction && uiStep === "idle")) {
     const initialOrder = currentPrediction ? currentPrediction.ranking : TEAMS.map((t) => t.id);
     return (
       <div>
@@ -73,7 +59,6 @@ export function PredictionsPage() {
             } else {
               void (async () => {
                 try {
-                  await saveSurveyResponse(uid, pendingSurvey!);
                   const result = await savePrediction(uid, order);
                   setSaved(result);
                   setError(null);

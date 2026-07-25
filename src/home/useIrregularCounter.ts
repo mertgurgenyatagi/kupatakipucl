@@ -6,10 +6,10 @@ interface IrregularCounterOptions {
 }
 
 // Skewed toward short gaps with an occasional long pause (random() twice,
-// multiplied, biases toward zero) — averages to roughly 1.5 ticks/sec while
+// multiplied, biases toward zero) — averages to roughly 0.75 ticks/sec while
 // reading as "extremely irregular" rather than a metronome (Mert's spec).
 function nextDelayMs(random: () => number): number {
-  return 120 + random() * random() * 2200;
+  return 120 + random() * random() * 4850;
 }
 
 function nextStep(random: () => number): number {
