@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Hero Photo Tuner</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 24px;
+    background: #111;
+    color: #eee;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .sub { color: #999; font-size: 13px; margin: 0 0 18px; }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  button {
+    cursor: pointer;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #222;
+    color: #eee;
+    font-size: 13px;
+  }
+  button:hover { background: #333; }
+  #copied { font-size: 12px; color: #7fd17f; }
+
+  #output {
+    display: none;
+    width: 100%;
+    min-height: 340px;
+    margin-top: 14px;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 12px;
+    background: #000;
+    color: #8f8;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 12px;
+    white-space: pre;
+    resize: vertical;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 26px;
+  }
+  .card {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    border-radius: 6px;
+    background: #000;
+  }
+  .frame img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    will-change: transform;
+  }
+  .name { font-weight: 600; margin: 10px 0 2px; font-size: 14px; }
+  .file { font-size: 11px; color: #777; margin-bottom: 10px; word-break: break-all; }
+
+  .sliders { display: flex; flex-direction: column; gap: 8px; }
+  .sliders label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #aaa;
+  }
+  input[type="range"] { width: 100%; }
+  .reset {
+    background: none;
+    border: none;
+    color: #6cf;
+    text-decoration: underline;
+    font-size: 11px;
+    padding: 0;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Hero Photo Tuner</h1>
+<p class="sub">
+  Each frame is the same 2:3 (width:height) portrait box the hero carousel renders.
+  Drag the sliders to set position and zoom for each photo, then export. Zoom is
+  simulated here with a CSS scale, but gets applied as a tighter source crop in
+  the real pipeline — so the shipped image stays full quality at any zoom level,
+  it doesn't get blurrier the way this on-screen preview would past 1.0×.
+</p>
+
+<div class="topbar">
+  <button id="exportBtn">Export positions</button>
+  <span id="copied"></span>
+</div>
+<textarea id="output" readonly></textarea>
+
+<div class="grid" id="grid"></div>
+
+<script>
+  // file: on-disk filename in this folder (source, pre-conversion)
+  // key: the eventual served path once these go through the crop/convert
+  //      pipeline and land in public/hero/ — matches HERO_IMAGE_POSITIONS keys
+  // name: display label only
+  const DATA = [
+    { file: "new_bellingham.jpeg", key: "/hero/bellingham.webp", name: "Bellingham" },
+    { file: "new_bruno.webp",      key: "/hero/bruno.webp",      name: "Bruno Fernandes" },
+    { file: "new_dembele.jpg",     key: "/hero/dembele.webp",    name: "Dembélé" },
+    { file: "new_haaland.webp",    key: "/hero/haaland.webp",    name: "Haaland" },
+    { file: "new_kane.webp",       key: "/hero/harry_kane.webp", name: "Harry Kane" },
+    { file: "new_mbappe.jpg",      key: "/hero/mbappe.webp",     name: "Mbappé" },
+    { file: "new_musiala.jpeg",    key: "/hero/musiala.webp",    name: "Musiala" },
+    { file: "new_olise.webp",      key: "/hero/olise.webp",      name: "Olise" },
+    { file: "new_pedri.jpeg",      key: "/hero/pedri.webp",      name: "Pedri" },
+    { file: "new_raphinha.jpg",    key: "/hero/raphinha.webp",   name: "Raphinha" },
+    { file: "new_rice.jpg",        key: "/hero/rice.webp",       name: "Rice" },
+    { file: "new_rodri.jpg",       key: "/hero/rodri.webp",      name: "Rodri" },
+    { file: "new_saka.jpg",        key: "/hero/saka.webp",       name: "Saka" },
+    { file: "new_valverde.jpeg",   key: "/hero/valverde.webp",   name: "Valverde" },
+    { file: "new_vinijr.webp",     key: "/hero/vinijr.webp",     name: "Vinícius Jr." },
+    { file: "new_wirtz.webp",      key: "/hero/wirtz.webp",      name: "Wirtz" },
+    { file: "new_yamal.webp",      key: "/hero/yamal.webp",      name: "Yamal" },
+  ];
+
+  const DEFAULT_X = 50;
+  const DEFAULT_Y = 25; // faces tend to sit in the upper third of these shots
+  const DEFAULT_ZOOM = 100; // 1.00x — same framing object-fit:cover gives you today
+
+  const positions = {}; // key -> { x, y, zoom }
+  const grid = document.getElementById("grid");
+
+  DATA.forEach((item) => {
+    positions[item.key] = { x: DEFAULT_X, y: DEFAULT_Y, zoom: DEFAULT_ZOOM / 100 };
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="frame">
+        <img src="${item.file}" alt="${item.name}" />
+      </div>
+      <div class="name">${item.name}</div>
+      <div class="file">${item.file} → ${item.key}</div>
+      <div class="sliders">
+        <label>Horizontal <span class="xval">${DEFAULT_X}%</span></label>
+        <input type="range" min="0" max="100" value="${DEFAULT_X}" class="xSlider" />
+        <label>Vertical <span class="yval">${DEFAULT_Y}%</span></label>
+        <input type="range" min="0" max="100" value="${DEFAULT_Y}" class="ySlider" />
+        <label>Zoom <span class="zval">${(DEFAULT_ZOOM / 100).toFixed(2)}×</span></label>
+        <input type="range" min="100" max="400" value="${DEFAULT_ZOOM}" class="zSlider" />
+      </div>
+      <button class="reset">Reset</button>
+    `;
+
+    const img = card.querySelector("img");
+    const xSlider = card.querySelector(".xSlider");
+    const ySlider = card.querySelector(".ySlider");
+    const zSlider = card.querySelector(".zSlider");
+    const xval = card.querySelector(".xval");
+    const yval = card.querySelector(".yval");
+    const zval = card.querySelector(".zval");
+
+    function apply() {
+      const x = Number(xSlider.value);
+      const y = Number(ySlider.value);
+      const zoom = Number(zSlider.value) / 100;
+      positions[item.key] = { x, y, zoom };
+      xval.textContent = x + "%";
+      yval.textContent = y + "%";
+      zval.textContent = zoom.toFixed(2) + "×";
+      img.style.objectPosition = x + "% " + y + "%";
+      img.style.transformOrigin = x + "% " + y + "%";
+      img.style.transform = "scale(" + zoom + ")";
+    }
+
+    xSlider.addEventListener("input", apply);
+    ySlider.addEventListener("input", apply);
+    zSlider.addEventListener("input", apply);
+    card.querySelector(".reset").addEventListener("click", () => {
+      xSlider.value = 50;
+      ySlider.value = 50;
+      zSlider.value = 100;
+      apply();
+    });
+
+    apply();
+    grid.appendChild(card);
+  });
+
+  document.getElementById("exportBtn").addEventListener("click", () => {
+    const lines = DATA.map((item) => {
+      const p = positions[item.key];
+      return `  "${item.key}": { x: ${p.x}, y: ${p.y}, zoom: ${p.zoom.toFixed(2)} },`;
+    });
+    const text =
+      "// x/y are the focal point (%), zoom is the source-crop tightness (1.00 = no zoom).\n" +
+      "// Fed into the crop script's extract math, not used directly as CSS object-position.\n" +
+      "export const HERO_CROP_FOCUS: Record<string, { x: number; y: number; zoom: number }> = {\n" +
+      lines.join("\n") +
+      "\n};";
+
+    const out = document.getElementById("output");
+    out.style.display = "block";
+    out.value = text;
+
+    navigator.clipboard.writeText(text).then(
+      () => {
+        const c = document.getElementById("copied");
+        c.textContent = "Copied to clipboard";
+        setTimeout(() => (c.textContent = ""), 2000);
+      },
+      () => {} // clipboard blocked under file:// in some browsers — textarea above is the fallback
+    );
+  });
+</script>
+
+</body>
+</html>

@@ -391,7 +391,7 @@ export function ProfilePage() {
                   per-team brass glow on this view entirely. */}
               <RankingList
                 ranking={currentPrediction.ranking}
-                averagePositions={averagePositions}
+                averagePositions={state === "loggedin_notstarted" ? undefined : averagePositions}
                 onSelectTeam={handleSelectTeam}
               />
             </div>

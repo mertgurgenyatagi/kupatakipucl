@@ -1,9 +1,13 @@
+import { useState, type KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { PostWithId } from "./postTypes";
 import { Player } from "../profile/usePlayers";
 import { computeThreadStats } from "./threadStats";
 import { timeAgo } from "./forumTime";
+import { ForumImageThumb } from "./ForumImageThumb";
+import { ThreadPopup } from "./ThreadPopup";
+import { fullName, firstNameOnly, avatarSrc } from "../profile/deletedAccount";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +18,10 @@ interface RecentPostsPreviewProps {
   /** postId -> set of uids who liked it. */
   likesByPost: Map<string, Set<string>>;
   onToggleLike: (postId: string) => void;
+  onSelectParticipant: (uid: string) => void;
+  onDeletePost: (postId: string) => void;
+  onSaveEdit: (postId: string, text: string) => void;
+  onRefetch: () => void;
   /** Defaults to 3 (forum-widget-round-01 Q4) — enough to feel alive in a
    *  home-page cell without turning into the full thread view (that's what
    *  /forum is for). */
@@ -25,13 +33,14 @@ function initials(firstName: string, lastName: string) {
 }
 
 /**
- * "Recent forum posts" per PAGE_BRIEFING's Home brief — a condensed preview,
- * explicitly not the full interactive Forum (that stays PostForm/ThreadNode's
- * job at /forum). Read-only except for the like toggle (forum-widget-round-01
- * §C — no quick-reply, no in-widget composer, no edit/delete here, all of
- * that stays a /forum-only concern). Threads sort by last activity, not
- * strictly by when they were first posted, so a reply bumps its thread back
- * to the top (round-01 Q1/Q6).
+ * "Recent forum posts" per PAGE_BRIEFING's Home brief — a condensed preview.
+ * Every row is a single click target (whole-row, gray-on-hover) that opens
+ * the exact same ThreadPopup /forum itself uses — the only carve-outs are
+ * the like button and the reply-count pill, which both stay their own
+ * target (the pill still leads to the same popup, just via its own click
+ * rather than the row's, so it can get its own brass hover state). Threads
+ * sort by last activity, not strictly by when they were first posted, so a
+ * reply bumps its thread back to the top (round-01 Q1/Q6).
  */
 export function RecentPostsPreview({
   posts,
@@ -39,8 +48,14 @@ export function RecentPostsPreview({
   uid,
   likesByPost,
   onToggleLike,
+  onSelectParticipant,
+  onDeletePost,
+  onSaveEdit,
+  onRefetch,
   limit = 3,
 }: RecentPostsPreviewProps) {
+  const [expandedRootId, setExpandedRootId] = useState<string | null>(null);
+
   const playersByUid = new Map(players.map((p) => [p.uid, p]));
   const stats = computeThreadStats(posts);
   const recent = posts
@@ -56,75 +71,114 @@ export function RecentPostsPreview({
     );
   }
 
-  return (
-    <ul className="no-scrollbar min-h-0 flex-1 divide-y divide-border/50 overflow-y-auto px-5 sm:px-6">
-      {recent.map((post) => {
-        const author = playersByUid.get(post.uid);
-        const threadStats = stats.get(post.id) ?? { replyCount: 0, lastActivityAt: post.createdAt, latestReply: null };
-        const likedBy = likesByPost.get(post.id);
-        const liked = likedBy?.has(uid) ?? false;
-        const likeCount = likedBy?.size ?? 0;
-        const replyAuthor = threadStats.latestReply ? playersByUid.get(threadStats.latestReply.uid) : undefined;
+  function openPost(postId: string) {
+    setExpandedRootId(postId);
+  }
 
-        return (
-          <li key={post.id} className="flex items-start gap-3 py-4">
-            <Avatar className="size-8 shrink-0">
-              <AvatarImage src={author?.photoURL} alt="" />
-              <AvatarFallback className="font-mono text-[0.6rem] text-muted-foreground">
-                {author ? initials(author.firstName, author.lastName) : "?"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="truncate font-display text-sm font-medium text-ink">
-                  {author ? `${author.firstName} ${author.lastName}` : "Bilinmeyen"}
-                </span>
-                <span className="shrink-0 font-mono text-[0.62rem] text-muted-foreground tnum">
-                  {timeAgo(threadStats.lastActivityAt)}
-                </span>
-              </div>
-              <div className="mt-1.5 flex items-start gap-2.5">
-                {post.imageURL && (
-                  <img
-                    src={post.imageURL}
-                    alt=""
-                    className="size-11 shrink-0 rounded-lg border border-border/50 object-cover"
-                  />
-                )}
-                <p className="line-clamp-2 min-w-0 flex-1 text-sm text-navy-muted">{post.text}</p>
-              </div>
-              <div className="mt-2.5 flex items-center gap-3.5">
-                <button
-                  type="button"
-                  onClick={() => onToggleLike(post.id)}
-                  aria-pressed={liked}
-                  aria-label={liked ? "Beğeniyi geri al" : "Beğen"}
-                  className={cn(
-                    "-ml-1.5 flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 outline-none transition-colors duration-150 ease-[var(--ease-cotton)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass",
-                    liked ? "text-brass" : "text-muted-foreground hover:text-brass"
+  function handleRowKeyDown(e: KeyboardEvent<HTMLDivElement>, postId: string) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openPost(postId);
+    }
+  }
+
+  return (
+    <>
+      <ul className="no-scrollbar min-h-0 flex-1 divide-y divide-border/50 overflow-y-auto px-3 sm:px-4">
+        {recent.map((post) => {
+          const author = playersByUid.get(post.uid);
+          const threadStats = stats.get(post.id) ?? { replyCount: 0, lastActivityAt: post.createdAt, latestReply: null };
+          const likedBy = likesByPost.get(post.id);
+          const liked = likedBy?.has(uid) ?? false;
+          const likeCount = likedBy?.size ?? 0;
+          const replyAuthor = threadStats.latestReply ? playersByUid.get(threadStats.latestReply.uid) : undefined;
+
+          return (
+            <li key={post.id}>
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label={`${fullName(author)}: ${post.text || "gönderiyi aç"}`}
+                onClick={() => openPost(post.id)}
+                onKeyDown={(e) => handleRowKeyDown(e, post.id)}
+                className="flex cursor-pointer items-start gap-3 rounded-lg px-2 py-4 outline-none transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-muted/60 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brass"
+              >
+                <Avatar className="size-8 shrink-0">
+                  <AvatarImage src={avatarSrc(author)} alt="" />
+                  <AvatarFallback className="font-mono text-[0.6rem] text-muted-foreground">
+                    {author ? initials(author.firstName, author.lastName) : "?"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="truncate font-display text-sm font-medium text-ink">{fullName(author)}</span>
+                    <span className="shrink-0 font-mono text-[0.62rem] text-muted-foreground tnum">
+                      {timeAgo(threadStats.lastActivityAt)}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex items-start gap-2.5">
+                    {post.imageURL && <ForumImageThumb src={post.imageURL} />}
+                    <p className="line-clamp-2 min-w-0 flex-1 text-sm text-navy-muted">{post.text}</p>
+                  </div>
+                  <div className="mt-2.5 flex items-center gap-3.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleLike(post.id);
+                      }}
+                      aria-pressed={liked}
+                      aria-label={liked ? "Beğeniyi geri al" : "Beğen"}
+                      className={cn(
+                        "-ml-1.5 flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 outline-none transition-colors duration-150 ease-[var(--ease-cotton)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass",
+                        liked ? "text-brass" : "text-muted-foreground hover:text-brass"
+                      )}
+                    >
+                      <Heart className="size-3.5" fill={liked ? "currentColor" : "none"} strokeWidth={2} aria-hidden />
+                      {/* Always rendered, even at zero — a count that appears/disappears on
+                          toggle changes the button's width and snaps the row (and everything
+                          below it in this scroll list) sideways/downward. */}
+                      <span className="font-mono text-[0.68rem] tnum">{likeCount}</span>
+                    </button>
+                    {/* No separate onClick — bubbles up to the row's own handler, same
+                        destination, so it doesn't need to duplicate that logic. Its only
+                        job here is the distinct brass hover cue. */}
+                    <span className="cursor-pointer font-mono text-[0.68rem] text-muted-foreground tnum transition-colors duration-150 hover:text-brass">
+                      {threadStats.replyCount} yanıt
+                    </span>
+                  </div>
+                  {threadStats.latestReply && (
+                    <p className="mt-2 line-clamp-1 pl-3 text-xs text-muted-foreground">
+                      ↳ <span className="font-medium text-ink/80">{firstNameOnly(replyAuthor)}:</span>{" "}
+                      {threadStats.latestReply.text}
+                    </p>
                   )}
-                >
-                  <Heart className="size-3.5" fill={liked ? "currentColor" : "none"} strokeWidth={2} aria-hidden />
-                  {/* Always rendered, even at zero — a count that appears/disappears on
-                      toggle changes the button's width and snaps the row (and everything
-                      below it in this scroll list) sideways/downward. */}
-                  <span className="font-mono text-[0.68rem] tnum">{likeCount}</span>
-                </button>
-                <span className="font-mono text-[0.68rem] text-muted-foreground tnum">
-                  {threadStats.replyCount} yanıt
-                </span>
+                </div>
               </div>
-              {threadStats.latestReply && (
-                <p className="mt-2 line-clamp-1 pl-3 text-xs text-muted-foreground">
-                  ↳ <span className="font-medium text-ink/80">{replyAuthor ? replyAuthor.firstName : "Bilinmeyen"}:</span>{" "}
-                  {threadStats.latestReply.text}
-                </p>
-              )}
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+            </li>
+          );
+        })}
+      </ul>
+
+      <ThreadPopup
+        rootId={expandedRootId}
+        posts={posts}
+        players={players}
+        uid={uid}
+        likesByPost={likesByPost}
+        onToggleLike={onToggleLike}
+        onOpenChange={(open) => {
+          if (!open) setExpandedRootId(null);
+        }}
+        onSelectParticipant={onSelectParticipant}
+        onDelete={(postId) => {
+          onDeletePost(postId);
+          if (postId === expandedRootId) setExpandedRootId(null);
+        }}
+        onSaveEdit={onSaveEdit}
+        onPosted={onRefetch}
+      />
+    </>
   );
 }
 

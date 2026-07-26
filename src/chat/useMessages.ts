@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { collection, getDocs, limit, onSnapshot, orderBy, query, startAfter } from "firebase/firestore";
 import { db } from "../firebase";
 import { Message } from "./messageTypes";
+import { getCached, setCached } from "../lib/sessionCache";
 
 export interface MessageWithId extends Message {
   id: string;
@@ -12,15 +13,21 @@ export interface MessageWithId extends Message {
 // the most recent PAGE_SIZE messages, not the entire collection. Older
 // history is reachable on demand via loadOlder(), a one-time (non-live) fetch.
 const PAGE_SIZE = 50;
+const CACHE_KEY = "liveMessages";
 
 function toMessage(docSnap: { id: string; data: () => unknown }): MessageWithId {
   return { id: docSnap.id, ...(docSnap.data() as Message) };
 }
 
 export function useMessages() {
-  const [liveMessages, setLiveMessages] = useState<MessageWithId[]>([]);
+  const cached = getCached<MessageWithId[]>(CACHE_KEY);
+  const [liveMessages, setLiveMessages] = useState<MessageWithId[]>(cached ?? []);
   const [olderMessages, setOlderMessages] = useState<MessageWithId[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Revisiting Home mid-session already has the last-seen messages cached —
+  // show them immediately rather than blanking the chat while the listener
+  // reattaches, then let onSnapshot's first callback (fires fast off
+  // Firestore's local cache before the network round-trip) reconcile it.
+  const [loading, setLoading] = useState(cached === undefined);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [hasMoreOlder, setHasMoreOlder] = useState(true);
 
@@ -30,6 +37,7 @@ export function useMessages() {
       messagesQuery,
       (snapshot) => {
         const docs = snapshot.docs.map(toMessage).reverse();
+        setCached(CACHE_KEY, docs);
         setLiveMessages(docs);
         setLoading(false);
         if (docs.length < PAGE_SIZE) setHasMoreOlder(false);

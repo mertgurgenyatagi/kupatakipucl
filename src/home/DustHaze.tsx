@@ -1,5 +1,3 @@
-import { motion, useReducedMotion } from "motion/react";
-
 interface Blob {
   top: string;
   left: string;
@@ -32,9 +30,7 @@ const GRAIN =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
 
 /**
- * Hero background — replaces the photo carousel here specifically (the
- * carousel's three images move down into the sections below instead, see
- * SplitBand). Mert's brief, verbatim: "an animating blurred haze of
+ * Hero background. Mert's brief, verbatim: "an animating blurred haze of
  * enlargened dust particles in a dance of pitch black and blue, moving with
  * elegance and embodying high definition."
  *
@@ -43,10 +39,16 @@ const GRAIN =
  * would read as the Awwwards-style spectacle DESIGN-SPEC §9 rules out.
  * "Elegance" comes from slow, mirrored, staggered motion rather than speed
  * or density.
+ *
+ * Driven by a plain CSS @keyframes animation (animate-dust-drift, in
+ * styles/index.css) rather than framer-motion's per-frame JS loop — five
+ * blobs animating independently on the main thread was real, needless
+ * overhead for something this ambient; a shared keyframe with per-element
+ * animation-duration/-delay gets the identical motion straight from the
+ * compositor. The global prefers-reduced-motion rule (same stylesheet)
+ * already collapses this to a no-op for anyone who's asked for less motion.
  */
 export function DustHaze() {
-  const reduceMotion = useReducedMotion();
-
   return (
     <div
       aria-hidden
@@ -59,9 +61,9 @@ export function DustHaze() {
       style={{ transform: "translateZ(0)", contain: "paint" }}
     >
       {BLOBS.map((blob, i) => (
-        <motion.div
+        <div
           key={i}
-          className="absolute rounded-full"
+          className="animate-dust-drift absolute rounded-full"
           style={{
             top: blob.top,
             left: blob.left,
@@ -70,21 +72,8 @@ export function DustHaze() {
             background: blob.color,
             filter: "blur(70px)",
             opacity: 0.6,
-          }}
-          animate={
-            reduceMotion
-              ? undefined
-              : {
-                  x: ["0%", "14%", "-10%", "0%"],
-                  y: ["0%", "-12%", "10%", "0%"],
-                  scale: [1, 1.18, 0.88, 1],
-                }
-          }
-          transition={{
-            duration: blob.duration,
-            delay: blob.delay,
-            repeat: Infinity,
-            ease: "easeInOut",
+            animationDuration: `${blob.duration}s`,
+            animationDelay: `${blob.delay}s`,
           }}
         />
       ))}

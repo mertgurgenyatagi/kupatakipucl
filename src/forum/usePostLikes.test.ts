@@ -1,5 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { clearSessionCache } from "../lib/sessionCache";
 
 const mockGetDocs = vi.fn();
 const mockCollection = vi.fn((_db: unknown, name: string) => ({ name }));
@@ -24,6 +25,7 @@ describe("usePostLikes", () => {
     mockGetDocs.mockReset();
     mockSetDoc.mockReset();
     mockDeleteDoc.mockReset();
+    clearSessionCache();
   });
 
   it("returns an empty map before any likes exist", async () => {

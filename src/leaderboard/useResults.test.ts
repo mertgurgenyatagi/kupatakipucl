@@ -1,5 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { clearSessionCache } from "../lib/sessionCache";
 
 const mockGetDocs = vi.fn();
 const mockCollection = vi.fn((_db: unknown, name: string) => ({ name }));
@@ -16,6 +17,7 @@ import { useResults } from "./useResults";
 describe("useResults", () => {
   beforeEach(() => {
     mockGetDocs.mockReset();
+    clearSessionCache();
   });
 
   it("returns an empty results map before any docs exist", async () => {

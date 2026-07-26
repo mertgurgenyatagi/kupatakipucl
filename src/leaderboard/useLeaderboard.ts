@@ -6,11 +6,15 @@ import { Profile } from "../profile/profileTypes";
 import { useResults } from "./useResults";
 import { computeScore } from "./scoring";
 import { LeaderboardEntry } from "./leaderboardTypes";
+import { getCached, setCached } from "../lib/sessionCache";
+
+const CACHE_KEY = "leaderboard";
 
 export function useLeaderboard() {
   const { results, loading: resultsLoading } = useResults();
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = getCached<LeaderboardEntry[]>(CACHE_KEY);
+  const [entries, setEntries] = useState<LeaderboardEntry[]>(cached ?? []);
+  const [loading, setLoading] = useState(cached === undefined);
 
   useEffect(() => {
     if (resultsLoading) return;
@@ -38,6 +42,7 @@ export function useLeaderboard() {
           });
         });
         next.sort((a, b) => b.points - a.points);
+        setCached(CACHE_KEY, next);
         setEntries(next);
         setLoading(false);
       })

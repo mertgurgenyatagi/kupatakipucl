@@ -15,8 +15,16 @@ vi.mock("firebase/firestore", () => ({
   getDocs: () => Promise.resolve({ docs: [] }),
   getDoc: () => Promise.resolve({ exists: () => false, data: () => ({}) }),
   doc: (_db: unknown, collection: string, id: string) => ({ collection, id }),
-  onSnapshot: (_ref: unknown, onNext: (snapshot: { exists: () => boolean; data: () => unknown }) => void) => {
-    onNext({ exists: () => false, data: () => ({}) });
+  // query/orderBy/limit/startAfter — useMessages.ts's live chat listener
+  // builds a query with these even on a page (Home) this suite only
+  // passes through on the way to Forum; a no-op passthrough is enough
+  // since chat data itself isn't under test here.
+  query: (...args: unknown[]) => args,
+  orderBy: () => ({}),
+  limit: () => ({}),
+  startAfter: () => ({}),
+  onSnapshot: (_ref: unknown, onNext: (snapshot: { exists: () => boolean; data: () => unknown; docs: unknown[] }) => void) => {
+    onNext({ exists: () => false, data: () => ({}), docs: [] });
     return () => {};
   },
   setDoc: () => Promise.resolve(undefined),

@@ -44,7 +44,7 @@ export function HomePage() {
   // "HOME - logged in, not started" sections, plus PAGEMAP_SPEC.md §3.
   // Every other state keeps the shared skeleton below untouched.
   if (state === "loggedout_notstarted") {
-    return <HomeLandingLoggedOut players={players} results={results} />;
+    return <HomeLandingLoggedOut players={players} />;
   }
   if (state === "loggedin_notstarted") {
     return <LoggedInHome players={players} />;

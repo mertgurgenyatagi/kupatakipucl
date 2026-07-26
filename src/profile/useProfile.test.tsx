@@ -1,5 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { clearSessionCache } from "../lib/sessionCache";
 
 const mockGetDoc = vi.fn();
 const mockSetDoc = vi.fn();
@@ -31,6 +32,7 @@ describe("useProfile", () => {
   beforeEach(() => {
     mockGetDoc.mockReset();
     mockSetDoc.mockReset();
+    clearSessionCache();
   });
 
   it("returns loading=false and profile=null when uid is null", async () => {

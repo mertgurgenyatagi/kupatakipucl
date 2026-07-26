@@ -40,6 +40,7 @@ function renderRoom(overrides: Partial<Parameters<typeof ChatRoom>[0]> = {}) {
       loadingOlder={false}
       hasMoreOlder={false}
       typingUids={[]}
+      onSelectParticipant={vi.fn()}
       {...overrides}
     />
   );
@@ -62,9 +63,17 @@ describe("ChatRoom", () => {
     expect(screen.getByText("Merhaba")).toBeInTheDocument();
   });
 
-  it("falls back to the raw uid when no matching player is found", () => {
+  it("shows 'Silindi' (not the raw uid) when no matching player is found", () => {
     renderRoom({ messages: [message({ uid: "unknown-uid" })], players: [] });
-    expect(screen.getByText("unknown-uid")).toBeInTheDocument();
+    expect(screen.getByText("Silindi")).toBeInTheDocument();
+    expect(screen.queryByText("unknown-uid")).not.toBeInTheDocument();
+  });
+
+  it("opens the participant popup when a name is clicked", () => {
+    const onSelectParticipant = vi.fn();
+    renderRoom({ messages: [message({ uid: "uid-ada" })], onSelectParticipant });
+    fireEvent.click(screen.getByText("Ada Lovelace"));
+    expect(onSelectParticipant).toHaveBeenCalledWith("uid-ada");
   });
 
   it("shows a delete button only on the current user's own messages", () => {
@@ -108,6 +117,7 @@ describe("ChatRoom", () => {
         loadingOlder={false}
         hasMoreOlder={true}
         typingUids={[]}
+        onSelectParticipant={vi.fn()}
       />
     );
     fireEvent.click(screen.getByText("Daha eski mesajları yükle"));

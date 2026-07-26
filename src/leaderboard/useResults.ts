@@ -2,10 +2,14 @@ import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { TeamResult } from "./teamResultTypes";
+import { getCached, setCached } from "../lib/sessionCache";
+
+const CACHE_KEY = "results";
 
 export function useResults() {
-  const [results, setResults] = useState<Record<string, TeamResult>>({});
-  const [loading, setLoading] = useState(true);
+  const cached = getCached<Record<string, TeamResult>>(CACHE_KEY);
+  const [results, setResults] = useState<Record<string, TeamResult>>(cached ?? {});
+  const [loading, setLoading] = useState(cached === undefined);
 
   useEffect(() => {
     let ignore = false;
@@ -16,6 +20,7 @@ export function useResults() {
         snapshot.docs.forEach((docSnap: { id: string; data: () => unknown }) => {
           next[docSnap.id] = docSnap.data() as TeamResult;
         });
+        setCached(CACHE_KEY, next);
         setResults(next);
         setLoading(false);
       })
