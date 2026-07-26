@@ -12,6 +12,7 @@ import { DevPanel } from "./devpanel/DevPanel";
 import { TeamPopupTuner } from "./devpanel/TeamPopupTuner";
 import { StatsPageTuner } from "./devpanel/StatsPageTuner";
 import { HomeLoggedInTuner } from "./devpanel/HomeLoggedInTuner";
+import { ForumTuner } from "./devpanel/ForumTuner";
 
 export function App() {
   return (
@@ -36,6 +37,7 @@ export function App() {
               {import.meta.env.DEV && (
                 <Route path="/dev/home-loggedin-tuner" element={<HomeLoggedInTuner />} />
               )}
+              {import.meta.env.DEV && <Route path="/dev/forum-tuner" element={<ForumTuner />} />}
             </Routes>
           </AppShell>
         </HashRouter>

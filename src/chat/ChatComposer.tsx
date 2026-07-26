@@ -156,7 +156,7 @@ export function ChatComposer({ uid, players }: ChatComposerProps) {
           maxLength={MESSAGE_MAX_LENGTH}
           rows={1}
           placeholder="Bir şeyler yaz…"
-          className="max-h-28 min-w-0 flex-1 resize-none overflow-y-auto rounded-2xl border border-border/70 bg-background px-4 py-2 text-sm text-ink outline-none placeholder:text-muted-foreground focus:border-brass"
+          className="no-scrollbar max-h-28 min-w-0 flex-1 resize-none overflow-y-auto rounded-2xl border border-border/70 bg-background px-4 py-2 text-sm text-ink outline-none placeholder:text-muted-foreground focus:border-brass"
         />
         <button
           type="submit"

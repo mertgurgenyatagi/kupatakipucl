@@ -1,16 +1,17 @@
 import { PostWithId } from "./postTypes";
 
 export interface ThreadStats {
-  /** Every descendant post anywhere in the thread, not just direct
-   *  replies — buildThreadTree.ts already establishes replies can nest
-   *  arbitrarily deep, so a reply-to-a-reply still counts. */
+  /** Every reply under this root post (replies are flat — forum-round-01
+   *  Q3 replaced nesting with quoting — but this still walks one extra
+   *  level down for safety since the underlying grouping is recursive). */
   replyCount: number;
-  /** The root post's own createdAt, or its most recent descendant's,
-   *  whichever is later — a thread with a fresh reply reads as "recent"
-   *  even if it was first posted days ago (forum-widget-round-01 Q1/Q6). */
+  /** The root post's own createdAt, or its most recent reply's, whichever
+   *  is later — a thread with a fresh reply reads as "recent" even if it
+   *  was first posted days ago (forum-widget-round-01 Q1/Q6). Editing a
+   *  post never touches this (forum-round-03 Q6). */
   lastActivityAt: number;
-  /** The single most recently created reply anywhere in the thread
-   *  (any depth), or null if it has none yet. */
+  /** The single most recently created reply in the thread, or null if it
+   *  has none yet. */
   latestReply: PostWithId | null;
 }
 

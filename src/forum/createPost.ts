@@ -4,11 +4,19 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../firebase";
 import { ForumPost } from "./postTypes";
 
+export interface QuoteRef {
+  postId: string;
+  authorUid: string;
+  text: string;
+}
+
 export async function createPost(
   uid: string,
   text: string,
   imageFile: File | null,
-  parentId: string | null
+  parentId: string | null,
+  mentionedUids: string[] = [],
+  quote: QuoteRef | null = null
 ): Promise<void> {
   const trimmed = text.trim();
   if (!trimmed && !imageFile) return;
@@ -20,6 +28,17 @@ export async function createPost(
     imageURL = await getDownloadURL(imageRef);
   }
 
-  const post: ForumPost = { uid, text: trimmed, imageURL, parentId, createdAt: Date.now() };
+  const post: ForumPost = {
+    uid,
+    text: trimmed,
+    imageURL,
+    parentId,
+    createdAt: Date.now(),
+    editedAt: null,
+    mentionedUids,
+    quotedPostId: quote?.postId ?? null,
+    quotedAuthorUid: quote?.authorUid ?? null,
+    quotedText: quote?.text ?? null,
+  };
   await addDoc(collection(db, "forumPosts"), post);
 }

@@ -151,7 +151,21 @@ describe("HomeLandingLoggedIn", () => {
 
   it("passes posts, the current user's uid, and likes through to the forum preview", () => {
     renderPage({
-      posts: [{ id: "f1", uid: "p2", text: "x", imageURL: null, parentId: null, createdAt: 1 }],
+      posts: [
+        {
+          id: "f1",
+          uid: "p2",
+          text: "x",
+          imageURL: null,
+          parentId: null,
+          createdAt: 1,
+          editedAt: null,
+          mentionedUids: [],
+          quotedPostId: null,
+          quotedAuthorUid: null,
+          quotedText: null,
+        },
+      ],
       likesByPost: new Map([["f1", new Set(["me"])]]),
     });
     expect(screen.getByText("recent-posts:1:me:1")).toBeInTheDocument();

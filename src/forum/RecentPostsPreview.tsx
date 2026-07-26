@@ -3,6 +3,7 @@ import { Heart } from "lucide-react";
 import { PostWithId } from "./postTypes";
 import { Player } from "../profile/usePlayers";
 import { computeThreadStats } from "./threadStats";
+import { timeAgo } from "./forumTime";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
@@ -21,18 +22,6 @@ interface RecentPostsPreviewProps {
 
 function initials(firstName: string, lastName: string) {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-}
-
-function timeAgo(createdAt: number): string {
-  const diffMs = Date.now() - createdAt;
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return "az önce";
-  if (minutes < 60) return `${minutes} dk önce`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} sa önce`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} gün önce`;
-  return new Date(createdAt).toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
 }
 
 /**

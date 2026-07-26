@@ -3,7 +3,19 @@ import { computeThreadStats } from "./threadStats";
 import { PostWithId } from "./postTypes";
 
 function post(id: string, parentId: string | null, createdAt: number): PostWithId {
-  return { id, uid: "uid1", text: `text-${id}`, imageURL: null, parentId, createdAt };
+  return {
+    id,
+    uid: "uid1",
+    text: `text-${id}`,
+    imageURL: null,
+    parentId,
+    createdAt,
+    editedAt: null,
+    mentionedUids: [],
+    quotedPostId: null,
+    quotedAuthorUid: null,
+    quotedText: null,
+  };
 }
 
 describe("computeThreadStats", () => {

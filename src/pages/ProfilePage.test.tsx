@@ -124,6 +124,20 @@ describe("ProfilePage", () => {
     expect(screen.getByText("Mert G")).toBeInTheDocument();
   });
 
+  it("hides the rank/points header section before the tournament starts", () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
+    renderPage();
+    expect(screen.queryByText("Sıra")).not.toBeInTheDocument();
+    expect(screen.queryByText("Puan")).not.toBeInTheDocument();
+  });
+
+  it("shows the rank/points header section once the tournament has started", () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
+    renderPage();
+    expect(screen.getByText("Sıra")).toBeInTheDocument();
+    expect(screen.getByText("Puan")).toBeInTheDocument();
+  });
+
   it("uploads a new photo when a file is selected", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUpdateProfilePhoto.mockResolvedValue({ ...PROFILE, photoURL: "new-photo-url" });

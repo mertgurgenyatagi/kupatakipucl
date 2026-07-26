@@ -255,30 +255,35 @@ export function ProfilePage() {
 
             {/* Bottom-left: rank + points, same plaque-engraving mono voice
                 as the leaderboard's own rank/points columns — brass only
-                for rank 01, matching that "one earned distinction" rule. */}
-            <div className="flex items-end gap-5">
-              <div>
-                <p className="font-mono text-[0.75rem] tracking-[0.22em] text-muted-foreground uppercase">
-                  Sıra
-                </p>
-                <p
-                  className={cn(
-                    "font-mono text-[1.91rem] font-semibold tnum",
-                    myEntry?.rank === 1 ? "text-brass" : "text-ink"
-                  )}
-                >
-                  {myEntry ? `#${myEntry.rank}` : "—"}
-                </p>
+                for rank 01, matching that "one earned distinction" rule.
+                Meaningless before the tournament starts (nothing's ranked
+                yet), so the whole block is dropped rather than shown as a
+                dash pair. */}
+            {predictionLocked && (
+              <div className="flex items-end gap-5">
+                <div>
+                  <p className="font-mono text-[0.75rem] tracking-[0.22em] text-muted-foreground uppercase">
+                    Sıra
+                  </p>
+                  <p
+                    className={cn(
+                      "font-mono text-[1.91rem] font-semibold tnum",
+                      myEntry?.rank === 1 ? "text-brass" : "text-ink"
+                    )}
+                  >
+                    {myEntry ? `#${myEntry.rank}` : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-mono text-[0.75rem] tracking-[0.22em] text-muted-foreground uppercase">
+                    Puan
+                  </p>
+                  <p className="font-mono text-[1.91rem] font-semibold text-ink tnum">
+                    {myEntry ? myEntry.entry.points : "—"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="font-mono text-[0.75rem] tracking-[0.22em] text-muted-foreground uppercase">
-                  Puan
-                </p>
-                <p className="font-mono text-[1.91rem] font-semibold text-ink tnum">
-                  {myEntry ? myEntry.entry.points : "—"}
-                </p>
-              </div>
-            </div>
+            )}
           </div>
         </Frame>
 

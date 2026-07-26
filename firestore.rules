@@ -114,11 +114,29 @@ service cloud.firestore {
     // Forum posts: public read (pageAccess.ts allows the logged-out ST_NLI
     // state to view the forum — unlike chat, which is logged-in only in
     // every state). A user can only create a post attributed to their own
-    // uid. Immutable, no admin panel (SPEC.md §6, §7b) — no edits/deletes.
+    // uid.
+    //
+    // Editing (forum-round-02/03) is text/mentions/editedAt only — never
+    // imageURL, parentId, uid, createdAt, or the quote fields, so a reply's
+    // quote can't be forged after the fact.
+    //
+    // Deleting is real, with cascade (forum-round-01/03): you can delete
+    // your own post, OR any reply whose root post you own — that second
+    // branch is what makes "delete my thread" work at all, since the batch
+    // in deletePost.ts deletes replies authored by other people too. A
+    // reply's own parentId always points at a root post it was created
+    // against (replies are flat — forum-round-01 Q3 — so this never chains
+    // more than one hop deep).
     match /forumPosts/{postId} {
       allow read: if true;
       allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if false;
+      allow update: if request.auth != null
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'mentionedUids', 'editedAt']);
+      allow delete: if request.auth != null
+        && (resource.data.uid == request.auth.uid
+            || (resource.data.parentId != null
+                && get(/databases/$(database)/documents/forumPosts/$(resource.data.parentId)).data.uid == request.auth.uid));
     }
 
     // Post likes: a lightweight positive-signal toggle on forum posts —

@@ -250,25 +250,31 @@ describe("TeamPopup", () => {
           tournamentStarted={false}
         />
       );
-      expect(await screen.findByText("Turnuva başlamadan bu bilgi görüntülenemez.")).toBeInTheDocument();
+      expect((await screen.findAllByText("Turnuva başlamadan bu bilgi görüntülenemez.")).length).toBeGreaterThanOrEqual(1);
       expect(screen.queryByText("Ada Lovelace")).not.toBeInTheDocument();
       expect(screen.queryByText("Bu takımı tahmin eden katılımcı yok.")).not.toBeInTheDocument();
     });
 
-    it("still shows the dossier (pitch diagram, stat lists, match history) since that's dummy data, not hidden prediction data", async () => {
+    it("hides every other widget too (pitch diagram, stat lists, rank/points, match history), showing the crest/name/manager only", async () => {
       render(
         <TeamPopup
           teamId={TEAM.id}
           entries={[entryA]}
-          results={{}}
+          results={results}
           onOpenChange={() => {}}
           onSelectParticipant={() => {}}
           onSelectTeam={() => {}}
           tournamentStarted={false}
         />
       );
-      expect(await screen.findByRole("img", { name: /Muhtemel 11/ })).toBeInTheDocument();
-      expect(screen.getByText("GOL")).toBeInTheDocument();
+      expect(await screen.findByText(TEAM.name)).toBeInTheDocument();
+      expect(screen.queryByRole("img", { name: /Muhtemel 11/ })).not.toBeInTheDocument();
+      expect(screen.queryByText("GOL")).not.toBeInTheDocument();
+      expect(screen.queryByText("ASİST")).not.toBeInTheDocument();
+      expect(screen.queryByText("PERFORMANS")).not.toBeInTheDocument();
+      expect(screen.queryByText("#15")).not.toBeInTheDocument();
+      expect(screen.queryByText("12")).not.toBeInTheDocument();
+      expect(screen.getAllByText("Turnuva başlamadan bu bilgi görüntülenemez.").length).toBeGreaterThanOrEqual(5);
     });
   });
 });

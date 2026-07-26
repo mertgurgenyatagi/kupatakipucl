@@ -118,6 +118,11 @@ function generatePosts(threadCount: number, players: Player[]): PostWithId[] {
       imageURL: i % 4 === 1 ? fakeThumbnail(i) : null,
       parentId: null,
       createdAt: baseCreatedAt,
+      editedAt: null,
+      mentionedUids: [],
+      quotedPostId: null,
+      quotedAuthorUid: null,
+      quotedText: null,
     });
 
     if (i % 2 === 0) {
@@ -130,6 +135,11 @@ function generatePosts(threadCount: number, players: Player[]): PostWithId[] {
           imageURL: null,
           parentId: id,
           createdAt: baseCreatedAt + (r + 1) * 600_000,
+          editedAt: null,
+          mentionedUids: [],
+          quotedPostId: null,
+          quotedAuthorUid: null,
+          quotedText: null,
         });
       }
     }

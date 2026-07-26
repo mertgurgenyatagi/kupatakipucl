@@ -40,6 +40,31 @@ describe("createPost", () => {
     expect(typeof written.createdAt).toBe("number");
   });
 
+  it("defaults editedAt to null and mentionedUids/quote fields to empty when omitted", async () => {
+    mockAddDoc.mockResolvedValue(undefined);
+    await createPost("uid1", "Merhaba", null, null);
+    const [, written] = mockAddDoc.mock.calls[0];
+    expect(written.editedAt).toBeNull();
+    expect(written.mentionedUids).toEqual([]);
+    expect(written.quotedPostId).toBeNull();
+    expect(written.quotedAuthorUid).toBeNull();
+    expect(written.quotedText).toBeNull();
+  });
+
+  it("writes the given mentionedUids", async () => {
+    mockAddDoc.mockResolvedValue(undefined);
+    await createPost("uid1", "hey @Ada", null, null, ["uid2"]);
+    const [, written] = mockAddDoc.mock.calls[0];
+    expect(written.mentionedUids).toEqual(["uid2"]);
+  });
+
+  it("writes the quote fields when a quote is given", async () => {
+    mockAddDoc.mockResolvedValue(undefined);
+    await createPost("uid1", "cevap", null, "thread-1", [], { postId: "p2", authorUid: "uid3", text: "orijinal metin" });
+    const [, written] = mockAddDoc.mock.calls[0];
+    expect(written).toMatchObject({ quotedPostId: "p2", quotedAuthorUid: "uid3", quotedText: "orijinal metin" });
+  });
+
   it("uploads the image and writes its download URL for an image-only post", async () => {
     mockUploadBytes.mockResolvedValue(undefined);
     mockGetDownloadURL.mockResolvedValue("https://example.com/image.png");

@@ -8,7 +8,20 @@ import { Player } from "../profile/usePlayers";
 const players: Player[] = [{ uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "", createdAt: 1 }];
 
 function post(overrides: Partial<PostWithId>): PostWithId {
-  return { id: "p1", uid: "uid1", text: "Merhaba", imageURL: null, parentId: null, createdAt: 1000, ...overrides };
+  return {
+    id: "p1",
+    uid: "uid1",
+    text: "Merhaba",
+    imageURL: null,
+    parentId: null,
+    createdAt: 1000,
+    editedAt: null,
+    mentionedUids: [],
+    quotedPostId: null,
+    quotedAuthorUid: null,
+    quotedText: null,
+    ...overrides,
+  };
 }
 
 function renderPreview(overrides: Partial<Parameters<typeof RecentPostsPreview>[0]> = {}) {

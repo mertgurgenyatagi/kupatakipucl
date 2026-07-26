@@ -45,11 +45,10 @@ interface TeamPopupProps {
   /** Clicking a team in match history re-opens this same popup for that
    *  other team. */
   onSelectTeam: (teamId: string) => void;
-  /** Before the tournament starts, "who predicted this team" is exactly the
-   *  hidden prediction data PAGEMAP_SPEC §5 keeps from everyone (including
-   *  other logged-in participants) until predictions lock — so that widget
-   *  shows a plain "not viewable yet" placeholder instead of the real list,
-   *  same treatment as ParticipantPopup.tsx. */
+  /** Before the tournament starts, every widget in this dossier — pitch
+   *  diagram, stat lists, rank/points, match history, and "who predicted
+   *  this team" — shows a plain "not viewable yet" placeholder instead of
+   *  real content, same treatment as ParticipantPopup.tsx. */
   tournamentStarted: boolean;
   /** Overrides for the tunable layout constants (column widths, row sizes,
    *  marker size, etc.) — defaults to the exact shipped look
@@ -515,7 +514,7 @@ export const TeamPopup = memo(function TeamPopup({
         className="w-full max-w-[calc(100%-2rem)] gap-0 rounded-none bg-transparent p-0 ring-0 sm:max-w-4xl"
       >
         {team && dossier && (
-          <Frame className="max-h-[min(92vh,60rem)] w-full animate-cotton-rise border-navy-line/35">
+          <Frame className="h-[min(92vh,60rem)] w-full animate-cotton-rise border-navy-line/35">
             {/* Profile tab — the team's own crest, blurred and scaled into
                 an abstract, darkened backdrop (was the stadium photo;
                 dropped in favor of reusing an asset that already exists).
@@ -562,18 +561,18 @@ export const TeamPopup = memo(function TeamPopup({
 
                 <div className="flex shrink-0 items-baseline gap-8 sm:gap-10">
                   <span
-                    aria-label={`Sıra ${result ? result.position : "belirsiz"}`}
+                    aria-label={`Sıra ${tournamentStarted && result ? result.position : "belirsiz"}`}
                     className="font-display leading-none font-bold text-ink tnum"
                     style={{ fontSize: `${t.rankPtsSize}rem` }}
                   >
-                    {result ? `#${result.position}` : "#-"}
+                    {tournamentStarted && result ? `#${result.position}` : "#-"}
                   </span>
                   <span
-                    aria-label={`Puan ${result?.points ?? "belirsiz"}`}
+                    aria-label={`Puan ${tournamentStarted ? (result?.points ?? "belirsiz") : "belirsiz"}`}
                     className="font-display leading-none font-bold text-ink tnum"
                     style={{ fontSize: `${t.rankPtsSize}rem` }}
                   >
-                    {result?.points ?? "-"}
+                    {tournamentStarted ? (result?.points ?? "-") : "-"}
                   </span>
                 </div>
               </div>
@@ -600,18 +599,30 @@ export const TeamPopup = memo(function TeamPopup({
                 style={{ gridTemplateColumns: `${t.col1}fr ${t.col2}fr ${t.col3}fr`, gap: `${t.gridGap}rem` }}
               >
                 <div className={cn(WIDGET_BLOCK, "min-h-0")}>
-                  <PitchDiagram dossier={dossier} t={t} />
+                  {tournamentStarted ? <PitchDiagram dossier={dossier} t={t} /> : <NotViewablePlaceholder />}
                 </div>
 
                 <div className="flex min-h-0 flex-col gap-3">
                   <div className={cn(WIDGET_BLOCK, "min-h-0 flex-1")}>
-                    <StatList label="GOL" rows={dossier.topScorers} badge={false} t={t} />
+                    {tournamentStarted ? (
+                      <StatList label="GOL" rows={dossier.topScorers} badge={false} t={t} />
+                    ) : (
+                      <NotViewablePlaceholder />
+                    )}
                   </div>
                   <div className={cn(WIDGET_BLOCK, "min-h-0 flex-1")}>
-                    <StatList label="ASİST" rows={dossier.topAssisters} badge={false} t={t} />
+                    {tournamentStarted ? (
+                      <StatList label="ASİST" rows={dossier.topAssisters} badge={false} t={t} />
+                    ) : (
+                      <NotViewablePlaceholder />
+                    )}
                   </div>
                   <div className={cn(WIDGET_BLOCK, "min-h-0 flex-1")}>
-                    <StatList label="PERFORMANS" rows={dossier.topRated} badge={true} t={t} />
+                    {tournamentStarted ? (
+                      <StatList label="PERFORMANS" rows={dossier.topRated} badge={true} t={t} />
+                    ) : (
+                      <NotViewablePlaceholder />
+                    )}
                   </div>
                 </div>
 
@@ -674,46 +685,52 @@ export const TeamPopup = memo(function TeamPopup({
                   {/* Match history — next fixture pinned on top, decided
                       fixtures scrolling backward in time below it. */}
                   <div className={cn(WIDGET_BLOCK, "min-h-0 flex-1")}>
-                    {nextMatch ? (
-                      <div className="shrink-0 border-b border-border/40">
-                        <MatchRow
-                          homeId={nextMatch.home ? team.id : nextMatch.opponentId}
-                          awayId={nextMatch.home ? nextMatch.opponentId : team.id}
-                          homeGoals={null}
-                          awayGoals={null}
-                          kickoffUtc={nextMatch.kickoffUtc}
-                          result={null}
-                          t={t}
-                          onSelectTeam={onSelectTeam}
-                        />
-                      </div>
+                    {!tournamentStarted ? (
+                      <NotViewablePlaceholder />
                     ) : (
-                      <p className="shrink-0 px-3 py-2 font-display text-xs text-muted-foreground italic">
-                        Kalan maç yok.
-                      </p>
-                    )}
-                    <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                      {pastMatches.length === 0 ? (
-                        <p className="px-3 py-2 font-display text-xs text-muted-foreground italic">
-                          Henüz oynanmış maç yok.
-                        </p>
-                      ) : (
-                        pastMatches.map((m) => (
-                          <div key={m.fixtureId} className="border-b border-border/30 last:border-0">
+                      <>
+                        {nextMatch ? (
+                          <div className="shrink-0 border-b border-border/40">
                             <MatchRow
-                              homeId={m.home ? team.id : m.opponentId}
-                              awayId={m.home ? m.opponentId : team.id}
-                              homeGoals={m.home ? m.teamGoals : m.opponentGoals}
-                              awayGoals={m.home ? m.opponentGoals : m.teamGoals}
-                              kickoffUtc={m.kickoffUtc}
-                              result={m.result}
+                              homeId={nextMatch.home ? team.id : nextMatch.opponentId}
+                              awayId={nextMatch.home ? nextMatch.opponentId : team.id}
+                              homeGoals={null}
+                              awayGoals={null}
+                              kickoffUtc={nextMatch.kickoffUtc}
+                              result={null}
                               t={t}
                               onSelectTeam={onSelectTeam}
                             />
                           </div>
-                        ))
-                      )}
-                    </div>
+                        ) : (
+                          <p className="shrink-0 px-3 py-2 font-display text-xs text-muted-foreground italic">
+                            Kalan maç yok.
+                          </p>
+                        )}
+                        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+                          {pastMatches.length === 0 ? (
+                            <p className="px-3 py-2 font-display text-xs text-muted-foreground italic">
+                              Henüz oynanmış maç yok.
+                            </p>
+                          ) : (
+                            pastMatches.map((m) => (
+                              <div key={m.fixtureId} className="border-b border-border/30 last:border-0">
+                                <MatchRow
+                                  homeId={m.home ? team.id : m.opponentId}
+                                  awayId={m.home ? m.opponentId : team.id}
+                                  homeGoals={m.home ? m.teamGoals : m.opponentGoals}
+                                  awayGoals={m.home ? m.opponentGoals : m.teamGoals}
+                                  kickoffUtc={m.kickoffUtc}
+                                  result={m.result}
+                                  t={t}
+                                  onSelectTeam={onSelectTeam}
+                                />
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
