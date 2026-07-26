@@ -3,6 +3,12 @@ import { addDoc, collection } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../firebase";
 import { ForumPost } from "./postTypes";
+import { compressImage } from "../lib/compressImage";
+
+// Forum images render as a small bounded thumbnail by default (4chan-style —
+// only the click-to-expand view shows them larger), so there's no reason to
+// keep a phone camera's full resolution around.
+const FORUM_IMAGE_MAX_DIMENSION = 1000;
 
 export interface QuoteRef {
   postId: string;
@@ -23,8 +29,9 @@ export async function createPost(
 
   let imageURL: string | null = null;
   if (imageFile) {
+    const compressed = await compressImage(imageFile, { maxDimension: FORUM_IMAGE_MAX_DIMENSION, quality: 0.75 });
     const imageRef = ref(storage, `forum-images/${uid}-${Date.now()}`);
-    await uploadBytes(imageRef, imageFile);
+    await uploadBytes(imageRef, compressed);
     imageURL = await getDownloadURL(imageRef);
   }
 

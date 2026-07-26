@@ -1,8 +1,9 @@
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
-import { Send } from "lucide-react";
+import { Send, X } from "lucide-react";
 import { Player } from "../profile/usePlayers";
-import { sendMessage } from "./sendMessage";
+import { sendMessage, QuotedMessage } from "./sendMessage";
 import { setTypingStatus } from "./useTypingStatus";
+import { fullName } from "../profile/deletedAccount";
 import { MESSAGE_MAX_LENGTH, MESSAGE_LENGTH_WARNING_AT } from "./messageTypes";
 import {
   findActiveMentionQuery,
@@ -16,6 +17,8 @@ import { cn } from "@/lib/utils";
 interface ChatComposerProps {
   uid: string;
   players: Player[];
+  quoted: QuotedMessage | null;
+  onClearQuote: () => void;
 }
 
 // Re-sending "still typing" more often than this would just be noise —
@@ -25,7 +28,7 @@ interface ChatComposerProps {
 const TYPING_RESEND_MS = 2000;
 const MAX_TEXTAREA_HEIGHT_PX = 112;
 
-export function ChatComposer({ uid, players }: ChatComposerProps) {
+export function ChatComposer({ uid, players, quoted, onClearQuote }: ChatComposerProps) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [mention, setMention] = useState<MentionQuery | null>(null);
@@ -43,6 +46,10 @@ export function ChatComposer({ uid, players }: ChatComposerProps) {
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT_PX)}px`;
   }, [text]);
+
+  useEffect(() => {
+    if (quoted) textareaRef.current?.focus();
+  }, [quoted]);
 
   function reportTyping(hasText: boolean) {
     const now = Date.now();
@@ -82,11 +89,12 @@ export function ChatComposer({ uid, players }: ChatComposerProps) {
     if (!text.trim()) return;
     const mentionedUids = resolveMentionedUids(text, players);
     try {
-      await sendMessage(uid, text, mentionedUids);
+      await sendMessage(uid, text, mentionedUids, quoted);
       setText("");
       setMention(null);
       setError(null);
       reportTyping(false);
+      onClearQuote();
     } catch (err) {
       console.error("Failed to send message", err);
       setError("Mesaj gönderilemedi, tekrar deneyin.");
@@ -145,6 +153,23 @@ export function ChatComposer({ uid, players }: ChatComposerProps) {
             </li>
           ))}
         </ul>
+      )}
+
+      {quoted && (
+        <div className="flex items-start gap-2 px-3 pt-2 sm:px-4">
+          <div className="min-w-0 flex-1 rounded-lg border-l-2 border-brass/50 bg-muted/50 py-1 pl-2 text-[0.76rem] leading-snug">
+            <span className="font-medium text-brass">{fullName(players.find((p) => p.uid === quoted.uid))}: </span>
+            <span className="text-muted-foreground">&ldquo;{quoted.text}&rdquo;</span>
+          </div>
+          <button
+            type="button"
+            onClick={onClearQuote}
+            aria-label="Alıntıyı kaldır"
+            className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:text-brass focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass"
+          >
+            <X className="size-3" aria-hidden />
+          </button>
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className="flex items-end gap-2 p-3 sm:px-4">

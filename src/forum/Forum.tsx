@@ -68,29 +68,29 @@ export function Forum({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 lg:min-h-0">
-      <div className="shrink-0 rounded-xl border border-border/60 bg-background p-4">
-        <div className="flex items-start gap-2">
-          <div className="min-w-0 w-full sm:w-1/4">
-            {uid ? (
-              <PostForm uid={uid} parentId={null} players={players} onPosted={onRefetch} placeholder="Yeni bir konu başlat…" />
-            ) : (
-              <p className="font-display text-sm text-muted-foreground italic">
-                Konu açmak veya yanıtlamak için giriş yapmalısın.
-              </p>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
-            aria-label={searchOpen ? "Aramayı kapat" : "Forumda ara"}
-            aria-pressed={searchOpen}
-            className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:text-brass focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass"
-          >
-            {searchOpen ? <X className="size-4" aria-hidden /> : <Search className="size-4" aria-hidden />}
-          </button>
+      <div className="relative shrink-0">
+        <button
+          type="button"
+          onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
+          aria-label={searchOpen ? "Aramayı kapat" : "Forumda ara"}
+          aria-pressed={searchOpen}
+          className="absolute top-1 right-0 z-10 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:text-brass focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass"
+        >
+          {searchOpen ? <X className="size-4" aria-hidden /> : <Search className="size-4" aria-hidden />}
+        </button>
+
+        <div className="mx-auto w-full sm:w-1/2 lg:w-1/3">
+          {uid ? (
+            <PostForm uid={uid} parentId={null} players={players} onPosted={onRefetch} placeholder="Yeni bir konu başlat…" />
+          ) : (
+            <p className="text-center font-display text-sm text-muted-foreground italic">
+              Konu açmak veya yanıtlamak için giriş yapmalısın.
+            </p>
+          )}
         </div>
+
         {searchOpen && (
-          <div className="mt-3 border-t border-border/50 pt-3">
+          <div className="mx-auto mt-3 w-full sm:w-1/2 lg:w-1/3">
             <input
               autoFocus
               value={searchQuery}

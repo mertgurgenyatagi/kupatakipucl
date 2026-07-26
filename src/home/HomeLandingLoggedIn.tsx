@@ -29,6 +29,10 @@ interface HomeLandingLoggedInProps {
   likesByPost: Map<string, Set<string>>;
   onToggleLike: (postId: string) => void;
   likeError: string | null;
+  onDeletePost: (postId: string) => void;
+  onSaveEdit: (postId: string, text: string) => void;
+  onRefetchPosts: () => void;
+  forumActionError: string | null;
 }
 
 function initials(firstName: string, lastName: string) {
@@ -48,12 +52,12 @@ function MiniCountdownDigit({ value, label }: { value: number; label: string }) 
 
 const PAGE_SHELL =
   "relative mx-auto flex w-full max-w-[1400px] min-w-0 flex-col gap-4 p-4 sm:p-6 lg:h-full lg:min-h-0 lg:flex-1 lg:gap-5 lg:p-6";
-// Hero sits at 60% of an equal quarter-share (9fr of a 17/17/17 baseline —
-// i.e. 15% of the row) with the other three equally splitting what's left
-// (85% / 3 ≈ 28.3% each), per Mert's explicit ratio call rather than a
-// plain 4-way equal split.
+// Hero is pinned to a fixed 300px — matching LeaderboardHero's own column
+// width exactly (leaderboard/LeaderboardPage.tsx's fixed 300px middle
+// column) rather than a fr-share of the row. Forum and Sohbet give up the
+// width Hero gained; Katılımcılar's 17fr is untouched (Mert's explicit call).
 const CELL_ROW =
-  "grid min-w-0 flex-1 gap-4 sm:gap-5 lg:h-full lg:min-h-0 lg:grid-cols-[17fr_17fr_9fr_17fr] [&>*]:min-h-0 [&>*]:min-w-0";
+  "grid min-w-0 flex-1 gap-4 sm:gap-5 lg:h-full lg:min-h-0 lg:grid-cols-[13.409345fr_14.7953275fr_300px_14.7953275fr] [&>*]:min-h-0 [&>*]:min-w-0";
 const CELL = "h-[26rem] lg:h-full animate-cotton-rise";
 
 /**
@@ -83,6 +87,10 @@ export function HomeLandingLoggedIn({
   likesByPost,
   onToggleLike,
   likeError,
+  onDeletePost,
+  onSaveEdit,
+  onRefetchPosts,
+  forumActionError,
 }: HomeLandingLoggedInProps) {
   const countdown = useCountdown(TOURNAMENT_START_ISO);
 
@@ -174,7 +182,11 @@ export function HomeLandingLoggedIn({
 
         <Frame className={CELL} style={{ animationDelay: "120ms" }}>
           <FrameHeader tone="navy">
-            <FrameTitle className="text-base text-navy-ink sm:text-lg">Forum</FrameTitle>
+            <FrameTitle className="text-base text-navy-ink sm:text-lg">
+              <Link to="/forum" className="cursor-pointer no-underline hover:underline">
+                Forum
+              </Link>
+            </FrameTitle>
           </FrameHeader>
           <FrameBody>
             <RecentPostsPreview
@@ -183,10 +195,14 @@ export function HomeLandingLoggedIn({
               uid={me.uid}
               likesByPost={likesByPost}
               onToggleLike={onToggleLike}
+              onSelectParticipant={setSelectedPlayerUid}
+              onDeletePost={onDeletePost}
+              onSaveEdit={onSaveEdit}
+              onRefetch={onRefetchPosts}
             />
-            {likeError && (
+            {(likeError || forumActionError) && (
               <p role="alert" className="shrink-0 px-5 pb-2 text-[0.72rem] text-destructive sm:px-6">
-                {likeError}
+                {likeError ?? forumActionError}
               </p>
             )}
             <ForumPreviewFooter />
@@ -212,6 +228,7 @@ export function HomeLandingLoggedIn({
               loadingOlder={loadingOlderMessages}
               hasMoreOlder={hasMoreOlderMessages}
               typingUids={typingUids}
+              onSelectParticipant={setSelectedPlayerUid}
             />
           </FrameBody>
         </Frame>

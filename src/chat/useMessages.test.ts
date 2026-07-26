@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { clearSessionCache } from "../lib/sessionCache";
 
 const mockOnSnapshot = vi.fn();
 const mockGetDocs = vi.fn();
@@ -43,6 +44,7 @@ describe("useMessages", () => {
     mockOrderBy.mockClear();
     mockLimit.mockClear();
     mockStartAfter.mockClear();
+    clearSessionCache();
     mockOnSnapshot.mockImplementation((_query: unknown, onNext: SnapshotCallback, onError: ErrorCallback) => {
       capturedOnNext = onNext;
       capturedOnError = onError;

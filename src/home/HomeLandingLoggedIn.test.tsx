@@ -104,6 +104,10 @@ function renderPage(overrides: Partial<Parameters<typeof HomeLandingLoggedIn>[0]
         likesByPost={new Map()}
         onToggleLike={vi.fn()}
         likeError={null}
+        onDeletePost={vi.fn()}
+        onSaveEdit={vi.fn()}
+        onRefetchPosts={vi.fn()}
+        forumActionError={null}
         {...overrides}
       />
     </MemoryRouter>
@@ -191,6 +195,10 @@ describe("HomeLandingLoggedIn", () => {
           likesByPost={new Map()}
           onToggleLike={vi.fn()}
           likeError="Beğeni kaydedilemedi, tekrar deneyin."
+          onDeletePost={vi.fn()}
+          onSaveEdit={vi.fn()}
+          onRefetchPosts={vi.fn()}
+          forumActionError={null}
         />
       </MemoryRouter>
     );

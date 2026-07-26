@@ -6,8 +6,10 @@ import { QuoteRef } from "./createPost";
 import { Player } from "../profile/usePlayers";
 import { ReplyRow } from "./ReplyRow";
 import { PostForm } from "./PostForm";
+import { ForumImageThumb } from "./ForumImageThumb";
 import { timeAgo } from "./forumTime";
 import { splitMentionSegments } from "../chat/chatMentions";
+import { fullName, avatarSrc } from "../profile/deletedAccount";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Frame, FrameBody } from "@/components/ui/frame";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -128,18 +130,17 @@ export function ThreadPopup({
                 className="group flex min-w-0 cursor-pointer items-center gap-2.5"
               >
                 <Avatar className="size-8 shrink-0">
-                  <AvatarImage src={author?.photoURL} alt="" />
+                  <AvatarImage src={avatarSrc(author)} alt="" />
                   <AvatarFallback className="font-mono text-[0.6rem] text-muted-foreground">
                     {author ? initials(author.firstName, author.lastName) : "?"}
                   </AvatarFallback>
                 </Avatar>
                 <span className="min-w-0 text-left">
                   <DialogTitle className="truncate font-display text-sm font-medium text-ink group-hover:underline">
-                    {author ? `${author.firstName} ${author.lastName}` : "Bilinmeyen"}
+                    {fullName(author)}
                   </DialogTitle>
                   <DialogDescription className="sr-only">
-                    {author ? `${author.firstName} ${author.lastName}` : "Bilinmeyen"} tarafından paylaşılan konu ve tüm
-                    yanıtları.
+                    {fullName(author)} tarafından paylaşılan konu ve tüm yanıtları.
                   </DialogDescription>
                   <span className="block font-mono text-[0.62rem] text-muted-foreground tnum">
                     {timeAgo(root.createdAt)}
@@ -181,52 +182,57 @@ export function ThreadPopup({
 
             <FrameBody className="min-h-0 flex-1 gap-0 overflow-hidden p-0">
               <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-5">
-                {editingRoot ? (
-                  <div className="flex flex-col gap-1.5">
-                    <textarea
-                      autoFocus
-                      value={rootDraft}
-                      onChange={(e) => setRootDraft(e.target.value)}
-                      rows={3}
-                      className="w-full resize-none rounded-md border border-border/70 bg-background px-2.5 py-2 text-sm text-ink outline-none focus:border-brass"
+                <div className="flex items-start gap-3">
+                  {/* Never shown while editing — editing only ever touches
+                      the text, never the attached image. */}
+                  {root.imageURL && !editingRoot && (
+                    <ForumImageThumb
+                      src={root.imageURL}
+                      className="block size-20 shrink-0 cursor-pointer overflow-hidden rounded-md border border-border/50"
                     />
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={handleSaveRootEdit}
-                        className="cursor-pointer font-mono text-[0.66rem] tracking-wide text-brass uppercase hover:underline"
-                      >
-                        Kaydet
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingRoot(false)}
-                        className="cursor-pointer font-mono text-[0.66rem] tracking-wide text-muted-foreground uppercase hover:underline"
-                      >
-                        Vazgeç
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm break-words whitespace-pre-wrap text-navy-muted">
-                    {splitMentionSegments(root.text, players).map((segment, i) =>
-                      segment.isMention ? (
-                        <span key={i} className="font-semibold text-brass">
-                          {segment.text}
-                        </span>
-                      ) : (
-                        <span key={i}>{segment.text}</span>
-                      )
+                  )}
+                  <div className="min-w-0 flex-1">
+                    {editingRoot ? (
+                      <div className="flex flex-col gap-1.5">
+                        <textarea
+                          autoFocus
+                          value={rootDraft}
+                          onChange={(e) => setRootDraft(e.target.value)}
+                          rows={3}
+                          className="w-full resize-none rounded-md border border-border/70 bg-background px-2.5 py-2 text-sm text-ink outline-none focus:border-brass"
+                        />
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={handleSaveRootEdit}
+                            className="cursor-pointer font-mono text-[0.66rem] tracking-wide text-brass uppercase hover:underline"
+                          >
+                            Kaydet
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingRoot(false)}
+                            className="cursor-pointer font-mono text-[0.66rem] tracking-wide text-muted-foreground uppercase hover:underline"
+                          >
+                            Vazgeç
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm break-words whitespace-pre-wrap text-navy-muted">
+                        {splitMentionSegments(root.text, players).map((segment, i) =>
+                          segment.isMention ? (
+                            <span key={i} className="font-semibold text-brass">
+                              {segment.text}
+                            </span>
+                          ) : (
+                            <span key={i}>{segment.text}</span>
+                          )
+                        )}
+                      </p>
                     )}
-                  </p>
-                )}
-                {root.imageURL && (
-                  <img
-                    src={root.imageURL}
-                    alt=""
-                    className="mt-2.5 max-h-80 w-full rounded-lg border border-border/50 object-cover"
-                  />
-                )}
+                  </div>
+                </div>
 
                 <ul className="mt-4 flex flex-col gap-1.5 border-t border-border/40 pt-3">
                   {replies.length === 0 ? (

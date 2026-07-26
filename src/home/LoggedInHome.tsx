@@ -7,6 +7,9 @@ import { usePresenceHeartbeat, useOnlineCount } from "../chat/usePresence";
 import { useTypingUsers } from "../chat/useTypingStatus";
 import { usePosts } from "../forum/usePosts";
 import { usePostLikes, setPostLiked, LikesByPost } from "../forum/usePostLikes";
+import { deletePost } from "../forum/deletePost";
+import { editPost } from "../forum/editPost";
+import { resolveMentionedUids } from "../chat/chatMentions";
 import { HomeLandingLoggedIn } from "./HomeLandingLoggedIn";
 import type { Player } from "../profile/usePlayers";
 
@@ -24,7 +27,7 @@ export function LoggedInHome({ players }: { players: Player[] }) {
   const { profile, loading: profileLoading } = useProfile(user?.uid ?? null);
   const { submitterUids, loading: submittersLoading } = usePredictionSubmitters();
   const { messages, loading: messagesLoading, loadOlder, loadingOlder, hasMoreOlder } = useMessages();
-  const { posts, loading: postsLoading } = usePosts();
+  const { posts, loading: postsLoading, refetch: refetchPosts } = usePosts();
   const { likesByPost: fetchedLikes, loading: likesLoading } = usePostLikes();
 
   usePresenceHeartbeat(user?.uid ?? null);
@@ -37,6 +40,7 @@ export function LoggedInHome({ players }: { players: Player[] }) {
   // up for you after the next full reload.
   const [likesByPost, setLikesByPost] = useState<LikesByPost>(new Map());
   const [likeError, setLikeError] = useState<string | null>(null);
+  const [forumActionError, setForumActionError] = useState<string | null>(null);
 
   useEffect(() => {
     setLikesByPost(fetchedLikes);
@@ -70,6 +74,29 @@ export function LoggedInHome({ players }: { players: Player[] }) {
     }
   }
 
+  async function handleDeletePost(postId: string) {
+    setForumActionError(null);
+    const replyIds = posts.filter((p) => p.parentId === postId).map((p) => p.id);
+    try {
+      await deletePost(postId, replyIds);
+      refetchPosts();
+    } catch (err) {
+      console.error("Failed to delete post", err);
+      setForumActionError("Gönderi silinemedi, tekrar deneyin.");
+    }
+  }
+
+  async function handleSaveEdit(postId: string, text: string) {
+    setForumActionError(null);
+    try {
+      await editPost(postId, text, resolveMentionedUids(text, players));
+      refetchPosts();
+    } catch (err) {
+      console.error("Failed to edit post", err);
+      setForumActionError("Gönderi güncellenemedi, tekrar deneyin.");
+    }
+  }
+
   if (!user || profileLoading || submittersLoading || messagesLoading || postsLoading || likesLoading || !profile) {
     return null;
   }
@@ -89,6 +116,10 @@ export function LoggedInHome({ players }: { players: Player[] }) {
       likesByPost={likesByPost}
       onToggleLike={handleToggleLike}
       likeError={likeError}
+      onDeletePost={handleDeletePost}
+      onSaveEdit={handleSaveEdit}
+      onRefetchPosts={refetchPosts}
+      forumActionError={forumActionError}
     />
   );
 }

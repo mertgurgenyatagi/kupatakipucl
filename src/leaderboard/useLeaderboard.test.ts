@@ -1,5 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { clearSessionCache } from "../lib/sessionCache";
 
 const mockGetDocs = vi.fn();
 const mockCollection = vi.fn((_db: unknown, name: string) => ({ name }));
@@ -27,6 +28,7 @@ function mockCollections(overrides: {
 describe("useLeaderboard", () => {
   beforeEach(() => {
     mockGetDocs.mockReset();
+    clearSessionCache();
   });
 
   it("returns an empty list when nobody has submitted a prediction", async () => {

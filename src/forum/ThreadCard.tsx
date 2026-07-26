@@ -4,8 +4,10 @@ import { PostWithId } from "./postTypes";
 import { Player } from "../profile/usePlayers";
 import { ThreadStats } from "./threadStats";
 import { ReplyRow } from "./ReplyRow";
+import { ForumImageThumb } from "./ForumImageThumb";
 import { timeAgo } from "./forumTime";
 import { splitMentionSegments } from "../chat/chatMentions";
+import { fullName, avatarSrc } from "../profile/deletedAccount";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
@@ -62,22 +64,22 @@ export function ThreadCard({
   const omittedCount = sortedReplies.length - preview.length;
 
   return (
-    <div className="flex min-h-0 flex-col gap-3 rounded-xl border border-border/60 bg-background p-4">
-      <div className="flex items-start justify-between gap-2">
+    <div className="flex h-[27rem] flex-col gap-3 overflow-hidden rounded-xl border border-border/60 bg-background p-4">
+      <div className="flex shrink-0 items-start justify-between gap-2">
         <button
           type="button"
           onClick={() => onSelectParticipant(post.uid)}
           className="group flex min-w-0 cursor-pointer items-center gap-2.5"
         >
           <Avatar className="size-8 shrink-0">
-            <AvatarImage src={author?.photoURL} alt="" />
+            <AvatarImage src={avatarSrc(author)} alt="" />
             <AvatarFallback className="font-mono text-[0.6rem] text-muted-foreground">
               {author ? initials(author.firstName, author.lastName) : "?"}
             </AvatarFallback>
           </Avatar>
           <span className="min-w-0 text-left">
             <span className="block truncate font-display text-sm font-medium text-ink group-hover:underline">
-              {author ? `${author.firstName} ${author.lastName}` : "Bilinmeyen"}
+              {fullName(author)}
             </span>
             <span className="block font-mono text-[0.62rem] text-muted-foreground tnum">
               {timeAgo(stats.lastActivityAt)}
@@ -97,38 +99,33 @@ export function ThreadCard({
         )}
       </div>
 
-      {post.imageURL && (
-        <img
-          src={post.imageURL}
-          alt=""
-          className="max-h-56 w-full rounded-lg border border-border/50 object-cover"
-        />
-      )}
-
-      <div>
-        <p className={cn("text-sm break-words whitespace-pre-wrap text-navy-muted", isLong && "line-clamp-3")}>
-          {splitMentionSegments(post.text, players).map((segment, i) =>
-            segment.isMention ? (
-              <span key={i} className="font-semibold text-brass">
-                {segment.text}
-              </span>
-            ) : (
-              <span key={i}>{segment.text}</span>
-            )
+      <div className="flex shrink-0 items-start gap-3">
+        {post.imageURL && <ForumImageThumb src={post.imageURL} />}
+        <div className="min-h-[3.75rem] min-w-0 flex-1">
+          <p className={cn("text-sm break-words whitespace-pre-wrap text-navy-muted", "line-clamp-3")}>
+            {splitMentionSegments(post.text, players).map((segment, i) =>
+              segment.isMention ? (
+                <span key={i} className="font-semibold text-brass">
+                  {segment.text}
+                </span>
+              ) : (
+                <span key={i}>{segment.text}</span>
+              )
+            )}
+          </p>
+          {isLong && (
+            <button
+              type="button"
+              onClick={onExpand}
+              className="mt-1 cursor-pointer font-mono text-[0.66rem] tracking-wide text-muted-foreground uppercase hover:text-brass"
+            >
+              Devamını oku
+            </button>
           )}
-        </p>
-        {isLong && (
-          <button
-            type="button"
-            onClick={onExpand}
-            className="mt-1 cursor-pointer font-mono text-[0.66rem] tracking-wide text-muted-foreground uppercase hover:text-brass"
-          >
-            Devamını oku
-          </button>
-        )}
+        </div>
       </div>
 
-      <div className="flex items-center gap-3.5">
+      <div className="flex shrink-0 items-center gap-3.5">
         <button
           type="button"
           onClick={() => onToggleLike(post.id)}
@@ -152,37 +149,48 @@ export function ThreadCard({
         </button>
       </div>
 
-      {(preview.length > 0 || omittedCount > 0) && (
-        <div className="flex min-h-0 flex-col gap-1.5 border-t border-border/40 pt-2.5">
-          {omittedCount > 0 && (
-            <button
-              type="button"
-              onClick={onExpand}
-              className="cursor-pointer rounded-lg bg-muted/40 px-3 py-1.5 text-left font-mono text-[0.66rem] tracking-wide text-muted-foreground uppercase hover:text-brass"
-            >
-              + {omittedCount} önceki yanıt · tümünü gör
-            </button>
-          )}
-          <ul className="flex flex-col gap-1.5">
-            {preview.map((reply) => {
-              const rLikedBy = likesByPost.get(reply.id);
-              return (
-                <ReplyRow
-                  key={reply.id}
-                  reply={reply}
-                  players={players}
-                  posts={posts}
-                  uid={uid}
-                  liked={uid ? (rLikedBy?.has(uid) ?? false) : false}
-                  likeCount={rLikedBy?.size ?? 0}
-                  onToggleLike={onToggleLike}
-                  onSelectParticipant={onSelectParticipant}
-                />
-              );
-            })}
-          </ul>
-        </div>
-      )}
+      {/* Fixed-height card regardless of reply count (Mert's explicit call —
+          a 0-reply and a 3-reply thread render the same overall frame). The
+          preview always uses ReplyRow's compact layout, sized so its 3 rows
+          fit here in full — never scrolls, never clips mid-row. */}
+      <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-hidden border-t border-border/40 pt-2">
+        {sortedReplies.length === 0 ? (
+          <p className="flex flex-1 items-center justify-center text-center font-display text-xs text-muted-foreground italic">
+            Henüz yanıt yok.
+          </p>
+        ) : (
+          <>
+            {omittedCount > 0 && (
+              <button
+                type="button"
+                onClick={onExpand}
+                className="shrink-0 cursor-pointer rounded-lg bg-muted/40 px-3 py-1 text-left font-mono text-[0.62rem] tracking-wide text-muted-foreground uppercase hover:text-brass"
+              >
+                + {omittedCount} önceki yanıt · tümünü gör
+              </button>
+            )}
+            <ul className="flex min-h-0 flex-1 flex-col gap-1">
+              {preview.map((reply) => {
+                const rLikedBy = likesByPost.get(reply.id);
+                return (
+                  <ReplyRow
+                    key={reply.id}
+                    reply={reply}
+                    players={players}
+                    posts={posts}
+                    uid={uid}
+                    liked={uid ? (rLikedBy?.has(uid) ?? false) : false}
+                    likeCount={rLikedBy?.size ?? 0}
+                    onToggleLike={onToggleLike}
+                    onSelectParticipant={onSelectParticipant}
+                    compact
+                  />
+                );
+              })}
+            </ul>
+          </>
+        )}
+      </div>
     </div>
   );
 }

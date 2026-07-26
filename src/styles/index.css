@@ -198,6 +198,21 @@
     0%, 100% { opacity: 0.55; }
     50%      { opacity: 1; }
   }
+  /* DustHaze's blob drift — a single shared keyframe (every blob moves
+     through the same relative path, just at its own duration/delay/color)
+     driven by plain CSS instead of a per-frame JS animation loop, so five
+     concurrent blurred blobs cost the compositor, not the main thread. */
+  @keyframes dust-drift {
+    0%     { transform: translate(0%, 0%) scale(1); }
+    33.33% { transform: translate(14%, -12%) scale(1.18); }
+    66.66% { transform: translate(-10%, 10%) scale(0.88); }
+    100%   { transform: translate(0%, 0%) scale(1); }
+  }
+  .animate-dust-drift {
+    animation-name: dust-drift;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
 
   .animate-cotton-rise {
     opacity: 0;

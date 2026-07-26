@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Search, Trash2, X } from "lucide-react";
+import { Search, Trash2, X, Quote } from "lucide-react";
 import { MessageWithId } from "./useMessages";
 import { Player } from "../profile/usePlayers";
 import { deleteMessage } from "./deleteMessage";
@@ -8,6 +8,8 @@ import { buildChatItems, formatMessageTime, ChatItem } from "./chatGrouping";
 import { splitMentionSegments } from "./chatMentions";
 import { ChatComposer } from "./ChatComposer";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { fullName, firstNameOnly, avatarSrc, DELETED_ACCOUNT_LABEL } from "../profile/deletedAccount";
+import { QuotedMessage } from "./sendMessage";
 import { cn } from "@/lib/utils";
 
 interface ChatRoomProps {
@@ -18,6 +20,7 @@ interface ChatRoomProps {
   loadingOlder: boolean;
   hasMoreOlder: boolean;
   typingUids: string[];
+  onSelectParticipant: (uid: string) => void;
 }
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -62,6 +65,11 @@ function MessageRow({
   author,
   players,
   onDelete,
+  onSelectParticipant,
+  onQuote,
+  onJumpToQuote,
+  highlighted,
+  rowRef,
 }: {
   message: MessageWithId;
   showHeader: boolean;
@@ -70,35 +78,74 @@ function MessageRow({
   author: Player | undefined;
   players: Player[];
   onDelete: (id: string) => void;
+  onSelectParticipant: (uid: string) => void;
+  onQuote: (message: MessageWithId) => void;
+  onJumpToQuote: (messageId: string) => void;
+  highlighted: boolean;
+  rowRef: (el: HTMLLIElement | null) => void;
 }) {
+  const quoteAuthor = message.quotedAuthorUid ? players.find((p) => p.uid === message.quotedAuthorUid) : undefined;
   return (
-    <li className={cn("group flex items-start gap-2.5", showHeader ? "pt-2.5" : "pt-0.5")}>
+    <li
+      ref={rowRef}
+      className={cn(
+        "group flex items-start gap-2 rounded-lg transition-colors duration-700 ease-out",
+        showHeader ? "pt-1.5" : "pt-0.5",
+        highlighted && "bg-brass/[0.16]"
+      )}
+    >
       {showHeader ? (
-        <Avatar className="size-7 shrink-0">
-          <AvatarImage src={author?.photoURL} alt="" />
-          <AvatarFallback className="font-mono text-[0.55rem] text-muted-foreground">
-            {author ? initials(author.firstName, author.lastName) : "?"}
-          </AvatarFallback>
-        </Avatar>
+        <button
+          type="button"
+          onClick={() => onSelectParticipant(message.uid)}
+          className="shrink-0 cursor-pointer"
+          aria-label={author ? `${author.firstName} ${author.lastName}` : DELETED_ACCOUNT_LABEL}
+        >
+          <Avatar className="size-6">
+            <AvatarImage src={avatarSrc(author)} alt="" />
+            <AvatarFallback className="font-mono text-[0.55rem] text-muted-foreground">
+              {author ? initials(author.firstName, author.lastName) : "?"}
+            </AvatarFallback>
+          </Avatar>
+        </button>
       ) : (
-        <div className="size-7 shrink-0" />
+        <div className="size-6 shrink-0" />
       )}
 
       <div
         className={cn(
-          "min-w-0 flex-1 rounded-xl px-3 py-1.5",
-          isOwn ? "bg-brass/[0.1]" : mentionsMe ? "bg-amber-400/[0.1]" : "bg-transparent"
+          "min-w-0 flex-1 rounded-xl px-3 py-1",
+          mentionsMe ? "bg-amber-400/[0.1]" : "bg-transparent"
         )}
       >
         {showHeader && (
           <div className="mb-0.5 flex items-baseline gap-1.5">
-            <span className="font-display text-xs font-semibold text-ink">
-              {author ? `${author.firstName} ${author.lastName}` : message.uid}
-            </span>
+            <button
+              type="button"
+              onClick={() => onSelectParticipant(message.uid)}
+              className={cn(
+                "cursor-pointer font-display text-xs font-semibold hover:underline",
+                isOwn ? "text-brass" : "text-ink"
+              )}
+            >
+              {fullName(author)}
+            </button>
             <span className="font-mono text-[0.6rem] text-muted-foreground tnum">
               {formatMessageTime(message.createdAt)}
             </span>
           </div>
+        )}
+        {message.quotedMessageId && (
+          <button
+            type="button"
+            onClick={() => onJumpToQuote(message.quotedMessageId!)}
+            className="mb-1 flex w-full cursor-pointer items-start rounded-md border-l-2 border-brass/50 py-1 pl-2 text-left text-[0.76rem] leading-snug hover:bg-brass/[0.08]"
+          >
+            <span className="min-w-0 truncate">
+              <span className="font-medium text-brass">{firstNameOnly(quoteAuthor)}: </span>
+              <span className="text-muted-foreground">&ldquo;{message.quotedText}&rdquo;</span>
+            </span>
+          </button>
         )}
         {message.deleted ? (
           <p className="text-sm text-muted-foreground italic">Bu mesaj silindi.</p>
@@ -107,15 +154,27 @@ function MessageRow({
         )}
       </div>
 
-      {isOwn && !message.deleted && (
-        <button
-          type="button"
-          onClick={() => onDelete(message.id)}
-          aria-label="Mesajı sil"
-          className="shrink-0 cursor-pointer rounded-full p-1 text-muted-foreground opacity-0 outline-none transition-opacity duration-150 hover:text-destructive focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass group-hover:opacity-100"
-        >
-          <Trash2 className="size-3" aria-hidden />
-        </button>
+      {!message.deleted && (
+        <div className="flex shrink-0 flex-col gap-0.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+          {isOwn && (
+            <button
+              type="button"
+              onClick={() => onDelete(message.id)}
+              aria-label="Mesajı sil"
+              className="cursor-pointer rounded-full p-1 text-muted-foreground outline-none hover:text-destructive focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass"
+            >
+              <Trash2 className="size-3" aria-hidden />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => onQuote(message)}
+            aria-label="Alıntıla"
+            className="cursor-pointer rounded-full p-1 text-muted-foreground outline-none hover:text-brass focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass"
+          >
+            <Quote className="size-3" aria-hidden />
+          </button>
+        </div>
       )}
     </li>
   );
@@ -131,16 +190,42 @@ function MessageRow({
  * `messages` arrives pre-capped and chronological (useMessages.ts caps the
  * live window and exposes onLoadOlder for history beyond it — Q2).
  */
-export function ChatRoom({ uid, players, messages, onLoadOlder, loadingOlder, hasMoreOlder, typingUids }: ChatRoomProps) {
+export function ChatRoom({
+  uid,
+  players,
+  messages,
+  onLoadOlder,
+  loadingOlder,
+  hasMoreOlder,
+  typingUids,
+  onSelectParticipant,
+}: ChatRoomProps) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<MessageWithId[]>([]);
   const [searching, setSearching] = useState(false);
+  const [quoted, setQuoted] = useState<QuotedMessage | null>(null);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const rowRefs = useRef(new Map<string, HTMLLIElement>());
 
   const listRef = useRef<HTMLUListElement>(null);
   const prevFirstIdRef = useRef<string | null>(null);
   const prevScrollHeightRef = useRef(0);
+  // Tracks whether the user was already scrolled to (near) the bottom right
+  // before this render's messages update — updated continuously on scroll,
+  // not computed after the fact. Without this, any re-render of `messages`
+  // (a new message arriving, or even an unrelated snapshot re-emit) forced
+  // scrollTop to the bottom unconditionally, yanking someone back down mid-
+  // read the instant they'd scrolled up even slightly.
+  const wasAtBottomRef = useRef(true);
+  const NEAR_BOTTOM_PX = 80;
+
+  function handleScroll() {
+    const el = listRef.current;
+    if (!el) return;
+    wasAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
+  }
 
   const playersByUid = useMemo(() => new Map(players.map((p) => [p.uid, p])), [players]);
   const items: ChatItem[] = useMemo(() => buildChatItems(messages), [messages]);
@@ -154,8 +239,11 @@ export function ChatRoom({ uid, players, messages, onLoadOlder, loadingOlder, ha
       // Older messages were just prepended (onLoadOlder) — keep whatever was
       // on screen anchored in place instead of jumping.
       el.scrollTop += el.scrollHeight - prevScrollHeightRef.current;
-    } else {
+    } else if (prevFirstIdRef.current === null || wasAtBottomRef.current) {
+      // First mount, or the user was already at the bottom — follow new
+      // messages down. Otherwise leave their scroll position alone.
       el.scrollTop = el.scrollHeight;
+      wasAtBottomRef.current = true;
     }
 
     prevFirstIdRef.current = firstId;
@@ -179,6 +267,18 @@ export function ChatRoom({ uid, players, messages, onLoadOlder, loadingOlder, ha
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(id);
   }, [searchQuery, searchOpen]);
+
+  function handleQuote(message: MessageWithId) {
+    setQuoted({ id: message.id, uid: message.uid, text: message.text });
+  }
+
+  function handleJumpToQuote(messageId: string) {
+    const el = rowRefs.current.get(messageId);
+    if (!el) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    setHighlightedId(messageId);
+    setTimeout(() => setHighlightedId((current) => (current === messageId ? null : current)), 1500);
+  }
 
   function closeSearch() {
     setSearchOpen(false);
@@ -241,9 +341,13 @@ export function ChatRoom({ uid, players, messages, onLoadOlder, loadingOlder, ha
               return (
                 <li key={message.id} className="rounded-lg border border-border/50 px-3 py-2">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="font-display text-xs font-semibold text-ink">
-                      {author ? `${author.firstName} ${author.lastName}` : message.uid}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onSelectParticipant(message.uid)}
+                      className="cursor-pointer font-display text-xs font-semibold text-ink hover:underline"
+                    >
+                      {fullName(author)}
+                    </button>
                     <span className="shrink-0 font-mono text-[0.6rem] text-muted-foreground tnum">
                       {formatMessageTime(message.createdAt)}
                     </span>
@@ -259,9 +363,9 @@ export function ChatRoom({ uid, players, messages, onLoadOlder, loadingOlder, ha
           <p className="text-center font-display text-sm text-muted-foreground italic">Henüz mesaj yok.</p>
         </div>
       ) : (
-        <ul ref={listRef} className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-2 sm:px-6">
+        <ul ref={listRef} onScroll={handleScroll} className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-1.5 sm:px-6">
           {hasMoreOlder && (
-            <li className="flex justify-center pb-2">
+            <li className="flex justify-center pb-1.5">
               <button
                 type="button"
                 onClick={onLoadOlder}
@@ -274,7 +378,7 @@ export function ChatRoom({ uid, players, messages, onLoadOlder, loadingOlder, ha
           )}
           {items.map((item) =>
             item.type === "divider" ? (
-              <li key={item.key} className="flex justify-center py-2.5">
+              <li key={item.key} className="flex justify-center py-1.5">
                 <span className="rounded-full bg-muted px-3 py-1 font-mono text-[0.62rem] tracking-wide text-muted-foreground uppercase">
                   {item.label}
                 </span>
@@ -289,6 +393,14 @@ export function ChatRoom({ uid, players, messages, onLoadOlder, loadingOlder, ha
                 author={playersByUid.get(item.message.uid)}
                 players={players}
                 onDelete={handleDelete}
+                onSelectParticipant={onSelectParticipant}
+                onQuote={handleQuote}
+                onJumpToQuote={handleJumpToQuote}
+                highlighted={highlightedId === item.message.id}
+                rowRef={(el) => {
+                  if (el) rowRefs.current.set(item.message.id, el);
+                  else rowRefs.current.delete(item.message.id);
+                }}
               />
             )
           )}
@@ -299,7 +411,7 @@ export function ChatRoom({ uid, players, messages, onLoadOlder, loadingOlder, ha
         {typingText && <p className="text-xs text-muted-foreground italic">{typingText}</p>}
       </div>
 
-      <ChatComposer uid={uid} players={players} />
+      <ChatComposer uid={uid} players={players} quoted={quoted} onClearQuote={() => setQuoted(null)} />
       {deleteError && (
         <p role="alert" className="px-3 pb-2 text-xs text-destructive sm:px-4">
           {deleteError}

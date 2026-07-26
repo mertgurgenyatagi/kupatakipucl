@@ -26,7 +26,18 @@ function post(overrides: Partial<PostWithId>): PostWithId {
 
 function renderPreview(overrides: Partial<Parameters<typeof RecentPostsPreview>[0]> = {}) {
   return render(
-    <RecentPostsPreview posts={[]} players={players} uid="uid1" likesByPost={new Map()} onToggleLike={vi.fn()} {...overrides} />
+    <RecentPostsPreview
+      posts={[]}
+      players={players}
+      uid="uid1"
+      likesByPost={new Map()}
+      onToggleLike={vi.fn()}
+      onSelectParticipant={vi.fn()}
+      onDeletePost={vi.fn()}
+      onSaveEdit={vi.fn()}
+      onRefetch={vi.fn()}
+      {...overrides}
+    />
   );
 }
 
@@ -87,9 +98,9 @@ describe("RecentPostsPreview", () => {
     expect(screen.getAllByText(/^Gönderi \d$/)).toHaveLength(2);
   });
 
-  it("falls back to a placeholder name when no matching player is found", () => {
+  it("shows 'Silindi' when no matching player is found (a deleted account)", () => {
     renderPreview({ posts: [post({ uid: "unknown-uid" })], players: [] });
-    expect(screen.getByText("Bilinmeyen")).toBeInTheDocument();
+    expect(screen.getByText("Silindi")).toBeInTheDocument();
   });
 
   it("shows a thumbnail when a post has an image, and none when it doesn't", () => {
@@ -124,6 +135,24 @@ describe("RecentPostsPreview", () => {
     renderPreview({ posts: [post({ id: "p1" })], onToggleLike });
     fireEvent.click(screen.getByRole("button", { name: "Beğen" }));
     expect(onToggleLike).toHaveBeenCalledWith("p1");
+  });
+
+  it("opens the thread popup (with the full text) when the row itself is clicked", () => {
+    renderPreview({ posts: [post({ id: "p1", text: "Tıklanabilir satır" })] });
+    fireEvent.click(screen.getByText("Tıklanabilir satır"));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("clicking the like button does not also open the thread popup", () => {
+    renderPreview({ posts: [post({ id: "p1" })] });
+    fireEvent.click(screen.getByRole("button", { name: "Beğen" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("clicking the reply count opens the thread popup", () => {
+    renderPreview({ posts: [post({ id: "p1" })] });
+    fireEvent.click(screen.getByText("0 yanıt"));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });
 

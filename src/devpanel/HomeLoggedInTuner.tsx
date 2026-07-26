@@ -292,6 +292,10 @@ export function HomeLoggedInTuner() {
           likesByPost={likesByPost}
           onToggleLike={handleToggleLike}
           likeError={null}
+          onDeletePost={() => {}}
+          onSaveEdit={() => {}}
+          onRefetchPosts={() => {}}
+          forumActionError={null}
         />
       </div>
     </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { collection, doc, deleteDoc, getDocs, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { PostLike } from "./postLikeTypes";
+import { getCached, setCached } from "../lib/sessionCache";
 
 function likeDocId(postId: string, uid: string): string {
   return `${postId}_${uid}`;
@@ -10,14 +11,20 @@ function likeDocId(postId: string, uid: string): string {
 /** postId -> set of uids who liked it. */
 export type LikesByPost = Map<string, Set<string>>;
 
+const CACHE_KEY = "postLikes";
+
 export function usePostLikes() {
-  const [likesByPost, setLikesByPost] = useState<LikesByPost>(new Map());
-  const [loading, setLoading] = useState(true);
+  const cached = getCached<LikesByPost>(CACHE_KEY);
+  const [likesByPost, setLikesByPost] = useState<LikesByPost>(cached ?? new Map());
+  const [loading, setLoading] = useState(cached === undefined);
   const [refreshIndex, setRefreshIndex] = useState(0);
 
   useEffect(() => {
     let ignore = false;
-    setLoading(true);
+    // Only flash a loading state on the very first, uncached load — a
+    // manual refetch() (e.g. after liking a post) revalidates silently
+    // instead of flickering the whole list back to "loading".
+    if (getCached<LikesByPost>(CACHE_KEY) === undefined) setLoading(true);
     getDocs(collection(db, "postLikes"))
       .then((snapshot) => {
         if (ignore) return;
@@ -28,6 +35,7 @@ export function usePostLikes() {
           uids.add(like.uid);
           map.set(like.postId, uids);
         });
+        setCached(CACHE_KEY, map);
         setLikesByPost(map);
         setLoading(false);
       })

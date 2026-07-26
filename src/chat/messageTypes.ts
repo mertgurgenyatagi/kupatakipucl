@@ -12,6 +12,12 @@ export interface Message {
    *  but every reader ignores it once this is true, rendering a "deleted"
    *  placeholder instead (ChatRoom.tsx). */
   deleted?: boolean;
+  /** Set when this message quotes an earlier one (chat-widget-round-04) —
+   *  a text snapshot only, not a live reference, so it still reads fine even
+   *  if the quoted message is later deleted. */
+  quotedMessageId?: string;
+  quotedAuthorUid?: string;
+  quotedText?: string;
 }
 
 // chat-widget-round-01 Q17: hard cap at 360, with a counter that only shows

@@ -28,23 +28,23 @@ describe("ChatComposer", () => {
 
   it("sends the typed message on submit and clears the input", async () => {
     mockSendMessage.mockResolvedValue(undefined);
-    render(<ChatComposer uid="me" players={players} />);
+    render(<ChatComposer uid="me" players={players} quoted={null} onClearQuote={() => {}} />);
     const textarea = screen.getByRole("textbox");
     fireEvent.change(textarea, { target: { value: "Merhaba millet" } });
     fireEvent.click(screen.getByText("Gönder"));
-    expect(mockSendMessage).toHaveBeenCalledWith("me", "Merhaba millet", []);
+    expect(mockSendMessage).toHaveBeenCalledWith("me", "Merhaba millet", [], null);
     await waitFor(() => expect(textarea).toHaveValue(""));
   });
 
   it("does not send an empty message", () => {
-    render(<ChatComposer uid="me" players={players} />);
+    render(<ChatComposer uid="me" players={players} quoted={null} onClearQuote={() => {}} />);
     fireEvent.click(screen.getByText("Gönder"));
     expect(mockSendMessage).not.toHaveBeenCalled();
   });
 
   it("shows an inline error and keeps the typed text when sending fails", async () => {
     mockSendMessage.mockRejectedValue(new Error("permission-denied"));
-    render(<ChatComposer uid="me" players={players} />);
+    render(<ChatComposer uid="me" players={players} quoted={null} onClearQuote={() => {}} />);
     const textarea = screen.getByRole("textbox");
     fireEvent.change(textarea, { target: { value: "Kaybolmasın" } });
     fireEvent.click(screen.getByText("Gönder"));
@@ -54,16 +54,16 @@ describe("ChatComposer", () => {
 
   it("submits on Enter without Shift", async () => {
     mockSendMessage.mockResolvedValue(undefined);
-    render(<ChatComposer uid="me" players={players} />);
+    render(<ChatComposer uid="me" players={players} quoted={null} onClearQuote={() => {}} />);
     const textarea = screen.getByRole("textbox");
     fireEvent.change(textarea, { target: { value: "hızlı mesaj" } });
     fireEvent.keyDown(textarea, { key: "Enter" });
-    expect(mockSendMessage).toHaveBeenCalledWith("me", "hızlı mesaj", []);
+    expect(mockSendMessage).toHaveBeenCalledWith("me", "hızlı mesaj", [], null);
     await waitFor(() => expect(textarea).toHaveValue(""));
   });
 
   it("does not submit on Shift+Enter", () => {
-    render(<ChatComposer uid="me" players={players} />);
+    render(<ChatComposer uid="me" players={players} quoted={null} onClearQuote={() => {}} />);
     const textarea = screen.getByRole("textbox");
     fireEvent.change(textarea, { target: { value: "satır" } });
     fireEvent.keyDown(textarea, { key: "Enter", shiftKey: true });
@@ -71,12 +71,12 @@ describe("ChatComposer", () => {
   });
 
   it("caps input length via maxLength", () => {
-    render(<ChatComposer uid="me" players={players} />);
+    render(<ChatComposer uid="me" players={players} quoted={null} onClearQuote={() => {}} />);
     expect(screen.getByRole("textbox")).toHaveAttribute("maxLength", "360");
   });
 
   it("shows a character counter only once the 300 mark is crossed", () => {
-    render(<ChatComposer uid="me" players={players} />);
+    render(<ChatComposer uid="me" players={players} quoted={null} onClearQuote={() => {}} />);
     const textarea = screen.getByRole("textbox");
 
     fireEvent.change(textarea, { target: { value: "a".repeat(299) } });
@@ -88,7 +88,7 @@ describe("ChatComposer", () => {
 
   it("reports typing to setTypingStatus while composing, and clears it after sending", async () => {
     mockSendMessage.mockResolvedValue(undefined);
-    render(<ChatComposer uid="me" players={players} />);
+    render(<ChatComposer uid="me" players={players} quoted={null} onClearQuote={() => {}} />);
     const textarea = screen.getByRole("textbox");
 
     fireEvent.change(textarea, { target: { value: "yazıyorum" } });
@@ -99,7 +99,7 @@ describe("ChatComposer", () => {
   });
 
   it("clears typing status when the input is emptied without sending", () => {
-    render(<ChatComposer uid="me" players={players} />);
+    render(<ChatComposer uid="me" players={players} quoted={null} onClearQuote={() => {}} />);
     const textarea = screen.getByRole("textbox");
     fireEvent.change(textarea, { target: { value: "a" } });
     fireEvent.change(textarea, { target: { value: "" } });
@@ -107,7 +107,7 @@ describe("ChatComposer", () => {
   });
 
   it("shows mention suggestions matching the @query, excluding the composer's own uid", () => {
-    render(<ChatComposer uid="me" players={players} />);
+    render(<ChatComposer uid="me" players={players} quoted={null} onClearQuote={() => {}} />);
     const textarea = screen.getByRole("textbox");
     fireEvent.change(textarea, { target: { value: "@a" } });
     expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
@@ -115,7 +115,7 @@ describe("ChatComposer", () => {
   });
 
   it("inserts the picked mention into the text and hides the dropdown", () => {
-    render(<ChatComposer uid="me" players={players} />);
+    render(<ChatComposer uid="me" players={players} quoted={null} onClearQuote={() => {}} />);
     const textarea = screen.getByRole("textbox");
     fireEvent.change(textarea, { target: { value: "@a" } });
     fireEvent.click(screen.getByText("Ada Lovelace"));
@@ -125,11 +125,11 @@ describe("ChatComposer", () => {
 
   it("resolves @mentions in the sent text to uids", async () => {
     mockSendMessage.mockResolvedValue(undefined);
-    render(<ChatComposer uid="me" players={players} />);
+    render(<ChatComposer uid="me" players={players} quoted={null} onClearQuote={() => {}} />);
     const textarea = screen.getByRole("textbox");
     fireEvent.change(textarea, { target: { value: "@Ada bak buna" } });
     fireEvent.click(screen.getByText("Gönder"));
-    expect(mockSendMessage).toHaveBeenCalledWith("me", "@Ada bak buna", ["uid-ada"]);
+    expect(mockSendMessage).toHaveBeenCalledWith("me", "@Ada bak buna", ["uid-ada"], null);
     await waitFor(() => expect(textarea).toHaveValue(""));
   });
 });

@@ -240,8 +240,8 @@ describe("ProfilePage", () => {
     expect(screen.getByText(/takım dosyası/)).toBeInTheDocument();
   });
 
-  it("shows the average position everyone predicted for each team", () => {
-    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
+  it("shows the average position everyone predicted for each team, once the tournament has started", () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     mockUsePrediction.mockReturnValue({
       prediction: { ranking: ["arsenal", "barcelona"], submittedAt: 1, updatedAt: 1 },
       loading: false,
@@ -256,6 +256,23 @@ describe("ProfilePage", () => {
     renderPage();
     // arsenal: predicted 1st then 2nd -> average 1.5; barcelona: 2nd then 1st -> average 1.5
     expect(screen.getAllByText("1.5")).toHaveLength(2);
+  });
+
+  it("hides the average position while logged-in-not-started", () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
+    mockUsePrediction.mockReturnValue({
+      prediction: { ranking: ["arsenal", "barcelona"], submittedAt: 1, updatedAt: 1 },
+      loading: false,
+    });
+    mockUseLeaderboard.mockReturnValue({
+      entries: [
+        { uid: "a", firstName: "A", lastName: "A", photoURL: "", points: 0, ranking: ["arsenal", "barcelona"] },
+        { uid: "b", firstName: "B", lastName: "B", photoURL: "", points: 0, ranking: ["barcelona", "arsenal"] },
+      ],
+      loading: false,
+    });
+    renderPage();
+    expect(screen.queryByText("1.5")).not.toBeInTheDocument();
   });
 
   it("opens a confirm dialog when the delete-profile button is clicked", () => {

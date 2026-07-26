@@ -1,6 +1,7 @@
 // src/forum/usePosts.test.ts
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { clearSessionCache } from "../lib/sessionCache";
 
 const mockGetDocs = vi.fn();
 const mockCollection = vi.fn((_db: unknown, name: string) => ({ name }));
@@ -17,6 +18,7 @@ import { usePosts } from "./usePosts";
 describe("usePosts", () => {
   beforeEach(() => {
     mockGetDocs.mockReset();
+    clearSessionCache();
   });
 
   it("returns an empty list before any posts exist", async () => {
