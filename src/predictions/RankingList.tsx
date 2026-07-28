@@ -48,23 +48,23 @@ export function RankingList({ ranking, correctness, averagePositions, onSelectTe
             onMouseLeave={handleMouseLeave}
             className={cn(
               "flex items-center gap-3.5 rounded-lg border px-4 py-3 transition-[background-color,box-shadow] duration-500 ease-[var(--ease-cotton)]",
-              onSelectTeam && "cursor-pointer hover:border-border",
+              onSelectTeam && "cursor-pointer hover:border-color_border1",
               isCorrect
-                ? "border-brass/50 bg-brass/[0.08] shadow-[0_0_18px_rgba(31,138,101,0.4)]"
-                : "border-border/50 bg-background",
+                ? "border-color_green/50 bg-color_green/[0.08] shadow-[0_0_18px_var(--tw-shadow-color)] shadow-color_green/40"
+                : "border-color_border1/50 bg-background",
               inBand && cn("bg-foreground/[0.06]", !isOrigin && "animate-pulse")
             )}
           >
             <TeamCrest teamId={id} className="size-8 shrink-0" />
-            <span className="min-w-0 flex-1 truncate font-display text-base text-ink">
+            <span className="min-w-0 flex-1 truncate font-display text-base text-color_text">
               {team?.name ?? id}
             </span>
             {average != null && (
-              <span className="shrink-0 font-mono text-sm text-muted-foreground tnum">
+              <span className="shrink-0 font-mono text-sm text-color_textsecondary tnum">
                 {average.toFixed(1)}
               </span>
             )}
-            <span className="w-7 shrink-0 text-right font-display text-xl font-bold text-amber-400 tnum">
+            <span className="w-7 shrink-0 text-right font-display text-xl font-bold text-color_gold tnum">
               {index + 1}
             </span>
           </li>

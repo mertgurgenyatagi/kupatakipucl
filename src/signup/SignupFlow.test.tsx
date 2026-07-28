@@ -36,22 +36,41 @@ vi.mock("../predictions/useSurveyResponse", () => ({
 }));
 
 vi.mock("./steps/PhotoStep", () => ({
-  PhotoStep: ({ onSelect }: { onSelect: (file: File) => void }) => (
-    <button onClick={() => onSelect(new File(["x"], "photo.png"))}>pick-photo</button>
+  PhotoStep: ({ onSelect, initialFile }: { onSelect: (file: File) => void; initialFile?: File | null }) => (
+    <div>
+      {initialFile && <span>has-initial-photo</span>}
+      <button onClick={() => onSelect(new File(["x"], "photo.png"))}>pick-photo</button>
+    </div>
   ),
 }));
 
 vi.mock("./steps/NameStep", () => ({
-  NameStep: ({ onSubmit, disabled }: { onSubmit: (f: string, l: string) => void; disabled?: boolean }) => (
-    <button disabled={disabled} onClick={() => onSubmit("Mert", "G")}>
-      submit-name
-    </button>
+  NameStep: ({
+    onSubmit,
+    disabled,
+    initialFirstName,
+    initialLastName,
+  }: {
+    onSubmit: (f: string, l: string) => void;
+    disabled?: boolean;
+    initialFirstName?: string;
+    initialLastName?: string;
+  }) => (
+    <div>
+      {initialFirstName && <span>initial-name:{initialFirstName}-{initialLastName}</span>}
+      <button disabled={disabled} onClick={() => onSubmit("Mert", "G")}>
+        submit-name
+      </button>
+    </div>
   ),
 }));
 
 vi.mock("./steps/AgeRollerStep", () => ({
-  AgeRollerStep: ({ onConfirm }: { onConfirm: (v: number) => void }) => (
-    <button onClick={() => onConfirm(30)}>confirm-age</button>
+  AgeRollerStep: ({ onConfirm, defaultValue }: { onConfirm: (v: number) => void; defaultValue: number }) => (
+    <div>
+      <span>age-default:{defaultValue}</span>
+      <button onClick={() => onConfirm(30)}>confirm-age</button>
+    </div>
   ),
 }));
 
@@ -60,13 +79,16 @@ vi.mock("./ChoiceStep", () => ({
     question,
     onSelect,
     disabled,
+    initialValue,
   }: {
     question: string;
     onSelect: (v: string) => void;
     disabled?: boolean;
+    initialValue?: string | null;
   }) => (
     <div>
       <span>question:{question}</span>
+      {initialValue && <span>initial-value:{initialValue}</span>}
       <button disabled={disabled} onClick={() => onSelect("test-value")}>
         choose
       </button>
@@ -75,8 +97,17 @@ vi.mock("./ChoiceStep", () => ({
 }));
 
 vi.mock("./steps/UclTeamStep", () => ({
-  UclTeamStep: ({ onSelect }: { onSelect: (teamId: string | null) => void }) => (
-    <button onClick={() => onSelect("arsenal")}>pick-team</button>
+  UclTeamStep: ({
+    onSelect,
+    initialSelection,
+  }: {
+    onSelect: (teamId: string | "none") => void;
+    initialSelection?: string | "none" | null;
+  }) => (
+    <div>
+      {initialSelection && <span>initial-team:{initialSelection}</span>}
+      <button onClick={() => onSelect("arsenal")}>pick-team</button>
+    </div>
   ),
 }));
 
@@ -205,5 +236,56 @@ describe("SignupFlow", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent("Cevapların kaydedilemedi, tekrar deneyin.");
     expect(screen.getByText(/telefonda mı masaüstünde mi/)).toBeInTheDocument();
+  });
+
+  it("hides the back button on welcome and photo, but shows it from the name step onward", async () => {
+    render(<SignupFlow uid="uid1" onDone={vi.fn()} />);
+    expect(screen.queryByLabelText("Geri")).not.toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(2600);
+    });
+    expect(screen.queryByLabelText("Geri")).not.toBeInTheDocument(); // photo
+
+    fireEvent.click(screen.getByText("pick-photo"));
+    expect(screen.getByLabelText("Geri")).toBeInTheDocument(); // name
+  });
+
+  it("going back from name returns to photo, and going back from quiz-age skips the bounce screen to land on name", async () => {
+    render(<SignupFlow uid="uid1" onDone={vi.fn()} />);
+    await reachNameStep();
+
+    fireEvent.click(screen.getByLabelText("Geri"));
+    expect(screen.getByText("pick-photo")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("pick-photo"));
+    mockSaveProfile.mockResolvedValue(undefined);
+    fireEvent.click(screen.getByText("submit-name"));
+    await flushMicrotasks();
+    await act(async () => {
+      vi.advanceTimersByTime(2000); // bounce-profile
+    });
+    expect(screen.getByText("confirm-age")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Geri"));
+    expect(screen.getByText("submit-name")).toBeInTheDocument();
+  });
+
+  it("preserves previously entered answers when going back and forward again", async () => {
+    mockSaveProfile.mockResolvedValue(undefined);
+    render(<SignupFlow uid="uid1" onDone={vi.fn()} />);
+    await reachNameStep();
+    fireEvent.click(screen.getByText("submit-name"));
+    await flushMicrotasks();
+    await act(async () => {
+      vi.advanceTimersByTime(2000); // bounce-profile
+    });
+
+    fireEvent.click(screen.getByText("confirm-age")); // age = 30, now on quiz-knowledge
+    fireEvent.click(screen.getByLabelText("Geri")); // back to quiz-age
+    expect(screen.getByText("age-default:30")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Geri")); // back further, skipping bounce-profile, to name
+    expect(screen.getByText("initial-name:Mert-G")).toBeInTheDocument();
   });
 });

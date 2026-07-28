@@ -42,10 +42,10 @@ function initials(firstName: string, lastName: string) {
 function MiniCountdownDigit({ value, label }: { value: number; label: string }) {
   return (
     <span className="flex items-baseline gap-1.5 whitespace-nowrap">
-      <span className="font-display text-2xl leading-none font-semibold text-ink tnum sm:text-3xl">
+      <span className="font-display text-2xl leading-none font-semibold text-color_text tnum sm:text-3xl">
         {String(value).padStart(2, "0")}
       </span>
-      <span className="font-mono text-xs tracking-[0.1em] text-muted-foreground uppercase">{label}</span>
+      <span className="font-mono text-xs tracking-[0.1em] text-color_textsecondary uppercase">{label}</span>
     </span>
   );
 }
@@ -70,7 +70,7 @@ const CELL = "h-[26rem] lg:h-full animate-cotton-rise";
  * sheet).
  *
  * Navy shows up as each cell's header band, not a full-width strip under
- * AppShell's own navy top bar — stacking two full-bleed navy bars is the
+ * AppShell's own color_secondary top bar — stacking two full-bleed color_secondary bars is the
  * exact "corporate masthead" silhouette §0b already got rejected once for.
  */
 export function HomeLandingLoggedIn({
@@ -126,11 +126,11 @@ export function HomeLandingLoggedIn({
           <div className="flex min-w-0 items-center gap-3.5">
             <Avatar className="size-14 shrink-0">
               <AvatarImage src={me.photoURL} alt="" />
-              <AvatarFallback className="font-mono text-sm text-muted-foreground">
+              <AvatarFallback className="font-mono text-sm text-color_textsecondary">
                 {initials(me.firstName, me.lastName)}
               </AvatarFallback>
             </Avatar>
-            <p className="min-w-0 truncate font-display text-xl text-ink sm:text-2xl">
+            <p className="min-w-0 truncate font-display text-xl text-color_text sm:text-2xl">
               Hoş geldin, <span className="font-bold">{me.firstName}</span>.
             </p>
           </div>
@@ -142,7 +142,7 @@ export function HomeLandingLoggedIn({
             {!submitterUids.has(me.uid) && (
               <Link
                 to="/predictions"
-                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-ink px-6 py-3 text-sm font-semibold text-background outline-none transition-all duration-150 ease-[var(--ease-cotton)] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass"
+                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-color_text px-6 py-3 text-sm font-semibold text-background outline-none transition-all duration-150 ease-[var(--ease-cotton)] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_accent"
               >
                 Tahminini Yap
                 <ArrowRight className="size-4" aria-hidden />
@@ -151,7 +151,7 @@ export function HomeLandingLoggedIn({
 
             {!countdown.done && (
               <div className="flex items-baseline gap-4 whitespace-nowrap">
-                <span className="font-mono text-xs tracking-[0.12em] text-muted-foreground uppercase">
+                <span className="font-mono text-xs tracking-[0.12em] text-color_textsecondary uppercase">
                   Tahminlerin Kapanmasına
                 </span>
                 <div className="flex items-baseline gap-3.5">
@@ -169,7 +169,7 @@ export function HomeLandingLoggedIn({
       <div className={CELL_ROW}>
         <Frame className={CELL} style={{ animationDelay: "60ms" }}>
           <FrameHeader tone="navy">
-            <FrameTitle className="text-base text-navy-ink sm:text-lg">Katılımcılar</FrameTitle>
+            <FrameTitle className="text-base text-color_text sm:text-lg">Katılımcılar</FrameTitle>
           </FrameHeader>
           <FrameBody>
             <ParticipantStatusList
@@ -182,7 +182,7 @@ export function HomeLandingLoggedIn({
 
         <Frame className={CELL} style={{ animationDelay: "120ms" }}>
           <FrameHeader tone="navy">
-            <FrameTitle className="text-base text-navy-ink sm:text-lg">
+            <FrameTitle className="text-base text-color_text sm:text-lg">
               <Link to="/forum" className="cursor-pointer no-underline hover:underline">
                 Forum
               </Link>
@@ -201,7 +201,7 @@ export function HomeLandingLoggedIn({
               onRefetch={onRefetchPosts}
             />
             {(likeError || forumActionError) && (
-              <p role="alert" className="shrink-0 px-5 pb-2 text-[0.72rem] text-destructive sm:px-6">
+              <p role="alert" className="shrink-0 px-5 pb-2 text-[0.72rem] text-color_remove sm:px-6">
                 {likeError ?? forumActionError}
               </p>
             )}
@@ -213,9 +213,9 @@ export function HomeLandingLoggedIn({
 
         <Frame className={CELL} style={{ animationDelay: "240ms" }}>
           <FrameHeader tone="navy">
-            <FrameTitle className="text-base text-navy-ink sm:text-lg">Sohbet</FrameTitle>
-            <span className="flex items-center gap-1.5 font-mono text-[0.62rem] tracking-[0.1em] text-navy-ink/70 uppercase tnum">
-              <span className="size-1.5 rounded-full bg-brass" aria-hidden />
+            <FrameTitle className="text-base text-color_text sm:text-lg">Sohbet</FrameTitle>
+            <span className="flex items-center gap-1.5 font-mono text-[0.62rem] tracking-[0.1em] text-color_text/70 uppercase tnum">
+              <span className="size-1.5 rounded-full bg-color_accent" aria-hidden />
               {onlineCount} çevrimiçi
             </span>
           </FrameHeader>

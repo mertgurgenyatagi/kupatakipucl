@@ -7,13 +7,13 @@ interface Blob {
   delay: number;
 }
 
-// Two blues distinct from the site's own (no-longer-blue) --navy token,
-// plus near-black — deliberately scoped to this one component, not
-// promoted to global tokens (this section is meant to be its own weird
-// moment, not a repaint of the site's palette).
-const DEEP = "#0d1730";
-const MID = "#1c2f66";
-const BRIGHT = "#2f56b8";
+// Two blues distinct from the site's own (no-longer-blue) --color_secondary
+// token, plus near-black — colors.css's color_blob1/2/3 (deliberately their
+// own tokens, not a repaint of the site's actual palette onto this one
+// weird, ambient moment).
+const DEEP = "var(--color_blob1)";
+const MID = "var(--color_blob2)";
+const BRIGHT = "var(--color_blob3)";
 
 const BLOBS: Blob[] = [
   { top: "8%", left: "6%", vmax: 46, color: MID, duration: 16, delay: 0 },

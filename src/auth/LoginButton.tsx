@@ -11,7 +11,7 @@ export function LoginButton() {
       await signInWithPopup(auth, new GoogleAuthProvider());
     } catch (err) {
       console.error("Google sign-in failed", err);
-      setError("Sign-in didn't go through, try again.");
+      setError("Giriş yapılamadı, tekrar deneyin.");
     }
   }
 

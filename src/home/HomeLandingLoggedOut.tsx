@@ -29,19 +29,15 @@ const staggerGroup: Variants = {
   visible: { transition: { staggerChildren: 0.09, delayChildren: 0.08 } },
 };
 
-/** A single Google CTA, restyled per call site via the same wrapper-targets-
- *  the-inner-button pattern AppShell.tsx already uses for the top-bar one —
- *  LoginButton itself stays a single, unstyled source of truth for the
- *  actual sign-in call. */
-function SignupCta({ tone }: { tone: "primary" | "outline" }) {
-  const toneClass =
-    tone === "primary"
-      ? "[&_button]:bg-ink [&_button]:text-background hover:[&_button]:scale-[1.03]"
-      : "[&_button]:border [&_button]:border-navy-line [&_button]:text-navy-ink hover:[&_button]:border-brass";
+/** The single Google CTA on this page — restyled via the same wrapper-
+ *  targets-the-inner-button pattern AppShell.tsx already uses for the top-bar
+ *  one — LoginButton itself stays a single, unstyled source of truth for the
+ *  actual sign-in call. Only one of these renders on the page now (the
+ *  duplicate outline CTA under the countdown was dropped — same button
+ *  twice on one screen read as a mistake, not reinforcement). */
+function SignupCta() {
   return (
-    <div
-      className={`[&_button]:flex [&_button]:cursor-pointer [&_button]:items-center [&_button]:gap-2.5 [&_button]:rounded-full [&_button]:px-6 [&_button]:py-3.5 [&_button]:text-sm [&_button]:font-semibold [&_button]:transition-transform [&_button]:duration-150 [&_button]:ease-[var(--ease-cotton)] [&_svg]:size-[1.05rem] [&_[role=alert]]:mt-2 [&_[role=alert]]:text-xs [&_[role=alert]]:text-destructive ${toneClass}`}
-    >
+    <div className="[&_button]:flex [&_button]:cursor-pointer [&_button]:items-center [&_button]:gap-2.5 [&_button]:rounded-full [&_button]:bg-color_text [&_button]:px-6 [&_button]:py-3.5 [&_button]:text-sm [&_button]:font-semibold [&_button]:text-background [&_button]:transition-transform [&_button]:duration-150 [&_button]:ease-[var(--ease-cotton)] hover:[&_button]:scale-[1.03] [&_svg]:size-[1.05rem] [&_[role=alert]]:mt-2 [&_[role=alert]]:text-xs [&_[role=alert]]:text-color_remove">
       <LoginButton />
     </div>
   );
@@ -50,10 +46,10 @@ function SignupCta({ tone }: { tone: "primary" | "outline" }) {
 function CountdownDigit({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center gap-1.5">
-      <span className="font-display text-3xl font-semibold text-navy-ink tnum sm:text-4xl">
+      <span className="font-display text-3xl font-semibold text-color_text tnum sm:text-4xl">
         {String(value).padStart(2, "0")}
       </span>
-      <span className="font-mono text-[0.6rem] tracking-[0.22em] text-navy-muted uppercase">{label}</span>
+      <span className="font-mono text-[0.6rem] tracking-[0.22em] text-color_textsecondary uppercase">{label}</span>
     </div>
   );
 }
@@ -91,30 +87,30 @@ export function HomeLandingLoggedOut({ players }: HomeLandingLoggedOutProps) {
         <div className="flex flex-col gap-6">
           <motion.h1
             variants={riseIn}
-            className="max-w-3xl text-balance font-display text-4xl leading-[0.98] font-semibold tracking-[-0.02em] text-ink sm:text-5xl lg:text-6xl"
+            className="max-w-3xl text-balance font-display text-4xl leading-[0.98] font-semibold tracking-[-0.02em] text-color_text sm:text-5xl lg:text-6xl"
           >
             36 takım. <SlotNumber value={liveCount} /> katılımcı. 1 turnuva.
           </motion.h1>
-          <motion.p variants={riseIn} className="max-w-xl text-base text-navy-muted sm:text-lg">
+          <motion.p variants={riseIn} className="max-w-xl text-base text-color_textsecondary sm:text-lg">
             Şampiyonlar Ligi nasıl ilerleyecek? Tahminini yap, arkadaşlarınla aynı tabloda yarış.
           </motion.p>
 
           <motion.div variants={riseIn} className="flex flex-wrap items-center gap-6 pt-2">
-            <SignupCta tone="primary" />
+            <SignupCta />
             {players.length > 0 && (
               <div className="flex items-center gap-3">
                 <AvatarStack players={players} />
-                <span className="font-mono text-xs text-navy-muted">{players.length} kişi katıldı</span>
+                <span className="font-mono text-xs text-color_textsecondary">{players.length} kişi katıldı</span>
               </div>
             )}
           </motion.div>
         </div>
 
-        <motion.div variants={riseIn} className="flex flex-col gap-7 lg:border-l lg:border-navy-line/30 lg:pl-12">
-          <p className="text-balance font-display text-lg leading-snug text-ink sm:text-xl">{MISSION_COPY}</p>
+        <motion.div variants={riseIn} className="flex flex-col gap-7 lg:border-l lg:border-color_border1/30 lg:pl-12">
+          <p className="text-balance font-display text-lg leading-snug text-color_text sm:text-xl">{MISSION_COPY}</p>
 
           <div className="flex flex-col gap-4">
-            <span className="font-mono text-[0.62rem] tracking-[0.28em] text-navy-muted uppercase">
+            <span className="font-mono text-[0.62rem] tracking-[0.28em] text-color_textsecondary uppercase">
               Kayıtların Kapanmasına
             </span>
             <div className="flex items-start gap-5 sm:gap-7">
@@ -122,9 +118,6 @@ export function HomeLandingLoggedOut({ players }: HomeLandingLoggedOutProps) {
               <CountdownDigit value={countdown.hours} label="Saat" />
               <CountdownDigit value={countdown.minutes} label="Dakika" />
               <CountdownDigit value={countdown.seconds} label="Saniye" />
-            </div>
-            <div className="pt-1">
-              <SignupCta tone="outline" />
             </div>
           </div>
         </motion.div>

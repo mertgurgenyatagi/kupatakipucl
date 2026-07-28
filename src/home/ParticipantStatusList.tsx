@@ -19,9 +19,9 @@ function initials(firstName: string, lastName: string) {
  * "Full list of participants" per Mert's sketch — every signed-up player,
  * alphabetical (easiest to scan for your own name / a specific friend's),
  * with a gold tick marking who's already submitted their league prediction.
- * Gold here is literally Tailwind's amber-400/500 — the same "gold" already
+ * Gold here is literally Tailwind's color_gold/500 — the same "gold" already
  * used for rank numerals and standout figures elsewhere (RankingList,
- * ParticipantPopup), not the site's --brass token (which reads green despite
+ * ParticipantPopup), not the site's --color_accent token (which reads green despite
  * its name, a leftover from the dark-theme rework).
  */
 export function ParticipantStatusList({ players, submitterUids, onSelectPlayer }: ParticipantStatusListProps) {
@@ -31,43 +31,46 @@ export function ParticipantStatusList({ players, submitterUids, onSelectPlayer }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-baseline justify-between border-b border-border/50 px-5 py-2.5 sm:px-6">
-        <span className="font-mono text-[0.62rem] tracking-[0.14em] text-muted-foreground uppercase">
+      <div className="flex shrink-0 items-baseline justify-between border-b border-color_border1/50 px-5 py-2.5 sm:px-6">
+        <span className="font-mono text-[0.62rem] tracking-[0.14em] text-color_textsecondary uppercase">
           Tahminini Gönderdi
         </span>
-        <span className="font-mono text-[0.68rem] text-amber-400 tnum">
+        <span className="font-mono text-[0.68rem] text-color_gold tnum">
           {submitterUids.size} / {players.length}
         </span>
       </div>
 
       {sorted.length === 0 ? (
         <div className="flex flex-1 items-center justify-center px-5 py-8 sm:px-6">
-          <p className="text-center font-display text-sm text-muted-foreground italic">Henüz katılımcı yok.</p>
+          <p className="text-center font-display text-sm text-color_textsecondary italic">Henüz katılımcı yok.</p>
         </div>
       ) : (
-        <ul className="no-scrollbar min-h-0 flex-1 divide-y divide-border/50 overflow-y-auto px-5 sm:px-6">
+        <ul className="no-scrollbar min-h-0 flex-1 divide-y divide-border/50 overflow-y-auto px-3 sm:px-4">
           {sorted.map((player) => {
             const submitted = submitterUids.has(player.uid);
             return (
               <li
                 key={player.uid}
                 onClick={onSelectPlayer ? () => onSelectPlayer(player.uid) : undefined}
-                className={cn("flex items-center gap-3 py-2.5", onSelectPlayer && "cursor-pointer")}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors duration-150 ease-[var(--ease-cotton)]",
+                  onSelectPlayer && "cursor-pointer hover:bg-color_text/[0.06]"
+                )}
               >
                 <Avatar className="size-8 shrink-0">
                   <AvatarImage src={player.photoURL} alt="" />
-                  <AvatarFallback className="font-mono text-[0.6rem] text-muted-foreground">
+                  <AvatarFallback className="font-mono text-[0.6rem] text-color_textsecondary">
                     {initials(player.firstName, player.lastName)}
                   </AvatarFallback>
                 </Avatar>
-                <span className="min-w-0 flex-1 truncate font-display text-sm text-ink">
+                <span className="min-w-0 flex-1 truncate font-display text-sm text-color_text">
                   {player.firstName} {player.lastName}
                 </span>
                 <span
                   aria-label={submitted ? "Tahminini gönderdi" : "Henüz göndermedi"}
                   className={cn(
                     "flex size-5 shrink-0 items-center justify-center rounded-full border",
-                    submitted ? "border-amber-400/40 bg-amber-400/15 text-amber-400" : "border-border/60 text-transparent"
+                    submitted ? "border-color_gold/40 bg-color_gold/15 text-color_gold" : "border-color_border1/60 text-transparent"
                   )}
                 >
                   <Check className="size-3" strokeWidth={3} aria-hidden />

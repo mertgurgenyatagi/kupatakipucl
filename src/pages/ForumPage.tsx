@@ -23,7 +23,7 @@ function ForumSkeleton() {
       <Skeleton className="h-16 w-full shrink-0 rounded-xl" />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="flex flex-col gap-3 rounded-xl border border-border/60 p-4">
+          <div key={i} className="flex flex-col gap-3 rounded-xl border border-color_border1/60 p-4">
             <div className="flex items-center gap-2.5">
               <Skeleton className="size-8 shrink-0 rounded-full" />
               <Skeleton className="h-4 w-24 rounded-sm" />
@@ -113,8 +113,8 @@ export function ForumPage() {
   if (!isPageAllowed("forum", state)) {
     return (
       <div className="flex h-full flex-1 items-center px-5 sm:px-8 lg:px-12">
-        <p className="font-display text-2xl text-muted-foreground italic">
-          This section isn't available right now.
+        <p className="font-display text-2xl text-color_textsecondary italic">
+          Bu bölüm şu anda kullanılamıyor.
         </p>
       </div>
     );

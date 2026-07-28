@@ -109,7 +109,7 @@ describe("PredictionsPage", () => {
     mockUseVisibilityState.mockReturnValue("loggedout_notstarted");
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
     renderPage();
-    expect(screen.getByText("This section isn't available right now.")).toBeInTheDocument();
+    expect(screen.getByText("Bu bölüm şu anda kullanılamıyor.")).toBeInTheDocument();
   });
 
   it("renders nothing while the prediction is loading", () => {

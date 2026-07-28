@@ -74,7 +74,7 @@ export function Forum({
           onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
           aria-label={searchOpen ? "Aramayı kapat" : "Forumda ara"}
           aria-pressed={searchOpen}
-          className="absolute top-1 right-0 z-10 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:text-brass focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass"
+          className="absolute top-1 right-0 z-10 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-color_textsecondary outline-none transition-colors hover:text-color_accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_accent"
         >
           {searchOpen ? <X className="size-4" aria-hidden /> : <Search className="size-4" aria-hidden />}
         </button>
@@ -83,7 +83,7 @@ export function Forum({
           {uid ? (
             <PostForm uid={uid} parentId={null} players={players} onPosted={onRefetch} placeholder="Yeni bir konu başlat…" />
           ) : (
-            <p className="text-center font-display text-sm text-muted-foreground italic">
+            <p className="text-center font-display text-sm text-color_textsecondary italic">
               Konu açmak veya yanıtlamak için giriş yapmalısın.
             </p>
           )}
@@ -96,14 +96,14 @@ export function Forum({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Forumda ara…"
-              className="w-full rounded-full border border-border/70 bg-background px-3.5 py-1.5 text-sm text-ink outline-none placeholder:text-muted-foreground focus:border-brass"
+              className="w-full rounded-full border border-color_border1/70 bg-background px-3.5 py-1.5 text-sm text-color_text outline-none placeholder:text-color_textsecondary focus:border-color_accent"
             />
           </div>
         )}
       </div>
 
       {actionError && (
-        <p role="alert" className="shrink-0 text-xs text-destructive">
+        <p role="alert" className="shrink-0 text-xs text-color_remove">
           {actionError}
         </p>
       )}
@@ -111,7 +111,7 @@ export function Forum({
       <div className="min-h-0 flex-1 overflow-y-auto lg:min-h-0">
         {roots.length === 0 ? (
           <div className="flex flex-1 items-center justify-center py-12">
-            <p className="text-center font-display text-sm text-muted-foreground italic">
+            <p className="text-center font-display text-sm text-color_textsecondary italic">
               {searchQuery.trim() ? "Sonuç bulunamadı." : "Henüz gönderi yok."}
             </p>
           </div>

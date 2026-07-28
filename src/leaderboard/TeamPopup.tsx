@@ -97,7 +97,7 @@ const TIME_FMT = new Intl.DateTimeFormat("tr-TR", {
 // swaps in for the time once a fixture is decided.
 const MATCH_ROW_GRID = "1.5rem minmax(0,1fr) 4rem minmax(0,1fr) 1.5rem";
 
-const WIDGET_BLOCK = "flex min-h-0 flex-col rounded-xl bg-background border border-border/60";
+const WIDGET_BLOCK = "flex min-h-0 flex-col rounded-xl bg-background border border-color_border1/60";
 
 // One shared row-sizing "constant" for every list row in this popup — the
 // stat lists, "who predicted this team", and match history all used to
@@ -113,7 +113,7 @@ const NOT_VIEWABLE_MESSAGE = "Turnuva başlamadan bu bilgi görüntülenemez.";
 
 function NotViewablePlaceholder() {
   return (
-    <p className="flex h-full items-center justify-center px-4 text-center font-display text-sm text-muted-foreground italic">
+    <p className="flex h-full items-center justify-center px-4 text-center font-display text-sm text-color_textsecondary italic">
       {NOT_VIEWABLE_MESSAGE}
     </p>
   );
@@ -127,9 +127,9 @@ const RESULT_LABEL: Record<ResultLetter, string> = {
 // Green for won, gray for draw, red for loss — Mert's own spec, no letter,
 // just the color (the current build's lettered badge circle was dropped).
 const RESULT_DOT_CLASS: Record<ResultLetter, string> = {
-  G: "bg-brass",
-  B: "bg-muted-foreground",
-  M: "bg-destructive",
+  G: "bg-color_accent",
+  B: "bg-color_textsecondary",
+  M: "bg-color_remove",
 };
 
 function ResultDot({ result }: { result: ResultLetter }) {
@@ -193,10 +193,10 @@ function MatchRow({
       tabIndex={0}
       onClick={handleMatchupClick}
       onKeyDown={handleMatchupKeyDown}
-      className="grid cursor-pointer items-center gap-1.5 rounded-lg px-2 outline-none transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-accent focus-visible:bg-accent"
+      className="grid cursor-pointer items-center gap-1.5 rounded-lg px-2 outline-none transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill focus-visible:bg-color_hoverfill"
       style={{ gridTemplateColumns: MATCH_ROW_GRID, height: `${t.matchRowHeight}rem` }}
     >
-      <span className="text-right font-mono text-[0.65rem] text-muted-foreground tnum">{homeGoals ?? ""}</span>
+      <span className="text-right font-mono text-[0.65rem] text-color_textsecondary tnum">{homeGoals ?? ""}</span>
       <button
         type="button"
         onClick={(e) => {
@@ -206,17 +206,17 @@ function MatchRow({
         className="group flex min-w-0 cursor-pointer flex-col items-center gap-1"
       >
         <TeamCrest teamId={homeId} style={crestStyle} />
-        <span className="truncate font-display font-medium text-ink group-hover:underline" style={nameStyle}>
+        <span className="truncate font-display font-medium text-color_text group-hover:underline" style={nameStyle}>
           {home?.shortName ?? homeId}
         </span>
       </button>
 
       <span className="flex flex-col items-center justify-center gap-1 leading-tight">
-        <span className="font-mono text-[0.65rem] text-ink tnum">{DATE_FMT.format(kickoff)}</span>
+        <span className="font-mono text-[0.65rem] text-color_text tnum">{DATE_FMT.format(kickoff)}</span>
         {result ? (
           <ResultDot result={result} />
         ) : (
-          <span className="font-mono text-[0.6rem] text-muted-foreground tnum">{TIME_FMT.format(kickoff)}</span>
+          <span className="font-mono text-[0.6rem] text-color_textsecondary tnum">{TIME_FMT.format(kickoff)}</span>
         )}
       </span>
 
@@ -229,11 +229,11 @@ function MatchRow({
         className="group flex min-w-0 cursor-pointer flex-col items-center gap-1"
       >
         <TeamCrest teamId={awayId} style={crestStyle} />
-        <span className="truncate font-display font-medium text-ink group-hover:underline" style={nameStyle}>
+        <span className="truncate font-display font-medium text-color_text group-hover:underline" style={nameStyle}>
           {away?.shortName ?? awayId}
         </span>
       </button>
-      <span className="text-left font-mono text-[0.65rem] text-muted-foreground tnum">{awayGoals ?? ""}</span>
+      <span className="text-left font-mono text-[0.65rem] text-color_textsecondary tnum">{awayGoals ?? ""}</span>
     </div>
   );
 }
@@ -305,7 +305,7 @@ function PitchDiagram({ dossier, t }: { dossier: TeamDossier; t: TeamPopupTuning
           y1={PITCH_H / 2}
           x2={PITCH_W}
           y2={PITCH_H / 2}
-          stroke="rgba(255,255,255,0.45)"
+          stroke="var(--color_pitchlines)"
           strokeWidth="1.5"
         />
         <circle
@@ -313,7 +313,7 @@ function PitchDiagram({ dossier, t }: { dossier: TeamDossier; t: TeamPopupTuning
           cy={PITCH_H / 2}
           r="42"
           fill="none"
-          stroke="rgba(255,255,255,0.45)"
+          stroke="var(--color_pitchlines)"
           strokeWidth="1.5"
         />
         {/* Top penalty + 6-yard box */}
@@ -323,7 +323,7 @@ function PitchDiagram({ dossier, t }: { dossier: TeamDossier; t: TeamPopupTuning
           width="210"
           height="85"
           fill="none"
-          stroke="rgba(255,255,255,0.45)"
+          stroke="var(--color_pitchlines)"
           strokeWidth="1.5"
         />
         <rect
@@ -332,7 +332,7 @@ function PitchDiagram({ dossier, t }: { dossier: TeamDossier; t: TeamPopupTuning
           width="96"
           height="32"
           fill="none"
-          stroke="rgba(255,255,255,0.45)"
+          stroke="var(--color_pitchlines)"
           strokeWidth="1.5"
         />
         {/* Bottom penalty + 6-yard box */}
@@ -342,7 +342,7 @@ function PitchDiagram({ dossier, t }: { dossier: TeamDossier; t: TeamPopupTuning
           width="210"
           height="85"
           fill="none"
-          stroke="rgba(255,255,255,0.45)"
+          stroke="var(--color_pitchlines)"
           strokeWidth="1.5"
         />
         <rect
@@ -351,20 +351,20 @@ function PitchDiagram({ dossier, t }: { dossier: TeamDossier; t: TeamPopupTuning
           width="96"
           height="32"
           fill="none"
-          stroke="rgba(255,255,255,0.45)"
+          stroke="var(--color_pitchlines)"
           strokeWidth="1.5"
         />
 
         {markers.map(({ player, x, y }, i) => (
           <g key={i}>
-            <circle cx={x} cy={y} r={t.markerRadius} fill="var(--brass)" />
+            <circle cx={x} cy={y} r={t.markerRadius} fill="var(--color_accent)" />
             <text
               x={x}
               y={y + t.markerRadius + 16}
               textAnchor="middle"
               fontSize={t.markerFontSize}
               fontFamily="var(--font-mono)"
-              fill="#EDECEC"
+              fill="var(--color_text)"
             >
               {shortPlayerName(player.name)}
             </text>
@@ -378,7 +378,7 @@ function PitchDiagram({ dossier, t }: { dossier: TeamDossier; t: TeamPopupTuning
           fontSize="10"
           letterSpacing="1"
           fontFamily="var(--font-mono)"
-          fill="rgba(255,255,255,0.7)"
+          fill="var(--color_pitchformation)"
         >
           {dossier.formation}
         </text>
@@ -410,35 +410,35 @@ function StatList({
   const valueStyle: CSSProperties = { fontSize: `${t.fsValue}rem` };
   return (
     <div className="flex h-full flex-col justify-center px-4 py-2">
-      <span className="border-b border-border/40 pt-0.5 pb-2.5 font-mono text-[0.7rem] tracking-[0.18em] text-muted-foreground uppercase">
+      <span className="border-b border-color_border1/40 pt-0.5 pb-2.5 font-mono text-[0.7rem] tracking-[0.18em] text-color_textsecondary uppercase">
         {label}
       </span>
       {rows.map((row, i) => (
         <div
           key={row.name + i}
-          className="flex items-center border-b border-border/30 last:border-0"
+          className="flex items-center border-b border-color_border1/30 last:border-0"
           style={rowStyle}
         >
-          <span className={cn(ROW_RANK_W, "shrink-0 font-mono text-muted-foreground tnum")} style={valueStyle}>
+          <span className={cn(ROW_RANK_W, "shrink-0 font-mono text-color_textsecondary tnum")} style={valueStyle}>
             {i + 1}
           </span>
           <Avatar className="shrink-0" style={avatarStyle}>
-            <AvatarFallback className={cn("font-mono text-navy-ink", row.fill)} style={avatarTextStyle}>
+            <AvatarFallback className={cn("font-mono text-color_text", row.fill)} style={avatarTextStyle}>
               {initials(row.name)}
             </AvatarFallback>
           </Avatar>
-          <span className="min-w-0 flex-1 truncate font-display font-medium text-ink" style={nameStyle}>
+          <span className="min-w-0 flex-1 truncate font-display font-medium text-color_text" style={nameStyle}>
             {row.name}
           </span>
           {badge ? (
             <span
-              className="shrink-0 rounded-sm bg-brass/15 px-1.5 py-0.5 font-mono font-semibold text-brass tnum"
+              className="shrink-0 rounded-sm bg-color_accent/15 px-1.5 py-0.5 font-mono font-semibold text-color_accent tnum"
               style={valueStyle}
             >
               {row.value}
             </span>
           ) : (
-            <span className="shrink-0 font-mono font-bold text-ink tnum" style={valueStyle}>
+            <span className="shrink-0 font-mono font-bold text-color_text tnum" style={valueStyle}>
               {row.value}
             </span>
           )}
@@ -514,7 +514,7 @@ export const TeamPopup = memo(function TeamPopup({
         className="w-full max-w-[calc(100%-2rem)] gap-0 rounded-none bg-transparent p-0 ring-0 sm:max-w-4xl"
       >
         {team && dossier && (
-          <Frame className="h-[min(92vh,60rem)] w-full animate-cotton-rise border-navy-line/35">
+          <Frame className="h-[min(92vh,60rem)] w-full animate-cotton-rise border-color_border1/35">
             {/* Profile tab — the team's own crest, blurred and scaled into
                 an abstract, darkened backdrop (was the stadium photo;
                 dropped in favor of reusing an asset that already exists).
@@ -533,7 +533,7 @@ export const TeamPopup = memo(function TeamPopup({
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    className="absolute top-2 right-2 text-muted-foreground hover:bg-white/10 hover:text-ink"
+                    className="absolute top-2 right-2 text-color_textsecondary hover:bg-color_hover/10 hover:text-color_text"
                   />
                 }
               >
@@ -548,28 +548,28 @@ export const TeamPopup = memo(function TeamPopup({
                     style={{ width: `${t.crestSize}rem`, height: `${t.crestSize}rem` }}
                   />
                   <div className="min-w-0">
-                    <DialogTitle className="truncate font-display text-lg font-semibold tracking-[-0.01em] text-ink sm:text-xl">
+                    <DialogTitle className="truncate font-display text-lg font-semibold tracking-[-0.01em] text-color_text sm:text-xl">
                       {team.name}
                     </DialogTitle>
                     <DialogDescription className="sr-only">
                       {team.name} takım dosyası: sıra, puan, muhtemel 11, gol/asist/reyting
                       krallığı, maç geçmişi ve bu takımı tahmin eden katılımcılar.
                     </DialogDescription>
-                    <p className="truncate font-display text-sm text-muted-foreground">{dossier.manager}</p>
+                    <p className="truncate font-display text-sm text-color_textsecondary">{dossier.manager}</p>
                   </div>
                 </div>
 
                 <div className="flex shrink-0 items-baseline gap-8 sm:gap-10">
                   <span
                     aria-label={`Sıra ${tournamentStarted && result ? result.position : "belirsiz"}`}
-                    className="font-display leading-none font-bold text-ink tnum"
+                    className="font-display leading-none font-bold text-color_text tnum"
                     style={{ fontSize: `${t.rankPtsSize}rem` }}
                   >
                     {tournamentStarted && result ? `#${result.position}` : "#-"}
                   </span>
                   <span
                     aria-label={`Puan ${tournamentStarted ? (result?.points ?? "belirsiz") : "belirsiz"}`}
-                    className="font-display leading-none font-bold text-ink tnum"
+                    className="font-display leading-none font-bold text-color_text tnum"
                     style={{ fontSize: `${t.rankPtsSize}rem` }}
                   >
                     {tournamentStarted ? (result?.points ?? "-") : "-"}
@@ -637,7 +637,7 @@ export const TeamPopup = memo(function TeamPopup({
                       {!tournamentStarted ? (
                         <NotViewablePlaceholder />
                       ) : predictors.length === 0 ? (
-                        <p className="px-2 py-2 font-display text-sm text-muted-foreground italic">
+                        <p className="px-2 py-2 font-display text-sm text-color_textsecondary italic">
                           Bu takımı tahmin eden katılımcı yok.
                         </p>
                       ) : (
@@ -647,8 +647,8 @@ export const TeamPopup = memo(function TeamPopup({
                             type="button"
                             onClick={() => onSelectParticipant(p.entry.uid)}
                             className={cn(
-                              "group flex w-full cursor-pointer items-center rounded-lg px-1.5 text-left transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-accent",
-                              p.correct && "bg-brass/[0.12]"
+                              "group flex w-full cursor-pointer items-center rounded-lg px-1.5 text-left transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill",
+                              p.correct && "bg-color_green/[0.12]"
                             )}
                             style={{ gap: `${t.rowGap}rem`, paddingTop: `${t.rowPy}rem`, paddingBottom: `${t.rowPy}rem` }}
                           >
@@ -658,20 +658,20 @@ export const TeamPopup = memo(function TeamPopup({
                             >
                               <AvatarImage src={p.entry.photoURL} alt="" />
                               <AvatarFallback
-                                className="bg-secondary font-mono text-navy-text"
+                                className="bg-secondary font-mono text-color_secondary"
                                 style={{ fontSize: `${(t.rowAvatar * 0.343).toFixed(3)}rem` }}
                               >
                                 {participantInitials(p.entry.firstName, p.entry.lastName)}
                               </AvatarFallback>
                             </Avatar>
                             <span
-                              className="min-w-0 flex-1 truncate font-display font-medium text-ink group-hover:underline"
+                              className="min-w-0 flex-1 truncate font-display font-medium text-color_text group-hover:underline"
                               style={{ fontSize: `${t.fsName}rem` }}
                             >
                               {p.entry.firstName} {p.entry.lastName}
                             </span>
                             <span
-                              className={cn(ROW_RANK_W, "shrink-0 text-right font-mono text-muted-foreground tnum")}
+                              className={cn(ROW_RANK_W, "shrink-0 text-right font-mono text-color_textsecondary tnum")}
                               style={{ fontSize: `${t.fsValue}rem` }}
                             >
                               {p.predictedPosition}
@@ -690,7 +690,7 @@ export const TeamPopup = memo(function TeamPopup({
                     ) : (
                       <>
                         {nextMatch ? (
-                          <div className="shrink-0 border-b border-border/40">
+                          <div className="shrink-0 border-b border-color_border1/40">
                             <MatchRow
                               homeId={nextMatch.home ? team.id : nextMatch.opponentId}
                               awayId={nextMatch.home ? nextMatch.opponentId : team.id}
@@ -703,18 +703,18 @@ export const TeamPopup = memo(function TeamPopup({
                             />
                           </div>
                         ) : (
-                          <p className="shrink-0 px-3 py-2 font-display text-xs text-muted-foreground italic">
+                          <p className="shrink-0 px-3 py-2 font-display text-xs text-color_textsecondary italic">
                             Kalan maç yok.
                           </p>
                         )}
                         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
                           {pastMatches.length === 0 ? (
-                            <p className="px-3 py-2 font-display text-xs text-muted-foreground italic">
+                            <p className="px-3 py-2 font-display text-xs text-color_textsecondary italic">
                               Henüz oynanmış maç yok.
                             </p>
                           ) : (
                             pastMatches.map((m) => (
-                              <div key={m.fixtureId} className="border-b border-border/30 last:border-0">
+                              <div key={m.fixtureId} className="border-b border-color_border1/30 last:border-0">
                                 <MatchRow
                                   homeId={m.home ? team.id : m.opponentId}
                                   awayId={m.home ? m.opponentId : team.id}

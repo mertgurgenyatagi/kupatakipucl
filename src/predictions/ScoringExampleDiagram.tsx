@@ -31,17 +31,17 @@ export function ScoringExampleDiagram({ teams, centerIndex }: ScoringExampleDiag
             className={cn(
               "flex items-center gap-3 rounded-lg border px-3 py-2",
               inBand
-                ? cn("border-border bg-foreground/[0.06]", !isCenter && "animate-pulse")
-                : "border-border/50 bg-background"
+                ? cn("border-color_border1 bg-foreground/[0.06]", !isCenter && "animate-pulse")
+                : "border-color_border1/50 bg-background"
             )}
           >
-            <span className="w-5 shrink-0 text-right font-mono text-sm font-bold text-amber-400 tnum">
+            <span className="w-5 shrink-0 text-right font-mono text-sm font-bold text-color_gold tnum">
               {index + 1}
             </span>
             {isCenter && (
               <>
                 <TeamCrest teamId={team.id} className="size-7 shrink-0" />
-                <span className="min-w-0 flex-1 truncate font-display text-sm font-semibold text-ink">
+                <span className="min-w-0 flex-1 truncate font-display text-sm font-semibold text-color_text">
                   {team.name}
                 </span>
               </>

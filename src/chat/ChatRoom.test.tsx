@@ -179,6 +179,6 @@ describe("ChatRoom", () => {
     renderRoom({
       messages: [message({ id: "mention", uid: "uid-ada", text: "@Mert bak buna", mentionedUids: ["me"] })],
     });
-    expect(screen.getByText("@Mert")).toHaveClass("text-brass");
+    expect(screen.getByText("@Mert")).toHaveClass("text-color_accent");
   });
 });

@@ -131,7 +131,7 @@ export function UpcomingMatchesDrawer({
         aria-controls={PANEL_ID}
         aria-label={open ? "Yaklaşan maçları kapat" : "Yaklaşan maçları göster"}
         onClick={() => setOpen((o) => !o)}
-        className="flex h-12 w-full shrink-0 cursor-pointer items-center justify-center rounded-t-[var(--radius-4xl)] border-t border-border/70 bg-card text-muted-foreground shadow-frame transition-colors duration-150 ease-[var(--ease-cotton)] hover:text-ink"
+        className="flex h-12 w-full shrink-0 cursor-pointer items-center justify-center rounded-t-[var(--radius-4xl)] border-t border-color_border1/70 bg-card text-color_textsecondary shadow-frame transition-colors duration-150 ease-[var(--ease-cotton)] hover:text-color_text"
       >
         {open ? <ChevronDown className="size-4" /> : <ChevronUp className="size-4" />}
       </button>
@@ -142,7 +142,7 @@ export function UpcomingMatchesDrawer({
       >
         <div
           onScroll={handleScroll}
-          className="no-scrollbar min-h-0 flex-1 overflow-y-auto border-t border-border/70 pt-2"
+          className="no-scrollbar min-h-0 flex-1 overflow-y-auto border-t border-color_border1/70 pt-2"
         >
           {shown.map((fixture) => {
             const home = TEAM_BY_ID[fixture.homeTeamId];
@@ -157,10 +157,10 @@ export function UpcomingMatchesDrawer({
                   tabIndex={0}
                   onClick={handleMatchClick}
                   onKeyDown={handleMatchKeyDown}
-                  className="grid h-full w-full cursor-pointer items-center gap-1.5 rounded-lg px-2 transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-accent focus-visible:bg-accent"
+                  className="grid h-full w-full cursor-pointer items-center gap-1.5 rounded-lg px-2 transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-color_hoverfill focus-visible:bg-color_hoverfill"
                   style={{ gridTemplateColumns: ROW_GRID_COLUMNS }}
                 >
-                  <span className="font-mono text-xs text-muted-foreground tnum">
+                  <span className="font-mono text-xs text-color_textsecondary tnum">
                     {place(results, home.id)}
                   </span>
                   <button
@@ -169,16 +169,16 @@ export function UpcomingMatchesDrawer({
                     className="group flex cursor-pointer flex-col items-center gap-1"
                   >
                     <TeamCrest teamId={home.id} className="size-7" />
-                    <span className="truncate font-display text-sm font-medium text-ink group-hover:underline">
+                    <span className="truncate font-display text-sm font-medium text-color_text group-hover:underline">
                       {home.shortName}
                     </span>
                   </button>
 
                   <span className="flex flex-col items-center justify-center leading-tight">
-                    <span className="font-mono text-sm text-ink tnum">
+                    <span className="font-mono text-sm text-color_text tnum">
                       {DATE_FMT.format(kickoff)}
                     </span>
-                    <span className="font-mono text-sm text-muted-foreground tnum">
+                    <span className="font-mono text-sm text-color_textsecondary tnum">
                       {TIME_FMT.format(kickoff)}
                     </span>
                   </span>
@@ -189,11 +189,11 @@ export function UpcomingMatchesDrawer({
                     className="group flex cursor-pointer flex-col items-center gap-1"
                   >
                     <TeamCrest teamId={away.id} className="size-7" />
-                    <span className="truncate font-display text-sm font-medium text-ink group-hover:underline">
+                    <span className="truncate font-display text-sm font-medium text-color_text group-hover:underline">
                       {away.shortName}
                     </span>
                   </button>
-                  <span className="font-mono text-xs text-muted-foreground tnum">
+                  <span className="font-mono text-xs text-color_textsecondary tnum">
                     {place(results, away.id)}
                   </span>
                 </div>
@@ -203,7 +203,7 @@ export function UpcomingMatchesDrawer({
 
           {loadingMore && (
             <div className="flex items-center justify-center py-3">
-              <Loader2 className="size-4 animate-spin text-muted-foreground" />
+              <Loader2 className="size-4 animate-spin text-color_textsecondary" />
             </div>
           )}
         </div>

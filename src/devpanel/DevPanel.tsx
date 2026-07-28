@@ -55,13 +55,13 @@ export function DevPanel() {
 
   const phaseBtn = (active: boolean) =>
     `rounded-md border px-3 py-1.5 text-sm ${
-      active ? "border-brass bg-brass text-navy-ink" : "border-border bg-card text-ink hover:border-brass"
+      active ? "border-color_accent bg-color_accent text-color_text" : "border-color_border1 bg-card text-color_text hover:border-color_accent"
     } disabled:cursor-default`;
 
   return (
-    <div className="mx-auto h-full max-w-3xl space-y-6 overflow-y-auto p-6 font-sans text-ink">
-      <section className="rounded-lg border border-border bg-card p-4">
-        <h2 className="mb-3 font-mono text-xs tracking-wide text-muted-foreground uppercase">Turnuva Durumu</h2>
+    <div className="mx-auto h-full max-w-3xl space-y-6 overflow-y-auto p-6 font-sans text-color_text">
+      <section className="rounded-lg border border-color_border1 bg-card p-4">
+        <h2 className="mb-3 font-mono text-xs tracking-wide text-color_textsecondary uppercase">Turnuva Durumu</h2>
         <div className="flex flex-wrap gap-2">
           {PHASES.map((phase) => (
             <button
@@ -83,8 +83,8 @@ export function DevPanel() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-border bg-card p-4">
-        <h2 className="mb-3 font-mono text-xs tracking-wide text-muted-foreground uppercase">Giriş Durumu</h2>
+      <section className="rounded-lg border border-color_border1 bg-card p-4">
+        <h2 className="mb-3 font-mono text-xs tracking-wide text-color_textsecondary uppercase">Giriş Durumu</h2>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setLoggedInOverride(true)}
@@ -110,9 +110,9 @@ export function DevPanel() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-border bg-card p-4">
-        <h2 className="mb-3 font-mono text-xs tracking-wide text-muted-foreground uppercase">Güncel Tarih</h2>
-        <p className="mb-2 font-mono text-sm tabular-nums text-muted-foreground">
+      <section className="rounded-lg border border-color_border1 bg-card p-4">
+        <h2 className="mb-3 font-mono text-xs tracking-wide text-color_textsecondary uppercase">Güncel Tarih</h2>
+        <p className="mb-2 font-mono text-sm tabular-nums text-color_textsecondary">
           {effectiveDate ?? "Henüz hiçbir maç oynanmadı"}
         </p>
         <div className="flex flex-wrap items-center gap-2">
@@ -121,7 +121,7 @@ export function DevPanel() {
             onChange={(e) => setDateInput(e.target.value)}
             placeholder="YYYY-MM-DD"
             aria-label="Özel tarih"
-            className="rounded-md border border-border bg-background px-2 py-1.5 text-sm text-ink"
+            className="rounded-md border border-color_border1 bg-background px-2 py-1.5 text-sm text-color_text"
           />
           <button onClick={() => setCurrentDateOverride(dateInput || null)} className={phaseBtn(false)}>
             Ayarla
@@ -133,17 +133,17 @@ export function DevPanel() {
       </section>
 
       {error && (
-        <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p role="alert" className="rounded-md border border-color_remove/40 bg-color_remove/10 px-3 py-2 text-sm text-color_remove">
           {error}
         </p>
       )}
 
-      <section className="rounded-lg border border-border bg-card p-4">
-        <h2 className="mb-3 font-mono text-xs tracking-wide text-muted-foreground uppercase">Maçlar</h2>
+      <section className="rounded-lg border border-color_border1 bg-card p-4">
+        <h2 className="mb-3 font-mono text-xs tracking-wide text-color_textsecondary uppercase">Maçlar</h2>
         <div className="space-y-4">
           {MATCHDAYS.map((matchday) => (
             <div key={matchday}>
-              <h3 className="mb-1.5 text-sm font-semibold text-ink">{matchday}. Hafta</h3>
+              <h3 className="mb-1.5 text-sm font-semibold text-color_text">{matchday}. Hafta</h3>
               <ul className="space-y-1">
                 {FIXTURES.filter((f) => f.matchday === matchday).map((fixture) => {
                   const currentOutcome = outcomes[fixture.id] ?? "notplayed";
@@ -160,7 +160,7 @@ export function DevPanel() {
                         aria-label={`${teamName(fixture.homeTeamId)} - ${teamName(fixture.awayTeamId)}`}
                         value={currentOutcome}
                         onChange={(e) => handleOutcomeChange(fixture.id, e.target.value as MatchOutcome)}
-                        className="rounded-md border border-border bg-background px-1.5 py-1 text-sm text-ink"
+                        className="rounded-md border border-color_border1 bg-background px-1.5 py-1 text-sm text-color_text"
                       >
                         <option value="notplayed">Oynanmadı</option>
                         <option value="homewin" disabled={!unlocked}>

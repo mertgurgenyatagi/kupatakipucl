@@ -13,7 +13,7 @@ export function BounceCheck({ text }: { text: string }) {
         initial={{ scale: 0.4, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 16, mass: 0.7 }}
-        className="flex size-20 items-center justify-center rounded-full bg-ink"
+        className="flex size-20 items-center justify-center rounded-full bg-color_text"
       >
         <Check className="size-10 text-background" strokeWidth={3} />
       </motion.div>
@@ -21,7 +21,7 @@ export function BounceCheck({ text }: { text: string }) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.18, duration: 0.3, ease: "easeOut" }}
-        className="text-center font-display text-2xl font-light text-ink"
+        className="text-center font-display text-2xl font-light text-color_text"
       >
         {text}
       </motion.p>

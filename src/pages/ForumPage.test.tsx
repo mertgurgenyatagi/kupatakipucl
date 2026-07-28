@@ -114,13 +114,13 @@ describe("ForumPage", () => {
   it("shows the blocked message when the page isn't allowed for this state", () => {
     mockUseVisibilityState.mockReturnValue("loggedout_notstarted");
     render(<ForumPage />);
-    expect(screen.getByText("This section isn't available right now.")).toBeInTheDocument();
+    expect(screen.getByText("Bu bölüm şu anda kullanılamıyor.")).toBeInTheDocument();
   });
 
   it("shows the blocked message for a logged-out visitor even once the tournament's started", () => {
     mockUseVisibilityState.mockReturnValue("loggedout_leaguephase");
     render(<ForumPage />);
-    expect(screen.getByText("This section isn't available right now.")).toBeInTheDocument();
+    expect(screen.getByText("Bu bölüm şu anda kullanılamıyor.")).toBeInTheDocument();
   });
 
   it("shows a loading skeleton while posts, players, or likes are loading", () => {

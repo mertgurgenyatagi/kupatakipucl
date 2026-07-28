@@ -239,7 +239,7 @@ export function HomeLoggedInTuner() {
     <div className="mb-4">
       <label className="mb-1 flex items-baseline justify-between text-xs">
         <span>{label}</span>
-        <span className="font-mono text-[0.68rem] text-brass tnum">{value}</span>
+        <span className="font-mono text-[0.68rem] text-color_accent tnum">{value}</span>
       </label>
       <input
         type="range"
@@ -247,22 +247,22 @@ export function HomeLoggedInTuner() {
         max={max}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-brass"
+        className="w-full accent-color_accent"
       />
     </div>
   );
 
   return (
-    <div className="flex h-full min-h-0 bg-background text-ink">
+    <div className="flex h-full min-h-0 bg-background text-color_text">
       {/* Hidden below md: the fixed 280px control rail eats into Tailwind's
           viewport-relative sm:/md: breakpoints for whatever renders beside
           it, so a narrow-viewport check with the rail still showing doesn't
           match how the real page (no rail competing for width) behaves at
           that same width. Below md, the preview alone gets the full
           viewport — controls trade off for an accurate mobile check. */}
-      <div className="no-scrollbar hidden w-[280px] shrink-0 overflow-y-auto border-r border-border bg-card p-4 md:block">
-        <h1 className="font-display text-base font-bold text-ink">Home (Logged-in) Tuner</h1>
-        <p className="mt-1 mb-5 text-xs text-muted-foreground">
+      <div className="no-scrollbar hidden w-[280px] shrink-0 overflow-y-auto border-r border-color_border1 bg-card p-4 md:block">
+        <h1 className="font-display text-base font-bold text-color_text">Home (Logged-in) Tuner</h1>
+        <p className="mt-1 mb-5 text-xs text-color_textsecondary">
           Bu, HomeLandingLoggedIn.tsx'in kendisi — kopyası değil.
         </p>
         {slider("Katılımcı sayısı", count, 80, setCount)}
@@ -271,7 +271,7 @@ export function HomeLoggedInTuner() {
         {slider("Çevrimiçi sayısı", onlineCount, Math.max(count, 1), setOnlineCount)}
         {slider("Yazan kişi sayısı", typingCount, 3, setTypingCount)}
         {slider("Forum konu sayısı", postCount, 20, setPostCount)}
-        <p className="mt-1 text-[0.68rem] text-muted-foreground">
+        <p className="mt-1 text-[0.68rem] text-color_textsecondary">
           Konuların yaklaşık yarısına otomatik yanıt ve bazılarına fotoğraf eklenir. Kalpler ve "daha eski
           mesajları yükle" tıklanabilir (yerel, kalıcı değil). Mesajların bir kısmı seni etiketler, bir kısmı
           silinmiş olarak gösterilir.

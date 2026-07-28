@@ -32,7 +32,7 @@ const COLUMNS: { key: SortKey; label: string; help: string }[] = [
   { key: "points", label: "P", help: "Puan" },
 ];
 
-const HEADER_CELL = "flex h-5 items-center border-b border-border";
+const HEADER_CELL = "flex h-5 items-center border-b border-color_border1";
 
 /** A lip peeking out above the frame's top edge, spanning the frame's full
  *  width with the same corner radius, behind the frame in stacking order
@@ -44,7 +44,7 @@ function FrameHandle() {
   return (
     <div
       aria-hidden
-      className="absolute inset-x-0 -top-2 z-0 h-4 rounded-t-[var(--radius-4xl)] bg-navy"
+      className="absolute inset-x-0 -top-2 z-0 h-4 rounded-t-[var(--radius-4xl)] bg-color_secondary"
     />
   );
 }
@@ -112,10 +112,10 @@ function TeamTableHalf({
               onClick={() => onSort("position")}
               aria-pressed={sortKey === "position"}
               className={cn(
-                "absolute inset-0 flex items-center gap-1 pl-3 font-mono text-[0.6rem] font-medium tracking-[0.18em] uppercase transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-accent focus-visible:text-ink",
+                "absolute inset-0 flex items-center gap-1 pl-3 font-mono text-[0.6rem] font-medium tracking-[0.18em] uppercase transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-color_hoverfill focus-visible:text-color_text",
                 sortKey === "position"
-                  ? "text-ink"
-                  : "text-muted-foreground hover:text-ink"
+                  ? "text-color_text"
+                  : "text-color_textsecondary hover:text-color_text"
               )}
             >
               <span>S</span>
@@ -126,7 +126,7 @@ function TeamTableHalf({
             role="columnheader"
             className={cn(
               HEADER_CELL,
-              "pl-2 font-mono text-[0.6rem] font-medium tracking-[0.18em] text-muted-foreground uppercase"
+              "pl-2 font-mono text-[0.6rem] font-medium tracking-[0.18em] text-color_textsecondary uppercase"
             )}
           >
             Takım
@@ -141,8 +141,8 @@ function TeamTableHalf({
                   onClick={() => onSort(col.key)}
                   aria-pressed={active}
                   className={cn(
-                    "absolute inset-0 flex items-center justify-end gap-0.5 px-1 font-mono text-[0.6rem] font-medium tracking-[0.18em] uppercase transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-accent focus-visible:text-ink",
-                    active ? "text-ink" : "text-muted-foreground hover:text-ink"
+                    "absolute inset-0 flex items-center justify-end gap-0.5 px-1 font-mono text-[0.6rem] font-medium tracking-[0.18em] uppercase transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-color_hoverfill focus-visible:text-color_text",
+                    active ? "text-color_text" : "text-color_textsecondary hover:text-color_text"
                   )}
                 >
                   <span>{col.label}</span>
@@ -160,9 +160,9 @@ function TeamTableHalf({
           const band = result ? qualificationBand(result.position) : null;
           const highlighted = highlightedTeamIds?.has(team.id) ?? false;
           const cell = cn(
-            "flex items-center border-b border-border/50 py-1 transition-colors duration-150 ease-[var(--ease-cotton)] animate-cotton-rise group-hover:bg-accent",
+            "flex items-center border-b border-color_border1/50 py-1 transition-colors duration-150 ease-[var(--ease-cotton)] animate-cotton-rise group-hover:bg-color_hoverfill",
             !result && "opacity-55",
-            highlighted && "bg-brass/[0.12]"
+            highlighted && "bg-color_green/[0.12]"
           );
           const statCell = cn(cell, "justify-end px-1");
           return (
@@ -179,13 +179,13 @@ function TeamTableHalf({
                   eliminated band (25-36) gets none. */}
               <div role="cell" className={cn(cell, "gap-1.5 pr-0 pl-3")}>
                 {band === "direct" && (
-                  <span aria-hidden className="h-3 w-1 shrink-0 rounded-r-full bg-brass" />
+                  <span aria-hidden className="h-3 w-1 shrink-0 rounded-r-full bg-color_accent" />
                 )}
                 {band === "playoff" && (
-                  <span aria-hidden className="h-3 w-1 shrink-0 rounded-r-full bg-amber-500" />
+                  <span aria-hidden className="h-3 w-1 shrink-0 rounded-r-full bg-color_qualification" />
                 )}
                 {band === "eliminated" && <span aria-hidden className="w-1 shrink-0" />}
-                <span className="font-mono text-xs tracking-tight text-muted-foreground tnum">
+                <span className="font-mono text-xs tracking-tight text-color_textsecondary tnum">
                   {result ? String(result.position) : "--"}
                 </span>
               </div>
@@ -195,7 +195,7 @@ function TeamTableHalf({
                 <span className="flex min-w-0 items-center gap-2.5">
                   <TeamCrest teamId={team.id} className="size-6 shrink-0" />
                   <span
-                    className="truncate font-display text-sm font-medium text-ink"
+                    className="truncate font-display text-sm font-medium text-color_text"
                     title={team.name}
                   >
                     {team.shortName}
@@ -204,22 +204,22 @@ function TeamTableHalf({
               </div>
 
               <div role="cell" className={statCell}>
-                <span className="font-mono text-xs tracking-tight text-muted-foreground tnum">
+                <span className="font-mono text-xs tracking-tight text-color_textsecondary tnum">
                   {result?.matchesPlayed ?? "-"}
                 </span>
               </div>
               <div role="cell" className={statCell}>
-                <span className="font-mono text-xs tracking-tight text-muted-foreground tnum">
+                <span className="font-mono text-xs tracking-tight text-color_textsecondary tnum">
                   {result?.goalsFor ?? "-"}
                 </span>
               </div>
               <div role="cell" className={statCell}>
-                <span className="font-mono text-xs tracking-tight text-muted-foreground tnum">
+                <span className="font-mono text-xs tracking-tight text-color_textsecondary tnum">
                   {result?.goalsAgainst ?? "-"}
                 </span>
               </div>
               <div role="cell" className={statCell}>
-                <span className="font-mono text-xs tracking-tight text-ink tnum">
+                <span className="font-mono text-xs tracking-tight text-color_text tnum">
                   {result ? signed(result.goalDifference) : "-"}
                 </span>
               </div>
@@ -227,7 +227,7 @@ function TeamTableHalf({
                   column shares the same width and padding; the number
                   that decides the table is marked by weight/color only). */}
               <div role="cell" className={statCell}>
-                <span className="font-mono text-xs font-bold tracking-tight text-ink tnum">
+                <span className="font-mono text-xs font-bold tracking-tight text-color_text tnum">
                   {result?.points ?? "-"}
                 </span>
               </div>
@@ -244,7 +244,7 @@ function TeamTableHalf({
  * standing, given the same weight as the participant leaderboard rather than
  * shrunk into a side-widget. Crest + a 3-4 letter team code instead of full
  * names, split into two 18-row halves side by side. Tabular numerals
- * throughout; the rank numeral itself turns brass for the earned
+ * throughout; the rank numeral itself turns color_accent for the earned
  * direct-qualification distinction — no separate line accent. Puan is the
  * one bold column — the number that actually decides the table. Sortable
  * via clickable column headers with a mono active-sort caret, shared across
@@ -263,14 +263,14 @@ export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTab
     return (
       <div className="relative h-full">
         <FrameHandle />
-        <Frame className="relative z-10 h-full animate-cotton-rise border-navy-line/35">
+        <Frame className="relative z-10 h-full animate-cotton-rise border-color_border1/35">
         <FrameBody className="flex-row gap-3 px-3 py-1.5 sm:px-4">
           {halves.map((half, i) => (
             <div
               key={i}
               className={cn(
                 "no-scrollbar min-w-0 flex-1 overflow-y-auto",
-                i === 1 && "border-l border-border/50 pl-3"
+                i === 1 && "border-l border-color_border1/50 pl-3"
               )}
             >
               <div
@@ -287,7 +287,7 @@ export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTab
                       role="columnheader"
                       className={cn(
                         HEADER_CELL,
-                        "pl-3 font-mono text-[0.6rem] font-medium tracking-[0.18em] text-muted-foreground uppercase"
+                        "pl-3 font-mono text-[0.6rem] font-medium tracking-[0.18em] text-color_textsecondary uppercase"
                       )}
                     >
                       Takım
@@ -296,7 +296,7 @@ export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTab
                       role="columnheader"
                       className={cn(
                         HEADER_CELL,
-                        "justify-end pr-3 font-mono text-[0.6rem] font-medium tracking-[0.18em] text-muted-foreground uppercase"
+                        "justify-end pr-3 font-mono text-[0.6rem] font-medium tracking-[0.18em] text-color_textsecondary uppercase"
                       )}
                     >
                       P
@@ -306,7 +306,7 @@ export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTab
                 <div role="rowgroup" className="contents">
                   {half.map((team, index) => {
                     const cell = cn(
-                      "flex items-center border-b border-border/50 py-1 transition-colors duration-150 ease-[var(--ease-cotton)] animate-cotton-rise group-hover:bg-accent"
+                      "flex items-center border-b border-color_border1/50 py-1 transition-colors duration-150 ease-[var(--ease-cotton)] animate-cotton-rise group-hover:bg-color_hoverfill"
                     );
                     return (
                       <div
@@ -320,7 +320,7 @@ export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTab
                           <span className="flex min-w-0 items-center gap-2.5">
                             <TeamCrest teamId={team.id} className="size-6 shrink-0" />
                             <span
-                              className="truncate font-display text-sm font-medium text-ink"
+                              className="truncate font-display text-sm font-medium text-color_text"
                               title={team.name}
                             >
                               {team.shortName}
@@ -328,7 +328,7 @@ export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTab
                           </span>
                         </div>
                         <div role="cell" className={cn(cell, "justify-end pr-3")}>
-                          <span className="font-mono text-sm tracking-tight text-muted-foreground tnum">
+                          <span className="font-mono text-sm tracking-tight text-color_textsecondary tnum">
                             0
                           </span>
                         </div>
@@ -363,7 +363,7 @@ export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTab
   return (
     <div className="relative h-full">
       <FrameHandle />
-      <Frame className="relative z-10 h-full animate-cotton-rise border-navy-line/35">
+      <Frame className="relative z-10 h-full animate-cotton-rise border-color_border1/35">
         <FrameBody className="min-h-0 gap-2 px-3 py-1 sm:px-4">
           <div className="flex min-h-0 flex-1 gap-3">
             <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto">
@@ -376,7 +376,7 @@ export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTab
                 onSelectTeam={onSelectTeam}
               />
             </div>
-            <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto border-l border-border/50 pl-3">
+            <div className="no-scrollbar min-w-0 flex-1 overflow-y-auto border-l border-color_border1/50 pl-3">
               <TeamTableHalf
                 teams={right}
                 results={results}

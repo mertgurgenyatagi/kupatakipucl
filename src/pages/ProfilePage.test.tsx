@@ -108,7 +108,7 @@ describe("ProfilePage", () => {
   it("shows the blocked message when the page isn't allowed for this state", () => {
     mockUseVisibilityState.mockReturnValue("loggedout_notstarted");
     renderPage();
-    expect(screen.getByText("This section isn't available right now.")).toBeInTheDocument();
+    expect(screen.getByText("Bu bölüm şu anda kullanılamıyor.")).toBeInTheDocument();
   });
 
   it("shows a loading skeleton while profile or prediction is loading", () => {

@@ -75,7 +75,7 @@ describe("App routing integration", () => {
     // Hooks) — findByText lets that pending fetch settle before the test
     // ends, so it doesn't leak an unwrapped state update into a later test.
     expect(
-      await screen.findByText("This section isn't available right now.")
+      await screen.findByText("Bu bölüm şu anda kullanılamıyor.")
     ).toBeInTheDocument();
   });
 });

@@ -18,7 +18,7 @@ describe("LogoutButton", () => {
   it("calls signOut when clicked", async () => {
     mockSignOut.mockResolvedValue(undefined);
     render(<LogoutButton />);
-    fireEvent.click(screen.getByText("Sign out"));
+    fireEvent.click(screen.getByText("Çıkış yap"));
     await waitFor(() => expect(mockSignOut).toHaveBeenCalledTimes(1));
   });
 });

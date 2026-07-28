@@ -60,11 +60,11 @@ describe("AppShell nav gating", () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
     mockUseTournamentPhase.mockReturnValue("notstarted");
     renderShell();
-    expect(screen.getByText("Home")).toBeInTheDocument();
+    expect(screen.getByText("Ana Sayfa")).toBeInTheDocument();
     expect(screen.queryByText("Forum")).not.toBeInTheDocument();
     expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
-    expect(screen.queryByText("Leaderboard")).not.toBeInTheDocument();
-    expect(screen.queryByText("Stats")).not.toBeInTheDocument();
+    expect(screen.queryByText("Puan Durumu")).not.toBeInTheDocument();
+    expect(screen.queryByText("İstatistikler")).not.toBeInTheDocument();
   });
 
   it("shows forum (but never a Predictions link) when not started but logged in", () => {
@@ -73,17 +73,17 @@ describe("AppShell nav gating", () => {
     renderShell();
     expect(screen.getByText("Forum")).toBeInTheDocument();
     expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
-    expect(screen.queryByText("Leaderboard")).not.toBeInTheDocument();
-    expect(screen.queryByText("Stats")).not.toBeInTheDocument();
+    expect(screen.queryByText("Puan Durumu")).not.toBeInTheDocument();
+    expect(screen.queryByText("İstatistikler")).not.toBeInTheDocument();
   });
 
   it("shows leaderboard but not forum, stats or predictions when started and not logged in", () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
     mockUseTournamentPhase.mockReturnValue("leaguephase");
     renderShell();
-    expect(screen.getByText("Leaderboard")).toBeInTheDocument();
+    expect(screen.getByText("Puan Durumu")).toBeInTheDocument();
     expect(screen.queryByText("Forum")).not.toBeInTheDocument();
-    expect(screen.queryByText("Stats")).not.toBeInTheDocument();
+    expect(screen.queryByText("İstatistikler")).not.toBeInTheDocument();
     expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
   });
 
@@ -92,7 +92,7 @@ describe("AppShell nav gating", () => {
     for (const phase of ["leaguephase", "preknockout", "knockout"] as TournamentPhase[]) {
       mockUseTournamentPhase.mockReturnValue(phase);
       renderShell();
-      for (const label of ["Leaderboard", "Forum", "Stats"]) {
+      for (const label of ["Puan Durumu", "Forum", "İstatistikler"]) {
         expect(screen.getAllByText(label).length).toBeGreaterThan(0);
       }
       expect(screen.queryByText("Predictions")).not.toBeInTheDocument();

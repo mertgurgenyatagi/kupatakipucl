@@ -64,7 +64,7 @@ export function ThreadCard({
   const omittedCount = sortedReplies.length - preview.length;
 
   return (
-    <div className="flex h-[27rem] flex-col gap-3 overflow-hidden rounded-xl border border-border/60 bg-background p-4">
+    <div className="flex h-[27rem] flex-col gap-3 overflow-hidden rounded-xl border border-color_border1/60 bg-background p-4">
       <div className="flex shrink-0 items-start justify-between gap-2">
         <button
           type="button"
@@ -73,15 +73,15 @@ export function ThreadCard({
         >
           <Avatar className="size-8 shrink-0">
             <AvatarImage src={avatarSrc(author)} alt="" />
-            <AvatarFallback className="font-mono text-[0.6rem] text-muted-foreground">
+            <AvatarFallback className="font-mono text-[0.6rem] text-color_textsecondary">
               {author ? initials(author.firstName, author.lastName) : "?"}
             </AvatarFallback>
           </Avatar>
           <span className="min-w-0 text-left">
-            <span className="block truncate font-display text-sm font-medium text-ink group-hover:underline">
+            <span className="block truncate font-display text-sm font-medium text-color_text group-hover:underline">
               {fullName(author)}
             </span>
-            <span className="block font-mono text-[0.62rem] text-muted-foreground tnum">
+            <span className="block font-mono text-[0.62rem] text-color_textsecondary tnum">
               {timeAgo(stats.lastActivityAt)}
               {post.editedAt && " · düzenlendi"}
             </span>
@@ -92,7 +92,7 @@ export function ThreadCard({
             type="button"
             onClick={() => onDelete(post.id)}
             aria-label="Konuyu sil"
-            className="shrink-0 cursor-pointer rounded-full p-1 text-muted-foreground outline-none transition-colors hover:text-destructive focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass"
+            className="shrink-0 cursor-pointer rounded-full p-1 text-color_textsecondary outline-none transition-colors hover:text-color_remove focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent"
           >
             <Trash2 className="size-3.5" aria-hidden />
           </button>
@@ -102,10 +102,10 @@ export function ThreadCard({
       <div className="flex shrink-0 items-start gap-3">
         {post.imageURL && <ForumImageThumb src={post.imageURL} />}
         <div className="min-h-[3.75rem] min-w-0 flex-1">
-          <p className={cn("text-sm break-words whitespace-pre-wrap text-navy-muted", "line-clamp-3")}>
+          <p className={cn("text-sm break-words whitespace-pre-wrap text-color_textsecondary", "line-clamp-3")}>
             {splitMentionSegments(post.text, players).map((segment, i) =>
               segment.isMention ? (
-                <span key={i} className="font-semibold text-brass">
+                <span key={i} className="font-semibold text-color_accent">
                   {segment.text}
                 </span>
               ) : (
@@ -117,7 +117,7 @@ export function ThreadCard({
             <button
               type="button"
               onClick={onExpand}
-              className="mt-1 cursor-pointer font-mono text-[0.66rem] tracking-wide text-muted-foreground uppercase hover:text-brass"
+              className="mt-1 cursor-pointer font-mono text-[0.66rem] tracking-wide text-color_textsecondary uppercase hover:text-color_accent"
             >
               Devamını oku
             </button>
@@ -132,8 +132,8 @@ export function ThreadCard({
           aria-pressed={liked}
           aria-label={liked ? "Beğeniyi geri al" : "Beğen"}
           className={cn(
-            "-ml-1.5 flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 outline-none transition-colors duration-150 ease-[var(--ease-cotton)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass",
-            liked ? "text-brass" : "text-muted-foreground hover:text-brass"
+            "-ml-1.5 flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 outline-none transition-colors duration-150 ease-[var(--ease-cotton)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent",
+            liked ? "text-color_accent" : "text-color_textsecondary hover:text-color_accent"
           )}
         >
           <Heart className="size-3.5" fill={liked ? "currentColor" : "none"} strokeWidth={2} aria-hidden />
@@ -142,7 +142,7 @@ export function ThreadCard({
         <button
           type="button"
           onClick={onExpand}
-          className="flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 text-muted-foreground outline-none transition-colors hover:text-brass focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass"
+          className="flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 text-color_textsecondary outline-none transition-colors hover:text-color_accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent"
         >
           <MessageCircle className="size-3.5" aria-hidden />
           <span className="font-mono text-[0.68rem] tnum">{sortedReplies.length} yanıt</span>
@@ -153,9 +153,9 @@ export function ThreadCard({
           a 0-reply and a 3-reply thread render the same overall frame). The
           preview always uses ReplyRow's compact layout, sized so its 3 rows
           fit here in full — never scrolls, never clips mid-row. */}
-      <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-hidden border-t border-border/40 pt-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-hidden border-t border-color_border1/40 pt-2">
         {sortedReplies.length === 0 ? (
-          <p className="flex flex-1 items-center justify-center text-center font-display text-xs text-muted-foreground italic">
+          <p className="flex flex-1 items-center justify-center text-center font-display text-xs text-color_textsecondary italic">
             Henüz yanıt yok.
           </p>
         ) : (
@@ -164,7 +164,7 @@ export function ThreadCard({
               <button
                 type="button"
                 onClick={onExpand}
-                className="shrink-0 cursor-pointer rounded-lg bg-muted/40 px-3 py-1 text-left font-mono text-[0.62rem] tracking-wide text-muted-foreground uppercase hover:text-brass"
+                className="shrink-0 cursor-pointer rounded-lg bg-color_secondary/40 px-3 py-1 text-left font-mono text-[0.62rem] tracking-wide text-color_textsecondary uppercase hover:text-color_accent"
               >
                 + {omittedCount} önceki yanıt · tümünü gör
               </button>

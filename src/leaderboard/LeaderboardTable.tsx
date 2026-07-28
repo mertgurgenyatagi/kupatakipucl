@@ -59,27 +59,27 @@ export const LeaderboardTable = memo(function LeaderboardTable({
   const ranked = assignRanks(entries);
 
   return (
-    <Frame className="h-full animate-cotton-rise border-navy-line/35">
+    <Frame className="h-full animate-cotton-rise border-color_border1/35">
       <FrameBody>
         {entries.length === 0 ? (
           <div className="flex flex-1 items-center px-6 py-12">
-            <p className="font-display text-xl text-muted-foreground italic">
+            <p className="font-display text-xl text-color_textsecondary italic">
               Henüz tahmin gönderen olmadı.
             </p>
           </div>
         ) : (
           <div className="no-scrollbar min-h-0 flex-1 px-2 sm:px-3 lg:overflow-y-auto">
             <Table className="text-sm">
-              <TableHeader className="sticky top-0 z-10 bg-card [&_tr]:border-b [&_tr]:border-border">
+              <TableHeader className="sticky top-0 z-10 bg-card [&_tr]:border-b [&_tr]:border-color_border1">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-10 w-14 pl-3 font-mono text-[0.6rem] font-medium tracking-[0.22em] text-muted-foreground uppercase">
+                  <TableHead className="h-10 w-14 pl-3 font-mono text-[0.6rem] font-medium tracking-[0.22em] text-color_textsecondary uppercase">
                     Sıra
                   </TableHead>
                   <TableHead className="h-10 w-10 p-0" aria-label="Fotoğraf" />
-                  <TableHead className="h-10 font-mono text-[0.6rem] font-medium tracking-[0.22em] text-muted-foreground uppercase">
+                  <TableHead className="h-10 font-mono text-[0.6rem] font-medium tracking-[0.22em] text-color_textsecondary uppercase">
                     Katılımcı
                   </TableHead>
-                  <TableHead className="h-10 pr-4 text-right font-mono text-[0.6rem] font-medium tracking-[0.22em] text-muted-foreground uppercase">
+                  <TableHead className="h-10 pr-4 text-right font-mono text-[0.6rem] font-medium tracking-[0.22em] text-color_textsecondary uppercase">
                     Puan
                   </TableHead>
                 </TableRow>
@@ -108,18 +108,18 @@ export const LeaderboardTable = memo(function LeaderboardTable({
                       tabIndex={canReveal ? 0 : undefined}
                       aria-haspopup={canReveal ? "dialog" : undefined}
                       className={cn(
-                        "group animate-cotton-rise border-b border-border/60 transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-accent",
-                        leader && "bg-brass/[0.07]",
-                        canReveal && "cursor-pointer outline-none focus-visible:bg-accent focus-visible:ring-1 focus-visible:ring-ring/50 focus-visible:ring-inset"
+                        "group animate-cotton-rise border-b border-color_border1/60 transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill",
+                        leader && "bg-color_accent/[0.07]",
+                        canReveal && "cursor-pointer outline-none focus-visible:bg-color_hoverfill focus-visible:ring-1 focus-visible:ring-color_border2/50 focus-visible:ring-inset"
                       )}
                     >
-                      {/* Rank — brass only for rank 01, the one earned
+                      {/* Rank — color_accent only for rank 01, the one earned
                           distinction (§16, the plaque). */}
                       <TableCell className="py-3 pl-3 align-middle">
                         <span
                           className={cn(
                             "font-mono text-xs tracking-tight tnum",
-                            leader ? "text-brass" : "text-muted-foreground"
+                            leader ? "text-color_accent" : "text-color_textsecondary"
                           )}
                         >
                           {String(rank).padStart(2, "0")}
@@ -131,7 +131,7 @@ export const LeaderboardTable = memo(function LeaderboardTable({
                       <TableCell className="py-2 pr-0 pl-0 align-middle">
                         <Avatar className="size-8">
                           <AvatarImage src={entry.photoURL} alt="" />
-                          <AvatarFallback className="bg-secondary font-mono text-[0.6rem] text-navy-text">
+                          <AvatarFallback className="bg-secondary font-mono text-[0.6rem] text-color_secondary">
                             {initials(entry.firstName, entry.lastName)}
                           </AvatarFallback>
                         </Avatar>
@@ -142,7 +142,7 @@ export const LeaderboardTable = memo(function LeaderboardTable({
                           table instead of popping up a card here. */}
                       <TableCell className="w-full py-3 align-middle">
                         <span className="flex min-w-0 items-baseline gap-3">
-                          <span className="truncate font-display text-sm font-medium text-ink">
+                          <span className="truncate font-display text-sm font-medium text-color_text">
                             {entry.firstName} {entry.lastName}
                           </span>
                         </span>
@@ -153,7 +153,7 @@ export const LeaderboardTable = memo(function LeaderboardTable({
                         <span
                           className={cn(
                             "font-mono text-sm tracking-tight tnum",
-                            leader ? "font-semibold text-brass" : "font-medium text-ink"
+                            leader ? "font-semibold text-color_accent" : "font-medium text-color_text"
                           )}
                         >
                           {entry.points}

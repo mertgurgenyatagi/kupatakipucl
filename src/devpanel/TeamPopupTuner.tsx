@@ -67,8 +67,15 @@ function formatExport(t: TeamPopupTuning): string {
  * Gated behind `import.meta.env.DEV` in App.tsx, same as `/dev` itself —
  * inert in production.
  */
+// The real default is "var(--color_pitch)" (see teamPopupTuning.ts) — reads
+// fine as an SVG fill, but a native <input type="color"> requires a literal
+// #rrggbb and silently rejects a var() reference. This tuner's own starting
+// point needs the resolved literal instead; DEFAULT_TEAM_POPUP_TUNING itself
+// (what the live app actually falls back to) is untouched.
+const TUNER_INITIAL: TeamPopupTuning = { ...DEFAULT_TEAM_POPUP_TUNING, pitchFill: "#1E5631" };
+
 export function TeamPopupTuner() {
-  const [tuning, setTuning] = useState<TeamPopupTuning>(DEFAULT_TEAM_POPUP_TUNING);
+  const [tuning, setTuning] = useState<TeamPopupTuning>(TUNER_INITIAL);
   const [copied, setCopied] = useState(false);
 
   function set<K extends keyof TeamPopupTuning>(key: K, value: TeamPopupTuning[K]) {
@@ -100,24 +107,24 @@ export function TeamPopupTuner() {
   // the dialog's own portal content so the stacking comparison is real.
   const sidebar = (
     <div
-      className="no-scrollbar fixed inset-y-0 left-0 z-[999] w-[340px] overflow-y-auto border-r border-border bg-card p-4 text-ink"
+      className="no-scrollbar fixed inset-y-0 left-0 z-[999] w-[340px] overflow-y-auto border-r border-color_border1 bg-card p-4 text-color_text"
     >
-        <h1 className="font-display text-base font-bold text-ink">Team Popup Tuner</h1>
-        <p className="mt-1 mb-5 text-xs text-muted-foreground">
+        <h1 className="font-display text-base font-bold text-color_text">Team Popup Tuner</h1>
+        <p className="mt-1 mb-5 text-xs text-color_textsecondary">
           Bu, TeamPopup.tsx'in kendisi — kopyası değil. Sürükle, sonra "Değerleri kopyala"ya bas.
         </p>
 
         <button
           type="button"
-          onClick={() => setTuning(DEFAULT_TEAM_POPUP_TUNING)}
-          className="mb-5 cursor-pointer text-xs text-muted-foreground underline hover:text-ink"
+          onClick={() => setTuning(TUNER_INITIAL)}
+          className="mb-5 cursor-pointer text-xs text-color_textsecondary underline hover:text-color_text"
         >
           Mevcut sürüme sıfırla
         </button>
 
         {groups.map((group) => (
           <div key={group} className="mb-5">
-            <h2 className="mb-2 border-b border-border/60 pb-1.5 font-mono text-[0.62rem] tracking-[0.18em] text-muted-foreground uppercase">
+            <h2 className="mb-2 border-b border-color_border1/60 pb-1.5 font-mono text-[0.62rem] tracking-[0.18em] text-color_textsecondary uppercase">
               {group}
             </h2>
             {fieldsOf()
@@ -126,7 +133,7 @@ export function TeamPopupTuner() {
                 <div key={f.key} className="mb-3">
                   <label className="mb-1 flex items-baseline justify-between text-xs">
                     <span>{f.label}</span>
-                    <span className="font-mono text-[0.68rem] text-brass tnum">
+                    <span className="font-mono text-[0.68rem] text-color_accent tnum">
                       {tuning[f.key]}
                       {f.unit}
                     </span>
@@ -138,7 +145,7 @@ export function TeamPopupTuner() {
                     step={f.step}
                     value={tuning[f.key] as number}
                     onChange={(e) => set(f.key, parseFloat(e.target.value) as never)}
-                    className="w-full accent-brass"
+                    className="w-full accent-color_accent"
                   />
                 </div>
               ))}
@@ -146,21 +153,21 @@ export function TeamPopupTuner() {
         ))}
 
         <div className="mb-5">
-          <h2 className="mb-2 border-b border-border/60 pb-1.5 font-mono text-[0.62rem] tracking-[0.18em] text-muted-foreground uppercase">
+          <h2 className="mb-2 border-b border-color_border1/60 pb-1.5 font-mono text-[0.62rem] tracking-[0.18em] text-color_textsecondary uppercase">
             Saha rengi
           </h2>
           <input
             type="color"
             value={tuning.pitchFill}
             onChange={(e) => set("pitchFill", e.target.value)}
-            className="h-8 w-full cursor-pointer rounded border border-border bg-transparent"
+            className="h-8 w-full cursor-pointer rounded border border-color_border1 bg-transparent"
           />
         </div>
 
         <button
           type="button"
           onClick={handleExport}
-          className="w-full cursor-pointer rounded-lg bg-brass px-3 py-2.5 font-display text-sm font-semibold text-navy-ink transition-opacity hover:opacity-90"
+          className="w-full cursor-pointer rounded-lg bg-color_accent px-3 py-2.5 font-display text-sm font-semibold text-color_text transition-opacity hover:opacity-90"
         >
           {copied ? "Kopyalandı — buraya yapıştır" : "Değerleri kopyala"}
         </button>
@@ -168,7 +175,7 @@ export function TeamPopupTuner() {
   );
 
   return (
-    <div className="flex h-full min-h-0 bg-background text-ink">
+    <div className="flex h-full min-h-0 bg-background text-color_text">
       {createPortal(sidebar, document.body)}
 
       <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-auto p-8 pl-[calc(340px+2rem)]">

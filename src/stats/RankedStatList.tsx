@@ -38,40 +38,40 @@ export function RankedStatList({
   return (
     <div className="flex flex-col">
       <span
-        className="border-b border-border/40 pb-2 font-mono tracking-[0.18em] text-muted-foreground uppercase"
+        className="border-b border-color_border1/40 pb-2 font-mono tracking-[0.18em] text-color_textsecondary uppercase"
         style={{ fontSize: `${t.labelFontSize}rem` }}
       >
         {label}
       </span>
       {rows.length === 0 ? (
-        <p className="pt-2 text-sm text-muted-foreground">Henüz hesaplanabilecek veri yok.</p>
+        <p className="pt-2 text-sm text-color_textsecondary">Henüz hesaplanabilecek veri yok.</p>
       ) : (
         <div className="flex flex-col">
           {rows.map((row, i) => (
             <div
               key={row.key}
-              className="flex items-center gap-3 border-b border-border/50 last:border-0"
+              className="flex items-center gap-3 border-b border-color_border1/50 last:border-0"
               style={rowStyle}
             >
-              <span className="w-4 shrink-0 font-mono text-xs text-muted-foreground tnum">
+              <span className="w-4 shrink-0 font-mono text-xs text-color_textsecondary tnum">
                 {i + 1}
               </span>
               {row.teamId ? (
                 <TeamCrest teamId={row.teamId} className="shrink-0" style={crestStyle} />
               ) : (
                 <Avatar className="shrink-0" style={crestStyle}>
-                  <AvatarFallback className={cn("font-mono text-[0.58rem] text-navy-ink", row.fill)}>
+                  <AvatarFallback className={cn("font-mono text-[0.58rem] text-color_text", row.fill)}>
                     {initials(row.name)}
                   </AvatarFallback>
                 </Avatar>
               )}
               <span
-                className="min-w-0 flex-1 truncate font-display font-medium text-ink"
+                className="min-w-0 flex-1 truncate font-display font-medium text-color_text"
                 style={fontStyle}
               >
                 {row.name}
               </span>
-              <span className="shrink-0 font-mono font-bold text-ink tnum" style={fontStyle}>
+              <span className="shrink-0 font-mono font-bold text-color_text tnum" style={fontStyle}>
                 {row.value}
               </span>
             </div>

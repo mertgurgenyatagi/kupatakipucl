@@ -39,7 +39,7 @@ export function TeamCrest({
       />
       <AvatarFallback className="rounded-sm bg-secondary">
         <Shield
-          className="size-4 text-muted-foreground/50"
+          className="size-4 text-color_textsecondary/50"
           strokeWidth={1.5}
         />
       </AvatarFallback>

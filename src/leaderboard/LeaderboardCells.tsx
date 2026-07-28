@@ -25,14 +25,14 @@ export function ParticipantCountCell({
   return (
     <Frame className={cn("animate-cotton-rise", className)}>
       <FrameHeader tone="plain">
-        <FrameMeta className="text-muted-foreground">Katılımcı</FrameMeta>
-        <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-brass" />
+        <FrameMeta className="text-color_textsecondary">Katılımcı</FrameMeta>
+        <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-color_accent" />
       </FrameHeader>
       <div className="flex flex-1 items-baseline gap-3 px-5 py-5 sm:px-6">
-        <span className="font-display text-5xl leading-none font-semibold tracking-[-0.02em] text-ink tnum sm:text-6xl">
+        <span className="font-display text-5xl leading-none font-semibold tracking-[-0.02em] text-color_text tnum sm:text-6xl">
           {entries.length}
         </span>
-        <span className="pb-1 font-mono text-[0.62rem] leading-relaxed tracking-[0.16em] text-muted-foreground uppercase">
+        <span className="pb-1 font-mono text-[0.62rem] leading-relaxed tracking-[0.16em] text-color_textsecondary uppercase">
           tahmin
           <br />
           gönderdi
@@ -42,9 +42,9 @@ export function ParticipantCountCell({
   );
 }
 
-/** The current leader — a small navy plaque (§16). Factual, not a fanfare:
+/** The current leader — a small color_secondary plaque (§16). Factual, not a fanfare:
  *  name and points, the way the leaderboard stays cool (§6). This is where
- *  navy takes real surface area among the smaller cells (§3, §0b). */
+ *  color_secondary takes real surface area among the smaller cells (§3, §0b). */
 export function CurrentLeaderCell({
   entries,
   className,
@@ -57,13 +57,13 @@ export function CurrentLeaderCell({
   return (
     <Frame
       className={cn(
-        "animate-cotton-rise border-navy-line/40 bg-navy text-navy-ink [animation-delay:80ms]",
+        "animate-cotton-rise border-color_border1/40 bg-color_secondary text-color_text [animation-delay:80ms]",
         className
       )}
     >
-      <div className="flex items-center justify-between gap-3 border-b border-navy-line/50 px-5 py-3.5 sm:px-6">
-        <FrameMeta className="text-navy-muted">Lider</FrameMeta>
-        <span className="font-mono text-[0.62rem] tracking-[0.22em] text-brass uppercase tnum">
+      <div className="flex items-center justify-between gap-3 border-b border-color_border1/50 px-5 py-3.5 sm:px-6">
+        <FrameMeta className="text-color_textsecondary">Lider</FrameMeta>
+        <span className="font-mono text-[0.62rem] tracking-[0.22em] text-color_accent uppercase tnum">
           {leader ? "01" : "—"}
         </span>
       </div>
@@ -72,22 +72,22 @@ export function CurrentLeaderCell({
         <div className="flex flex-1 items-center gap-4 px-5 py-5 sm:px-6">
           <Avatar className="size-12 shrink-0 opacity-95 grayscale-[35%]">
             <AvatarImage src={leader.photoURL} alt="" />
-            <AvatarFallback className="bg-navy-line/40 font-mono text-xs text-navy-ink">
+            <AvatarFallback className="bg-color_border1/40 font-mono text-xs text-color_text">
               {initials(leader.firstName, leader.lastName)}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="truncate font-display text-2xl leading-tight font-medium text-navy-ink">
+            <p className="truncate font-display text-2xl leading-tight font-medium text-color_text">
               {leader.firstName} {leader.lastName}
             </p>
-            <p className="mt-0.5 font-mono text-[0.72rem] tracking-[0.08em] text-navy-muted tnum">
+            <p className="mt-0.5 font-mono text-[0.72rem] tracking-[0.08em] text-color_textsecondary tnum">
               {leader.points} puan
             </p>
           </div>
         </div>
       ) : (
         <div className="flex flex-1 items-center px-5 py-5 sm:px-6">
-          <p className="font-display text-lg text-navy-muted italic">
+          <p className="font-display text-lg text-color_textsecondary italic">
             Henüz lider yok.
           </p>
         </div>

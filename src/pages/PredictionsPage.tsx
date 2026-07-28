@@ -45,7 +45,7 @@ export function PredictionsPage() {
   const [error, setError] = useState<string | null>(null);
 
   if (!isPageAllowed("predictions", state)) {
-    return <p>This section isn't available right now.</p>;
+    return <p>Bu bölüm şu anda kullanılamıyor.</p>;
   }
 
   if (loading) return null;
@@ -112,7 +112,7 @@ export function PredictionsPage() {
           >
             <TeamRanker teams={TEAMS} initialOrder={TEAMS.map((t) => t.id)} onSubmit={handleSubmit} />
             {error && (
-              <p role="alert" className="mt-2 text-sm text-destructive">
+              <p role="alert" className="mt-2 text-sm text-color_remove">
                 {error}
               </p>
             )}

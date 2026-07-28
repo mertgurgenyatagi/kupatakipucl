@@ -16,7 +16,7 @@ describe("BarChartWidget", () => {
     expect(screen.getByText("Yaş")).toBeInTheDocument();
     expect(screen.getByText("20")).toBeInTheDocument();
     expect(screen.getByText("21")).toBeInTheDocument();
-    const fills = container.querySelectorAll<HTMLElement>(".bg-brass");
+    const fills = container.querySelectorAll<HTMLElement>(".bg-color_accent");
     expect(fills[0].style.width).toBe("50%");
     expect(fills[1].style.width).toBe("100%");
   });

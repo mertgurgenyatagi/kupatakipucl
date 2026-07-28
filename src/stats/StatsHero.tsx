@@ -9,7 +9,7 @@ import { HeroCarousel } from "../leaderboard/HeroCarousel";
  */
 export function StatsHero() {
   return (
-    <Frame className="relative h-full animate-cotton-rise border-navy-line/35">
+    <Frame className="relative h-full animate-cotton-rise border-color_border1/35">
       <HeroCarousel />
     </Frame>
   );

@@ -33,27 +33,27 @@ export const STAT_WIDGETS: StatWidgetSpec[] = [
     key: "rating",
     title: "En İyiler",
     rows: [
-      { name: "A. Yıldız", value: "8.7", fill: "bg-navy" },
-      { name: "K. Demir", value: "8.3", fill: "bg-silver" },
-      { name: "E. Kaya", value: "7.9", fill: "bg-brass" },
+      { name: "A. Yıldız", value: "8.7", fill: "bg-color_secondary" },
+      { name: "K. Demir", value: "8.3", fill: "bg-color_textsecondary" },
+      { name: "E. Kaya", value: "7.9", fill: "bg-color_accent" },
     ],
   },
   {
     key: "scorers",
     title: "Gol Krallığı",
     rows: [
-      { name: "K. Demir", value: "11", fill: "bg-navy" },
-      { name: "A. Yıldız", value: "9", fill: "bg-silver" },
-      { name: "B. Aydın", value: "7", fill: "bg-brass" },
+      { name: "K. Demir", value: "11", fill: "bg-color_secondary" },
+      { name: "A. Yıldız", value: "9", fill: "bg-color_textsecondary" },
+      { name: "B. Aydın", value: "7", fill: "bg-color_accent" },
     ],
   },
   {
     key: "assists",
     title: "Asist Krallığı",
     rows: [
-      { name: "M. Şahin", value: "8", fill: "bg-navy" },
-      { name: "E. Kaya", value: "6", fill: "bg-silver" },
-      { name: "A. Yıldız", value: "5", fill: "bg-brass" },
+      { name: "M. Şahin", value: "8", fill: "bg-color_secondary" },
+      { name: "E. Kaya", value: "6", fill: "bg-color_textsecondary" },
+      { name: "A. Yıldız", value: "5", fill: "bg-color_accent" },
     ],
   },
 ];

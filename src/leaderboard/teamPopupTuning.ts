@@ -51,7 +51,7 @@ export const DEFAULT_TEAM_POPUP_TUNING: TeamPopupTuning = {
   rankPtsSize: 2.3,
   markerRadius: 22,
   markerFontSize: 15,
-  pitchFill: "#1E5631",
+  pitchFill: "var(--color_pitch)",
   rowAvatar: 1.9,
   rowPy: 0.281,
   rowGap: 0.76,

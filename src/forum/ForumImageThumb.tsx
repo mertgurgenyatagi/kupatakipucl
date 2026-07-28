@@ -30,7 +30,7 @@ export function ForumImageThumb({ src, className }: ForumImageThumbProps) {
         type="button"
         onClick={openLightbox}
         aria-label="Resmi büyüt"
-        className={className ?? "block size-16 shrink-0 cursor-pointer overflow-hidden rounded-md border border-border/50"}
+        className={className ?? "block size-16 shrink-0 cursor-pointer overflow-hidden rounded-md border border-color_border1/50"}
       >
         <img src={src} alt="" loading="lazy" className="size-full object-cover" />
       </button>
@@ -44,7 +44,7 @@ export function ForumImageThumb({ src, className }: ForumImageThumbProps) {
             e.stopPropagation();
             setExpanded(false);
           }}
-          className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-black/80 p-6"
+          className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-color_idk/80 p-6"
         >
           <img
             src={src}
@@ -59,7 +59,7 @@ export function ForumImageThumb({ src, className }: ForumImageThumbProps) {
               setExpanded(false);
             }}
             aria-label="Kapat"
-            className="absolute top-4 right-4 cursor-pointer rounded-full bg-black/50 p-2 text-white outline-none transition-colors hover:bg-black/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass"
+            className="absolute top-4 right-4 cursor-pointer rounded-full bg-color_idk/50 p-2 text-white outline-none transition-colors hover:bg-color_idk/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_accent"
           >
             <X className="size-5" aria-hidden />
           </button>

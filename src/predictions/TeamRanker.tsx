@@ -62,19 +62,19 @@ function SortableTeamRow({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className={cn(
-        "flex cursor-pointer touch-none items-center gap-2.5 rounded-lg border border-border/50 bg-background px-3 py-2 outline-none select-none",
+        "flex cursor-pointer touch-none items-center gap-2.5 rounded-lg border border-color_border1/50 bg-background px-3 py-2 outline-none select-none",
         "transition-[transform,box-shadow,border-color,background-color] duration-200 ease-[var(--ease-cotton)]",
-        "focus-visible:ring-2 focus-visible:ring-ring/50",
-        isDragging ? "z-10 scale-[1.02] border-brass/50 bg-card shadow-frame" : "hover:border-border",
+        "focus-visible:ring-2 focus-visible:ring-color_border2/50",
+        isDragging ? "z-10 scale-[1.02] border-color_accent/50 bg-card shadow-frame" : "hover:border-color_border1",
         highlighted && cn("bg-foreground/[0.06]", !isOrigin && "animate-pulse")
       )}
     >
-      <span className="w-5 shrink-0 text-right font-mono text-sm font-bold text-amber-400 tnum">
+      <span className="w-5 shrink-0 text-right font-mono text-sm font-bold text-color_gold tnum">
         {index + 1}
       </span>
-      <GripVerticalIcon aria-hidden className="size-3.5 shrink-0 text-muted-foreground/50" />
+      <GripVerticalIcon aria-hidden className="size-3.5 shrink-0 text-color_textsecondary/50" />
       <TeamCrest teamId={team.id} className="size-7 shrink-0" />
-      <span className="min-w-0 flex-1 truncate font-display text-sm text-ink">{team.name}</span>
+      <span className="min-w-0 flex-1 truncate font-display text-sm text-color_text">{team.name}</span>
     </li>
   );
 }

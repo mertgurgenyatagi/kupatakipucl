@@ -122,8 +122,8 @@ export function ThreadPopup({
         className="w-full max-w-[calc(100%-2rem)] gap-0 rounded-none bg-transparent p-0 ring-0 sm:max-w-2xl"
       >
         {root && (
-          <Frame className="flex max-h-[min(88vh,52rem)] w-full min-h-0 flex-col animate-cotton-rise border-navy-line/35">
-            <div className="relative flex shrink-0 items-start justify-between gap-3 border-b border-border/60 px-4 py-3 sm:px-5">
+          <Frame className="flex max-h-[min(88vh,52rem)] w-full min-h-0 flex-col animate-cotton-rise border-color_border1/35">
+            <div className="relative flex shrink-0 items-start justify-between gap-3 border-b border-color_border1/60 px-4 py-3 sm:px-5">
               <button
                 type="button"
                 onClick={() => onSelectParticipant(root.uid)}
@@ -131,18 +131,18 @@ export function ThreadPopup({
               >
                 <Avatar className="size-8 shrink-0">
                   <AvatarImage src={avatarSrc(author)} alt="" />
-                  <AvatarFallback className="font-mono text-[0.6rem] text-muted-foreground">
+                  <AvatarFallback className="font-mono text-[0.6rem] text-color_textsecondary">
                     {author ? initials(author.firstName, author.lastName) : "?"}
                   </AvatarFallback>
                 </Avatar>
                 <span className="min-w-0 text-left">
-                  <DialogTitle className="truncate font-display text-sm font-medium text-ink group-hover:underline">
+                  <DialogTitle className="truncate font-display text-sm font-medium text-color_text group-hover:underline">
                     {fullName(author)}
                   </DialogTitle>
                   <DialogDescription className="sr-only">
                     {fullName(author)} tarafından paylaşılan konu ve tüm yanıtları.
                   </DialogDescription>
-                  <span className="block font-mono text-[0.62rem] text-muted-foreground tnum">
+                  <span className="block font-mono text-[0.62rem] text-color_textsecondary tnum">
                     {timeAgo(root.createdAt)}
                     {root.editedAt && " · düzenlendi"}
                   </span>
@@ -158,7 +158,7 @@ export function ThreadPopup({
                       setEditingRoot(true);
                     }}
                     aria-label="Düzenle"
-                    className="cursor-pointer rounded-full p-1.5 text-muted-foreground outline-none transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass"
+                    className="cursor-pointer rounded-full p-1.5 text-color_textsecondary outline-none transition-colors hover:text-color_text focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent"
                   >
                     <Pencil className="size-3.5" aria-hidden />
                   </button>
@@ -168,12 +168,12 @@ export function ThreadPopup({
                     type="button"
                     onClick={() => onDelete(root.id)}
                     aria-label="Konuyu sil"
-                    className="cursor-pointer rounded-full p-1.5 text-muted-foreground outline-none transition-colors hover:text-destructive focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass"
+                    className="cursor-pointer rounded-full p-1.5 text-color_textsecondary outline-none transition-colors hover:text-color_remove focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent"
                   >
                     <Trash2 className="size-3.5" aria-hidden />
                   </button>
                 )}
-                <DialogClose render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground" />}>
+                <DialogClose render={<Button variant="ghost" size="icon-sm" className="text-color_textsecondary" />}>
                   <XIcon />
                   <span className="sr-only">Kapat</span>
                 </DialogClose>
@@ -188,7 +188,7 @@ export function ThreadPopup({
                   {root.imageURL && !editingRoot && (
                     <ForumImageThumb
                       src={root.imageURL}
-                      className="block size-20 shrink-0 cursor-pointer overflow-hidden rounded-md border border-border/50"
+                      className="block size-20 shrink-0 cursor-pointer overflow-hidden rounded-md border border-color_border1/50"
                     />
                   )}
                   <div className="min-w-0 flex-1">
@@ -199,30 +199,30 @@ export function ThreadPopup({
                           value={rootDraft}
                           onChange={(e) => setRootDraft(e.target.value)}
                           rows={3}
-                          className="w-full resize-none rounded-md border border-border/70 bg-background px-2.5 py-2 text-sm text-ink outline-none focus:border-brass"
+                          className="w-full resize-none rounded-md border border-color_border1/70 bg-background px-2.5 py-2 text-sm text-color_text outline-none focus:border-color_accent"
                         />
                         <div className="flex items-center gap-3">
                           <button
                             type="button"
                             onClick={handleSaveRootEdit}
-                            className="cursor-pointer font-mono text-[0.66rem] tracking-wide text-brass uppercase hover:underline"
+                            className="cursor-pointer font-mono text-[0.66rem] tracking-wide text-color_accent uppercase hover:underline"
                           >
                             Kaydet
                           </button>
                           <button
                             type="button"
                             onClick={() => setEditingRoot(false)}
-                            className="cursor-pointer font-mono text-[0.66rem] tracking-wide text-muted-foreground uppercase hover:underline"
+                            className="cursor-pointer font-mono text-[0.66rem] tracking-wide text-color_textsecondary uppercase hover:underline"
                           >
                             Vazgeç
                           </button>
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm break-words whitespace-pre-wrap text-navy-muted">
+                      <p className="text-sm break-words whitespace-pre-wrap text-color_textsecondary">
                         {splitMentionSegments(root.text, players).map((segment, i) =>
                           segment.isMention ? (
-                            <span key={i} className="font-semibold text-brass">
+                            <span key={i} className="font-semibold text-color_accent">
                               {segment.text}
                             </span>
                           ) : (
@@ -234,9 +234,9 @@ export function ThreadPopup({
                   </div>
                 </div>
 
-                <ul className="mt-4 flex flex-col gap-1.5 border-t border-border/40 pt-3">
+                <ul className="mt-4 flex flex-col gap-1.5 border-t border-color_border1/40 pt-3">
                   {replies.length === 0 ? (
-                    <p className="py-2 font-display text-sm text-muted-foreground italic">Henüz yanıt yok.</p>
+                    <p className="py-2 font-display text-sm text-color_textsecondary italic">Henüz yanıt yok.</p>
                   ) : (
                     replies.map((reply) => {
                       const likedBy = likesByPost.get(reply.id);
@@ -268,7 +268,7 @@ export function ThreadPopup({
               </div>
 
               {uid && (
-                <div className="shrink-0 border-t border-border/60 px-4 py-3 sm:px-5">
+                <div className="shrink-0 border-t border-color_border1/60 px-4 py-3 sm:px-5">
                   <PostForm
                     key={root.id}
                     uid={uid}

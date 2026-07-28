@@ -81,11 +81,11 @@ describe("StatsPage", () => {
   it("blocks a page-not-allowed state, including logged-out visitors after the tournament has started", () => {
     mockUseVisibilityState.mockReturnValue("loggedout_notstarted");
     const { rerender } = render(<StatsPage />);
-    expect(screen.getByText("This section isn't available right now.")).toBeInTheDocument();
+    expect(screen.getByText("Bu bölüm şu anda kullanılamıyor.")).toBeInTheDocument();
 
     mockUseVisibilityState.mockReturnValue("loggedout_leaguephase");
     rerender(<StatsPage />);
-    expect(screen.getByText("This section isn't available right now.")).toBeInTheDocument();
+    expect(screen.getByText("Bu bölüm şu anda kullanılamıyor.")).toBeInTheDocument();
   });
 
   it("renders nothing while any data source is still loading", () => {

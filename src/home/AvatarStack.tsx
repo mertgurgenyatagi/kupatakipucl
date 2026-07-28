@@ -22,7 +22,7 @@ export function AvatarStack({ players, className }: AvatarStackProps) {
       {shown.map((player) => (
         <Avatar key={player.uid} size="lg" className="ring-2 ring-background">
           <AvatarImage src={player.photoURL} alt="" />
-          <AvatarFallback className="font-mono text-xs text-navy-ink">
+          <AvatarFallback className="font-mono text-xs text-color_text">
             {player.firstName.charAt(0)}
           </AvatarFallback>
         </Avatar>

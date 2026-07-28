@@ -77,8 +77,8 @@ export function ReplyRow({
       <li
         ref={rowRef}
         className={cn(
-          "flex flex-col gap-1 rounded-lg bg-muted/60 px-2.5 py-1.5 transition-colors duration-700 ease-[var(--ease-cotton)]",
-          highlighted && "bg-brass/[0.16]"
+          "flex flex-col gap-1 rounded-lg bg-color_secondary/60 px-2.5 py-1.5 transition-colors duration-700 ease-[var(--ease-cotton)]",
+          highlighted && "bg-color_accent/[0.16]"
         )}
       >
         <div className="flex items-center gap-2">
@@ -89,11 +89,11 @@ export function ReplyRow({
           >
             <Avatar className="size-5 shrink-0">
               <AvatarImage src={avatarSrc(author)} alt="" />
-              <AvatarFallback className="font-mono text-[0.5rem] text-muted-foreground">
+              <AvatarFallback className="font-mono text-[0.5rem] text-color_textsecondary">
                 {author ? initials(author.firstName, author.lastName) : "?"}
               </AvatarFallback>
             </Avatar>
-            <span className="truncate font-display text-[0.76rem] font-medium text-ink group-hover:underline">
+            <span className="truncate font-display text-[0.76rem] font-medium text-color_text group-hover:underline">
               {fullName(author)}
             </span>
           </button>
@@ -103,8 +103,8 @@ export function ReplyRow({
             aria-pressed={liked}
             aria-label={liked ? "Beğeniyi geri al" : "Beğen"}
             className={cn(
-              "flex shrink-0 cursor-pointer items-center gap-1 rounded-full px-1 py-0.5 outline-none transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass",
-              liked ? "text-brass" : "text-muted-foreground hover:text-brass"
+              "flex shrink-0 cursor-pointer items-center gap-1 rounded-full px-1 py-0.5 outline-none transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent",
+              liked ? "text-color_accent" : "text-color_textsecondary hover:text-color_accent"
             )}
           >
             <Heart className="size-2.5" fill={liked ? "currentColor" : "none"} strokeWidth={2} aria-hidden />
@@ -113,9 +113,9 @@ export function ReplyRow({
         </div>
         <div className="flex items-center gap-1.5 pl-6">
           {reply.imageURL && (
-            <ForumImageThumb src={reply.imageURL} className="block size-5 shrink-0 cursor-pointer overflow-hidden rounded border border-border/50" />
+            <ForumImageThumb src={reply.imageURL} className="block size-5 shrink-0 cursor-pointer overflow-hidden rounded border border-color_border1/50" />
           )}
-          <p className="line-clamp-1 min-w-0 flex-1 text-[0.78rem] break-words text-navy-muted">{reply.text}</p>
+          <p className="line-clamp-1 min-w-0 flex-1 text-[0.78rem] break-words text-color_textsecondary">{reply.text}</p>
         </div>
       </li>
     );
@@ -144,8 +144,8 @@ export function ReplyRow({
     <li
       ref={rowRef}
       className={cn(
-        "flex flex-col gap-1.5 rounded-lg bg-muted/60 px-3 py-2.5 transition-colors duration-700 ease-[var(--ease-cotton)]",
-        highlighted && "bg-brass/[0.16]"
+        "flex flex-col gap-1.5 rounded-lg bg-color_secondary/60 px-3 py-2.5 transition-colors duration-700 ease-[var(--ease-cotton)]",
+        highlighted && "bg-color_accent/[0.16]"
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -156,15 +156,15 @@ export function ReplyRow({
         >
           <Avatar className="size-6 shrink-0">
             <AvatarImage src={avatarSrc(author)} alt="" />
-            <AvatarFallback className="font-mono text-[0.55rem] text-muted-foreground">
+            <AvatarFallback className="font-mono text-[0.55rem] text-color_textsecondary">
               {author ? initials(author.firstName, author.lastName) : "?"}
             </AvatarFallback>
           </Avatar>
-          <span className="truncate font-display text-[0.82rem] font-medium text-ink group-hover:underline">
+          <span className="truncate font-display text-[0.82rem] font-medium text-color_text group-hover:underline">
             {fullName(author)}
           </span>
         </button>
-        <span className="shrink-0 font-mono text-[0.6rem] text-muted-foreground tnum">
+        <span className="shrink-0 font-mono text-[0.6rem] text-color_textsecondary tnum">
           {timeAgo(reply.createdAt)}
           {reply.editedAt && " · düzenlendi"}
         </span>
@@ -187,12 +187,12 @@ export function ReplyRow({
             className={cn(
               "flex w-full items-start rounded-md border-l-2 py-1 pl-2 text-left text-[0.76rem] leading-snug",
               quoteClickable
-                ? "cursor-pointer border-brass/50 text-ink/80 hover:bg-brass/[0.08]"
-                : "cursor-default border-border text-muted-foreground italic"
+                ? "cursor-pointer border-color_accent/50 text-color_text/80 hover:bg-color_accent/[0.08]"
+                : "cursor-default border-color_border1 text-color_textsecondary italic"
             )}
           >
             <span className="min-w-0 truncate">
-              <span className={cn("font-medium", quoteTargetExists ? "text-brass" : "text-muted-foreground")}>
+              <span className={cn("font-medium", quoteTargetExists ? "text-color_accent" : "text-color_textsecondary")}>
                 {firstNameOnly(quoteAuthor)}:
               </span>{" "}
               &ldquo;{reply.quotedText}&rdquo;
@@ -200,12 +200,12 @@ export function ReplyRow({
           </button>
           {hoverPreview && onJumpToQuote && (
             <div
-              className="fixed z-50 max-w-64 rounded-lg border border-border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-frame"
+              className="fixed z-50 max-w-64 rounded-lg border border-color_border1 bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-frame"
               style={{ left: hoverPreview.x, top: hoverPreview.y }}
             >
               {quoteTargetExists ? (
                 <>
-                  <span className="font-medium text-brass">{firstNameOnly(quoteAuthor)}:</span> {reply.quotedText}
+                  <span className="font-medium text-color_accent">{firstNameOnly(quoteAuthor)}:</span> {reply.quotedText}
                 </>
               ) : (
                 "Bu gönderi silindi."
@@ -221,7 +221,7 @@ export function ReplyRow({
         {reply.imageURL && !editing && (
           <ForumImageThumb
             src={reply.imageURL}
-            className="block size-12 shrink-0 cursor-pointer overflow-hidden rounded-md border border-border/50"
+            className="block size-12 shrink-0 cursor-pointer overflow-hidden rounded-md border border-color_border1/50"
           />
         )}
         <div className="min-w-0 flex-1">
@@ -233,13 +233,13 @@ export function ReplyRow({
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={handleEditKeyDown}
                 rows={2}
-                className="w-full resize-none rounded-md border border-border/70 bg-background px-2 py-1.5 text-sm text-ink outline-none focus:border-brass"
+                className="w-full resize-none rounded-md border border-color_border1/70 bg-background px-2 py-1.5 text-sm text-color_text outline-none focus:border-color_accent"
               />
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={handleSave}
-                  className="cursor-pointer font-mono text-[0.66rem] tracking-wide text-brass uppercase hover:underline"
+                  className="cursor-pointer font-mono text-[0.66rem] tracking-wide text-color_accent uppercase hover:underline"
                 >
                   Kaydet
                 </button>
@@ -249,17 +249,17 @@ export function ReplyRow({
                     setDraft(reply.text);
                     setEditing(false);
                   }}
-                  className="cursor-pointer font-mono text-[0.66rem] tracking-wide text-muted-foreground uppercase hover:underline"
+                  className="cursor-pointer font-mono text-[0.66rem] tracking-wide text-color_textsecondary uppercase hover:underline"
                 >
                   Vazgeç
                 </button>
               </div>
             </div>
           ) : (
-            <p className="text-sm break-words whitespace-pre-wrap text-navy-muted">
+            <p className="text-sm break-words whitespace-pre-wrap text-color_textsecondary">
               {splitMentionSegments(reply.text, players).map((segment, i) =>
                 segment.isMention ? (
-                  <span key={i} className="font-semibold text-brass">
+                  <span key={i} className="font-semibold text-color_accent">
                     {segment.text}
                   </span>
                 ) : (
@@ -278,8 +278,8 @@ export function ReplyRow({
           aria-pressed={liked}
           aria-label={liked ? "Beğeniyi geri al" : "Beğen"}
           className={cn(
-            "-ml-1 flex cursor-pointer items-center gap-1 rounded-full px-1 py-0.5 outline-none transition-colors duration-150 ease-[var(--ease-cotton)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass",
-            liked ? "text-brass" : "text-muted-foreground hover:text-brass"
+            "-ml-1 flex cursor-pointer items-center gap-1 rounded-full px-1 py-0.5 outline-none transition-colors duration-150 ease-[var(--ease-cotton)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent",
+            liked ? "text-color_accent" : "text-color_textsecondary hover:text-color_accent"
           )}
         >
           <Heart className="size-3" fill={liked ? "currentColor" : "none"} strokeWidth={2} aria-hidden />
@@ -290,7 +290,7 @@ export function ReplyRow({
             type="button"
             onClick={() => onQuote(reply)}
             aria-label="Alıntıla"
-            className="flex cursor-pointer items-center gap-1 rounded-full px-1 py-0.5 text-muted-foreground outline-none transition-colors duration-150 hover:text-brass focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass"
+            className="flex cursor-pointer items-center gap-1 rounded-full px-1 py-0.5 text-color_textsecondary outline-none transition-colors duration-150 hover:text-color_accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent"
           >
             <Quote className="size-3" aria-hidden />
           </button>
@@ -300,7 +300,7 @@ export function ReplyRow({
             type="button"
             onClick={() => setEditing(true)}
             aria-label="Düzenle"
-            className="flex cursor-pointer items-center gap-1 rounded-full px-1 py-0.5 text-muted-foreground outline-none transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass"
+            className="flex cursor-pointer items-center gap-1 rounded-full px-1 py-0.5 text-color_textsecondary outline-none transition-colors duration-150 hover:text-color_text focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent"
           >
             <Pencil className="size-3" aria-hidden />
           </button>
@@ -310,7 +310,7 @@ export function ReplyRow({
             type="button"
             onClick={() => onDelete(reply.id)}
             aria-label="Sil"
-            className="flex cursor-pointer items-center gap-1 rounded-full px-1 py-0.5 text-muted-foreground outline-none transition-colors duration-150 hover:text-destructive focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass"
+            className="flex cursor-pointer items-center gap-1 rounded-full px-1 py-0.5 text-color_textsecondary outline-none transition-colors duration-150 hover:text-color_remove focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent"
           >
             <Trash2 className="size-3" aria-hidden />
           </button>

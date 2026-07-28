@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { ChevronLeft } from "lucide-react";
 import { saveProfile } from "../profile/useProfile";
 import { saveSurveyResponse } from "../predictions/useSurveyResponse";
 import type { SurveyResponse, MessiOrRonaldo, Device } from "../predictions/surveyTypes";
@@ -69,6 +70,12 @@ interface SignupFlowProps {
  * saveProfile/saveSurveyResponse calls below overwrite whatever stale
  * profile/photo a prior abandoned attempt left behind, no explicit cleanup
  * needed.
+ *
+ * Within a single attempt though, every answerable step has a way back —
+ * a fat-fingered age or a second-guessed team pick shouldn't mean starting
+ * the whole flow over. "welcome" and both "bounce-*" checkmark screens are
+ * transient/auto-advancing, not something to land on deliberately, so
+ * goBack() steps over them.
  */
 export function SignupFlow({ uid, onDone }: SignupFlowProps) {
   const order = FULL_ORDER;
@@ -77,11 +84,18 @@ export function SignupFlow({ uid, onDone }: SignupFlowProps) {
   const [error, setError] = useState<string | null>(null);
 
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [age, setAge] = useState(AGE_DEFAULT);
   const [footballKnowledge, setFootballKnowledge] = useState<number | null>(null);
   const [messiOrRonaldo, setMessiOrRonaldo] = useState<MessiOrRonaldo | null>(null);
   const [superLigTeam, setSuperLigTeam] = useState<string | null>(null);
-  const [uclTeam, setUclTeam] = useState<string | null>(null);
+  // Raw selection, kept distinct from null-meaning-"no team" until the
+  // survey response is actually built below — collapsing it any earlier
+  // would make "explicitly chose none" and "hasn't answered yet" look
+  // identical if this step gets revisited via goBack().
+  const [uclSelection, setUclSelection] = useState<string | "none" | null>(null);
+  const uclTeam = uclSelection === "none" ? null : uclSelection;
 
   const step = order[index];
 
@@ -89,12 +103,28 @@ export function SignupFlow({ uid, onDone }: SignupFlowProps) {
     setIndex((i) => i + 1);
   }
 
-  async function handleNameSubmit(firstName: string, lastName: string) {
+  // Bounce screens auto-advance forward on their own and were never meant to
+  // be landed on deliberately, so stepping back skips over them too — one
+  // press of "back" always lands on the previous *answerable* step.
+  function goBack() {
+    setIndex((i) => {
+      let next = i - 1;
+      while (next > 0 && order[next].startsWith("bounce-")) next--;
+      return Math.max(next, 0);
+    });
+  }
+
+  const BACK_HIDDEN: StepId[] = ["welcome", "photo", "bounce-profile", "bounce-survey"];
+  const showBack = !BACK_HIDDEN.includes(step);
+
+  async function handleNameSubmit(submittedFirstName: string, submittedLastName: string) {
     if (!photoFile || saving) return;
     setSaving(true);
     setError(null);
+    setFirstName(submittedFirstName);
+    setLastName(submittedLastName);
     try {
-      await saveProfile(uid, firstName, lastName, photoFile);
+      await saveProfile(uid, submittedFirstName, submittedLastName, photoFile);
       setSaving(false);
       advance();
     } catch (err) {
@@ -147,13 +177,23 @@ export function SignupFlow({ uid, onDone }: SignupFlowProps) {
           flickers between steps. */}
       <div
         aria-hidden
-        className="absolute top-10 left-1/2 h-1 w-64 -translate-x-1/2 overflow-hidden rounded-full bg-ink/10"
+        className="absolute top-10 left-1/2 h-1 w-64 -translate-x-1/2 overflow-hidden rounded-full bg-color_text/10"
       >
         <div
-          className="h-full rounded-full bg-ink transition-[width] duration-500 ease-[var(--ease-cotton)]"
+          className="h-full rounded-full bg-color_text transition-[width] duration-500 ease-[var(--ease-cotton)]"
           style={{ width: `${((index + 1) / order.length) * 100}%` }}
         />
       </div>
+      {showBack && (
+        <button
+          type="button"
+          onClick={goBack}
+          aria-label="Geri"
+          className="absolute top-8 left-6 flex cursor-pointer items-center justify-center rounded-full p-2 text-color_text transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_text hover:text-background sm:top-10 sm:left-8"
+        >
+          <ChevronLeft className="size-5" aria-hidden />
+        </button>
+      )}
       <AnimatePresence mode="wait">
         {/* max-h + overflow-y-auto is the actual bound — nothing here was
             genuinely constrained before this (the outer h-dvh clips, it
@@ -177,6 +217,7 @@ export function SignupFlow({ uid, onDone }: SignupFlowProps) {
 
           {step === "photo" && (
             <PhotoStep
+              initialFile={photoFile}
               onSelect={(file) => {
                 setPhotoFile(file);
                 advance();
@@ -184,7 +225,14 @@ export function SignupFlow({ uid, onDone }: SignupFlowProps) {
             />
           )}
 
-          {step === "name" && <NameStep onSubmit={handleNameSubmit} disabled={saving} />}
+          {step === "name" && (
+            <NameStep
+              onSubmit={handleNameSubmit}
+              disabled={saving}
+              initialFirstName={firstName}
+              initialLastName={lastName}
+            />
+          )}
 
           {step === "bounce-profile" && (
             <AutoAdvance delayMs={2000} onDone={advance}>
@@ -196,7 +244,7 @@ export function SignupFlow({ uid, onDone }: SignupFlowProps) {
             <AgeRollerStep
               min={AGE_MIN}
               max={AGE_MAX}
-              defaultValue={AGE_DEFAULT}
+              defaultValue={age}
               onConfirm={(value) => {
                 setAge(value);
                 advance();
@@ -211,6 +259,7 @@ export function SignupFlow({ uid, onDone }: SignupFlowProps) {
                 value: String(o.value),
                 label: `${o.value}. ${o.label}`,
               }))}
+              initialValue={footballKnowledge !== null ? String(footballKnowledge) : null}
               onSelect={(value) => {
                 setFootballKnowledge(Number(value));
                 advance();
@@ -222,6 +271,7 @@ export function SignupFlow({ uid, onDone }: SignupFlowProps) {
             <ChoiceStep
               question="Messi mi Ronaldo mu?"
               options={MESSI_RONALDO_OPTIONS.map((v) => ({ value: v, label: MESSI_RONALDO_LABEL[v] }))}
+              initialValue={messiOrRonaldo}
               onSelect={(value) => {
                 setMessiOrRonaldo(value as MessiOrRonaldo);
                 advance();
@@ -233,6 +283,7 @@ export function SignupFlow({ uid, onDone }: SignupFlowProps) {
             <ChoiceStep
               question="Süper Lig'de hangi takımı tutuyorsun?"
               options={SUPER_LIG_TEAMS.map((t) => ({ value: t, label: t }))}
+              initialValue={superLigTeam}
               onSelect={(value) => {
                 setSuperLigTeam(value);
                 advance();
@@ -242,8 +293,9 @@ export function SignupFlow({ uid, onDone }: SignupFlowProps) {
 
           {step === "quiz-uclteam" && (
             <UclTeamStep
-              onSelect={(teamId) => {
-                setUclTeam(teamId);
+              initialSelection={uclSelection}
+              onSelect={(selection) => {
+                setUclSelection(selection);
                 advance();
               }}
             />
@@ -269,7 +321,7 @@ export function SignupFlow({ uid, onDone }: SignupFlowProps) {
       {error && (
         <p
           role="alert"
-          className="absolute bottom-8 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          className="absolute bottom-8 rounded-md border border-color_remove/40 bg-color_remove/10 px-3 py-2 text-sm text-color_remove"
         >
           {error}
         </p>

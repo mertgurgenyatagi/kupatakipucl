@@ -31,14 +31,14 @@ function renderWithBold(text: string, boldTerms: string[]): ReactNode {
 export function IntroBeat({ text, boldTerms = [], visual, onContinue }: IntroBeatProps) {
   return (
     <div className="flex flex-col items-center gap-8 px-6">
-      <p className="max-w-lg text-balance text-center font-display text-2xl font-light text-ink sm:text-3xl">
+      <p className="max-w-lg text-balance text-center font-display text-2xl font-light text-color_text sm:text-3xl">
         {renderWithBold(text, boldTerms)}
       </p>
       {visual}
       <button
         type="button"
         onClick={onContinue}
-        className="cursor-pointer rounded-full bg-ink px-8 py-3.5 text-base font-semibold text-background transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass"
+        className="cursor-pointer rounded-full bg-color_text px-8 py-3.5 text-base font-semibold text-background transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_accent"
       >
         Devam et
       </button>

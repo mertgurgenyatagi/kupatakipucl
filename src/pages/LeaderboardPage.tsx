@@ -57,7 +57,7 @@ function LedgerSkeleton() {
             {Array.from({ length: 9 }).map((_, i) => (
               <div
                 key={i}
-                className="flex items-center gap-3 border-b border-border/60 py-3.5"
+                className="flex items-center gap-3 border-b border-color_border1/60 py-3.5"
               >
                 <Skeleton className="h-4 w-6 rounded-sm" />
                 <Skeleton className="h-4 flex-1 rounded-sm" />
@@ -72,7 +72,7 @@ function LedgerSkeleton() {
             {Array.from({ length: 9 }).map((_, i) => (
               <div
                 key={i}
-                className="flex items-center gap-3 border-b border-border/60 py-3.5"
+                className="flex items-center gap-3 border-b border-color_border1/60 py-3.5"
               >
                 <Skeleton className="h-4 w-6 rounded-sm" />
                 <Skeleton className="size-8 rounded-full" />
@@ -138,8 +138,8 @@ export function LeaderboardPage() {
   if (!isPageAllowed("leaderboard", state)) {
     return (
       <div className="flex h-full flex-1 items-center px-5 sm:px-8 lg:px-12">
-        <p className="font-display text-2xl text-muted-foreground italic">
-          This section isn't available right now.
+        <p className="font-display text-2xl text-color_textsecondary italic">
+          Bu bölüm şu anda kullanılamıyor.
         </p>
       </div>
     );

@@ -29,7 +29,7 @@ describe("LoginButton", () => {
     fireEvent.click(screen.getByText("Google ile giriş yap"));
     await waitFor(() =>
       expect(screen.getByRole("alert")).toHaveTextContent(
-        "Sign-in didn't go through, try again."
+        "Giriş yapılamadı, tekrar deneyin."
       )
     );
   });

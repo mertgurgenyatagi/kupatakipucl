@@ -58,7 +58,7 @@ const FORMATIONS: { label: string; lines: number[] }[] = [
 ];
 
 // Matches StatWidget.tsx's own fixed 3-row fill pattern exactly.
-const ROW_FILLS = ["bg-navy", "bg-silver", "bg-brass"];
+const ROW_FILLS = ["bg-color_secondary", "bg-color_textsecondary", "bg-color_accent"];
 
 export interface DossierPlayer {
   name: string;

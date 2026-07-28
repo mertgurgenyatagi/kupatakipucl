@@ -12,14 +12,14 @@ describe("PlaceholderPage", () => {
   it("shows the coming-soon label when the page is allowed for the current state", () => {
     mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     render(<PlaceholderPage page="leaderboard" label="Leaderboard" />);
-    expect(screen.getByText("Leaderboard — coming soon.")).toBeInTheDocument();
+    expect(screen.getByText("Leaderboard — yakında.")).toBeInTheDocument();
   });
 
   it("shows a blocked message when the page is not allowed for the current state", () => {
     mockUseVisibilityState.mockReturnValue("loggedout_notstarted");
     render(<PlaceholderPage page="leaderboard" label="Leaderboard" />);
     expect(
-      screen.getByText("This section isn't available right now.")
+      screen.getByText("Bu bölüm şu anda kullanılamıyor.")
     ).toBeInTheDocument();
   });
 });

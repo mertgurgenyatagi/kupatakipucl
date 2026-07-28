@@ -11,6 +11,7 @@ interface ChoiceStepProps {
   options: ChoiceOption[];
   onSelect: (value: string) => void;
   disabled?: boolean;
+  initialValue?: string | null;
 }
 
 /**
@@ -20,12 +21,12 @@ interface ChoiceStepProps {
  * border, ink text, background matches the page; hover/selected fully
  * inverts (white background, dark text).
  */
-export function ChoiceStep({ question, options, onSelect, disabled }: ChoiceStepProps) {
-  const [selected, setSelected] = useState<string | null>(null);
+export function ChoiceStep({ question, options, onSelect, disabled, initialValue }: ChoiceStepProps) {
+  const [selected, setSelected] = useState<string | null>(initialValue ?? null);
 
   return (
     <div className="flex flex-col items-center gap-6">
-      <p className="max-w-lg text-balance text-center font-display text-2xl font-light text-ink">{question}</p>
+      <p className="max-w-lg text-balance text-center font-display text-2xl font-light text-color_text">{question}</p>
       <div className="flex w-full max-w-lg flex-col gap-2.5">
         {options.map((option) => (
           <button
@@ -34,8 +35,8 @@ export function ChoiceStep({ question, options, onSelect, disabled }: ChoiceStep
             disabled={disabled}
             onClick={() => setSelected(option.value)}
             className={cn(
-              "cursor-pointer rounded-full border border-ink/45 bg-background px-5 py-3.5 text-center text-sm font-light text-ink transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-ink hover:text-background disabled:pointer-events-none disabled:opacity-60",
-              selected === option.value && "bg-ink text-background ring-2 ring-brass"
+              "cursor-pointer rounded-full border border-color_text/45 bg-background px-5 py-3.5 text-center text-sm font-light text-color_text transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_text hover:text-background disabled:pointer-events-none disabled:opacity-60",
+              selected === option.value && "bg-color_text text-background ring-2 ring-color_accent"
             )}
           >
             {option.label}
@@ -46,7 +47,7 @@ export function ChoiceStep({ question, options, onSelect, disabled }: ChoiceStep
         type="button"
         disabled={selected === null || disabled}
         onClick={() => selected && onSelect(selected)}
-        className="cursor-pointer rounded-full bg-ink px-8 py-3.5 text-base font-semibold text-background transition-opacity disabled:cursor-default disabled:opacity-40"
+        className="cursor-pointer rounded-full bg-color_text px-8 py-3.5 text-base font-semibold text-background transition-opacity disabled:cursor-default disabled:opacity-40"
       >
         Devam et
       </button>

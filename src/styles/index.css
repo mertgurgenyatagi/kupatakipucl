@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "./colors.css";
 /* Inter — one family, every text on the site (Mert's explicit call).
    Replaces Martel Sans. Variable font, one file covers the full weight
    range (100-900) plus italics, registered as "Inter Variable". */
@@ -35,6 +36,25 @@
     --color-brass: var(--brass);
     --color-press-white: var(--press-white);
     --color-ink: var(--ink);
+
+    /* The renamed names (see colors.css) — every app component now uses
+       these directly; the block above stays only as a compatibility net
+       for anything still written the old way, plus shadcn's own vendored
+       components in components/ui/ (which never got touched). */
+    --color-color_main: var(--color_main);
+    --color-color_secondary: var(--color_secondary);
+    --color-color_text: var(--color_text);
+    --color-color_accent: var(--color_accent);
+    --color-color_green: var(--color_green);
+    --color-color_remove: var(--color_remove);
+    --color-color_textsecondary: var(--color_textsecondary);
+    --color-color_border1: var(--color_border1);
+    --color-color_border2: var(--color_border2);
+    --color-color_hoverfill: var(--color_hoverfill);
+    --color-color_gold: var(--color_gold);
+    --color-color_qualification: var(--color_qualification);
+    --color-color_idk: var(--color_idk);
+    --color-color_hover: var(--color_hover);
 
     --ease-cotton: var(--ease-cotton);
 
@@ -79,60 +99,57 @@
 }
 
 :root {
-    /* --- Reworked to reflect cursor.com/home's actual dark theme ------
-       Not eyeballed — pulled live via getComputedStyle() against the real
-       site with prefers-color-scheme: dark forced. Confirmed values:
-       body bg #14120B, body/heading/nav text #EDECEC, primary button
-       (inverted pill) bg #EDECEC on #14120B, secondary/outline button
-       border = #EDECEC at 20% opacity, muted timestamp text = #EDECEC at
-       40%, elevated panel surface (their own "bg-theme-product-editor"
-       class) #1B1913, diff/success green #1F8A65, error red #CF2D56.
-       Every token below keeps its original *name*; only values change. */
-    --navy: #1B1913;                                                  /* their elevated panel surface */
+    /* --- Legacy names, now thin aliases onto colors.css --------------
+       These used to hold the literal values directly; renaming the app's
+       own components to the new color_* names (see colors.css) left these
+       as a compatibility net so shadcn's vendored components in
+       components/ui/ — which still reference them — keep working
+       untouched. Change a value in colors.css, not here. */
+    --navy: var(--color_secondary);
     --navy-text: var(--navy);
-    --navy-ink: #EDECEC;                                              /* text on navy */
-    --navy-muted: color-mix(in oklch, #EDECEC 55%, transparent);      /* dimmer text on navy */
-    --navy-line: color-mix(in oklch, #EDECEC 20%, transparent);       /* their own button-border alpha */
-    --silver: color-mix(in oklch, #EDECEC 55%, transparent);
-    --brass: #1F8A65;                                                 /* their "positive" green, standing in for the earned/gold accent */
-    --press-white: #14120B;                                           /* the ground */
-    --ink: #EDECEC;
+    --navy-ink: var(--color_text);
+    --navy-muted: var(--color_textsecondary);
+    --navy-line: var(--color_border1);
+    --silver: var(--color_textsecondary);
+    --brass: var(--color_accent);
+    --press-white: var(--color_main);
+    --ink: var(--color_text);
 
     --ease-cotton: cubic-bezier(0.22, 0.61, 0.36, 1);
 
-    /* --- shadcn semantic tokens, re-mapped onto the palette ---------- */
-    --background: var(--press-white);
-    --foreground: var(--ink);
-    --card: #1B1913;
-    --card-foreground: var(--ink);
-    --popover: var(--press-white);
-    --popover-foreground: var(--ink);
-    --primary: var(--navy);
-    --primary-foreground: var(--navy-ink);
-    --secondary: #1B1913;
-    --secondary-foreground: #EDECEC;
-    --muted: #1B1913;
-    --muted-foreground: color-mix(in oklch, #EDECEC 55%, transparent);
-    --accent: color-mix(in oklch, #EDECEC 8%, transparent);
-    --accent-foreground: #EDECEC;
-    --destructive: #CF2D56;
-    --border: color-mix(in oklch, #EDECEC 20%, transparent);
-    --input: color-mix(in oklch, #EDECEC 20%, transparent);
-    --ring: color-mix(in oklch, #EDECEC 60%, transparent);
-    --chart-1: var(--navy);
-    --chart-2: color-mix(in oklch, #EDECEC 35%, transparent);
-    --chart-3: color-mix(in oklch, #EDECEC 25%, transparent);
-    --chart-4: var(--silver);
-    --chart-5: var(--brass);
+    /* --- shadcn semantic tokens, aliased the same way ------------------ */
+    --background: var(--color_main);
+    --foreground: var(--color_text);
+    --card: var(--color_secondary);
+    --card-foreground: var(--color_text);
+    --popover: var(--color_main);
+    --popover-foreground: var(--color_text);
+    --primary: var(--color_secondary);
+    --primary-foreground: var(--color_text);
+    --secondary: var(--color_secondary);
+    --secondary-foreground: var(--color_text);
+    --muted: var(--color_secondary);
+    --muted-foreground: var(--color_textsecondary);
+    --accent: var(--color_hoverfill);
+    --accent-foreground: var(--color_text);
+    --destructive: var(--color_remove);
+    --border: var(--color_border1);
+    --input: var(--color_border1);
+    --ring: var(--color_border2);
+    --chart-1: var(--color_secondary);
+    --chart-2: color-mix(in oklch, var(--color_text) 35%, transparent);
+    --chart-3: color-mix(in oklch, var(--color_text) 25%, transparent);
+    --chart-4: var(--color_textsecondary);
+    --chart-5: var(--color_accent);
     --radius: 0.35rem;
-    --sidebar: var(--navy);
-    --sidebar-foreground: var(--navy-ink);
-    --sidebar-primary: var(--navy-ink);
-    --sidebar-primary-foreground: var(--navy);
-    --sidebar-accent: color-mix(in oklch, #EDECEC 15%, transparent);
-    --sidebar-accent-foreground: var(--navy-ink);
-    --sidebar-border: var(--navy-line);
-    --sidebar-ring: var(--silver);
+    --sidebar: var(--color_secondary);
+    --sidebar-foreground: var(--color_text);
+    --sidebar-primary: var(--color_text);
+    --sidebar-primary-foreground: var(--color_secondary);
+    --sidebar-accent: color-mix(in oklch, var(--color_text) 15%, transparent);
+    --sidebar-accent-foreground: var(--color_text);
+    --sidebar-border: var(--color_border1);
+    --sidebar-ring: var(--color_textsecondary);
 }
 
 @layer base {
@@ -173,7 +190,7 @@
      pass (Mert: "you went too far, drop the opacity and go a bit easier on
      the hardness") — some blur instead of a near-hard edge, lower alpha. */
   .shadow-frame {
-    box-shadow: 6px 6px 10px rgba(0, 0, 0, 0.4);
+    box-shadow: 6px 6px 10px var(--color_shadow);
   }
 
   /* The crowd, radiating around (DESIGN-SPEC §34) — an all-but-invisible
@@ -181,8 +198,8 @@
      reads as a nameable cream (§48, the Paper-Mill Rule). */
   .ground-radiance {
     background-image:
-      radial-gradient(120% 90% at 82% -10%, rgba(27, 25, 19, 0.5), transparent 60%),
-      radial-gradient(90% 70% at 6% 108%, rgba(237, 236, 236, 0.03), transparent 55%);
+      radial-gradient(120% 90% at 82% -10%, var(--color_glow), transparent 60%),
+      radial-gradient(90% 70% at 6% 108%, var(--color_faintglow), transparent 55%);
   }
 
   /* --- Motion: fade-y, floaty, cottony (DESIGN-SPEC §43, §50) -------- */

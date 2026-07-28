@@ -49,11 +49,11 @@ export function AgeRollerStep({ min, max, defaultValue, onConfirm }: AgeRollerSt
   }
 
   const arrowClass =
-    "flex cursor-pointer items-center justify-center rounded-full p-1.5 text-ink transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-ink hover:text-background disabled:pointer-events-none disabled:opacity-30";
+    "flex cursor-pointer items-center justify-center rounded-full p-1.5 text-color_text transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_text hover:text-background disabled:pointer-events-none disabled:opacity-30";
 
   return (
     <div className="flex flex-col items-center gap-8">
-      <p className="text-center font-display text-2xl font-light text-ink">Kaç yaşındasın?</p>
+      <p className="text-center font-display text-2xl font-light text-color_text">Kaç yaşındasın?</p>
       <div className="flex flex-col items-center gap-1">
         {/* Values increase going down the list (min at top, max at bottom)
             — the up arrow reveals what's above it in that list, i.e. a
@@ -78,7 +78,7 @@ export function AgeRollerStep({ min, max, defaultValue, onConfirm }: AgeRollerSt
                 aria-selected={v === value}
                 className={cn(
                   "flex snap-center items-center justify-center font-display text-3xl tabular-nums transition-opacity duration-150",
-                  v === value ? "text-ink opacity-100" : "text-ink/30"
+                  v === value ? "text-color_text opacity-100" : "text-color_text/30"
                 )}
                 style={{ height: ITEM_HEIGHT }}
               >
@@ -88,7 +88,7 @@ export function AgeRollerStep({ min, max, defaultValue, onConfirm }: AgeRollerSt
           </div>
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 border-y border-ink/20"
+            className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 border-y border-color_text/20"
             style={{ height: ITEM_HEIGHT }}
           />
         </div>
@@ -99,7 +99,7 @@ export function AgeRollerStep({ min, max, defaultValue, onConfirm }: AgeRollerSt
       <button
         type="button"
         onClick={() => onConfirm(value)}
-        className="cursor-pointer rounded-full bg-ink px-8 py-3.5 text-base font-semibold text-background"
+        className="cursor-pointer rounded-full bg-color_text px-8 py-3.5 text-base font-semibold text-background"
       >
         Devam et
       </button>

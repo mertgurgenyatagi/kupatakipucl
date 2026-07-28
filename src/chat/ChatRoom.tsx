@@ -43,10 +43,10 @@ function typingLineText(typingUids: string[], players: Player[]): string | null 
 function MessageText({ text, players }: { text: string; players: Player[] }) {
   const segments = splitMentionSegments(text, players);
   return (
-    <p className="text-sm break-words whitespace-pre-wrap text-navy-muted">
+    <p className="text-sm break-words whitespace-pre-wrap text-color_textsecondary">
       {segments.map((segment, i) =>
         segment.isMention ? (
-          <span key={i} className="font-semibold text-brass">
+          <span key={i} className="font-semibold text-color_accent">
             {segment.text}
           </span>
         ) : (
@@ -91,7 +91,7 @@ function MessageRow({
       className={cn(
         "group flex items-start gap-2 rounded-lg transition-colors duration-700 ease-out",
         showHeader ? "pt-1.5" : "pt-0.5",
-        highlighted && "bg-brass/[0.16]"
+        highlighted && "bg-color_accent/[0.16]"
       )}
     >
       {showHeader ? (
@@ -103,7 +103,7 @@ function MessageRow({
         >
           <Avatar className="size-6">
             <AvatarImage src={avatarSrc(author)} alt="" />
-            <AvatarFallback className="font-mono text-[0.55rem] text-muted-foreground">
+            <AvatarFallback className="font-mono text-[0.55rem] text-color_textsecondary">
               {author ? initials(author.firstName, author.lastName) : "?"}
             </AvatarFallback>
           </Avatar>
@@ -115,7 +115,7 @@ function MessageRow({
       <div
         className={cn(
           "min-w-0 flex-1 rounded-xl px-3 py-1",
-          mentionsMe ? "bg-amber-400/[0.1]" : "bg-transparent"
+          mentionsMe ? "bg-color_gold/[0.1]" : "bg-transparent"
         )}
       >
         {showHeader && (
@@ -125,12 +125,12 @@ function MessageRow({
               onClick={() => onSelectParticipant(message.uid)}
               className={cn(
                 "cursor-pointer font-display text-xs font-semibold hover:underline",
-                isOwn ? "text-brass" : "text-ink"
+                isOwn ? "text-color_accent" : "text-color_text"
               )}
             >
               {fullName(author)}
             </button>
-            <span className="font-mono text-[0.6rem] text-muted-foreground tnum">
+            <span className="font-mono text-[0.6rem] text-color_textsecondary tnum">
               {formatMessageTime(message.createdAt)}
             </span>
           </div>
@@ -139,16 +139,16 @@ function MessageRow({
           <button
             type="button"
             onClick={() => onJumpToQuote(message.quotedMessageId!)}
-            className="mb-1 flex w-full cursor-pointer items-start rounded-md border-l-2 border-brass/50 py-1 pl-2 text-left text-[0.76rem] leading-snug hover:bg-brass/[0.08]"
+            className="mb-1 flex w-full cursor-pointer items-start rounded-md border-l-2 border-color_accent/50 py-1 pl-2 text-left text-[0.76rem] leading-snug hover:bg-color_accent/[0.08]"
           >
             <span className="min-w-0 truncate">
-              <span className="font-medium text-brass">{firstNameOnly(quoteAuthor)}: </span>
-              <span className="text-muted-foreground">&ldquo;{message.quotedText}&rdquo;</span>
+              <span className="font-medium text-color_accent">{firstNameOnly(quoteAuthor)}: </span>
+              <span className="text-color_textsecondary">&ldquo;{message.quotedText}&rdquo;</span>
             </span>
           </button>
         )}
         {message.deleted ? (
-          <p className="text-sm text-muted-foreground italic">Bu mesaj silindi.</p>
+          <p className="text-sm text-color_textsecondary italic">Bu mesaj silindi.</p>
         ) : (
           <MessageText text={message.text} players={players} />
         )}
@@ -161,7 +161,7 @@ function MessageRow({
               type="button"
               onClick={() => onDelete(message.id)}
               aria-label="Mesajı sil"
-              className="cursor-pointer rounded-full p-1 text-muted-foreground outline-none hover:text-destructive focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass"
+              className="cursor-pointer rounded-full p-1 text-color_textsecondary outline-none hover:text-color_remove focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent"
             >
               <Trash2 className="size-3" aria-hidden />
             </button>
@@ -170,7 +170,7 @@ function MessageRow({
             type="button"
             onClick={() => onQuote(message)}
             aria-label="Alıntıla"
-            className="cursor-pointer rounded-full p-1 text-muted-foreground outline-none hover:text-brass focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass"
+            className="cursor-pointer rounded-full p-1 text-color_textsecondary outline-none hover:text-color_accent focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent"
           >
             <Quote className="size-3" aria-hidden />
           </button>
@@ -183,7 +183,7 @@ function MessageRow({
 /**
  * The chat/forum are DESIGN.md's designated outlet for warmth and banter —
  * genuinely loose, not just microscopically different from the rest of the
- * site (§6's Do list). Own messages get a faint brass-tinted background;
+ * site (§6's Do list). Own messages get a faint color_accent-tinted background;
  * a message that @mentions the current user gets a faint amber tint instead
  * (chat-widget-round-01 Q14) — everyone else's stay plain.
  *
@@ -301,19 +301,19 @@ export function ChatRoom({
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       {searchOpen ? (
-        <div className="flex shrink-0 items-center gap-1.5 border-b border-border/50 px-3 py-1.5 sm:px-4">
+        <div className="flex shrink-0 items-center gap-1.5 border-b border-color_border1/50 px-3 py-1.5 sm:px-4">
           <input
             autoFocus
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Sohbette ara…"
-            className="min-w-0 flex-1 rounded-full border border-border/70 bg-background px-3 py-1 text-xs text-ink outline-none placeholder:text-muted-foreground focus:border-brass"
+            className="min-w-0 flex-1 rounded-full border border-color_border1/70 bg-background px-3 py-1 text-xs text-color_text outline-none placeholder:text-color_textsecondary focus:border-color_accent"
           />
           <button
             type="button"
             onClick={closeSearch}
             aria-label="Aramayı kapat"
-            className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:text-brass focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass"
+            className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-color_textsecondary outline-none transition-colors hover:text-color_accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent"
           >
             <X className="size-3.5" aria-hidden />
           </button>
@@ -323,7 +323,7 @@ export function ChatRoom({
           type="button"
           onClick={() => setSearchOpen(true)}
           aria-label="Sohbette ara"
-          className="absolute top-1.5 right-3 z-10 flex size-6 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:text-brass focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass sm:right-4"
+          className="absolute top-1.5 right-3 z-10 flex size-6 cursor-pointer items-center justify-center rounded-full text-color_textsecondary outline-none transition-colors hover:text-color_accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent sm:right-4"
         >
           <Search className="size-3.5" aria-hidden />
         </button>
@@ -331,28 +331,28 @@ export function ChatRoom({
 
       {searchOpen ? (
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-3 sm:px-6">
-          {searching && <p className="text-center text-xs text-muted-foreground">Aranıyor…</p>}
+          {searching && <p className="text-center text-xs text-color_textsecondary">Aranıyor…</p>}
           {!searching && searchQuery.trim() && searchResults.length === 0 && (
-            <p className="text-center text-xs text-muted-foreground">Sonuç bulunamadı.</p>
+            <p className="text-center text-xs text-color_textsecondary">Sonuç bulunamadı.</p>
           )}
           <ul className="flex flex-col gap-3">
             {searchResults.map((message) => {
               const author = playersByUid.get(message.uid);
               return (
-                <li key={message.id} className="rounded-lg border border-border/50 px-3 py-2">
+                <li key={message.id} className="rounded-lg border border-color_border1/50 px-3 py-2">
                   <div className="flex items-baseline justify-between gap-2">
                     <button
                       type="button"
                       onClick={() => onSelectParticipant(message.uid)}
-                      className="cursor-pointer font-display text-xs font-semibold text-ink hover:underline"
+                      className="cursor-pointer font-display text-xs font-semibold text-color_text hover:underline"
                     >
                       {fullName(author)}
                     </button>
-                    <span className="shrink-0 font-mono text-[0.6rem] text-muted-foreground tnum">
+                    <span className="shrink-0 font-mono text-[0.6rem] text-color_textsecondary tnum">
                       {formatMessageTime(message.createdAt)}
                     </span>
                   </div>
-                  <p className="mt-0.5 line-clamp-2 text-sm text-navy-muted">{message.text}</p>
+                  <p className="mt-0.5 line-clamp-2 text-sm text-color_textsecondary">{message.text}</p>
                 </li>
               );
             })}
@@ -360,7 +360,7 @@ export function ChatRoom({
         </div>
       ) : messages.length === 0 ? (
         <div className="flex flex-1 items-center justify-center px-5 py-8 sm:px-6">
-          <p className="text-center font-display text-sm text-muted-foreground italic">Henüz mesaj yok.</p>
+          <p className="text-center font-display text-sm text-color_textsecondary italic">Henüz mesaj yok.</p>
         </div>
       ) : (
         <ul ref={listRef} onScroll={handleScroll} className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-1.5 sm:px-6">
@@ -370,7 +370,7 @@ export function ChatRoom({
                 type="button"
                 onClick={onLoadOlder}
                 disabled={loadingOlder}
-                className="cursor-pointer rounded-full border border-border/70 px-3 py-1 font-mono text-[0.62rem] text-muted-foreground uppercase outline-none transition-colors hover:text-brass focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass disabled:cursor-default disabled:opacity-60"
+                className="cursor-pointer rounded-full border border-color_border1/70 px-3 py-1 font-mono text-[0.62rem] text-color_textsecondary uppercase outline-none transition-colors hover:text-color_accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent disabled:cursor-default disabled:opacity-60"
               >
                 {loadingOlder ? "Yükleniyor…" : "Daha eski mesajları yükle"}
               </button>
@@ -379,7 +379,7 @@ export function ChatRoom({
           {items.map((item) =>
             item.type === "divider" ? (
               <li key={item.key} className="flex justify-center py-1.5">
-                <span className="rounded-full bg-muted px-3 py-1 font-mono text-[0.62rem] tracking-wide text-muted-foreground uppercase">
+                <span className="rounded-full bg-color_secondary px-3 py-1 font-mono text-[0.62rem] tracking-wide text-color_textsecondary uppercase">
                   {item.label}
                 </span>
               </li>
@@ -408,12 +408,12 @@ export function ChatRoom({
       )}
 
       <div className="h-5 shrink-0 px-5 sm:px-6" aria-live="polite">
-        {typingText && <p className="text-xs text-muted-foreground italic">{typingText}</p>}
+        {typingText && <p className="text-xs text-color_textsecondary italic">{typingText}</p>}
       </div>
 
       <ChatComposer uid={uid} players={players} quoted={quoted} onClearQuote={() => setQuoted(null)} />
       {deleteError && (
-        <p role="alert" className="px-3 pb-2 text-xs text-destructive sm:px-4">
+        <p role="alert" className="px-3 pb-2 text-xs text-color_remove sm:px-4">
           {deleteError}
         </p>
       )}

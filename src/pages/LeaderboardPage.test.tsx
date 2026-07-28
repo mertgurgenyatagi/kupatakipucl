@@ -36,7 +36,7 @@ describe("LeaderboardPage", () => {
     mockUseVisibilityState.mockReturnValue("loggedout_notstarted");
     mockUseLeaderboard.mockReturnValue({ entries: [], loading: false });
     render(<LeaderboardPage />);
-    expect(screen.getByText("This section isn't available right now.")).toBeInTheDocument();
+    expect(screen.getByText("Bu bölüm şu anda kullanılamıyor.")).toBeInTheDocument();
   });
 
   it("shows a skeleton placeholder while the leaderboard is loading", () => {

@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
  */
 export function HomeHero({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <Frame className={cn("relative animate-cotton-rise border-navy-line/35", className)} {...props}>
+    <Frame className={cn("relative animate-cotton-rise border-color_border1/35", className)} {...props}>
       <HeroCarousel />
     </Frame>
   );

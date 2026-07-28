@@ -62,7 +62,7 @@ export const DEFAULT_STATS_PAGE_TUNING: StatsPageTuning = {
   barHeight: 0.55,
   barRowGap: 0.1,
   barFontSize: 0.67,
-  barFill: "#1F8A65",
+  barFill: "var(--color_statsbar)",
   barLabelWidth: 22,
   numberFontSize: 2.7,
 };

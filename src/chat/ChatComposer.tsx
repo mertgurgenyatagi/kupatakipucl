@@ -134,9 +134,9 @@ export function ChatComposer({ uid, players, quoted, onClearQuote }: ChatCompose
   const showCounter = length >= MESSAGE_LENGTH_WARNING_AT;
 
   return (
-    <div className="relative shrink-0 border-t border-border/50">
+    <div className="relative shrink-0 border-t border-color_border1/50">
       {showDropdown && (
-        <ul className="absolute bottom-full left-3 z-10 mb-1.5 max-h-40 w-48 overflow-y-auto rounded-xl border border-border bg-popover py-1 shadow-frame">
+        <ul className="absolute bottom-full left-3 z-10 mb-1.5 max-h-40 w-48 overflow-y-auto rounded-xl border border-color_border1 bg-popover py-1 shadow-frame">
           {candidates.map((player, i) => (
             <li key={player.uid}>
               <button
@@ -145,7 +145,7 @@ export function ChatComposer({ uid, players, quoted, onClearQuote }: ChatCompose
                 onClick={() => pickMention(player)}
                 className={cn(
                   "block w-full cursor-pointer truncate px-3 py-1.5 text-left text-sm",
-                  i === activeSuggestion ? "bg-brass/[0.12] text-brass" : "text-ink hover:bg-muted"
+                  i === activeSuggestion ? "bg-color_accent/[0.12] text-color_accent" : "text-color_text hover:bg-color_secondary"
                 )}
               >
                 {player.firstName} {player.lastName}
@@ -157,15 +157,15 @@ export function ChatComposer({ uid, players, quoted, onClearQuote }: ChatCompose
 
       {quoted && (
         <div className="flex items-start gap-2 px-3 pt-2 sm:px-4">
-          <div className="min-w-0 flex-1 rounded-lg border-l-2 border-brass/50 bg-muted/50 py-1 pl-2 text-[0.76rem] leading-snug">
-            <span className="font-medium text-brass">{fullName(players.find((p) => p.uid === quoted.uid))}: </span>
-            <span className="text-muted-foreground">&ldquo;{quoted.text}&rdquo;</span>
+          <div className="min-w-0 flex-1 rounded-lg border-l-2 border-color_accent/50 bg-color_secondary/50 py-1 pl-2 text-[0.76rem] leading-snug">
+            <span className="font-medium text-color_accent">{fullName(players.find((p) => p.uid === quoted.uid))}: </span>
+            <span className="text-color_textsecondary">&ldquo;{quoted.text}&rdquo;</span>
           </div>
           <button
             type="button"
             onClick={onClearQuote}
             aria-label="Alıntıyı kaldır"
-            className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:text-brass focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass"
+            className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-color_textsecondary outline-none transition-colors hover:text-color_accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent"
           >
             <X className="size-3" aria-hidden />
           </button>
@@ -181,11 +181,11 @@ export function ChatComposer({ uid, players, quoted, onClearQuote }: ChatCompose
           maxLength={MESSAGE_MAX_LENGTH}
           rows={1}
           placeholder="Bir şeyler yaz…"
-          className="no-scrollbar max-h-28 min-w-0 flex-1 resize-none overflow-y-auto rounded-2xl border border-border/70 bg-background px-4 py-2 text-sm text-ink outline-none placeholder:text-muted-foreground focus:border-brass"
+          className="no-scrollbar max-h-28 min-w-0 flex-1 resize-none overflow-y-auto rounded-2xl border border-color_border1/70 bg-background px-4 py-2 text-sm text-color_text outline-none placeholder:text-color_textsecondary focus:border-color_accent"
         />
         <button
           type="submit"
-          className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-ink text-background outline-none transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass"
+          className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-color_text text-background outline-none transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_accent"
         >
           <span className="sr-only">Gönder</span>
           <Send className="size-3.5" aria-hidden />
@@ -195,7 +195,7 @@ export function ChatComposer({ uid, players, quoted, onClearQuote }: ChatCompose
       {(error || showCounter) && (
         <div className="flex items-center justify-between px-3 pb-2 sm:px-4">
           {error ? (
-            <p role="alert" className="text-xs text-destructive">
+            <p role="alert" className="text-xs text-color_remove">
               {error}
             </p>
           ) : (
@@ -205,7 +205,7 @@ export function ChatComposer({ uid, players, quoted, onClearQuote }: ChatCompose
             <span
               className={cn(
                 "font-mono text-[0.65rem] tnum",
-                length >= MESSAGE_MAX_LENGTH ? "text-destructive" : "text-muted-foreground"
+                length >= MESSAGE_MAX_LENGTH ? "text-color_remove" : "text-color_textsecondary"
               )}
             >
               {length} / {MESSAGE_MAX_LENGTH}

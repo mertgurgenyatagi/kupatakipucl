@@ -120,7 +120,7 @@ export function StatsPageView({ entries, results, players, responses, tuning }: 
       <div className={MAIN_ROW} style={{ gap: `${t.columnGap}rem` }}>
         <Frame className="min-h-0 lg:h-full">
           <FrameHeader tone="navy">
-            <FrameTitle className="text-navy-ink">Turnuva İstatistikleri</FrameTitle>
+            <FrameTitle className="text-color_text">Turnuva İstatistikleri</FrameTitle>
           </FrameHeader>
           <FrameBody className={WIDGET_GRID} style={gridStyle}>
             {STAT_WIDGETS.map((spec) => (
@@ -139,7 +139,7 @@ export function StatsPageView({ entries, results, players, responses, tuning }: 
         </Frame>
         <Frame className="min-h-0 lg:h-full">
           <FrameHeader tone="navy">
-            <FrameTitle className="text-navy-ink">Katılımcı İstatistikleri</FrameTitle>
+            <FrameTitle className="text-color_text">Katılımcı İstatistikleri</FrameTitle>
           </FrameHeader>
           <FrameBody className={WIDGET_GRID} style={gridStyle}>
             <NumberBox label="Katılımcı Sayısı" value={players.length} tuning={tuning} />
@@ -166,8 +166,8 @@ export function StatsPage() {
   if (!isPageAllowed("stats", state)) {
     return (
       <div className="flex h-full flex-1 items-center px-5 sm:px-8 lg:px-12">
-        <p className="font-display text-2xl text-muted-foreground italic">
-          This section isn't available right now.
+        <p className="font-display text-2xl text-color_textsecondary italic">
+          Bu bölüm şu anda kullanılamıyor.
         </p>
       </div>
     );

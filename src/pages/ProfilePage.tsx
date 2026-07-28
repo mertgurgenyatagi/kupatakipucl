@@ -134,8 +134,8 @@ export function ProfilePage() {
   if (!isPageAllowed("profile", state)) {
     return (
       <div className="flex h-full flex-1 items-center px-5 sm:px-8 lg:px-12">
-        <p className="font-display text-2xl text-muted-foreground italic">
-          This section isn't available right now.
+        <p className="font-display text-2xl text-color_textsecondary italic">
+          Bu bölüm şu anda kullanılamıyor.
         </p>
       </div>
     );
@@ -209,7 +209,7 @@ export function ProfilePage() {
               <div className="relative shrink-0">
                 <Avatar size="lg" className="ring-2 ring-background">
                   <AvatarImage src={displayedProfile?.photoURL} alt="" />
-                  <AvatarFallback className="bg-brass/20 font-mono text-sm text-ink">
+                  <AvatarFallback className="bg-color_accent/20 font-mono text-sm text-color_text">
                     {displayedProfile
                       ? initials(displayedProfile.firstName, displayedProfile.lastName)
                       : "?"}
@@ -240,21 +240,21 @@ export function ProfilePage() {
                 {photoError && (
                   <p
                     role="alert"
-                    className="absolute top-full left-0 z-20 mt-1 w-max max-w-[140px] text-[0.6rem] text-destructive"
+                    className="absolute top-full left-0 z-20 mt-1 w-max max-w-[140px] text-[0.6rem] text-color_remove"
                   >
                     {photoError}
                   </p>
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-display text-lg font-semibold tracking-[-0.01em] text-ink">
+                <p className="truncate font-display text-lg font-semibold tracking-[-0.01em] text-color_text">
                   {displayedProfile?.firstName} {displayedProfile?.lastName}
                 </p>
               </div>
             </div>
 
             {/* Bottom-left: rank + points, same plaque-engraving mono voice
-                as the leaderboard's own rank/points columns — brass only
+                as the leaderboard's own rank/points columns — color_accent only
                 for rank 01, matching that "one earned distinction" rule.
                 Meaningless before the tournament starts (nothing's ranked
                 yet), so the whole block is dropped rather than shown as a
@@ -262,23 +262,23 @@ export function ProfilePage() {
             {predictionLocked && (
               <div className="flex items-end gap-5">
                 <div>
-                  <p className="font-mono text-[0.75rem] tracking-[0.22em] text-muted-foreground uppercase">
+                  <p className="font-mono text-[0.75rem] tracking-[0.22em] text-color_textsecondary uppercase">
                     Sıra
                   </p>
                   <p
                     className={cn(
                       "font-mono text-[1.91rem] font-semibold tnum",
-                      myEntry?.rank === 1 ? "text-brass" : "text-ink"
+                      myEntry?.rank === 1 ? "text-color_accent" : "text-color_text"
                     )}
                   >
                     {myEntry ? `#${myEntry.rank}` : "—"}
                   </p>
                 </div>
                 <div>
-                  <p className="font-mono text-[0.75rem] tracking-[0.22em] text-muted-foreground uppercase">
+                  <p className="font-mono text-[0.75rem] tracking-[0.22em] text-color_textsecondary uppercase">
                     Puan
                   </p>
-                  <p className="font-mono text-[1.91rem] font-semibold text-ink tnum">
+                  <p className="font-mono text-[1.91rem] font-semibold text-color_text tnum">
                     {myEntry ? myEntry.entry.points : "—"}
                   </p>
                 </div>
@@ -293,7 +293,7 @@ export function ProfilePage() {
             wherever they show up. */}
         <Frame className="min-h-0 flex-1 animate-cotton-rise" style={{ animationDelay: "60ms" }}>
           <FrameHeader tone="navy">
-            <FrameTitle className="text-navy-ink">Anket Cevaplarınız</FrameTitle>
+            <FrameTitle className="text-color_text">Anket Cevaplarınız</FrameTitle>
           </FrameHeader>
           <FrameBody className="min-h-0 flex-1">
             <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-5">
@@ -320,21 +320,21 @@ export function ProfilePage() {
                     },
                   ].map((row) => (
                     <div key={row.question}>
-                      <p className="font-display text-sm leading-snug font-semibold text-ink">
+                      <p className="font-display text-sm leading-snug font-semibold text-color_text">
                         {row.question}
                       </p>
-                      <p className="mt-0.5 font-display text-sm leading-snug font-light text-amber-400 italic">
+                      <p className="mt-0.5 font-display text-sm leading-snug font-light text-color_gold italic">
                         {ensurePeriod(row.answer)}
                       </p>
                     </div>
                   ))}
                 </div>
               ) : surveyError ? (
-                <p className="py-2 font-display text-sm text-muted-foreground italic">
+                <p className="py-2 font-display text-sm text-color_textsecondary italic">
                   Anket cevapları görüntülenemiyor.
                 </p>
               ) : !surveyLoading ? (
-                <p className="py-2 font-display text-sm text-muted-foreground italic">
+                <p className="py-2 font-display text-sm text-color_textsecondary italic">
                   Anketi henüz doldurmadınız.
                 </p>
               ) : null}
@@ -352,12 +352,12 @@ export function ProfilePage() {
       <div className="flex min-h-0 min-w-0 flex-1 gap-3">
       <Frame className="min-h-0 min-w-0 flex-1 animate-cotton-rise" style={{ animationDelay: "120ms" }}>
         <FrameHeader tone="navy">
-          <FrameTitle className="text-navy-ink">Lig Tahmininiz</FrameTitle>
+          <FrameTitle className="text-color_text">Lig Tahmininiz</FrameTitle>
           {currentPrediction && !predictionLocked && predictionUiStep === "idle" && (
             <Button
               variant="outline"
               size="sm"
-              className="border-navy-line text-navy-ink hover:bg-navy-line/20"
+              className="border-color_border1 text-color_text hover:bg-color_border1/20"
               onClick={() => {
                 setPredictionError(null);
                 setPredictionUiStep("rank");
@@ -380,7 +380,7 @@ export function ProfilePage() {
                 }}
               />
               {predictionError && (
-                <p role="alert" className="mt-2 text-sm text-destructive">
+                <p role="alert" className="mt-2 text-sm text-color_remove">
                   {predictionError}
                 </p>
               )}
@@ -388,7 +388,7 @@ export function ProfilePage() {
           ) : currentPrediction ? (
             <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
               {/* No `correctness` prop here — Mert's call: skip the
-                  per-team brass glow on this view entirely. */}
+                  per-team color_accent glow on this view entirely. */}
               <RankingList
                 ranking={currentPrediction.ranking}
                 averagePositions={state === "loggedin_notstarted" ? undefined : averagePositions}
@@ -397,7 +397,7 @@ export function ProfilePage() {
             </div>
           ) : (
             <div className="flex flex-1 flex-col items-start justify-center gap-3">
-              <p className="font-display text-sm text-muted-foreground italic">
+              <p className="font-display text-sm text-color_textsecondary italic">
                 Henüz bir tahmin göndermediniz.
               </p>
               <Link to="/predictions" className={cn(buttonVariants({ variant: "default" }))}>
@@ -416,7 +416,7 @@ export function ProfilePage() {
             setDeleteError(null);
             setDeleteConfirmOpen(true);
           }}
-          className="text-destructive hover:text-destructive"
+          className="text-color_remove hover:text-color_remove"
         >
           Profili sil
         </Button>
@@ -460,7 +460,7 @@ export function ProfilePage() {
             </DialogDescription>
           </DialogHeader>
           {predictionError && (
-            <p role="alert" className="text-sm text-destructive">
+            <p role="alert" className="text-sm text-color_remove">
               {predictionError}
             </p>
           )}
@@ -514,7 +514,7 @@ export function ProfilePage() {
             </DialogDescription>
           </DialogHeader>
           {deleteError && (
-            <p role="alert" className="text-sm text-destructive">
+            <p role="alert" className="text-sm text-color_remove">
               {deleteError}
             </p>
           )}

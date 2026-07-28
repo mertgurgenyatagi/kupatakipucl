@@ -173,16 +173,16 @@ export function ForumTuner() {
   }
 
   return (
-    <div className="flex h-full min-h-0 bg-background text-ink">
-      <div className="no-scrollbar hidden w-[280px] shrink-0 overflow-y-auto border-r border-border bg-card p-4 md:block">
-        <h1 className="font-display text-base font-bold text-ink">Forum Tuner</h1>
-        <p className="mt-1 mb-5 text-xs text-muted-foreground">
+    <div className="flex h-full min-h-0 bg-background text-color_text">
+      <div className="no-scrollbar hidden w-[280px] shrink-0 overflow-y-auto border-r border-color_border1 bg-card p-4 md:block">
+        <h1 className="font-display text-base font-bold text-color_text">Forum Tuner</h1>
+        <p className="mt-1 mb-5 text-xs text-color_textsecondary">
           Bu, Forum.tsx'in kendisi — kopyası değil. "me" olarak giriş yapılmış varsayılır.
         </p>
         <div className="mb-4">
           <label className="mb-1 flex items-baseline justify-between text-xs">
             <span>Katılımcı sayısı</span>
-            <span className="font-mono text-[0.68rem] text-brass tnum">{count}</span>
+            <span className="font-mono text-[0.68rem] text-color_accent tnum">{count}</span>
           </label>
           <input
             type="range"
@@ -190,17 +190,17 @@ export function ForumTuner() {
             max={40}
             value={count}
             onChange={(e) => setCount(Number(e.target.value))}
-            className="w-full accent-brass"
+            className="w-full accent-color_accent"
           />
         </div>
         <button
           type="button"
           onClick={resetFixtures}
-          className="cursor-pointer text-xs text-muted-foreground underline hover:text-ink"
+          className="cursor-pointer text-xs text-color_textsecondary underline hover:text-color_text"
         >
           Kurguyu sıfırla
         </button>
-        <p className="mt-4 text-[0.68rem] text-muted-foreground">
+        <p className="mt-4 text-[0.68rem] text-color_textsecondary">
           Kalıcı değil: beğeni/silme/düzenleme yerel state üzerinde çalışır, Firestore'a hiçbir şey yazılmaz.
         </p>
       </div>

@@ -112,8 +112,16 @@ function formatExport(t: StatsPageTuning): string {
  * Gated behind `import.meta.env.DEV` in App.tsx, same as `/dev` itself —
  * inert in production.
  */
+// The real default is "var(--color_statsbar)" (see statsPageTuning.ts) —
+// reads fine as an SVG/CSS fill, but a native <input type="color"> requires
+// a literal #rrggbb and silently rejects a var() reference. This tuner's
+// own starting point needs the resolved literal instead;
+// DEFAULT_STATS_PAGE_TUNING itself (what the live app actually falls back
+// to) is untouched.
+const TUNER_INITIAL: StatsPageTuning = { ...DEFAULT_STATS_PAGE_TUNING, barFill: "#1F8A65" };
+
 export function StatsPageTuner() {
-  const [tuning, setTuning] = useState<StatsPageTuning>(DEFAULT_STATS_PAGE_TUNING);
+  const [tuning, setTuning] = useState<StatsPageTuning>(TUNER_INITIAL);
   const [count, setCount] = useState(51);
   const [copied, setCopied] = useState(false);
 
@@ -140,20 +148,20 @@ export function StatsPageTuner() {
   const groups = Array.from(new Set(fieldsOf().map((f) => f.group)));
 
   return (
-    <div className="flex h-full min-h-0 bg-background text-ink">
-      <div className="no-scrollbar w-[320px] shrink-0 overflow-y-auto border-r border-border bg-card p-4">
-        <h1 className="font-display text-base font-bold text-ink">Stats Page Tuner</h1>
-        <p className="mt-1 mb-5 text-xs text-muted-foreground">
+    <div className="flex h-full min-h-0 bg-background text-color_text">
+      <div className="no-scrollbar w-[320px] shrink-0 overflow-y-auto border-r border-color_border1 bg-card p-4">
+        <h1 className="font-display text-base font-bold text-color_text">Stats Page Tuner</h1>
+        <p className="mt-1 mb-5 text-xs text-color_textsecondary">
           Bu, StatsPage.tsx'in kendisi — kopyası değil. Sürükle, sonra "Değerleri kopyala"ya bas.
         </p>
 
         <div className="mb-5">
-          <h2 className="mb-2 border-b border-border/60 pb-1.5 font-mono text-[0.62rem] tracking-[0.18em] text-muted-foreground uppercase">
+          <h2 className="mb-2 border-b border-color_border1/60 pb-1.5 font-mono text-[0.62rem] tracking-[0.18em] text-color_textsecondary uppercase">
             Veri
           </h2>
           <label className="mb-1 flex items-baseline justify-between text-xs">
             <span>Katılımcı sayısı</span>
-            <span className="font-mono text-[0.68rem] text-brass tnum">{count}</span>
+            <span className="font-mono text-[0.68rem] text-color_accent tnum">{count}</span>
           </label>
           <input
             type="range"
@@ -161,24 +169,24 @@ export function StatsPageTuner() {
             max={80}
             value={count}
             onChange={(e) => setCount(Number(e.target.value))}
-            className="w-full accent-brass"
+            className="w-full accent-color_accent"
           />
-          <p className="mt-1.5 text-[0.68rem] text-muted-foreground">
+          <p className="mt-1.5 text-[0.68rem] text-color_textsecondary">
             Sağ sütunun widget'ları bu sayıya göre büyür — satır çakışması gibi hataları burada yakala.
           </p>
         </div>
 
         <button
           type="button"
-          onClick={() => setTuning(DEFAULT_STATS_PAGE_TUNING)}
-          className="mb-5 cursor-pointer text-xs text-muted-foreground underline hover:text-ink"
+          onClick={() => setTuning(TUNER_INITIAL)}
+          className="mb-5 cursor-pointer text-xs text-color_textsecondary underline hover:text-color_text"
         >
           Mevcut sürüme sıfırla
         </button>
 
         {groups.map((group) => (
           <div key={group} className="mb-5">
-            <h2 className="mb-2 border-b border-border/60 pb-1.5 font-mono text-[0.62rem] tracking-[0.18em] text-muted-foreground uppercase">
+            <h2 className="mb-2 border-b border-color_border1/60 pb-1.5 font-mono text-[0.62rem] tracking-[0.18em] text-color_textsecondary uppercase">
               {group}
             </h2>
             {fieldsOf()
@@ -187,7 +195,7 @@ export function StatsPageTuner() {
                 <div key={f.key} className="mb-3">
                   <label className="mb-1 flex items-baseline justify-between text-xs">
                     <span>{f.label}</span>
-                    <span className="font-mono text-[0.68rem] text-brass tnum">
+                    <span className="font-mono text-[0.68rem] text-color_accent tnum">
                       {tuning[f.key]}
                       {f.unit}
                     </span>
@@ -199,7 +207,7 @@ export function StatsPageTuner() {
                     step={f.step}
                     value={tuning[f.key] as number}
                     onChange={(e) => set(f.key, parseFloat(e.target.value) as never)}
-                    className="w-full accent-brass"
+                    className="w-full accent-color_accent"
                   />
                 </div>
               ))}
@@ -207,21 +215,21 @@ export function StatsPageTuner() {
         ))}
 
         <div className="mb-5">
-          <h2 className="mb-2 border-b border-border/60 pb-1.5 font-mono text-[0.62rem] tracking-[0.18em] text-muted-foreground uppercase">
+          <h2 className="mb-2 border-b border-color_border1/60 pb-1.5 font-mono text-[0.62rem] tracking-[0.18em] text-color_textsecondary uppercase">
             Çubuk rengi
           </h2>
           <input
             type="color"
             value={tuning.barFill}
             onChange={(e) => set("barFill", e.target.value)}
-            className="h-8 w-full cursor-pointer rounded border border-border bg-transparent"
+            className="h-8 w-full cursor-pointer rounded border border-color_border1 bg-transparent"
           />
         </div>
 
         <button
           type="button"
           onClick={handleExport}
-          className="w-full cursor-pointer rounded-lg bg-brass px-3 py-2.5 font-display text-sm font-semibold text-navy-ink transition-opacity hover:opacity-90"
+          className="w-full cursor-pointer rounded-lg bg-color_accent px-3 py-2.5 font-display text-sm font-semibold text-color_text transition-opacity hover:opacity-90"
         >
           {copied ? "Kopyalandı — buraya yapıştır" : "Değerleri kopyala"}
         </button>

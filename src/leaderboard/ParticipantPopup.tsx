@@ -53,7 +53,7 @@ const NOT_VIEWABLE_MESSAGE = "Turnuva başlamadan bu bilgi görüntülenemez.";
 
 function NotViewablePlaceholder() {
   return (
-    <p className="flex h-full items-center justify-center px-4 text-center font-display text-sm text-muted-foreground italic">
+    <p className="flex h-full items-center justify-center px-4 text-center font-display text-sm text-color_textsecondary italic">
       {NOT_VIEWABLE_MESSAGE}
     </p>
   );
@@ -70,13 +70,13 @@ function signed(n: number): string {
 // No title/label bar on any widget block (Mert's golden rule) — the
 // color-distinct background + border alone marks the boundary; content
 // starts with its own top padding instead of a label's.
-const WIDGET_BLOCK = "flex min-h-0 flex-col rounded-xl bg-background border border-border/60";
+const WIDGET_BLOCK = "flex min-h-0 flex-col rounded-xl bg-background border border-color_border1/60";
 
 // Same shape as TeamTable's own grid ("identical to team table" — stats
 // included): rank, team (crest+code), then the 5 stat columns. Narrower
 // floors than TeamTable's own (this widget lives in half the popup's width,
 // not half the whole page) but the same proportions.
-const PRED_HEADER_CELL = "flex h-4 items-center border-b border-border/60";
+const PRED_HEADER_CELL = "flex h-4 items-center border-b border-color_border1/60";
 const PRED_GRID_COLUMNS = "auto minmax(4rem,1fr) repeat(5, 1.6rem)";
 const PRED_STAT_COLUMNS: { key: keyof TeamResult; label: string; help: string }[] = [
   { key: "matchesPlayed", label: "O", help: "Oynanan maç" },
@@ -103,7 +103,7 @@ function RankHistoryChart({
 }) {
   if (checkpoints.length < 2) {
     return (
-      <p className="px-3 py-3 font-display text-sm text-muted-foreground italic">
+      <p className="px-3 py-3 font-display text-sm text-color_textsecondary italic">
         Yeterli maç oynanmadan gösterilmez.
       </p>
     );
@@ -131,12 +131,12 @@ function RankHistoryChart({
       role="img"
       aria-label={`Zaman içinde sıralama: sırasıyla ${checkpoints.map((c) => `${c.matchday}. hafta sonrası ${c.rank}.`).join(", ")}`}
     >
-      <polyline points={linePoints} fill="none" stroke="var(--brass)" strokeWidth="2" />
+      <polyline points={linePoints} fill="none" stroke="var(--color_accent)" strokeWidth="2" />
       {points.map((p, i) => {
         const isLast = i === points.length - 1;
         return (
           <g key={p.cp.fixtureId}>
-            <circle cx={p.x} cy={p.y} r={isLast ? 4.5 : 3} fill="var(--brass)" />
+            <circle cx={p.x} cy={p.y} r={isLast ? 4.5 : 3} fill="var(--color_accent)" />
             <text
               x={p.x}
               y={p.y - 10}
@@ -144,7 +144,7 @@ function RankHistoryChart({
               fontSize="11"
               fontFamily="var(--font-mono)"
               fontWeight={isLast ? 700 : 400}
-              fill={isLast ? "var(--ink)" : "var(--silver)"}
+              fill={isLast ? "var(--color_text)" : "var(--color_textsecondary)"}
             >
               {p.cp.rank}
             </text>
@@ -156,7 +156,7 @@ function RankHistoryChart({
                 fontSize="9"
                 fontFamily="var(--font-mono)"
                 fontWeight={isLast ? 700 : 400}
-                fill={isLast ? "var(--ink)" : "var(--muted-foreground)"}
+                fill={isLast ? "var(--color_text)" : "var(--color_textsecondary)"}
               >
                 {p.cp.matchday}. hafta
               </text>
@@ -245,7 +245,7 @@ export const ParticipantPopup = memo(function ParticipantPopup({
         className="w-full max-w-[calc(100%-2rem)] gap-0 rounded-none bg-transparent p-0 ring-0 sm:max-w-2xl"
       >
         {displayed && (
-          <Frame className="max-h-[min(85vh,44rem)] w-full animate-cotton-rise border-navy-line/35">
+          <Frame className="max-h-[min(85vh,44rem)] w-full animate-cotton-rise border-color_border1/35">
             {/* 1. Profile tab — the participant's own photo, blurred and
                 scaled up into an abstract, darkened color field. Picture +
                 name on one line, rank/points (smaller) beneath. */}
@@ -263,7 +263,7 @@ export const ParticipantPopup = memo(function ParticipantPopup({
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    className="absolute top-2 right-2 text-muted-foreground hover:bg-white/10 hover:text-ink"
+                    className="absolute top-2 right-2 text-color_textsecondary hover:bg-color_hover/10 hover:text-color_text"
                   />
                 }
               >
@@ -274,13 +274,13 @@ export const ParticipantPopup = memo(function ParticipantPopup({
               <div className="flex items-center gap-3 sm:gap-4">
                 <Avatar className="size-12 shrink-0 sm:size-14">
                   <AvatarImage src={displayed.entry.photoURL} alt="" />
-                  <AvatarFallback className="bg-brass/20 font-mono text-sm text-ink">
+                  <AvatarFallback className="bg-color_accent/20 font-mono text-sm text-color_text">
                     {initials(displayed.entry.firstName, displayed.entry.lastName)}
                   </AvatarFallback>
                 </Avatar>
 
                 <div className="min-w-0 flex-1">
-                  <DialogTitle className="truncate font-display text-lg font-semibold tracking-[-0.01em] text-ink sm:text-xl">
+                  <DialogTitle className="truncate font-display text-lg font-semibold tracking-[-0.01em] text-color_text sm:text-xl">
                     {displayed.entry.firstName} {displayed.entry.lastName}
                   </DialogTitle>
                   <DialogDescription className="sr-only">
@@ -290,18 +290,18 @@ export const ParticipantPopup = memo(function ParticipantPopup({
 
                   <div className="mt-1 flex items-baseline gap-4">
                     <span className="flex items-baseline gap-1.5">
-                      <span className="font-mono text-[0.55rem] tracking-[0.18em] text-muted-foreground uppercase">
+                      <span className="font-mono text-[0.55rem] tracking-[0.18em] text-color_textsecondary uppercase">
                         Sıra
                       </span>
-                      <span className="font-display text-sm leading-none font-bold text-brass tnum">
+                      <span className="font-display text-sm leading-none font-bold text-color_accent tnum">
                         {displayed.rank}
                       </span>
                     </span>
                     <span className="flex items-baseline gap-1.5">
-                      <span className="font-mono text-[0.55rem] tracking-[0.18em] text-muted-foreground uppercase">
+                      <span className="font-mono text-[0.55rem] tracking-[0.18em] text-color_textsecondary uppercase">
                         Puan
                       </span>
-                      <span className="font-display text-sm leading-none font-bold text-ink tnum">
+                      <span className="font-display text-sm leading-none font-bold text-color_text tnum">
                         {displayed.entry.points}
                       </span>
                     </span>
@@ -332,7 +332,7 @@ export const ParticipantPopup = memo(function ParticipantPopup({
                             role="columnheader"
                             className={cn(
                               PRED_HEADER_CELL,
-                              "pl-1 font-mono text-[0.55rem] tracking-[0.12em] text-muted-foreground uppercase"
+                              "pl-1 font-mono text-[0.55rem] tracking-[0.12em] text-color_textsecondary uppercase"
                             )}
                           >
                             Takım
@@ -344,7 +344,7 @@ export const ParticipantPopup = memo(function ParticipantPopup({
                               title={col.help}
                               className={cn(
                                 PRED_HEADER_CELL,
-                                "justify-end pr-1 font-mono text-[0.55rem] tracking-[0.12em] text-muted-foreground uppercase"
+                                "justify-end pr-1 font-mono text-[0.55rem] tracking-[0.12em] text-color_textsecondary uppercase"
                               )}
                             >
                               {col.label}
@@ -361,8 +361,8 @@ export const ParticipantPopup = memo(function ParticipantPopup({
                           const band = qualificationBand(predictedPosition);
                           const correct = result ? isPickCorrect(predictedPosition, result.position) : false;
                           const cell = cn(
-                            "flex items-center border-b border-border/30 py-1 transition-colors duration-150 ease-[var(--ease-cotton)] group-hover:bg-accent",
-                            correct && "bg-brass/[0.12]"
+                            "flex items-center border-b border-color_border1/30 py-1 transition-colors duration-150 ease-[var(--ease-cotton)] group-hover:bg-color_hoverfill",
+                            correct && "bg-color_green/[0.12]"
                           );
                           const statCell = cn(cell, "justify-end pr-1");
                           return (
@@ -374,13 +374,13 @@ export const ParticipantPopup = memo(function ParticipantPopup({
                             >
                               <div role="cell" className={cn(cell, "gap-1 pl-1")}>
                                 {band === "direct" && (
-                                  <span className="h-2.5 w-1 shrink-0 rounded-r-full bg-brass" />
+                                  <span className="h-2.5 w-1 shrink-0 rounded-r-full bg-color_accent" />
                                 )}
                                 {band === "playoff" && (
-                                  <span className="h-2.5 w-1 shrink-0 rounded-r-full bg-amber-500" />
+                                  <span className="h-2.5 w-1 shrink-0 rounded-r-full bg-color_qualification" />
                                 )}
                                 {band === "eliminated" && <span className="w-1 shrink-0" />}
-                                <span className="font-mono text-[0.65rem] text-muted-foreground tnum">
+                                <span className="font-mono text-[0.65rem] text-color_textsecondary tnum">
                                   {predictedPosition}
                                 </span>
                               </div>
@@ -388,7 +388,7 @@ export const ParticipantPopup = memo(function ParticipantPopup({
                                 <TeamCrest teamId={teamId} className="size-5 shrink-0" />
                                 <span
                                   title={team?.name}
-                                  className="min-w-0 truncate font-display text-xs font-medium text-ink"
+                                  className="min-w-0 truncate font-display text-xs font-medium text-color_text"
                                 >
                                   {team?.shortName ?? teamId}
                                 </span>
@@ -399,8 +399,8 @@ export const ParticipantPopup = memo(function ParticipantPopup({
                                     className={cn(
                                       "font-mono text-[0.65rem] tnum",
                                       col.key === "points"
-                                        ? "font-bold text-ink"
-                                        : "text-muted-foreground"
+                                        ? "font-bold text-color_text"
+                                        : "text-color_textsecondary"
                                     )}
                                   >
                                     {result
@@ -450,21 +450,21 @@ export const ParticipantPopup = memo(function ParticipantPopup({
                           },
                         ].map((row) => (
                           <div key={row.question}>
-                            <p className="font-display text-sm leading-snug font-semibold text-ink">
+                            <p className="font-display text-sm leading-snug font-semibold text-color_text">
                               {row.question}
                             </p>
-                            <p className="mt-0.5 font-display text-sm leading-snug font-light text-amber-400 italic">
+                            <p className="mt-0.5 font-display text-sm leading-snug font-light text-color_gold italic">
                               {ensurePeriod(row.answer)}
                             </p>
                           </div>
                         ))}
                       </div>
                     ) : surveyError ? (
-                      <p className="py-2 font-display text-sm text-muted-foreground italic">
+                      <p className="py-2 font-display text-sm text-color_textsecondary italic">
                         Anket cevapları görüntülenemiyor.
                       </p>
                     ) : !surveyLoading ? (
-                      <p className="py-2 font-display text-sm text-muted-foreground italic">
+                      <p className="py-2 font-display text-sm text-color_textsecondary italic">
                         Bu katılımcı anketi doldurmamış.
                       </p>
                     ) : null}

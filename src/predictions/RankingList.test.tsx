@@ -21,8 +21,8 @@ describe("RankingList", () => {
 
   it("glows a team that's currently correct", () => {
     render(<RankingList ranking={ranking} correctness={{ ajax: true, arsenal: false }} />);
-    expect(screen.getByText("Ajax").closest("li")).toHaveClass("border-brass/50");
-    expect(screen.getByText("Arsenal").closest("li")).not.toHaveClass("border-brass/50");
+    expect(screen.getByText("Ajax").closest("li")).toHaveClass("border-color_green/50");
+    expect(screen.getByText("Arsenal").closest("li")).not.toHaveClass("border-color_green/50");
   });
 
   it("calls onSelectTeam with the team id when a row is clicked, and is non-interactive without it", () => {

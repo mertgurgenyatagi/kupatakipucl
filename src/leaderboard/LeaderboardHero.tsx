@@ -27,7 +27,7 @@ export const LeaderboardHero = memo(function LeaderboardHero({
   results: Record<string, TeamResult>;
 }) {
   return (
-    <Frame className="relative h-full animate-cotton-rise border-navy-line/35">
+    <Frame className="relative h-full animate-cotton-rise border-color_border1/35">
       <HeroCarousel />
       <UpcomingMatchesDrawer results={results} />
     </Frame>
