@@ -1,53 +1,39 @@
 // src/chat/useMessages.ts
 import { useCallback, useEffect, useState } from "react";
-import { collection, getDocs, limit, onSnapshot, orderBy, query, startAfter } from "firebase/firestore";
+import { collection } from "firebase/firestore";
 import { db } from "../firebase";
 import { Message } from "./messageTypes";
 import { getCached, setCached } from "../lib/sessionCache";
+import { MESSAGE_PAGE_SIZE, subscribeToRecentMessages, fetchOlderMessages } from "./paginatedMessages";
 
 export interface MessageWithId extends Message {
   id: string;
 }
 
-// chat-widget-round-01 Q2: "cap it" — the live listener only ever watches
-// the most recent PAGE_SIZE messages, not the entire collection. Older
-// history is reachable on demand via loadOlder(), a one-time (non-live) fetch.
-const PAGE_SIZE = 50;
 const CACHE_KEY = "liveMessages";
-
-function toMessage(docSnap: { id: string; data: () => unknown }): MessageWithId {
-  return { id: docSnap.id, ...(docSnap.data() as Message) };
-}
 
 export function useMessages() {
   const cached = getCached<MessageWithId[]>(CACHE_KEY);
   const [liveMessages, setLiveMessages] = useState<MessageWithId[]>(cached ?? []);
   const [olderMessages, setOlderMessages] = useState<MessageWithId[]>([]);
-  // Revisiting Home mid-session already has the last-seen messages cached —
-  // show them immediately rather than blanking the chat while the listener
-  // reattaches, then let onSnapshot's first callback (fires fast off
-  // Firestore's local cache before the network round-trip) reconcile it.
   const [loading, setLoading] = useState(cached === undefined);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [hasMoreOlder, setHasMoreOlder] = useState(true);
 
   useEffect(() => {
-    const messagesQuery = query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(PAGE_SIZE));
-    const unsubscribe = onSnapshot(
-      messagesQuery,
-      (snapshot) => {
-        const docs = snapshot.docs.map(toMessage).reverse();
+    return subscribeToRecentMessages<Message>(
+      collection(db, "messages"),
+      (docs) => {
         setCached(CACHE_KEY, docs);
         setLiveMessages(docs);
         setLoading(false);
-        if (docs.length < PAGE_SIZE) setHasMoreOlder(false);
+        if (docs.length < MESSAGE_PAGE_SIZE) setHasMoreOlder(false);
       },
       (err: Error) => {
         console.error("Failed to load messages", err);
         setLoading(false);
       }
     );
-    return unsubscribe;
   }, []);
 
   const loadOlder = useCallback(async () => {
@@ -56,15 +42,8 @@ export function useMessages() {
 
     setLoadingOlder(true);
     try {
-      const olderQuery = query(
-        collection(db, "messages"),
-        orderBy("createdAt", "desc"),
-        startAfter(oldest.createdAt),
-        limit(PAGE_SIZE)
-      );
-      const snapshot = await getDocs(olderQuery);
-      const docs = snapshot.docs.map(toMessage).reverse();
-      if (docs.length < PAGE_SIZE) setHasMoreOlder(false);
+      const docs = await fetchOlderMessages<Message>(collection(db, "messages"), oldest.createdAt);
+      if (docs.length < MESSAGE_PAGE_SIZE) setHasMoreOlder(false);
       if (docs.length > 0) setOlderMessages((prev) => [...docs, ...prev]);
     } catch (err) {
       console.error("Failed to load older messages", err);
