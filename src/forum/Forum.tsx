@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import { PostWithId } from "./postTypes";
 import { Player } from "../profile/usePlayers";
+import { buildPlayersByUid } from "../profile/playersByUid";
 import { computeThreadStats } from "./threadStats";
 import { PostForm } from "./PostForm";
 import { ThreadCard } from "./ThreadCard";
@@ -45,7 +46,7 @@ export function Forum({
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedRootId, setExpandedRootId] = useState<string | null>(null);
 
-  const playersByUid = useMemo(() => new Map(players.map((p) => [p.uid, p])), [players]);
+  const playersByUid = useMemo(() => buildPlayersByUid(players), [players]);
   const stats = useMemo(() => computeThreadStats(posts), [posts]);
 
   const roots = useMemo(() => {

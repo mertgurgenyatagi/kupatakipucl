@@ -1,8 +1,9 @@
-import { useState, type KeyboardEvent } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { PostWithId } from "./postTypes";
 import { Player } from "../profile/usePlayers";
+import { buildPlayersByUid } from "../profile/playersByUid";
 import { computeThreadStats } from "./threadStats";
 import { timeAgo } from "./forumTime";
 import { ForumImageThumb } from "./ForumImageThumb";
@@ -56,7 +57,7 @@ export function RecentPostsPreview({
 }: RecentPostsPreviewProps) {
   const [expandedRootId, setExpandedRootId] = useState<string | null>(null);
 
-  const playersByUid = new Map(players.map((p) => [p.uid, p]));
+  const playersByUid = useMemo(() => buildPlayersByUid(players), [players]);
   const stats = computeThreadStats(posts);
   const recent = posts
     .filter((post) => post.parentId === null)

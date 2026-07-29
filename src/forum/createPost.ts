@@ -2,7 +2,7 @@
 import { addDoc, collection } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../firebase";
-import { ForumPost } from "./postTypes";
+import { ForumPost, POST_MAX_LENGTH } from "./postTypes";
 import { compressImage } from "../lib/compressImage";
 
 // Forum images render as a small bounded thumbnail by default (4chan-style —
@@ -24,7 +24,7 @@ export async function createPost(
   mentionedUids: string[] = [],
   quote: QuoteRef | null = null
 ): Promise<void> {
-  const trimmed = text.trim();
+  const trimmed = text.trim().slice(0, POST_MAX_LENGTH);
   if (!trimmed && !imageFile) return;
 
   let imageURL: string | null = null;

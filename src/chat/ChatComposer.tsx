@@ -5,6 +5,7 @@ import { sendMessage, QuotedMessage } from "./sendMessage";
 import { setTypingStatus } from "./useTypingStatus";
 import { fullName } from "../profile/deletedAccount";
 import { MESSAGE_MAX_LENGTH, MESSAGE_LENGTH_WARNING_AT } from "./messageTypes";
+import { useSendCooldown } from "../lib/useSendCooldown";
 import {
   findActiveMentionQuery,
   matchMentionCandidates,
@@ -35,6 +36,7 @@ export function ChatComposer({ uid, players, quoted, onClearQuote }: ChatCompose
   const [activeSuggestion, setActiveSuggestion] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastTypingSentRef = useRef(0);
+  const { isCoolingDown, trigger: triggerCooldown } = useSendCooldown();
 
   const mentionCandidates = players.filter((p) => p.uid !== uid);
   const candidates = mention ? matchMentionCandidates(mentionCandidates, mention.query) : [];
@@ -86,10 +88,11 @@ export function ChatComposer({ uid, players, quoted, onClearQuote }: ChatCompose
 
   async function handleSubmit(event?: FormEvent) {
     event?.preventDefault();
-    if (!text.trim()) return;
+    if (!text.trim() || isCoolingDown) return;
     const mentionedUids = resolveMentionedUids(text, players);
     try {
       await sendMessage(uid, text, mentionedUids, quoted);
+      triggerCooldown();
       setText("");
       setMention(null);
       setError(null);
@@ -185,7 +188,8 @@ export function ChatComposer({ uid, players, quoted, onClearQuote }: ChatCompose
         />
         <button
           type="submit"
-          className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-color_text text-background outline-none transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_accent"
+          disabled={isCoolingDown}
+          className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-color_text text-background outline-none transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_accent disabled:cursor-default disabled:opacity-40"
         >
           <span className="sr-only">Gönder</span>
           <Send className="size-3.5" aria-hidden />

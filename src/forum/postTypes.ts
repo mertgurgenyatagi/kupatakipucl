@@ -26,3 +26,9 @@ export interface ForumPost {
 export interface PostWithId extends ForumPost {
   id: string;
 }
+
+// not-started-audit item 10: same cap/warning-threshold pair as chat
+// (chat/messageTypes.ts's MESSAGE_MAX_LENGTH/MESSAGE_LENGTH_WARNING_AT) —
+// forum posts previously had no length limit at all, anywhere.
+export const POST_MAX_LENGTH = 360;
+export const POST_LENGTH_WARNING_AT = 300;

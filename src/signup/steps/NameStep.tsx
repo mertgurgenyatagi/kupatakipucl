@@ -7,6 +7,11 @@ interface NameStepProps {
   initialLastName?: string;
 }
 
+// not-started-audit item 15: names are locked forever once set
+// (PAGEMAP_SPEC.md §4), so an unbounded string typed once would be
+// permanent. Matches the 15-char cap enforced server-side in firestore.rules.
+const NAME_MAX_LENGTH = 15;
+
 export function NameStep({ onSubmit, disabled, initialFirstName, initialLastName }: NameStepProps) {
   const [firstName, setFirstName] = useState(initialFirstName ?? "");
   const [lastName, setLastName] = useState(initialLastName ?? "");
@@ -30,6 +35,7 @@ export function NameStep({ onSubmit, disabled, initialFirstName, initialLastName
         placeholder="İsim"
         aria-label="İsim"
         required
+        maxLength={NAME_MAX_LENGTH}
         disabled={disabled}
         className={inputClass}
       />
@@ -39,6 +45,7 @@ export function NameStep({ onSubmit, disabled, initialFirstName, initialLastName
         placeholder="Soyisim"
         aria-label="Soyisim"
         required
+        maxLength={NAME_MAX_LENGTH}
         disabled={disabled}
         className={inputClass}
       />

@@ -4,14 +4,20 @@ import { Player } from "../profile/usePlayers";
 import { MessageWithId } from "./useMessages";
 
 const mockDeleteMessage = vi.fn();
-const mockSearchMessages = vi.fn();
+const mockFetchAllMessagesForSearch = vi.fn();
 
 vi.mock("./deleteMessage", () => ({
   deleteMessage: (...args: unknown[]) => mockDeleteMessage(...args),
 }));
-vi.mock("./searchMessages", () => ({
-  searchMessages: (...args: unknown[]) => mockSearchMessages(...args),
-}));
+// filterMessagesByTerm is real (pure logic, cheap to actually exercise) —
+// only the network-fetching half is mocked.
+vi.mock("./searchMessages", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./searchMessages")>();
+  return {
+    ...actual,
+    fetchAllMessagesForSearch: (...args: unknown[]) => mockFetchAllMessagesForSearch(...args),
+  };
+});
 vi.mock("./ChatComposer", () => ({
   ChatComposer: ({ uid, players }: { uid: string; players: Player[] }) => (
     <div>chat-composer:{uid}:{players.length}</div>
@@ -49,7 +55,7 @@ function renderRoom(overrides: Partial<Parameters<typeof ChatRoom>[0]> = {}) {
 describe("ChatRoom", () => {
   beforeEach(() => {
     mockDeleteMessage.mockReset();
-    mockSearchMessages.mockReset();
+    mockFetchAllMessagesForSearch.mockReset();
   });
 
   it("shows an empty state when there are no messages", () => {
@@ -155,23 +161,55 @@ describe("ChatRoom", () => {
     });
 
     it("searches and renders matching results", async () => {
-      mockSearchMessages.mockResolvedValue([message({ id: "found", uid: "uid-ada", text: "aranan kelime" })]);
+      mockFetchAllMessagesForSearch.mockResolvedValue([
+        message({ id: "found", uid: "uid-ada", text: "aranan kelime" }),
+        message({ id: "other", uid: "uid-ada", text: "listedeki mesaj" }),
+      ]);
       renderRoom({ messages: [message({ text: "listedeki mesaj" })] });
 
       fireEvent.click(screen.getByRole("button", { name: "Sohbette ara" }));
       fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "aranan" } });
 
-      await waitFor(() => expect(mockSearchMessages).toHaveBeenCalledWith("aranan"));
+      await waitFor(() => expect(mockFetchAllMessagesForSearch).toHaveBeenCalledTimes(1));
       expect(await screen.findByText("aranan kelime")).toBeInTheDocument();
       expect(screen.queryByText("listedeki mesaj")).not.toBeInTheDocument();
     });
 
     it("shows a no-results message when a search comes back empty", async () => {
-      mockSearchMessages.mockResolvedValue([]);
+      mockFetchAllMessagesForSearch.mockResolvedValue([]);
       renderRoom({ messages: [] });
       fireEvent.click(screen.getByRole("button", { name: "Sohbette ara" }));
       fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "yok böyle bir şey" } });
       expect(await screen.findByText("Sonuç bulunamadı.")).toBeInTheDocument();
+    });
+
+    it("does not re-fetch on a second keystroke within the same search session", async () => {
+      mockFetchAllMessagesForSearch.mockResolvedValue([
+        message({ id: "found", uid: "uid-ada", text: "aranan kelime" }),
+      ]);
+      renderRoom({ messages: [] });
+      fireEvent.click(screen.getByRole("button", { name: "Sohbette ara" }));
+
+      fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "aran" } });
+      await waitFor(() => expect(mockFetchAllMessagesForSearch).toHaveBeenCalledTimes(1));
+
+      fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "aranan" } });
+      expect(await screen.findByText("aranan kelime")).toBeInTheDocument();
+      expect(mockFetchAllMessagesForSearch).toHaveBeenCalledTimes(1);
+    });
+
+    it("fetches again if the search panel is closed and reopened", async () => {
+      mockFetchAllMessagesForSearch.mockResolvedValue([]);
+      renderRoom({ messages: [] });
+
+      fireEvent.click(screen.getByRole("button", { name: "Sohbette ara" }));
+      fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "a" } });
+      await waitFor(() => expect(mockFetchAllMessagesForSearch).toHaveBeenCalledTimes(1));
+
+      fireEvent.click(screen.getByRole("button", { name: "Aramayı kapat" }));
+      fireEvent.click(screen.getByRole("button", { name: "Sohbette ara" }));
+      fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "b" } });
+      await waitFor(() => expect(mockFetchAllMessagesForSearch).toHaveBeenCalledTimes(2));
     });
   });
 

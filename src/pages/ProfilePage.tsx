@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { useAuth } from "../auth/AuthProvider";
@@ -88,6 +88,7 @@ function ProfileSkeleton() {
 export function ProfilePage() {
   const { user } = useAuth();
   const state = useVisibilityState();
+  const navigate = useNavigate();
   const uid = user?.uid ?? null;
 
   const { profile, loading: profileLoading } = useProfile(uid);
@@ -173,6 +174,7 @@ export function ProfilePage() {
       await Promise.all([deleteProfile(uid), deletePrediction(uid)]);
       await signOut(auth);
       setDeleteConfirmOpen(false);
+      navigate("/");
     } catch (err) {
       console.error("Failed to delete profile", err);
       setDeleteError("Profil silinemedi, tekrar deneyin.");

@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { ProfilePage } from "./ProfilePage";
 
@@ -73,8 +73,11 @@ vi.mock("../predictions/TeamRanker", () => ({
 
 function renderPage() {
   return render(
-    <MemoryRouter>
-      <ProfilePage />
+    <MemoryRouter initialEntries={["/profile"]}>
+      <Routes>
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/" element={<div>home-page</div>} />
+      </Routes>
     </MemoryRouter>
   );
 }
@@ -297,11 +300,7 @@ describe("ProfilePage", () => {
     await waitFor(() => expect(mockDeleteProfile).toHaveBeenCalledWith("uid1"));
     expect(mockDeletePrediction).toHaveBeenCalledWith("uid1");
     await waitFor(() => expect(mockSignOut).toHaveBeenCalledTimes(1));
-    await waitFor(() =>
-      expect(
-        screen.queryByText("Profilini silmek istediğine emin misin?")
-      ).not.toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.getByText("home-page")).toBeInTheDocument());
   });
 
   it("shows an error and keeps the dialog open when deletion fails", async () => {
