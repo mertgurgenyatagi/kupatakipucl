@@ -2,8 +2,9 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Search, Trash2, X, Quote } from "lucide-react";
 import { MessageWithId } from "./useMessages";
 import { Player } from "../profile/usePlayers";
+import { buildPlayersByUid } from "../profile/playersByUid";
 import { deleteMessage } from "./deleteMessage";
-import { searchMessages } from "./searchMessages";
+import { fetchAllMessagesForSearch, filterMessagesByTerm } from "./searchMessages";
 import { buildChatItems, formatMessageTime, ChatItem } from "./chatGrouping";
 import { splitMentionSegments } from "./chatMentions";
 import { ChatComposer } from "./ChatComposer";
@@ -220,6 +221,12 @@ export function ChatRoom({
   // read the instant they'd scrolled up even slightly.
   const wasAtBottomRef = useRef(true);
   const NEAR_BOTTOM_PX = 80;
+  // not-started-audit item 18: this used to re-run a full, unbounded fetch
+  // of the entire message history on every debounced keystroke. Now it
+  // fetches once per search session (while the panel stays open) and every
+  // later keystroke just filters that same in-memory list — reopening the
+  // panel later still gets a fresh fetch, since this resets to null on close.
+  const allMessagesCacheRef = useRef<MessageWithId[] | null>(null);
 
   function handleScroll() {
     const el = listRef.current;
@@ -227,7 +234,7 @@ export function ChatRoom({
     wasAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
   }
 
-  const playersByUid = useMemo(() => new Map(players.map((p) => [p.uid, p])), [players]);
+  const playersByUid = useMemo(() => buildPlayersByUid(players), [players]);
   const items: ChatItem[] = useMemo(() => buildChatItems(messages), [messages]);
 
   useLayoutEffect(() => {
@@ -251,7 +258,10 @@ export function ChatRoom({
   }, [messages]);
 
   useEffect(() => {
-    if (!searchOpen) return;
+    if (!searchOpen) {
+      allMessagesCacheRef.current = null;
+      return;
+    }
     const trimmed = searchQuery.trim();
     if (!trimmed) {
       setSearchResults([]);
@@ -260,8 +270,15 @@ export function ChatRoom({
     }
     setSearching(true);
     const id = setTimeout(() => {
-      searchMessages(trimmed)
-        .then(setSearchResults)
+      const cached = allMessagesCacheRef.current;
+      const load = cached
+        ? Promise.resolve(cached)
+        : fetchAllMessagesForSearch().then((all) => {
+            allMessagesCacheRef.current = all;
+            return all;
+          });
+      load
+        .then((all) => setSearchResults(filterMessagesByTerm(all, trimmed)))
         .catch((err) => console.error("Failed to search messages", err))
         .finally(() => setSearching(false));
     }, SEARCH_DEBOUNCE_MS);

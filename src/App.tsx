@@ -10,11 +10,6 @@ import { ForumPage } from "./pages/ForumPage";
 import { StatsPage } from "./pages/StatsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { DevPanel } from "./devpanel/DevPanel";
-import { TeamPopupTuner } from "./devpanel/TeamPopupTuner";
-import { StatsPageTuner } from "./devpanel/StatsPageTuner";
-import { HomeLoggedInTuner } from "./devpanel/HomeLoggedInTuner";
-import { ForumTuner } from "./devpanel/ForumTuner";
-import { ColorTuner } from "./devpanel/ColorTuner";
 
 export function App() {
   return (
@@ -31,17 +26,6 @@ export function App() {
                 <Route path="/stats" element={<StatsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 {import.meta.env.DEV && <Route path="/dev" element={<DevPanel />} />}
-                {import.meta.env.DEV && (
-                  <Route path="/dev/team-popup-tuner" element={<TeamPopupTuner />} />
-                )}
-                {import.meta.env.DEV && (
-                  <Route path="/dev/stats-tuner" element={<StatsPageTuner />} />
-                )}
-                {import.meta.env.DEV && (
-                  <Route path="/dev/home-loggedin-tuner" element={<HomeLoggedInTuner />} />
-                )}
-                {import.meta.env.DEV && <Route path="/dev/forum-tuner" element={<ForumTuner />} />}
-                {import.meta.env.DEV && <Route path="/dev/color-tuner" element={<ColorTuner />} />}
               </Routes>
             </AppShell>
           </HashRouter>

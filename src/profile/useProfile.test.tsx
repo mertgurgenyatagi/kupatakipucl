@@ -1,38 +1,65 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { clearSessionCache } from "../lib/sessionCache";
 
-const mockGetDoc = vi.fn();
+const mockOnSnapshot = vi.fn();
 const mockSetDoc = vi.fn();
 const mockDeleteDoc = vi.fn();
 const mockDoc = vi.fn((_db: unknown, collection: string, id: string) => ({ collection, id }));
+const mockUnsubscribe = vi.fn();
 
 vi.mock("firebase/firestore", () => ({
   doc: (...args: unknown[]) => mockDoc(...(args as [unknown, string, string])),
-  getDoc: (...args: unknown[]) => mockGetDoc(...args),
+  onSnapshot: (...args: unknown[]) => mockOnSnapshot(...args),
   setDoc: (...args: unknown[]) => mockSetDoc(...args),
   deleteDoc: (...args: unknown[]) => mockDeleteDoc(...args),
 }));
 
 const mockUploadBytes = vi.fn();
 const mockGetDownloadURL = vi.fn();
+const mockDeleteObject = vi.fn();
 const mockRef = vi.fn((_storage: unknown, path: string) => ({ path }));
 
 vi.mock("firebase/storage", () => ({
   ref: (...args: unknown[]) => mockRef(...(args as [unknown, string])),
   uploadBytes: (...args: unknown[]) => mockUploadBytes(...args),
   getDownloadURL: (...args: unknown[]) => mockGetDownloadURL(...args),
+  deleteObject: (...args: unknown[]) => mockDeleteObject(...args),
 }));
 
 vi.mock("../firebase", () => ({ db: {}, storage: {} }));
 
 import { useProfile, saveProfile, updateProfilePhoto, deleteProfile } from "./useProfile";
 
+type SnapshotCallback = (snapshot: { exists: () => boolean; data: () => unknown }) => void;
+type ErrorCallback = (err: Error) => void;
+interface Captured {
+  uid: string;
+  onNext: SnapshotCallback;
+  onError: ErrorCallback;
+}
+
 describe("useProfile", () => {
+  let captured: Captured[];
+
+  function lastFor(uid: string): Captured {
+    const match = [...captured].reverse().find((c) => c.uid === uid);
+    if (!match) throw new Error(`no onSnapshot call captured for uid ${uid}`);
+    return match;
+  }
+
   beforeEach(() => {
-    mockGetDoc.mockReset();
+    captured = [];
+    mockOnSnapshot.mockReset();
+    mockUnsubscribe.mockReset();
     mockSetDoc.mockReset();
     clearSessionCache();
+    mockOnSnapshot.mockImplementation(
+      (docRef: { id: string }, onNext: SnapshotCallback, onError: ErrorCallback) => {
+        captured.push({ uid: docRef.id, onNext, onError });
+        return mockUnsubscribe;
+      }
+    );
   });
 
   it("returns loading=false and profile=null when uid is null", async () => {
@@ -42,53 +69,79 @@ describe("useProfile", () => {
   });
 
   it("returns profile=null when no profile doc exists", async () => {
-    mockGetDoc.mockResolvedValue({ exists: () => false });
     const { result } = renderHook(() => useProfile("uid1"));
+    act(() => lastFor("uid1").onNext({ exists: () => false, data: () => undefined }));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.profile).toBeNull();
   });
 
   it("returns the profile when a doc exists", async () => {
     const data = { firstName: "Mert", lastName: "G", photoURL: "url", createdAt: 123 };
-    mockGetDoc.mockResolvedValue({ exists: () => true, data: () => data });
     const { result } = renderHook(() => useProfile("uid1"));
+    act(() => lastFor("uid1").onNext({ exists: () => true, data: () => data }));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.profile).toEqual(data);
   });
 
-  it("stops loading and leaves profile null when the read rejects", async () => {
+  it("stops loading and leaves profile null when the listener errors", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    mockGetDoc.mockRejectedValue(new Error("permission-denied"));
     const { result } = renderHook(() => useProfile("uid1"));
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.profile).toBeNull();
+    act(() => lastFor("uid1").onError(new Error("permission-denied")));
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to load profile", expect.any(Error));
+    expect(result.current.profile).toBeNull();
     consoleErrorSpy.mockRestore();
   });
 
-  it("does not overwrite state with a stale profile when uid changes before the read resolves", async () => {
-    let resolveFirst: (value: { exists: () => boolean; data: () => unknown }) => void;
-    const firstPromise = new Promise((resolve) => {
-      resolveFirst = resolve;
-    });
-    const secondData = { firstName: "Second", lastName: "User", photoURL: "url2", createdAt: 456 };
+  it("updates live when a later snapshot reflects a changed name/photo", async () => {
+    const { result } = renderHook(() => useProfile("uid1"));
+    const original = { firstName: "Mert", lastName: "G", photoURL: "old.jpg", createdAt: 1 };
+    act(() => lastFor("uid1").onNext({ exists: () => true, data: () => original }));
+    await waitFor(() => expect(result.current.profile).toEqual(original));
 
-    mockGetDoc.mockImplementationOnce(() => firstPromise);
-    mockGetDoc.mockImplementationOnce(() =>
-      Promise.resolve({ exists: () => true, data: () => secondData })
-    );
+    const updated = { ...original, photoURL: "new.jpg" };
+    act(() => lastFor("uid1").onNext({ exists: () => true, data: () => updated }));
+    await waitFor(() => expect(result.current.profile).toEqual(updated));
+  });
+
+  it("shares one live subscription across two simultaneous mounts for the same uid", async () => {
+    const first = renderHook(() => useProfile("uid1"));
+    const second = renderHook(() => useProfile("uid1"));
+    expect(mockOnSnapshot).toHaveBeenCalledTimes(1);
+
+    const data = { firstName: "Mert", lastName: "G", photoURL: "url", createdAt: 1 };
+    act(() => lastFor("uid1").onNext({ exists: () => true, data: () => data }));
+    await waitFor(() => expect(first.result.current.profile).toEqual(data));
+    await waitFor(() => expect(second.result.current.profile).toEqual(data));
+  });
+
+  it("only unsubscribes once every mount for that uid has unmounted", async () => {
+    const first = renderHook(() => useProfile("uid1"));
+    const second = renderHook(() => useProfile("uid1"));
+    expect(mockOnSnapshot).toHaveBeenCalledTimes(1);
+
+    first.unmount();
+    expect(mockUnsubscribe).not.toHaveBeenCalled();
+
+    second.unmount();
+    expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not overwrite state with a stale profile when uid changes", async () => {
+    const secondData = { firstName: "Second", lastName: "User", photoURL: "url2", createdAt: 456 };
 
     const { result, rerender } = renderHook(({ uid }) => useProfile(uid), {
       initialProps: { uid: "uid1" },
     });
 
     rerender({ uid: "uid2" });
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.profile).toEqual(secondData);
+    act(() => lastFor("uid2").onNext({ exists: () => true, data: () => secondData }));
+    await waitFor(() => expect(result.current.profile).toEqual(secondData));
 
-    // Resolving the stale first promise afterwards must not clobber state.
-    resolveFirst!({ exists: () => true, data: () => ({ firstName: "Stale" }) });
-    await Promise.resolve();
+    // The old uid1 subscription was torn down on rerender — its onNext is
+    // no longer wired to this hook instance's setState at all, so calling
+    // it (simulating a slow, now-orphaned listener callback) must not
+    // clobber the current uid2 state.
+    act(() => lastFor("uid1").onNext({ exists: () => true, data: () => ({ firstName: "Stale" }) }));
     await Promise.resolve();
     expect(result.current.profile).toEqual(secondData);
   });
@@ -150,12 +203,30 @@ describe("updateProfilePhoto", () => {
 describe("deleteProfile", () => {
   beforeEach(() => {
     mockDeleteDoc.mockReset();
+    mockDeleteObject.mockReset();
   });
 
   it("deletes the profile doc for the given uid", async () => {
     mockDeleteDoc.mockResolvedValue(undefined);
+    mockDeleteObject.mockResolvedValue(undefined);
     await deleteProfile("uid1");
     expect(mockDeleteDoc).toHaveBeenCalledTimes(1);
     expect(mockDeleteDoc).toHaveBeenCalledWith({ collection: "profiles", id: "uid1" });
+  });
+
+  it("also deletes the profile photo from storage", async () => {
+    mockDeleteDoc.mockResolvedValue(undefined);
+    mockDeleteObject.mockResolvedValue(undefined);
+    await deleteProfile("uid1");
+    expect(mockDeleteObject).toHaveBeenCalledTimes(1);
+    expect(mockRef).toHaveBeenCalledWith({}, "profile-photos/uid1");
+  });
+
+  it("does not throw when the photo delete fails (e.g. already gone)", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockDeleteDoc.mockResolvedValue(undefined);
+    mockDeleteObject.mockRejectedValue(new Error("object-not-found"));
+    await expect(deleteProfile("uid1")).resolves.toBeUndefined();
+    consoleErrorSpy.mockRestore();
   });
 });

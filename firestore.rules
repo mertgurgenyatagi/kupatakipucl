@@ -7,7 +7,18 @@ service cloud.firestore {
     // read is public. Only the owner can write their own.
     match /profiles/{uid} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == uid;
+      // Field validation added 2026-07-29 (not-started-audit item 04/15):
+      // name length caps mirror NameStep.tsx's 15-char client-side cap.
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.firstName is string
+        && request.resource.data.firstName.size() > 0
+        && request.resource.data.firstName.size() <= 15
+        && request.resource.data.lastName is string
+        && request.resource.data.lastName.size() > 0
+        && request.resource.data.lastName.size() <= 15
+        && request.resource.data.photoURL is string;
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
     // Survey responses: readable by any signed-in participant (reversed
@@ -18,7 +29,19 @@ service cloud.firestore {
     // one-time-only (SPEC §5) — no updates or deletes once created.
     match /surveyResponses/{uid} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == uid;
+      // Field validation added 2026-07-29 (not-started-audit item 04) —
+      // shape/range matches SignupFlow.tsx's quiz options exactly.
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.age is number
+        && request.resource.data.age >= 1
+        && request.resource.data.age <= 120
+        && request.resource.data.footballKnowledge is number
+        && request.resource.data.footballKnowledge >= 1
+        && request.resource.data.footballKnowledge <= 7
+        && request.resource.data.messiOrRonaldo in ['messi', 'ronaldo', 'no-opinion']
+        && request.resource.data.superLigTeam is string
+        && request.resource.data.device in ['phone', 'desktop', 'both'];
       allow update, delete: if false;
     }
 
@@ -30,7 +53,13 @@ service cloud.firestore {
     // owner writes.
     match /predictions/{uid} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == uid;
+      // Field validation added 2026-07-29 (not-started-audit item 04): a
+      // prediction is always a full 36-team ranking, never partial.
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.ranking is list
+        && request.resource.data.ranking.size() == 36;
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
     // Team results feed the team table and score computation (SPEC.md §3, §8b),
@@ -83,7 +112,14 @@ service cloud.firestore {
     // delete of the doc itself by anyone, sender included.
     match /messages/{messageId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      // Field validation added 2026-07-29 (not-started-audit item 04):
+      // mirrors ChatComposer.tsx's 360-char cap (messageTypes.ts), enforced
+      // here since the client-side maxlength is trivially bypassable.
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 360;
       allow update: if request.auth != null
         && resource.data.uid == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleted'])
@@ -129,10 +165,34 @@ service cloud.firestore {
     // more than one hop deep).
     match /forumPosts/{postId} {
       allow read: if true;
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      // Field validation added 2026-07-29 (not-started-audit item 04/10):
+      // text is capped at 360 to match chat (an empty string is only valid
+      // when an image carries the post instead, per createPost.ts). Quote
+      // integrity (item 05): a quote naming a real postId must actually
+      // point at an existing post, and the claimed quotedAuthorUid must
+      // match that post's real author — otherwise words could be put in
+      // someone's mouth they never posted. Not validated against the
+      // quoted post's *current* text, since an edit made after being quoted
+      // is expected to diverge from the cached snapshot (that's the whole
+      // point of caching it) — only existence + true authorship are checked.
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 360
+        && (request.resource.data.text.size() > 0 || request.resource.data.imageURL != null)
+        && (
+          request.resource.data.quotedPostId == null
+          || (
+            exists(/databases/$(database)/documents/forumPosts/$(request.resource.data.quotedPostId))
+            && get(/databases/$(database)/documents/forumPosts/$(request.resource.data.quotedPostId)).data.uid == request.resource.data.quotedAuthorUid
+          )
+        );
       allow update: if request.auth != null
         && resource.data.uid == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'mentionedUids', 'editedAt']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'mentionedUids', 'editedAt'])
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 360
+        && (request.resource.data.text.size() > 0 || resource.data.imageURL != null);
       allow delete: if request.auth != null
         && (resource.data.uid == request.auth.uid
             || (resource.data.parentId != null

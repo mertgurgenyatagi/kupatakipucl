@@ -2,6 +2,8 @@
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { ImagePlus, Quote, X } from "lucide-react";
 import { createPost, QuoteRef } from "./createPost";
+import { POST_MAX_LENGTH, POST_LENGTH_WARNING_AT } from "./postTypes";
+import { useSendCooldown } from "../lib/useSendCooldown";
 import { resolveMentionedUids, findActiveMentionQuery, matchMentionCandidates, insertMention, MentionQuery } from "../chat/chatMentions";
 import { Player } from "../profile/usePlayers";
 import { cn } from "@/lib/utils";
@@ -42,6 +44,7 @@ export function PostForm({
   const [activeSuggestion, setActiveSuggestion] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { isCoolingDown, trigger: triggerCooldown } = useSendCooldown();
 
   const mentionCandidates = players.filter((p) => p.uid !== uid);
   const candidates = mention ? matchMentionCandidates(mentionCandidates, mention.query) : [];
@@ -85,9 +88,10 @@ export function PostForm({
 
   async function handleSubmit(event?: FormEvent) {
     event?.preventDefault();
-    if (!text.trim() && !imageFile) return;
+    if ((!text.trim() && !imageFile) || isCoolingDown) return;
     try {
       await createPost(uid, text, imageFile, parentId, resolveMentionedUids(text, players), quote);
+      triggerCooldown();
       setText("");
       setImageFile(null);
       setError(null);
@@ -173,6 +177,7 @@ export function PostForm({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           autoFocus={autoFocus}
+          maxLength={POST_MAX_LENGTH}
           rows={1}
           className="no-scrollbar max-h-40 min-w-0 flex-1 resize-none overflow-y-auto rounded-2xl border border-color_border1/70 bg-background px-4 py-2 text-sm text-color_text outline-none placeholder:text-color_textsecondary focus:border-color_accent"
         />
@@ -193,7 +198,8 @@ export function PostForm({
         </button>
         <button
           type="submit"
-          className="shrink-0 cursor-pointer rounded-lg bg-color_text px-4 py-2 text-sm font-medium text-background outline-none transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_accent"
+          disabled={isCoolingDown}
+          className="shrink-0 cursor-pointer rounded-lg bg-color_text px-4 py-2 text-sm font-medium text-background outline-none transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_accent disabled:cursor-default disabled:opacity-40"
         >
           Paylaş
         </button>
@@ -217,10 +223,26 @@ export function PostForm({
         </div>
       )}
 
-      {error && (
-        <p role="alert" className="text-xs text-color_remove">
-          {error}
-        </p>
+      {(error || text.length >= POST_LENGTH_WARNING_AT) && (
+        <div className="flex items-center justify-between gap-2">
+          {error ? (
+            <p role="alert" className="text-xs text-color_remove">
+              {error}
+            </p>
+          ) : (
+            <span />
+          )}
+          {text.length >= POST_LENGTH_WARNING_AT && (
+            <span
+              className={cn(
+                "font-mono text-[0.65rem] tnum",
+                text.length >= POST_MAX_LENGTH ? "text-color_remove" : "text-color_textsecondary"
+              )}
+            >
+              {text.length} / {POST_MAX_LENGTH}
+            </span>
+          )}
+        </div>
       )}
     </form>
   );

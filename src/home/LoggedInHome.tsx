@@ -76,9 +76,11 @@ export function LoggedInHome({ players }: { players: Player[] }) {
 
   async function handleDeletePost(postId: string) {
     setForumActionError(null);
-    const replyIds = posts.filter((p) => p.parentId === postId).map((p) => p.id);
+    const replies = posts.filter((p) => p.parentId === postId);
+    const replyIds = replies.map((p) => p.id);
+    const imageURLs = [posts.find((p) => p.id === postId)?.imageURL ?? null, ...replies.map((p) => p.imageURL)];
     try {
-      await deletePost(postId, replyIds);
+      await deletePost(postId, replyIds, imageURLs);
       refetchPosts();
     } catch (err) {
       console.error("Failed to delete post", err);

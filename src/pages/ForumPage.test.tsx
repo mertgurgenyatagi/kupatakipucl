@@ -147,7 +147,7 @@ describe("ForumPage", () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     render(<ForumPage />);
     fireEvent.click(screen.getByText("delete-post"));
-    await waitFor(() => expect(mockDeletePost).toHaveBeenCalledWith("root1", ["reply1"]));
+    await waitFor(() => expect(mockDeletePost).toHaveBeenCalledWith("root1", ["reply1"], [null, null]));
     await waitFor(() => expect(mockRefetch).toHaveBeenCalled());
   });
 
