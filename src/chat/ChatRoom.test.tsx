@@ -19,8 +19,18 @@ vi.mock("./searchMessages", async (importOriginal) => {
   };
 });
 vi.mock("./ChatComposer", () => ({
-  ChatComposer: ({ uid, players }: { uid: string; players: Player[] }) => (
-    <div>chat-composer:{uid}:{players.length}</div>
+  ChatComposer: ({
+    uid,
+    players,
+    mentionCandidates,
+  }: {
+    uid: string;
+    players: Player[];
+    mentionCandidates?: Player[];
+  }) => (
+    <div>
+      chat-composer:{uid}:{players.length}:mentions:{(mentionCandidates ?? players).map((p) => p.firstName).join(",")}
+    </div>
   ),
 }));
 
@@ -93,8 +103,17 @@ describe("ChatRoom", () => {
     mockDeleteMessage.mockRejectedValue(new Error("permission-denied"));
     renderRoom({ messages: [message({ id: "mine", uid: "me", text: "sil beni" })] });
     fireEvent.click(screen.getByRole("button", { name: "Mesajı sil" }));
-    expect(mockDeleteMessage).toHaveBeenCalledWith("mine");
+    expect(mockDeleteMessage).toHaveBeenCalledWith("mine", null);
     expect(await screen.findByRole("alert")).toHaveTextContent("Mesaj silinemedi, tekrar deneyin.");
+  });
+
+  // Without the lobbyId the update targeted /messages/{id}, a path where a
+  // lobby message simply doesn't exist, so it always failed.
+  it("deletes an in-lobby message against that lobby's own subcollection", () => {
+    mockDeleteMessage.mockResolvedValue(undefined);
+    renderRoom({ messages: [message({ id: "mine", uid: "me", text: "sil beni" })], lobbyId: "lobby1" });
+    fireEvent.click(screen.getByRole("button", { name: "Mesajı sil" }));
+    expect(mockDeleteMessage).toHaveBeenCalledWith("mine", "lobby1");
   });
 
   it("shows a placeholder instead of the text for a deleted message, with no delete button", () => {
@@ -147,7 +166,29 @@ describe("ChatRoom", () => {
 
   it("passes uid and players through to the composer", () => {
     renderRoom({ messages: [message({})] });
-    expect(screen.getByText("chat-composer:me:3")).toBeInTheDocument();
+    expect(screen.getByText("chat-composer:me:3:mentions:Mert,Ada,Kuzey")).toBeInTheDocument();
+  });
+
+  // Author lookup uses the global directory so a since-departed lobby member's
+  // old messages still resolve to their real name; only the composer's
+  // @-mention list is lobby-scoped.
+  it("resolves the author of a past member's message from the global player list", () => {
+    renderRoom({
+      players,
+      mentionCandidates: [players[0], players[2]],
+      messages: [message({ id: "old", uid: "uid-ada", text: "eski mesajım" })],
+    });
+    expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
+    expect(screen.queryByText("Silindi")).not.toBeInTheDocument();
+  });
+
+  it("still narrows the composer's @-mention candidates to the lobby's own members", () => {
+    renderRoom({
+      players,
+      mentionCandidates: [players[0], players[2]],
+      messages: [message({})],
+    });
+    expect(screen.getByText("chat-composer:me:3:mentions:Mert,Kuzey")).toBeInTheDocument();
   });
 
   describe("search", () => {
@@ -210,6 +251,24 @@ describe("ChatRoom", () => {
       fireEvent.click(screen.getByRole("button", { name: "Sohbette ara" }));
       fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "b" } });
       await waitFor(() => expect(mockFetchAllMessagesForSearch).toHaveBeenCalledTimes(2));
+    });
+
+    // special-lobby-round-7 Q2: search is confined to the current view —
+    // General or one lobby, never mixed.
+    it("searches the global collection when no lobby is selected", async () => {
+      mockFetchAllMessagesForSearch.mockResolvedValue([]);
+      renderRoom({ messages: [] });
+      fireEvent.click(screen.getByRole("button", { name: "Sohbette ara" }));
+      fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "a" } });
+      await waitFor(() => expect(mockFetchAllMessagesForSearch).toHaveBeenCalledWith(null));
+    });
+
+    it("scopes the search to the current lobby when one is selected", async () => {
+      mockFetchAllMessagesForSearch.mockResolvedValue([]);
+      renderRoom({ messages: [], lobbyId: "lobby1" });
+      fireEvent.click(screen.getByRole("button", { name: "Sohbette ara" }));
+      fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "a" } });
+      await waitFor(() => expect(mockFetchAllMessagesForSearch).toHaveBeenCalledWith("lobby1"));
     });
   });
 

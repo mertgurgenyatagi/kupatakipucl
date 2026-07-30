@@ -7,7 +7,13 @@ import { db } from "../firebase";
  * that `deleted` is the only field this write can touch (chat-widget-round-01
  * Q16 — reverses this collection's original "no edits or deletes, ever"
  * stance; see firestore.rules for the full note).
+ *
+ * `lobbyId` picks the lobby's own messages subcollection instead of the
+ * global one. Without it a lobby message was updated at /messages/{id},
+ * a path where that doc simply doesn't exist, so every in-lobby delete
+ * failed with the generic error (2026-07-30, final-review fix).
  */
-export async function deleteMessage(messageId: string): Promise<void> {
-  await updateDoc(doc(db, "messages", messageId), { deleted: true });
+export async function deleteMessage(messageId: string, lobbyId: string | null = null): Promise<void> {
+  const ref = lobbyId ? doc(db, "lobbies", lobbyId, "messages", messageId) : doc(db, "messages", messageId);
+  await updateDoc(ref, { deleted: true });
 }

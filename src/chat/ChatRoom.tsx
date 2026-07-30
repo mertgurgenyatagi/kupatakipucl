@@ -16,7 +16,16 @@ import { cn } from "@/lib/utils";
 
 interface ChatRoomProps {
   uid: string;
+  /** The GLOBAL player directory, not a lobby-filtered slice — every name,
+   *  avatar and quote attribution in the transcript resolves through this.
+   *  Someone who has since left (or been removed from) a lobby still authored
+   *  the messages already in its history, and filtering them out here made
+   *  those messages render with deletedAccount.ts's "Silindi" styling, which
+   *  claims the account was deleted (2026-07-30, final-review fix). */
   players: Player[];
+  /** Who the composer offers as @-mention targets — genuinely lobby-scoped,
+   *  unlike author lookup above. Defaults to `players` for the General room. */
+  mentionCandidates?: Player[];
   messages: (MessageWithId & { system?: LobbySystemInfo })[];
   onLoadOlder: () => void;
   loadingOlder: boolean;
@@ -203,6 +212,7 @@ function MessageRow({
 export function ChatRoom({
   uid,
   players,
+  mentionCandidates,
   messages,
   onLoadOlder,
   loadingOlder,
@@ -245,7 +255,7 @@ export function ChatRoom({
   }
 
   const playersByUid = useMemo(() => buildPlayersByUid(players), [players]);
-  const items: ChatItem[] = useMemo(() => buildChatItems(messages), [messages]);
+  const items: ChatItem<ChatRoomProps["messages"][number]>[] = useMemo(() => buildChatItems(messages), [messages]);
 
   useLayoutEffect(() => {
     const el = listRef.current;
@@ -267,6 +277,13 @@ export function ChatRoom({
     prevScrollHeightRef.current = el.scrollHeight;
   }, [messages]);
 
+  // Switching lobbies (or back to Genel) invalidates the search cache — it
+  // holds one scope's messages only, and search never mixes scopes
+  // (special-lobby-round-7 Q2).
+  useEffect(() => {
+    allMessagesCacheRef.current = null;
+  }, [lobbyId]);
+
   useEffect(() => {
     if (!searchOpen) {
       allMessagesCacheRef.current = null;
@@ -283,7 +300,7 @@ export function ChatRoom({
       const cached = allMessagesCacheRef.current;
       const load = cached
         ? Promise.resolve(cached)
-        : fetchAllMessagesForSearch().then((all) => {
+        : fetchAllMessagesForSearch(lobbyId).then((all) => {
             allMessagesCacheRef.current = all;
             return all;
           });
@@ -293,7 +310,7 @@ export function ChatRoom({
         .finally(() => setSearching(false));
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(id);
-  }, [searchQuery, searchOpen]);
+  }, [searchQuery, searchOpen, lobbyId]);
 
   function handleQuote(message: MessageWithId) {
     setQuoted({ id: message.id, uid: message.uid, text: message.text });
@@ -316,7 +333,7 @@ export function ChatRoom({
   async function handleDelete(messageId: string) {
     setDeleteError(null);
     try {
-      await deleteMessage(messageId);
+      await deleteMessage(messageId, lobbyId);
     } catch (err) {
       console.error("Failed to delete message", err);
       setDeleteError("Mesaj silinemedi, tekrar deneyin.");
@@ -438,7 +455,14 @@ export function ChatRoom({
         {typingText && <p className="text-xs text-color_textsecondary italic">{typingText}</p>}
       </div>
 
-      <ChatComposer uid={uid} players={players} quoted={quoted} onClearQuote={() => setQuoted(null)} lobbyId={lobbyId} />
+      <ChatComposer
+        uid={uid}
+        players={players}
+        mentionCandidates={mentionCandidates}
+        quoted={quoted}
+        onClearQuote={() => setQuoted(null)}
+        lobbyId={lobbyId}
+      />
       {deleteError && (
         <p role="alert" className="px-3 pb-2 text-xs text-color_remove sm:px-4">
           {deleteError}

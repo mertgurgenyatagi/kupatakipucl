@@ -66,6 +66,17 @@ describe("shouldGroupWithPrevious", () => {
     const current = msg({ uid: "uid1", createdAt: new Date("2026-07-25T00:01:00+03:00").getTime() });
     expect(shouldGroupWithPrevious(current, previous)).toBe(false);
   });
+
+  // A system message carries the acting user's own uid, so without an
+  // explicit exception it swallowed the header of the very next real message
+  // from that same person — which is exactly what happens in every brand-new
+  // lobby ("Grup oluşturuldu." then the creator's first message) and right
+  // after every join ("X katıldı." then X's first message).
+  it("never groups a real message onto a preceding system message, same uid or not", () => {
+    const previous = { ...msg({ uid: "uid1", createdAt: NOW }), system: { kind: "created", subjectUid: "uid1" } };
+    const current = msg({ uid: "uid1", createdAt: NOW + 30_000 });
+    expect(shouldGroupWithPrevious(current, previous)).toBe(false);
+  });
 });
 
 describe("buildChatItems", () => {
@@ -99,5 +110,35 @@ describe("buildChatItems", () => {
 
   it("returns an empty list for no messages", () => {
     expect(buildChatItems([], NOW)).toEqual([]);
+  });
+
+  it("shows the header on a new lobby's first real message, right after the creation system line", () => {
+    const t = new Date("2026-07-25T10:00:00+03:00").getTime();
+    const items = buildChatItems(
+      [
+        { ...msg({ id: "sys", uid: "uid1", createdAt: t }), system: { kind: "created", subjectUid: "uid1" } },
+        msg({ id: "first", uid: "uid1", createdAt: t + 30_000 }),
+        msg({ id: "second", uid: "uid1", createdAt: t + 60_000 }),
+      ],
+      NOW
+    );
+    const messageItems = items.filter((i) => i.type === "message");
+    // system line, then the creator's first message WITH a header, then a
+    // normal grouped continuation.
+    expect(messageItems.map((i) => (i.type === "message" ? i.showHeader : null))).toEqual([true, true, false]);
+  });
+
+  it("shows the header on a joiner's first message right after their own join line", () => {
+    const t = new Date("2026-07-25T10:00:00+03:00").getTime();
+    const items = buildChatItems(
+      [
+        msg({ id: "earlier", uid: "uid2", createdAt: t }),
+        { ...msg({ id: "sys", uid: "uid1", createdAt: t + 10_000 }), system: { kind: "joined", subjectUid: "uid1" } },
+        msg({ id: "hello", uid: "uid1", createdAt: t + 20_000 }),
+      ],
+      NOW
+    );
+    const messageItems = items.filter((i) => i.type === "message");
+    expect(messageItems.map((i) => (i.type === "message" ? i.showHeader : null))).toEqual([true, true, true]);
   });
 });

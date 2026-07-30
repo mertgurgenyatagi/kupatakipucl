@@ -16,9 +16,16 @@ import { MessageWithId } from "./useMessages";
  * same in-memory list, instead of re-running a full collection fetch on
  * every debounced keystroke. `searchMessages` composes both, kept as the
  * simple one-shot entry point these existing tests already cover.
+ *
+ * `lobbyId` scopes the fetch to one lobby's own messages subcollection.
+ * special-lobby-round-7 Q2 locks search to "confined to the current view —
+ * search General, or search one lobby, never mixed", so this is a switch
+ * between two collections, never a union of both (2026-07-30,
+ * final-review fix).
  */
-export async function fetchAllMessagesForSearch(): Promise<MessageWithId[]> {
-  const messagesQuery = query(collection(db, "messages"), orderBy("createdAt", "desc"));
+export async function fetchAllMessagesForSearch(lobbyId: string | null = null): Promise<MessageWithId[]> {
+  const messagesRef = lobbyId ? collection(db, "lobbies", lobbyId, "messages") : collection(db, "messages");
+  const messagesQuery = query(messagesRef, orderBy("createdAt", "desc"));
   const snapshot = await getDocs(messagesQuery);
   return snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...(docSnap.data() as Message) }));
 }
@@ -29,9 +36,9 @@ export function filterMessagesByTerm(messages: MessageWithId[], term: string): M
   return messages.filter((message) => !message.deleted && message.text.toLowerCase().includes(trimmed));
 }
 
-export async function searchMessages(term: string): Promise<MessageWithId[]> {
+export async function searchMessages(term: string, lobbyId: string | null = null): Promise<MessageWithId[]> {
   const trimmed = term.trim();
   if (!trimmed) return [];
-  const all = await fetchAllMessagesForSearch();
+  const all = await fetchAllMessagesForSearch(lobbyId);
   return filterMessagesByTerm(all, trimmed);
 }

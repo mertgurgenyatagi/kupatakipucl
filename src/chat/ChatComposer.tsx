@@ -18,7 +18,13 @@ import { cn } from "@/lib/utils";
 
 interface ChatComposerProps {
   uid: string;
+  /** Global directory — used to name the author of whatever is being quoted,
+   *  who may be a past lobby member (see ChatRoom's own note). */
   players: Player[];
+  /** Who can be @-mentioned here. Lobby-scoped when inside a lobby: mentioning
+   *  someone who isn't a member would notify nobody. Falls back to `players`
+   *  for the General room (2026-07-30, final-review fix). */
+  mentionCandidates?: Player[];
   quoted: QuotedMessage | null;
   onClearQuote: () => void;
   lobbyId?: string | null;
@@ -31,7 +37,15 @@ interface ChatComposerProps {
 const TYPING_RESEND_MS = 2000;
 const MAX_TEXTAREA_HEIGHT_PX = 112;
 
-export function ChatComposer({ uid, players, quoted, onClearQuote, lobbyId = null }: ChatComposerProps) {
+export function ChatComposer({
+  uid,
+  players,
+  mentionCandidates: mentionablePlayers,
+  quoted,
+  onClearQuote,
+  lobbyId = null,
+}: ChatComposerProps) {
+  const mentionable = mentionablePlayers ?? players;
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [mention, setMention] = useState<MentionQuery | null>(null);
@@ -40,8 +54,8 @@ export function ChatComposer({ uid, players, quoted, onClearQuote, lobbyId = nul
   const lastTypingSentRef = useRef(0);
   const { isCoolingDown, trigger: triggerCooldown } = useSendCooldown();
 
-  const mentionCandidates = players.filter((p) => p.uid !== uid);
-  const candidates = mention ? matchMentionCandidates(mentionCandidates, mention.query) : [];
+  const selectableMentions = mentionable.filter((p) => p.uid !== uid);
+  const candidates = mention ? matchMentionCandidates(selectableMentions, mention.query) : [];
   const showDropdown = mention !== null && candidates.length > 0;
 
   useEffect(() => {
@@ -92,7 +106,7 @@ export function ChatComposer({ uid, players, quoted, onClearQuote, lobbyId = nul
   async function handleSubmit(event?: FormEvent) {
     event?.preventDefault();
     if (!text.trim() || isCoolingDown) return;
-    const mentionedUids = resolveMentionedUids(text, players);
+    const mentionedUids = resolveMentionedUids(text, mentionable);
     try {
       if (lobbyId) {
         await sendLobbyMessage(lobbyId, uid, text, mentionedUids, quoted);

@@ -6,9 +6,17 @@ import { MessageWithId } from "./useMessages";
 // as one block instead of repeating their name/avatar every line.
 const GROUP_WINDOW_MS = 5 * 60_000;
 
-export type ChatItem =
+/**
+ * Anything the chat list can render: a plain message, or a lobby system
+ * message ("Grup oluşturuldu.", "X katıldı."). Kept structural (`system?:
+ * unknown`) rather than importing LobbySystemInfo — lobbyTypes.ts already
+ * imports from src/chat, so the reverse edge would be a module cycle.
+ */
+export type GroupableMessage = MessageWithId & { system?: unknown };
+
+export type ChatItem<T extends GroupableMessage = MessageWithId> =
   | { type: "divider"; key: string; label: string }
-  | { type: "message"; key: string; message: MessageWithId; showHeader: boolean };
+  | { type: "message"; key: string; message: T; showHeader: boolean };
 
 function startOfDay(ts: number): number {
   const d = new Date(ts);
@@ -32,7 +40,16 @@ export function formatMessageTime(createdAt: number): string {
   return new Date(createdAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
 }
 
-export function shouldGroupWithPrevious(current: MessageWithId, previous: MessageWithId): boolean {
+export function shouldGroupWithPrevious(current: GroupableMessage, previous: GroupableMessage): boolean {
+  // A system message never continues into the next message's group, even
+  // though it carries the acting user's own uid. Every new lobby opens with
+  // a "Grup oluşturuldu." authored by the creator, and every join adds an
+  // "X katıldı." authored by the joiner — without this, that person's first
+  // real message right afterwards lost its avatar and name, because it read
+  // as a continuation of a line that renders as neither (2026-07-30,
+  // final-review fix). A system message itself renders as a centered line
+  // with no header, so its own grouping flag is moot.
+  if (previous.system) return false;
   return (
     current.uid === previous.uid &&
     startOfDay(current.createdAt) === startOfDay(previous.createdAt) &&
@@ -43,9 +60,9 @@ export function shouldGroupWithPrevious(current: MessageWithId, previous: Messag
 /** Chronological messages -> a flat render list of date dividers and
  *  messages, each message flagged with whether it starts a new visual group
  *  (shows avatar/name) or continues the previous sender's run. */
-export function buildChatItems(messages: MessageWithId[], now: number = Date.now()): ChatItem[] {
-  const items: ChatItem[] = [];
-  let previous: MessageWithId | null = null;
+export function buildChatItems<T extends GroupableMessage>(messages: T[], now: number = Date.now()): ChatItem<T>[] {
+  const items: ChatItem<T>[] = [];
+  let previous: T | null = null;
 
   for (const message of messages) {
     if (!previous || startOfDay(message.createdAt) !== startOfDay(previous.createdAt)) {
