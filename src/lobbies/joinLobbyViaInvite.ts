@@ -22,9 +22,16 @@ export async function joinLobbyViaInvite(
   const invite = inviteSnap.data() as LobbyInvite;
   if (invite.expiresAt <= Date.now()) return { outcome: "invalid-or-expired" };
 
-  const lobbySnap = await getDoc(doc(db, "lobbies", invite.lobbyId));
-  if (!lobbySnap.exists()) return { outcome: "invalid-or-expired" };
-
+  // No separate "lobby still exists" getDoc() here: that read was gated by
+  // rules on already being a member of the lobby, which a genuine
+  // first-time joiner never is, so it threw PERMISSION_DENIED before this
+  // function could ever reach its graceful outcomes. The invite doc's own
+  // fields (lobbyId, expiresAt) are the source of truth for usability
+  // instead. A stale invite pointing at a since-deleted lobby is an
+  // existing, accepted limitation (invites aren't cascade-deleted with
+  // their lobby) — not something this fix newly introduces or needs to
+  // solve; it will surface later as a setDoc failure instead of an early
+  // getDoc failure (2026-07-30, task-13 fix).
   const memberSnap = await getDoc(doc(db, "lobbies", invite.lobbyId, "members", uid));
   if (memberSnap.exists()) return { outcome: "already-member", lobbyId: invite.lobbyId };
 

@@ -22,6 +22,10 @@ export async function leaveLobby(
     await updateDoc(doc(db, "lobbies", lobby.id), { createdByUid: nextOwner.uid });
   }
 
-  await deleteDoc(doc(db, "lobbies", lobby.id, "members", uid));
+  // Message must be sent BEFORE the leaver's own member doc is deleted: the
+  // message create rule requires exists(members/{request.auth.uid}) for the
+  // sender, so sending after the delete would always be denied (2026-07-30,
+  // task-13 fix). Mirrors joinLobbyViaInvite.ts's create-then-announce order.
   await sendLobbySystemMessage(lobby.id, uid, "left", uid, leaverFirstName);
+  await deleteDoc(doc(db, "lobbies", lobby.id, "members", uid));
 }

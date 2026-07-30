@@ -244,8 +244,17 @@ service cloud.firestore {
     }
 
     match /lobbies/{lobbyId}/members/{uid} {
+      // A user may always read their own (possibly not-yet-existing) member
+      // doc path, in addition to the normal membership-gated read below —
+      // this lets joinLobbyViaInvite.ts's already-member getDoc() succeed
+      // for a genuine first-time joiner (who has no member doc yet, so the
+      // exists() branch alone would deny them) without exposing any other
+      // user's membership data (2026-07-30, task-13 fix).
       allow read: if request.auth != null
-        && exists(/databases/$(database)/documents/lobbies/$(lobbyId)/members/$(request.auth.uid));
+        && (
+          request.auth.uid == uid
+          || exists(/databases/$(database)/documents/lobbies/$(lobbyId)/members/$(request.auth.uid))
+        );
       // Two shapes: the creator's own bootstrap membership (no invite exists
       // yet at lobby-creation time), or a normal invite-gated join.
       allow create: if request.auth != null
@@ -253,7 +262,13 @@ service cloud.firestore {
         && (
           (
             request.resource.data.viaInviteId == null
-            && get(/databases/$(database)/documents/lobbies/$(lobbyId)).data.createdByUid == request.auth.uid
+            // getAfter() (not get()): createLobby.ts writes the lobby doc,
+            // this bootstrap member doc, and the "created" message all in
+            // one writeBatch, so the lobby doc doesn't exist yet from a
+            // plain get()'s pre-batch point of view. getAfter() sees the
+            // batch's own pending state, i.e. the lobby doc as it will be
+            // once this batch commits (2026-07-30, task-13 fix).
+            && getAfter(/databases/$(database)/documents/lobbies/$(lobbyId)).data.createdByUid == request.auth.uid
           ) || (
             request.resource.data.viaInviteId is string
             && get(/databases/$(database)/documents/lobbyInvites/$(request.resource.data.viaInviteId)).data.lobbyId == lobbyId
@@ -283,8 +298,13 @@ service cloud.firestore {
     match /lobbies/{lobbyId}/messages/{messageId} {
       allow read: if request.auth != null
         && exists(/databases/$(database)/documents/lobbies/$(lobbyId)/members/$(request.auth.uid));
+      // existsAfter() (not exists()): createLobby.ts's "created" system
+      // message is batched with the lobby doc and the creator's bootstrap
+      // member doc in one writeBatch, so plain exists() (pre-batch state)
+      // can't see the sibling member-doc write. existsAfter() sees it as it
+      // will exist once the batch commits (2026-07-30, task-13 fix).
       allow create: if request.auth != null
-        && exists(/databases/$(database)/documents/lobbies/$(lobbyId)/members/$(request.auth.uid))
+        && existsAfter(/databases/$(database)/documents/lobbies/$(lobbyId)/members/$(request.auth.uid))
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.text is string
         && request.resource.data.text.size() > 0
