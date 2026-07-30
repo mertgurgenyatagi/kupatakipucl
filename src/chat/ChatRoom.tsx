@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Search, Trash2, X, Quote } from "lucide-react";
 import { MessageWithId } from "./useMessages";
+import { LobbySystemInfo } from "../lobbies/lobbyTypes";
 import { Player } from "../profile/usePlayers";
 import { buildPlayersByUid } from "../profile/playersByUid";
 import { deleteMessage } from "./deleteMessage";
@@ -16,7 +17,7 @@ import { cn } from "@/lib/utils";
 interface ChatRoomProps {
   uid: string;
   players: Player[];
-  messages: MessageWithId[];
+  messages: (MessageWithId & { system?: LobbySystemInfo })[];
   onLoadOlder: () => void;
   loadingOlder: boolean;
   hasMoreOlder: boolean;
@@ -72,7 +73,7 @@ function MessageRow({
   highlighted,
   rowRef,
 }: {
-  message: MessageWithId;
+  message: MessageWithId & { system?: LobbySystemInfo };
   showHeader: boolean;
   isOwn: boolean;
   mentionsMe: boolean;
@@ -85,6 +86,13 @@ function MessageRow({
   highlighted: boolean;
   rowRef: (el: HTMLLIElement | null) => void;
 }) {
+  if (message.system) {
+    return (
+      <li className="flex justify-center py-1">
+        <span className="text-xs text-color_textsecondary italic">{message.text}</span>
+      </li>
+    );
+  }
   const quoteAuthor = message.quotedAuthorUid ? players.find((p) => p.uid === message.quotedAuthorUid) : undefined;
   return (
     <li

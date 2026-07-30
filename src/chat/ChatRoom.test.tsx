@@ -219,4 +219,19 @@ describe("ChatRoom", () => {
     });
     expect(screen.getByText("@Mert")).toHaveClass("text-color_accent");
   });
+
+  it("renders a system message as a plain centered line, not a bubble", () => {
+    renderRoom({
+      messages: [
+        {
+          id: "sys1",
+          uid: "uid1",
+          text: "Ahmet katıldı.",
+          createdAt: 100,
+          system: { kind: "joined", subjectUid: "uid1" },
+        },
+      ],
+    });
+    expect(screen.getByText("Ahmet katıldı.").closest(".rounded-xl")).toBeNull();
+  });
 });
