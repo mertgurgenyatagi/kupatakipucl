@@ -9,6 +9,7 @@ import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { ForumPage } from "./pages/ForumPage";
 import { StatsPage } from "./pages/StatsPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { JoinLobbyPage } from "./pages/JoinLobbyPage";
 import { DevPanel } from "./devpanel/DevPanel";
 
 export function App() {
@@ -25,6 +26,7 @@ export function App() {
                 <Route path="/forum" element={<ForumPage />} />
                 <Route path="/stats" element={<StatsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/join/:inviteId" element={<JoinLobbyPage />} />
                 {import.meta.env.DEV && <Route path="/dev" element={<DevPanel />} />}
               </Routes>
             </AppShell>
