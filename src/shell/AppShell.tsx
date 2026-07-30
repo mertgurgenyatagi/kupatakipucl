@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { Toaster } from "sonner";
 import { useAuth } from "../auth/AuthProvider";
 import { useTournamentPhase } from "../tournament/useTournamentPhase";
 import { getVisibilityState, VisibilityState } from "../state/visibilityState";
@@ -156,6 +157,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
+
+      <Toaster closeButton />
 
       {/* --- Content region: routed pages compose their own framed cells -- */}
       <main className="ground-radiance flex min-h-0 min-w-0 flex-1 flex-col lg:overflow-hidden">
