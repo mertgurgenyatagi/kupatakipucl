@@ -3,10 +3,14 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 import { Player } from "../profile/usePlayers";
 
 const mockSendMessage = vi.fn();
+const mockSendLobbyMessage = vi.fn();
 const mockSetTypingStatus = vi.fn();
 
 vi.mock("./sendMessage", () => ({
   sendMessage: (...args: unknown[]) => mockSendMessage(...args),
+}));
+vi.mock("../lobbies/sendLobbyMessage", () => ({
+  sendLobbyMessage: vi.fn((...args: unknown[]) => mockSendLobbyMessage(...args)),
 }));
 vi.mock("./useTypingStatus", () => ({
   setTypingStatus: (...args: unknown[]) => mockSetTypingStatus(...args),
@@ -22,6 +26,7 @@ const players: Player[] = [
 describe("ChatComposer", () => {
   beforeEach(() => {
     mockSendMessage.mockReset();
+    mockSendLobbyMessage.mockReset();
     mockSetTypingStatus.mockReset();
     mockSetTypingStatus.mockResolvedValue(undefined);
   });
@@ -131,5 +136,23 @@ describe("ChatComposer", () => {
     fireEvent.click(screen.getByText("Gönder"));
     expect(mockSendMessage).toHaveBeenCalledWith("me", "@Ada bak buna", ["uid-ada"], null);
     await waitFor(() => expect(textarea).toHaveValue(""));
+  });
+
+  it("calls sendLobbyMessage instead of sendMessage when lobbyId is set", async () => {
+    mockSendLobbyMessage.mockResolvedValue(undefined);
+    render(<ChatComposer uid="me" players={players} quoted={null} onClearQuote={() => {}} lobbyId="lobby1" />);
+    const textarea = screen.getByRole("textbox");
+    fireEvent.change(textarea, { target: { value: "lobi mesajı" } });
+    fireEvent.click(screen.getByText("Gönder"));
+    expect(mockSendLobbyMessage).toHaveBeenCalledWith("lobby1", "me", "lobi mesajı", [], null);
+    expect(mockSendMessage).not.toHaveBeenCalled();
+    await waitFor(() => expect(textarea).toHaveValue(""));
+  });
+
+  it("does not report typing status when lobbyId is set", () => {
+    render(<ChatComposer uid="me" players={players} quoted={null} onClearQuote={() => {}} lobbyId="lobby1" />);
+    const textarea = screen.getByRole("textbox");
+    fireEvent.change(textarea, { target: { value: "a" } });
+    expect(mockSetTypingStatus).not.toHaveBeenCalled();
   });
 });

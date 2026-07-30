@@ -2,6 +2,7 @@ import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Send, X } from "lucide-react";
 import { Player } from "../profile/usePlayers";
 import { sendMessage, QuotedMessage } from "./sendMessage";
+import { sendLobbyMessage } from "../lobbies/sendLobbyMessage";
 import { setTypingStatus } from "./useTypingStatus";
 import { fullName } from "../profile/deletedAccount";
 import { MESSAGE_MAX_LENGTH, MESSAGE_LENGTH_WARNING_AT } from "./messageTypes";
@@ -20,6 +21,7 @@ interface ChatComposerProps {
   players: Player[];
   quoted: QuotedMessage | null;
   onClearQuote: () => void;
+  lobbyId?: string | null;
 }
 
 // Re-sending "still typing" more often than this would just be noise —
@@ -29,7 +31,7 @@ interface ChatComposerProps {
 const TYPING_RESEND_MS = 2000;
 const MAX_TEXTAREA_HEIGHT_PX = 112;
 
-export function ChatComposer({ uid, players, quoted, onClearQuote }: ChatComposerProps) {
+export function ChatComposer({ uid, players, quoted, onClearQuote, lobbyId = null }: ChatComposerProps) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [mention, setMention] = useState<MentionQuery | null>(null);
@@ -54,6 +56,7 @@ export function ChatComposer({ uid, players, quoted, onClearQuote }: ChatCompose
   }, [quoted]);
 
   function reportTyping(hasText: boolean) {
+    if (lobbyId) return;
     const now = Date.now();
     if (hasText) {
       if (now - lastTypingSentRef.current > TYPING_RESEND_MS) {
@@ -91,7 +94,11 @@ export function ChatComposer({ uid, players, quoted, onClearQuote }: ChatCompose
     if (!text.trim() || isCoolingDown) return;
     const mentionedUids = resolveMentionedUids(text, players);
     try {
-      await sendMessage(uid, text, mentionedUids, quoted);
+      if (lobbyId) {
+        await sendLobbyMessage(lobbyId, uid, text, mentionedUids, quoted);
+      } else {
+        await sendMessage(uid, text, mentionedUids, quoted);
+      }
       triggerCooldown();
       setText("");
       setMention(null);
