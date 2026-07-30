@@ -211,6 +211,11 @@ export function LobbyManagementPanel({
               Bu işlem grubu ve sohbet geçmişini herkes için kalıcı olarak siler. Bu işlem geri alınamaz.
             </DialogDescription>
           </DialogHeader>
+          {error && (
+            <p role="alert" className="text-sm text-color_remove">
+              {error}
+            </p>
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" disabled={deleting} onClick={() => setDeleteConfirmOpen(false)}>
               Vazgeç

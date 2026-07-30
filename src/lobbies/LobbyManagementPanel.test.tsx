@@ -101,4 +101,13 @@ describe("LobbyManagementPanel", () => {
     fireEvent.click(screen.getByText("Evet, sil"));
     await waitFor(() => expect(mockDeleteLobby).toHaveBeenCalledWith("lobby1"));
   });
+
+  it("shows the delete error inside the still-open confirmation dialog when deleteLobby fails", async () => {
+    mockDeleteLobby.mockReset().mockRejectedValue(new Error("nope"));
+    renderPanel();
+    fireEvent.click(screen.getByText("Grubu sil"));
+    fireEvent.click(screen.getByText("Evet, sil"));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Grup silinemedi, tekrar deneyin."));
+    expect(screen.getByText("Grubu silmek istediğine emin misin?")).toBeInTheDocument();
+  });
 });
