@@ -8,7 +8,7 @@ const GROUP_WINDOW_MS = 5 * 60_000;
 
 /**
  * Anything the chat list can render: a plain message, or a lobby system
- * message ("Grup oluşturuldu.", "X katıldı."). Kept structural (`system?:
+ * message ("Özel lobi oluşturuldu.", "X katıldı."). Kept structural (`system?:
  * unknown`) rather than importing LobbySystemInfo — lobbyTypes.ts already
  * imports from src/chat, so the reverse edge would be a module cycle.
  */
@@ -43,7 +43,7 @@ export function formatMessageTime(createdAt: number): string {
 export function shouldGroupWithPrevious(current: GroupableMessage, previous: GroupableMessage): boolean {
   // A system message never continues into the next message's group, even
   // though it carries the acting user's own uid. Every new lobby opens with
-  // a "Grup oluşturuldu." authored by the creator, and every join adds an
+  // a "Özel lobi oluşturuldu." authored by the creator, and every join adds an
   // "X katıldı." authored by the joiner — without this, that person's first
   // real message right afterwards lost its avatar and name, because it read
   // as a continuation of a line that renders as neither (2026-07-30,

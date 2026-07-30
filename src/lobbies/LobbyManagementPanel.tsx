@@ -61,7 +61,7 @@ export function LobbyManagementPanel({
       await renameLobby(lobby.id, myUid, myFirstName, trimmed);
     } catch (err) {
       console.error("Failed to rename lobby", err);
-      setError("Grup adı güncellenemedi, tekrar deneyin.");
+      setError("Özel lobi adı güncellenemedi, tekrar deneyin.");
     } finally {
       setSavingName(false);
     }
@@ -91,7 +91,7 @@ export function LobbyManagementPanel({
       onLeft();
     } catch (err) {
       console.error("Failed to leave lobby", err);
-      setError("Gruptan ayrılınamadı, tekrar deneyin.");
+      setError("Özel lobiden ayrılınamadı, tekrar deneyin.");
       setLeaving(false);
     }
   }
@@ -117,7 +117,7 @@ export function LobbyManagementPanel({
       onDeleted();
     } catch (err) {
       console.error("Failed to delete lobby", err);
-      setError("Grup silinemedi, tekrar deneyin.");
+      setError("Özel lobi silinemedi, tekrar deneyin.");
     } finally {
       setDeleting(false);
     }
@@ -128,7 +128,7 @@ export function LobbyManagementPanel({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Grup Ayarları</DialogTitle>
+            <DialogTitle>Özel Lobi Ayarları</DialogTitle>
             <DialogDescription>Kuran: {playersByUid.get(lobby.createdByUid)?.firstName ?? "Bilinmiyor"}</DialogDescription>
           </DialogHeader>
 
@@ -192,11 +192,11 @@ export function LobbyManagementPanel({
 
           <DialogFooter>
             <Button type="button" variant="outline" disabled={leaving} onClick={() => void handleLeave()}>
-              {leaving ? "Ayrılıyor…" : "Gruptan ayrıl"}
+              {leaving ? "Ayrılıyor…" : "Özel lobiden ayrıl"}
             </Button>
             {isCreator && (
               <Button type="button" variant="destructive" onClick={() => setDeleteConfirmOpen(true)}>
-                Grubu sil
+                Özel lobiyi sil
               </Button>
             )}
           </DialogFooter>
@@ -206,9 +206,9 @@ export function LobbyManagementPanel({
       <Dialog open={deleteConfirmOpen} onOpenChange={(next) => !deleting && setDeleteConfirmOpen(next)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Grubu silmek istediğine emin misin?</DialogTitle>
+            <DialogTitle>Özel lobiyi silmek istediğine emin misin?</DialogTitle>
             <DialogDescription>
-              Bu işlem grubu ve sohbet geçmişini herkes için kalıcı olarak siler. Bu işlem geri alınamaz.
+              Bu işlem özel lobiyi ve sohbet geçmişini herkes için kalıcı olarak siler. Bu işlem geri alınamaz.
             </DialogDescription>
           </DialogHeader>
           {error && (

@@ -5,5 +5,5 @@ export function showInviteInvalidToast(): void {
 }
 
 export function showLobbyCapToast(): void {
-  toast.error("En fazla 3 gruba katılabilirsin.", { duration: Infinity });
+  toast.error("En fazla 3 özel lobiye katılabilirsin.", { duration: Infinity });
 }

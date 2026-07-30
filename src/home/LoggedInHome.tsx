@@ -98,7 +98,7 @@ export function LoggedInHome({ players }: { players: Player[] }) {
       setKatilimcilarLobbyId(newId);
     } catch (err) {
       console.error("Failed to create lobby", err);
-      setCreateError("Grup oluşturulamadı, tekrar deneyin.");
+      setCreateError("Özel lobi oluşturulamadı, tekrar deneyin.");
     }
   }
 

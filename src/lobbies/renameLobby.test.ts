@@ -28,7 +28,7 @@ describe("renameLobby", () => {
     await renameLobby("lobby1", "uid1", "Ahmet", "Yeni İsim");
     expect(mockUpdateDoc).toHaveBeenCalledWith({ path: ["lobbies", "lobby1"] }, { name: "Yeni İsim" });
     expect(mockAddDoc.mock.calls[0][1]).toEqual(
-      expect.objectContaining({ text: "Ahmet grubu yeniden adlandırdı.", system: { kind: "renamed", subjectUid: "uid1" } })
+      expect.objectContaining({ text: "Ahmet özel lobiyi yeniden adlandırdı.", system: { kind: "renamed", subjectUid: "uid1" } })
     );
   });
 

@@ -48,7 +48,7 @@ describe("createLobby", () => {
     expect(batch.set).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ uid: "uid1", viaInviteId: null }));
     expect(batch.set).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ text: "Grup oluşturuldu.", system: { kind: "created", subjectUid: "uid1" } })
+      expect.objectContaining({ text: "Özel lobi oluşturuldu.", system: { kind: "created", subjectUid: "uid1" } })
     );
     expect(batch.commit).toHaveBeenCalledTimes(1);
   });

@@ -70,7 +70,7 @@ describe("shouldGroupWithPrevious", () => {
   // A system message carries the acting user's own uid, so without an
   // explicit exception it swallowed the header of the very next real message
   // from that same person — which is exactly what happens in every brand-new
-  // lobby ("Grup oluşturuldu." then the creator's first message) and right
+  // lobby ("Özel lobi oluşturuldu." then the creator's first message) and right
   // after every join ("X katıldı." then X's first message).
   it("never groups a real message onto a preceding system message, same uid or not", () => {
     const previous = { ...msg({ uid: "uid1", createdAt: NOW }), system: { kind: "created", subjectUid: "uid1" } };

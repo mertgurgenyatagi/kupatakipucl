@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Settings, Plus } from "lucide-react";
+import { ArrowRight, Settings } from "lucide-react";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -13,7 +13,7 @@ import { useCountdown } from "./useCountdown";
 import { TOURNAMENT_START_ISO } from "./deadlines";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { buildPlayersByUid } from "../profile/playersByUid";
-import { LobbySwitcher } from "../lobbies/LobbySwitcher";
+import { LobbySwitcher, getLobbySwitcherLabel } from "../lobbies/LobbySwitcher";
 import { LobbyManagementPanel } from "../lobbies/LobbyManagementPanel";
 import type { MyLobby } from "../lobbies/useMyLobbies";
 import type { useLobbyMessages } from "../lobbies/useLobbyMessages";
@@ -227,14 +227,15 @@ export function HomeLandingLoggedIn({
       <div className={CELL_ROW}>
         <Frame className={CELL} style={{ animationDelay: "60ms" }}>
           <FrameHeader tone="navy">
-            <FrameTitle className="text-base text-color_text sm:text-lg">Katılımcılar</FrameTitle>
+            <FrameTitle className="text-base text-color_text sm:text-lg">
+              {getLobbySwitcherLabel(myLobbies, katilimcilarLobbyId)}
+            </FrameTitle>
             <div className="flex items-center gap-2">
-              <LobbySwitcher options={myLobbies} current={katilimcilarLobbyId} onChange={onChangeKatilimcilarLobby} />
               {katilimcilarLobbyId ? (
                 <button
                   type="button"
                   onClick={() => onOpenLobbyManagement(katilimcilarLobbyId)}
-                  aria-label="Grup ayarları"
+                  aria-label="Özel lobi ayarları"
                   className="cursor-pointer text-color_textsecondary hover:text-color_accent"
                 >
                   <Settings className="size-3.5" aria-hidden />
@@ -243,12 +244,12 @@ export function HomeLandingLoggedIn({
                 <button
                   type="button"
                   onClick={onOpenCreateDialog}
-                  aria-label="Yeni grup"
-                  className="cursor-pointer text-color_textsecondary hover:text-color_accent"
+                  className="cursor-pointer inline-flex shrink-0 items-center rounded-full bg-color_text px-3 py-1 text-[0.7rem] font-semibold text-background transition-all duration-150 ease-[var(--ease-cotton)] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_accent"
                 >
-                  <Plus className="size-3.5" aria-hidden />
+                  Özel lobi oluştur
                 </button>
               ) : null}
+              <LobbySwitcher options={myLobbies} current={katilimcilarLobbyId} onChange={onChangeKatilimcilarLobby} />
             </div>
           </FrameHeader>
           <FrameBody>
@@ -293,32 +294,25 @@ export function HomeLandingLoggedIn({
 
         <Frame className={CELL} style={{ animationDelay: "240ms" }}>
           <FrameHeader tone="navy">
-            <FrameTitle className="text-base text-color_text sm:text-lg">Sohbet</FrameTitle>
+            <FrameTitle className="text-base text-color_text sm:text-lg">
+              {getLobbySwitcherLabel(myLobbies, sohbetLobbyId)}
+            </FrameTitle>
             <div className="flex items-center gap-2">
-              <LobbySwitcher options={myLobbies} current={sohbetLobbyId} onChange={onChangeSohbetLobby} />
-              {sohbetLobbyId ? (
+              {sohbetLobbyId && (
                 <button
                   type="button"
                   onClick={() => onOpenLobbyManagement(sohbetLobbyId)}
-                  aria-label="Grup ayarları"
+                  aria-label="Özel lobi ayarları"
                   className="cursor-pointer text-color_textsecondary hover:text-color_accent"
                 >
                   <Settings className="size-3.5" aria-hidden />
                 </button>
-              ) : canCreateLobby ? (
-                <button
-                  type="button"
-                  onClick={onOpenCreateDialog}
-                  aria-label="Yeni grup"
-                  className="cursor-pointer text-color_textsecondary hover:text-color_accent"
-                >
-                  <Plus className="size-3.5" aria-hidden />
-                </button>
-              ) : null}
+              )}
               <span className="flex items-center gap-1.5 font-mono text-[0.62rem] tracking-[0.1em] text-color_text/70 uppercase tnum">
                 <span className="size-1.5 rounded-full bg-color_accent" aria-hidden />
                 {onlineCount} çevrimiçi
               </span>
+              <LobbySwitcher options={myLobbies} current={sohbetLobbyId} onChange={onChangeSohbetLobby} />
             </div>
           </FrameHeader>
           <FrameBody>
@@ -380,7 +374,7 @@ export function HomeLandingLoggedIn({
       <Dialog open={createDialogOpen} onOpenChange={(open) => !open && onCloseCreateDialog()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Yeni Grup</DialogTitle>
+            <DialogTitle>Yeni Özel Lobi</DialogTitle>
           </DialogHeader>
           <form
             onSubmit={(e) => {
@@ -392,7 +386,7 @@ export function HomeLandingLoggedIn({
             <input
               name="lobbyName"
               maxLength={LOBBY_NAME_MAX_LENGTH}
-              placeholder="Grup adı"
+              placeholder="Özel lobi adı"
               className="w-full rounded-md border border-color_border1/70 bg-background px-3 py-1.5 text-sm text-color_text outline-none focus:border-color_accent"
             />
             {createError && (

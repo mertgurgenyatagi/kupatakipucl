@@ -85,18 +85,18 @@ describe("LobbyManagementPanel", () => {
 
   it("only shows the delete button for the creator", () => {
     renderPanel("uid2");
-    expect(screen.queryByText("Grubu sil")).toBeNull();
+    expect(screen.queryByText("Özel lobiyi sil")).toBeNull();
   });
 
   it("leaves without a confirmation dialog", async () => {
     renderPanel();
-    fireEvent.click(screen.getByText("Gruptan ayrıl"));
+    fireEvent.click(screen.getByText("Özel lobiden ayrıl"));
     await waitFor(() => expect(mockLeaveLobby).toHaveBeenCalledTimes(1));
   });
 
   it("requires confirmation before deleting", async () => {
     renderPanel();
-    fireEvent.click(screen.getByText("Grubu sil"));
+    fireEvent.click(screen.getByText("Özel lobiyi sil"));
     expect(mockDeleteLobby).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText("Evet, sil"));
     await waitFor(() => expect(mockDeleteLobby).toHaveBeenCalledWith("lobby1"));
@@ -105,9 +105,9 @@ describe("LobbyManagementPanel", () => {
   it("shows the delete error inside the still-open confirmation dialog when deleteLobby fails", async () => {
     mockDeleteLobby.mockReset().mockRejectedValue(new Error("nope"));
     renderPanel();
-    fireEvent.click(screen.getByText("Grubu sil"));
+    fireEvent.click(screen.getByText("Özel lobiyi sil"));
     fireEvent.click(screen.getByText("Evet, sil"));
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Grup silinemedi, tekrar deneyin."));
-    expect(screen.getByText("Grubu silmek istediğine emin misin?")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Özel lobi silinemedi, tekrar deneyin."));
+    expect(screen.getByText("Özel lobiyi silmek istediğine emin misin?")).toBeInTheDocument();
   });
 });

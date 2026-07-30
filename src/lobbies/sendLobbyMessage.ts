@@ -26,7 +26,7 @@ export async function sendLobbyMessage(
 export function buildLobbySystemText(kind: LobbySystemKind, subjectFirstName: string): string {
   switch (kind) {
     case "created":
-      return "Grup oluşturuldu.";
+      return "Özel lobi oluşturuldu.";
     case "joined":
       return `${subjectFirstName} katıldı.`;
     case "left":
@@ -34,7 +34,7 @@ export function buildLobbySystemText(kind: LobbySystemKind, subjectFirstName: st
     case "removed":
       return `${subjectFirstName} çıkarıldı.`;
     case "renamed":
-      return `${subjectFirstName} grubu yeniden adlandırdı.`;
+      return `${subjectFirstName} özel lobiyi yeniden adlandırdı.`;
   }
 }
 
