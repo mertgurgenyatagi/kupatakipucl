@@ -172,6 +172,7 @@ export function HomeLandingLoggedIn({
   const katilimcilarDisplaySubmitterUids = katilimcilarLobbyId
     ? new Set([...submitterUids].filter((uid) => katilimcilarLobbyMembers.some((m) => m.uid === uid)))
     : submitterUids;
+  const managedLobby = myLobbies.find((l) => l.id === managingLobbyId);
 
   return (
     <div className={PAGE_SHELL}>
@@ -321,9 +322,19 @@ export function HomeLandingLoggedIn({
             </div>
           </FrameHeader>
           <FrameBody>
+            {/* `players` (global) vs `mentionCandidates` (lobby-scoped) is a
+                deliberate split: author lookup has to see everyone who ever
+                posted, including people who have since left or been removed
+                from this lobby — otherwise their historical messages fall
+                through to deletedAccount.ts's "Silindi", which specifically
+                means "this account was deleted", not "this person left", and
+                leaving is meant to be quiet (Round 3). Who you can @-mention
+                is a genuinely lobby-scoped question, so that keeps the
+                filtered list (2026-07-30, final-review fix). */}
             <ChatRoom
               uid={me.uid}
-              players={sohbetDisplayPlayers}
+              players={players}
+              mentionCandidates={sohbetDisplayPlayers}
               messages={sohbetLobbyId ? sohbetLobbyMessages.messages : messages}
               onLoadOlder={sohbetLobbyId ? sohbetLobbyMessages.loadOlder : onLoadOlderMessages}
               loadingOlder={sohbetLobbyId ? sohbetLobbyMessages.loadingOlder : loadingOlderMessages}
@@ -347,9 +358,14 @@ export function HomeLandingLoggedIn({
         tournamentStarted={false}
       />
 
-      {managingLobbyId && (
+      {/* Looked up defensively rather than with a non-null assertion: the
+          managed lobby can vanish from myLobbies mid-action (deleted, left,
+          or this viewer removed by someone else) before LoggedInHome's
+          fallback effect has cleared managingLobbyId, and the panel reads
+          lobby.createdByUid unconditionally (2026-07-30, final-review fix). */}
+      {managedLobby && (
         <LobbyManagementPanel
-          lobby={myLobbies.find((l) => l.id === managingLobbyId)!}
+          lobby={managedLobby}
           members={katilimcilarLobbyId === managingLobbyId ? katilimcilarLobbyMembers : sohbetLobbyMembers}
           players={players}
           myUid={me.uid}

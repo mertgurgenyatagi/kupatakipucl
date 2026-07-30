@@ -68,6 +68,19 @@ export function LoggedInHome({ players }: { players: Player[] }) {
   const katilimcilarLobbyMembers = useLobbyMembers(katilimcilarLobbyId);
 
   const [managingLobbyId, setManagingLobbyId] = useState<string | null>(null);
+
+  // Same fallback as the two above, for the management panel. It can't be
+  // left to LobbyManagementPanel's own onDeleted/onLeft callbacks: those only
+  // fire once the delete/leave promise resolves (server ack), while Firestore
+  // emits the local snapshot as soon as the write applies locally — in that
+  // gap HomeLandingLoggedIn would look up a lobby that's already gone. And
+  // neither callback exists at all for the cases this viewer didn't trigger:
+  // another member removing you, or the creator deleting the lobby, while
+  // your panel happens to be open (2026-07-30, final-review fix).
+  useEffect(() => {
+    if (managingLobbyId && !myLobbies.some((l) => l.id === managingLobbyId)) setManagingLobbyId(null);
+  }, [myLobbies, managingLobbyId]);
+
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 

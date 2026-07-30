@@ -72,6 +72,8 @@ vi.mock("./HomeLandingLoggedIn", () => ({
     myLobbies,
     sohbetLobbyId,
     katilimcilarLobbyId,
+    managingLobbyId,
+    onOpenLobbyManagement,
   }: {
     me: Player;
     submitterUids: Set<string>;
@@ -86,6 +88,8 @@ vi.mock("./HomeLandingLoggedIn", () => ({
     myLobbies: { id: string; name: string }[];
     sohbetLobbyId: string | null;
     katilimcilarLobbyId: string | null;
+    managingLobbyId: string | null;
+    onOpenLobbyManagement: (id: string) => void;
   }) => (
     <div>
       <p>
@@ -99,6 +103,8 @@ vi.mock("./HomeLandingLoggedIn", () => ({
       <p>
         sohbet-lobby:{sohbetLobbyId ?? "none"}:katilimcilar-lobby:{katilimcilarLobbyId ?? "none"}
       </p>
+      <p>managing-lobby:{managingLobbyId ?? "none"}</p>
+      <button onClick={() => onOpenLobbyManagement("lobby1")}>open-management</button>
     </div>
   ),
 }));
@@ -220,6 +226,34 @@ describe("LoggedInHome", () => {
     });
     render(<LoggedInHome players={players} />);
     expect(screen.getByText("my-lobbies:Fener Grubu")).toBeInTheDocument();
+  });
+
+  // LobbyManagementPanel's own onDeleted/onLeft callbacks only fire on the
+  // server ack, and never at all when someone ELSE deletes the lobby or
+  // removes you — so the id has to be dropped the moment the lobby leaves
+  // myLobbies, or HomeLandingLoggedIn renders a panel for a lobby that's gone.
+  it("clears the managed lobby id once that lobby disappears from myLobbies", async () => {
+    const lobby = { id: "lobby1", name: "Fener Grubu", createdByUid: "uid1", createdAt: 1, myJoinedAt: 100 };
+    mockUseMyLobbies.mockReturnValue({ lobbies: [lobby], loading: false });
+    const { rerender } = render(<LoggedInHome players={players} />);
+
+    fireEvent.click(screen.getByText("open-management"));
+    expect(screen.getByText("managing-lobby:lobby1")).toBeInTheDocument();
+
+    mockUseMyLobbies.mockReturnValue({ lobbies: [], loading: false });
+    rerender(<LoggedInHome players={players} />);
+
+    await waitFor(() => expect(screen.getByText("managing-lobby:none")).toBeInTheDocument());
+  });
+
+  it("leaves the managed lobby id alone while that lobby is still present", () => {
+    mockUseMyLobbies.mockReturnValue({
+      lobbies: [{ id: "lobby1", name: "Fener Grubu", createdByUid: "uid1", createdAt: 1, myJoinedAt: 100 }],
+      loading: false,
+    });
+    render(<LoggedInHome players={players} />);
+    fireEvent.click(screen.getByText("open-management"));
+    expect(screen.getByText("managing-lobby:lobby1")).toBeInTheDocument();
   });
 
   it("defaults each cell's switcher to the most-recently-joined lobby", () => {

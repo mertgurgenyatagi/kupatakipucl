@@ -13,6 +13,7 @@ vi.mock("../chat/ChatRoom", () => ({
   ChatRoom: ({
     uid,
     players,
+    mentionCandidates,
     messages,
     onLoadOlder,
     loadingOlder,
@@ -21,6 +22,7 @@ vi.mock("../chat/ChatRoom", () => ({
   }: {
     uid: string;
     players: unknown[];
+    mentionCandidates?: unknown[];
     messages: unknown[];
     onLoadOlder: () => void;
     loadingOlder: boolean;
@@ -32,8 +34,14 @@ vi.mock("../chat/ChatRoom", () => ({
         chat-room:{uid}:{players.length}:{messages.length}:{String(loadingOlder)}:{String(hasMoreOlder)}:
         {typingUids.length}
       </p>
+      <p>chat-room-mentions:{mentionCandidates?.length ?? "unset"}</p>
       <button onClick={onLoadOlder}>load-older</button>
     </div>
+  ),
+}));
+vi.mock("../lobbies/LobbyManagementPanel", () => ({
+  LobbyManagementPanel: ({ lobby }: { lobby: { id: string; name: string } }) => (
+    <div>lobby-management-panel:{lobby.name}</div>
   ),
 }));
 vi.mock("./HomeHero", () => ({
@@ -283,5 +291,35 @@ describe("HomeLandingLoggedIn", () => {
     expect(screen.getByText("participant-popup:p2:false")).toBeInTheDocument();
     fireEvent.click(screen.getByText("close-popup"));
     expect(screen.getByText("participant-popup:none:false")).toBeInTheDocument();
+  });
+
+  describe("lobby-aware wiring", () => {
+    const lobby = { id: "lobby1", name: "Fener Grubu", createdByUid: "me", createdAt: 1, myJoinedAt: 100 };
+
+    it("renders the management panel for a lobby that's still present", () => {
+      renderPage({ myLobbies: [lobby], managingLobbyId: "lobby1" });
+      expect(screen.getByText("lobby-management-panel:Fener Grubu")).toBeInTheDocument();
+    });
+
+    // The lobby can vanish from myLobbies (deleted / left / removed) before
+    // LoggedInHome's fallback effect clears managingLobbyId — the old
+    // non-null assertion handed `undefined` to the panel and crashed on
+    // lobby.createdByUid.
+    it("renders no panel, and does not crash, when the managed lobby is already gone", () => {
+      expect(() => renderPage({ myLobbies: [], managingLobbyId: "lobby1" })).not.toThrow();
+      expect(screen.queryByText(/lobby-management-panel/)).not.toBeInTheDocument();
+    });
+
+    it("gives chat the global player list, and only the @-mention list the lobby's members", () => {
+      renderPage({
+        myLobbies: [lobby],
+        sohbetLobbyId: "lobby1",
+        sohbetLobbyMembers: [{ uid: "me", joinedAt: 1, viaInviteId: null }],
+      });
+      // Both global players reach author lookup; only the one current member
+      // is offered as a mention target.
+      expect(screen.getByText("chat-room:me:2:0:false:false:0")).toBeInTheDocument();
+      expect(screen.getByText("chat-room-mentions:1")).toBeInTheDocument();
+    });
   });
 });
