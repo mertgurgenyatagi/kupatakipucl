@@ -284,10 +284,37 @@ service cloud.firestore {
         );
     }
 
+    // Collection-group read over every `members` subcollection, which is
+    // what useMyLobbies.ts's
+    // `query(collectionGroup(db, "members"), where("uid", "==", uid))`
+    // actually issues. The path-scoped rule above does NOT cover this:
+    // Firestore only applies `match /lobbies/{lobbyId}/members/{uid}` to
+    // direct reads of that literal path, never to a collection-group query,
+    // which needs a recursive-wildcard match to be authorized at all. This
+    // is purely additive — the block above still serves every direct
+    // subcollection read (2026-07-30, final-review fix).
+    //
+    // Gated on `resource.data.uid`, not the `{memberUid}` path segment, on
+    // purpose: a collection-group query is only allowed if EVERY document it
+    // could return satisfies the rule, so the constraint has to be one the
+    // query itself declares. The query's own where("uid","==",uid) is what
+    // makes that true — a query without it (i.e. someone trying to list all
+    // memberships everywhere) is rejected outright.
+    match /{path=**}/members/{memberUid} {
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+
     match /lobbyInvites/{inviteId} {
-      // Readable by any signed-in user — a not-yet-member needs to resolve
-      // the token before they have any membership doc to gate on.
-      allow read: if request.auth != null;
+      // `get` (fetch one invite by its known id) is open to any signed-in
+      // user — a not-yet-member needs to resolve the token before they have
+      // any membership doc to gate on. `list` is NOT: `allow read` would
+      // cover both, letting anyone enumerate every live invite across every
+      // lobby and join at will, which defeats invite-only entirely
+      // (2026-07-30, final-review fix). joinLobbyViaInvite.ts only ever does
+      // a getDoc() by known id here, never a query, so blocking list costs
+      // the app nothing.
+      allow get: if request.auth != null;
+      allow list: if false;
       allow create: if request.auth != null
         && exists(/databases/$(database)/documents/lobbies/$(request.resource.data.lobbyId)/members/$(request.auth.uid))
         && request.resource.data.createdByUid == request.auth.uid
