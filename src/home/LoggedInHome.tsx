@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { useProfile } from "../profile/useProfile";
 import { usePredictionSubmitters } from "../predictions/usePredictionSubmitters";
@@ -11,6 +11,11 @@ import { deletePost } from "../forum/deletePost";
 import { editPost } from "../forum/editPost";
 import { resolveMentionedUids } from "../chat/chatMentions";
 import { HomeLandingLoggedIn } from "./HomeLandingLoggedIn";
+import { useMyLobbies } from "../lobbies/useMyLobbies";
+import { useLobbyMembers } from "../lobbies/useLobbyMembers";
+import { useLobbyMessages } from "../lobbies/useLobbyMessages";
+import { createLobby } from "../lobbies/createLobby";
+import { LOBBY_MAX_OWNED, LOBBY_MAX_JOINED } from "../lobbies/lobbyTypes";
 import type { Player } from "../profile/usePlayers";
 
 /**
@@ -33,6 +38,56 @@ export function LoggedInHome({ players }: { players: Player[] }) {
   usePresenceHeartbeat(user?.uid ?? null);
   const onlineCount = useOnlineCount();
   const typingUids = useTypingUsers(user?.uid ?? "");
+
+  const { lobbies: myLobbies } = useMyLobbies(user?.uid ?? null);
+
+  const [sohbetLobbyId, setSohbetLobbyId] = useState<string | null>(null);
+  const [katilimcilarLobbyId, setKatilimcilarLobbyId] = useState<string | null>(null);
+  const hasSetDefaultRef = useRef(false);
+
+  useEffect(() => {
+    if (hasSetDefaultRef.current || myLobbies.length === 0) return;
+    hasSetDefaultRef.current = true;
+    const mostRecent = [...myLobbies].sort((a, b) => b.myJoinedAt - a.myJoinedAt)[0];
+    setSohbetLobbyId(mostRecent.id);
+    setKatilimcilarLobbyId(mostRecent.id);
+  }, [myLobbies]);
+
+  // Fallback to Genel if the currently-selected lobby disappears (deleted,
+  // or this viewer was removed from it) — useMyLobbies() reflects either
+  // case live, so this just has to notice the id it was pointing at is gone.
+  useEffect(() => {
+    if (sohbetLobbyId && !myLobbies.some((l) => l.id === sohbetLobbyId)) setSohbetLobbyId(null);
+  }, [myLobbies, sohbetLobbyId]);
+  useEffect(() => {
+    if (katilimcilarLobbyId && !myLobbies.some((l) => l.id === katilimcilarLobbyId)) setKatilimcilarLobbyId(null);
+  }, [myLobbies, katilimcilarLobbyId]);
+
+  const sohbetLobbyMessages = useLobbyMessages(sohbetLobbyId);
+  const sohbetLobbyMembers = useLobbyMembers(sohbetLobbyId);
+  const katilimcilarLobbyMembers = useLobbyMembers(katilimcilarLobbyId);
+
+  const [managingLobbyId, setManagingLobbyId] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  const canCreateLobby =
+    myLobbies.filter((l) => l.createdByUid === (user?.uid ?? "")).length < LOBBY_MAX_OWNED &&
+    myLobbies.length < LOBBY_MAX_JOINED;
+
+  async function handleCreateLobby(newLobbyName: string) {
+    if (!user || !profile) return;
+    setCreateError(null);
+    try {
+      const newId = await createLobby(user.uid, newLobbyName, profile.firstName);
+      setCreateDialogOpen(false);
+      setSohbetLobbyId(newId);
+      setKatilimcilarLobbyId(newId);
+    } catch (err) {
+      console.error("Failed to create lobby", err);
+      setCreateError("Grup oluşturulamadı, tekrar deneyin.");
+    }
+  }
 
   // A local, optimistically-mutated overlay on top of the fetched likes —
   // usePostLikes() is a one-time fetch (forum-widget-round-01 Q7: "not real
@@ -122,6 +177,33 @@ export function LoggedInHome({ players }: { players: Player[] }) {
       onSaveEdit={handleSaveEdit}
       onRefetchPosts={refetchPosts}
       forumActionError={forumActionError}
+      myLobbies={myLobbies}
+      sohbetLobbyId={sohbetLobbyId}
+      onChangeSohbetLobby={setSohbetLobbyId}
+      sohbetLobbyMessages={sohbetLobbyMessages}
+      sohbetLobbyMembers={sohbetLobbyMembers.members}
+      katilimcilarLobbyId={katilimcilarLobbyId}
+      onChangeKatilimcilarLobby={setKatilimcilarLobbyId}
+      katilimcilarLobbyMembers={katilimcilarLobbyMembers.members}
+      managingLobbyId={managingLobbyId}
+      onOpenLobbyManagement={setManagingLobbyId}
+      onCloseLobbyManagement={() => setManagingLobbyId(null)}
+      onLeftManagedLobby={() => {
+        setManagingLobbyId(null);
+        if (sohbetLobbyId === managingLobbyId) setSohbetLobbyId(null);
+        if (katilimcilarLobbyId === managingLobbyId) setKatilimcilarLobbyId(null);
+      }}
+      onDeletedManagedLobby={() => {
+        setManagingLobbyId(null);
+        if (sohbetLobbyId === managingLobbyId) setSohbetLobbyId(null);
+        if (katilimcilarLobbyId === managingLobbyId) setKatilimcilarLobbyId(null);
+      }}
+      canCreateLobby={canCreateLobby}
+      createDialogOpen={createDialogOpen}
+      onOpenCreateDialog={() => setCreateDialogOpen(true)}
+      onCloseCreateDialog={() => setCreateDialogOpen(false)}
+      onCreateLobby={handleCreateLobby}
+      createError={createError}
     />
   );
 }

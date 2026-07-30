@@ -108,6 +108,25 @@ function renderPage(overrides: Partial<Parameters<typeof HomeLandingLoggedIn>[0]
         onSaveEdit={vi.fn()}
         onRefetchPosts={vi.fn()}
         forumActionError={null}
+        myLobbies={[]}
+        sohbetLobbyId={null}
+        onChangeSohbetLobby={vi.fn()}
+        sohbetLobbyMessages={{ messages: [], loading: false, loadOlder: vi.fn(), loadingOlder: false, hasMoreOlder: false }}
+        sohbetLobbyMembers={[]}
+        katilimcilarLobbyId={null}
+        onChangeKatilimcilarLobby={vi.fn()}
+        katilimcilarLobbyMembers={[]}
+        managingLobbyId={null}
+        onOpenLobbyManagement={vi.fn()}
+        onCloseLobbyManagement={vi.fn()}
+        onLeftManagedLobby={vi.fn()}
+        onDeletedManagedLobby={vi.fn()}
+        canCreateLobby={true}
+        createDialogOpen={false}
+        onOpenCreateDialog={vi.fn()}
+        onCloseCreateDialog={vi.fn()}
+        onCreateLobby={vi.fn()}
+        createError={null}
         {...overrides}
       />
     </MemoryRouter>
@@ -199,6 +218,25 @@ describe("HomeLandingLoggedIn", () => {
           onSaveEdit={vi.fn()}
           onRefetchPosts={vi.fn()}
           forumActionError={null}
+          myLobbies={[]}
+          sohbetLobbyId={null}
+          onChangeSohbetLobby={vi.fn()}
+          sohbetLobbyMessages={{ messages: [], loading: false, loadOlder: vi.fn(), loadingOlder: false, hasMoreOlder: false }}
+          sohbetLobbyMembers={[]}
+          katilimcilarLobbyId={null}
+          onChangeKatilimcilarLobby={vi.fn()}
+          katilimcilarLobbyMembers={[]}
+          managingLobbyId={null}
+          onOpenLobbyManagement={vi.fn()}
+          onCloseLobbyManagement={vi.fn()}
+          onLeftManagedLobby={vi.fn()}
+          onDeletedManagedLobby={vi.fn()}
+          canCreateLobby={true}
+          createDialogOpen={false}
+          onOpenCreateDialog={vi.fn()}
+          onCloseCreateDialog={vi.fn()}
+          onCreateLobby={vi.fn()}
+          createError={null}
         />
       </MemoryRouter>
     );

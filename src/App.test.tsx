@@ -12,6 +12,13 @@ vi.mock("./firebase", () => ({ auth: {}, db: {} }));
 
 vi.mock("firebase/firestore", () => ({
   collection: (_db: unknown, name: string) => ({ name }),
+  // collectionGroup/documentId/where — Special Lobby's useMyLobbies.ts
+  // subscribes to a `members` collection group even on Home (Sohbet/
+  // Katılımcılar cells now fetch it unconditionally); a no-op passthrough
+  // is enough here since lobby data itself isn't under test in this suite.
+  collectionGroup: (_db: unknown, name: string) => ({ name }),
+  documentId: () => "__name__",
+  where: (...args: unknown[]) => args,
   getDocs: () => Promise.resolve({ docs: [] }),
   getDoc: () => Promise.resolve({ exists: () => false, data: () => ({}) }),
   doc: (_db: unknown, collection: string, id: string) => ({ collection, id }),

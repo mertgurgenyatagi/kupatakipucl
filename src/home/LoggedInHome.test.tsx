@@ -13,6 +13,10 @@ const mockUseTypingUsers = vi.fn();
 const mockUsePosts = vi.fn();
 const mockUsePostLikes = vi.fn();
 const mockSetPostLiked = vi.fn();
+const mockUseMyLobbies = vi.fn();
+const mockUseLobbyMembers = vi.fn();
+const mockUseLobbyMessages = vi.fn();
+const mockCreateLobby = vi.fn();
 
 vi.mock("../auth/AuthProvider", () => ({
   useAuth: () => mockUseAuth(),
@@ -40,6 +44,18 @@ vi.mock("../forum/usePostLikes", () => ({
   usePostLikes: () => mockUsePostLikes(),
   setPostLiked: (...args: unknown[]) => mockSetPostLiked(...args),
 }));
+vi.mock("../lobbies/useMyLobbies", () => ({
+  useMyLobbies: (uid: string | null) => mockUseMyLobbies(uid),
+}));
+vi.mock("../lobbies/useLobbyMembers", () => ({
+  useLobbyMembers: (lobbyId: string | null) => mockUseLobbyMembers(lobbyId),
+}));
+vi.mock("../lobbies/useLobbyMessages", () => ({
+  useLobbyMessages: (lobbyId: string | null) => mockUseLobbyMessages(lobbyId),
+}));
+vi.mock("../lobbies/createLobby", () => ({
+  createLobby: (...args: unknown[]) => mockCreateLobby(...args),
+}));
 
 vi.mock("./HomeLandingLoggedIn", () => ({
   HomeLandingLoggedIn: ({
@@ -53,6 +69,9 @@ vi.mock("./HomeLandingLoggedIn", () => ({
     likesByPost,
     onToggleLike,
     likeError,
+    myLobbies,
+    sohbetLobbyId,
+    katilimcilarLobbyId,
   }: {
     me: Player;
     submitterUids: Set<string>;
@@ -64,6 +83,9 @@ vi.mock("./HomeLandingLoggedIn", () => ({
     likesByPost: Map<string, Set<string>>;
     onToggleLike: (postId: string) => void;
     likeError: string | null;
+    myLobbies: { id: string; name: string }[];
+    sohbetLobbyId: string | null;
+    katilimcilarLobbyId: string | null;
   }) => (
     <div>
       <p>
@@ -73,6 +95,10 @@ vi.mock("./HomeLandingLoggedIn", () => ({
       {likeError && <p role="alert">{likeError}</p>}
       <button onClick={() => onToggleLike("p1")}>toggle-like</button>
       <button onClick={onLoadOlderMessages}>load-older</button>
+      <p>my-lobbies:{myLobbies.map((l) => l.name).join(",")}</p>
+      <p>
+        sohbet-lobby:{sohbetLobbyId ?? "none"}:katilimcilar-lobby:{katilimcilarLobbyId ?? "none"}
+      </p>
     </div>
   ),
 }));
@@ -102,6 +128,16 @@ describe("LoggedInHome", () => {
     mockUsePosts.mockReturnValue({ posts: [], loading: false });
     mockUsePostLikes.mockReturnValue({ likesByPost: new Map(), loading: false });
     mockSetPostLiked.mockReset();
+    mockUseMyLobbies.mockReturnValue({ lobbies: [], loading: false });
+    mockUseLobbyMembers.mockReturnValue({ members: [], loading: false });
+    mockUseLobbyMessages.mockReturnValue({
+      messages: [],
+      loading: false,
+      loadOlder: vi.fn(),
+      loadingOlder: false,
+      hasMoreOlder: false,
+    });
+    mockCreateLobby.mockReset();
   });
 
   it("renders nothing while there's no signed-in user", () => {
@@ -175,5 +211,26 @@ describe("LoggedInHome", () => {
 
     fireEvent.click(screen.getByText("toggle-like"));
     await waitFor(() => expect(mockSetPostLiked).toHaveBeenCalledWith("p1", "uid1", false));
+  });
+
+  it("passes the user's lobbies through to HomeLandingLoggedIn", () => {
+    mockUseMyLobbies.mockReturnValue({
+      lobbies: [{ id: "lobby1", name: "Fener Grubu", createdByUid: "uid1", createdAt: 1, myJoinedAt: 100 }],
+      loading: false,
+    });
+    render(<LoggedInHome players={players} />);
+    expect(screen.getByText("my-lobbies:Fener Grubu")).toBeInTheDocument();
+  });
+
+  it("defaults each cell's switcher to the most-recently-joined lobby", () => {
+    mockUseMyLobbies.mockReturnValue({
+      lobbies: [
+        { id: "lobbyOld", name: "Eski Grup", createdByUid: "uid1", createdAt: 1, myJoinedAt: 100 },
+        { id: "lobbyNew", name: "Yeni Grup", createdByUid: "uid1", createdAt: 2, myJoinedAt: 200 },
+      ],
+      loading: false,
+    });
+    render(<LoggedInHome players={players} />);
+    expect(screen.getByText("sohbet-lobby:lobbyNew:katilimcilar-lobby:lobbyNew")).toBeInTheDocument();
   });
 });

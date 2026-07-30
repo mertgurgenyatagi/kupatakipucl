@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Settings, Plus } from "lucide-react";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { ChatRoom } from "../chat/ChatRoom";
 import { RecentPostsPreview, ForumPreviewFooter } from "../forum/RecentPostsPreview";
 import { ParticipantStatusList } from "./ParticipantStatusList";
@@ -10,6 +12,12 @@ import { HomeHero } from "./HomeHero";
 import { useCountdown } from "./useCountdown";
 import { TOURNAMENT_START_ISO } from "./deadlines";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
+import { buildPlayersByUid } from "../profile/playersByUid";
+import { LobbySwitcher } from "../lobbies/LobbySwitcher";
+import { LobbyManagementPanel } from "../lobbies/LobbyManagementPanel";
+import type { MyLobby } from "../lobbies/useMyLobbies";
+import type { useLobbyMessages } from "../lobbies/useLobbyMessages";
+import { LobbyMember, LOBBY_NAME_MAX_LENGTH } from "../lobbies/lobbyTypes";
 import type { RankedEntry } from "../leaderboard/ranking";
 import type { Player } from "../profile/usePlayers";
 import type { MessageWithId } from "../chat/useMessages";
@@ -33,6 +41,25 @@ interface HomeLandingLoggedInProps {
   onSaveEdit: (postId: string, text: string) => void;
   onRefetchPosts: () => void;
   forumActionError: string | null;
+  myLobbies: MyLobby[];
+  sohbetLobbyId: string | null;
+  onChangeSohbetLobby: (id: string | null) => void;
+  sohbetLobbyMessages: ReturnType<typeof useLobbyMessages>;
+  sohbetLobbyMembers: LobbyMember[];
+  katilimcilarLobbyId: string | null;
+  onChangeKatilimcilarLobby: (id: string | null) => void;
+  katilimcilarLobbyMembers: LobbyMember[];
+  managingLobbyId: string | null;
+  onOpenLobbyManagement: (id: string) => void;
+  onCloseLobbyManagement: () => void;
+  onLeftManagedLobby: () => void;
+  onDeletedManagedLobby: () => void;
+  canCreateLobby: boolean;
+  createDialogOpen: boolean;
+  onOpenCreateDialog: () => void;
+  onCloseCreateDialog: () => void;
+  onCreateLobby: (name: string) => void;
+  createError: string | null;
 }
 
 function initials(firstName: string, lastName: string) {
@@ -91,6 +118,25 @@ export function HomeLandingLoggedIn({
   onSaveEdit,
   onRefetchPosts,
   forumActionError,
+  myLobbies,
+  sohbetLobbyId,
+  onChangeSohbetLobby,
+  sohbetLobbyMessages,
+  sohbetLobbyMembers,
+  katilimcilarLobbyId,
+  onChangeKatilimcilarLobby,
+  katilimcilarLobbyMembers,
+  managingLobbyId,
+  onOpenLobbyManagement,
+  onCloseLobbyManagement,
+  onLeftManagedLobby,
+  onDeletedManagedLobby,
+  canCreateLobby,
+  createDialogOpen,
+  onOpenCreateDialog,
+  onCloseCreateDialog,
+  onCreateLobby,
+  createError,
 }: HomeLandingLoggedInProps) {
   const countdown = useCountdown(TOURNAMENT_START_ISO);
 
@@ -115,6 +161,17 @@ export function HomeLandingLoggedIn({
         rank: 1,
       }
     : null;
+
+  const playersByUid = buildPlayersByUid(players);
+  const sohbetDisplayPlayers = sohbetLobbyId
+    ? sohbetLobbyMembers.map((m) => playersByUid.get(m.uid)).filter((p): p is Player => p !== undefined)
+    : players;
+  const katilimcilarDisplayPlayers = katilimcilarLobbyId
+    ? katilimcilarLobbyMembers.map((m) => playersByUid.get(m.uid)).filter((p): p is Player => p !== undefined)
+    : players;
+  const katilimcilarDisplaySubmitterUids = katilimcilarLobbyId
+    ? new Set([...submitterUids].filter((uid) => katilimcilarLobbyMembers.some((m) => m.uid === uid)))
+    : submitterUids;
 
   return (
     <div className={PAGE_SHELL}>
@@ -170,11 +227,33 @@ export function HomeLandingLoggedIn({
         <Frame className={CELL} style={{ animationDelay: "60ms" }}>
           <FrameHeader tone="navy">
             <FrameTitle className="text-base text-color_text sm:text-lg">Katılımcılar</FrameTitle>
+            <div className="flex items-center gap-2">
+              <LobbySwitcher options={myLobbies} current={katilimcilarLobbyId} onChange={onChangeKatilimcilarLobby} />
+              {katilimcilarLobbyId ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenLobbyManagement(katilimcilarLobbyId)}
+                  aria-label="Grup ayarları"
+                  className="cursor-pointer text-color_textsecondary hover:text-color_accent"
+                >
+                  <Settings className="size-3.5" aria-hidden />
+                </button>
+              ) : canCreateLobby ? (
+                <button
+                  type="button"
+                  onClick={onOpenCreateDialog}
+                  aria-label="Yeni grup"
+                  className="cursor-pointer text-color_textsecondary hover:text-color_accent"
+                >
+                  <Plus className="size-3.5" aria-hidden />
+                </button>
+              ) : null}
+            </div>
           </FrameHeader>
           <FrameBody>
             <ParticipantStatusList
-              players={players}
-              submitterUids={submitterUids}
+              players={katilimcilarDisplayPlayers}
+              submitterUids={katilimcilarDisplaySubmitterUids}
               onSelectPlayer={setSelectedPlayerUid}
             />
           </FrameBody>
@@ -214,21 +293,44 @@ export function HomeLandingLoggedIn({
         <Frame className={CELL} style={{ animationDelay: "240ms" }}>
           <FrameHeader tone="navy">
             <FrameTitle className="text-base text-color_text sm:text-lg">Sohbet</FrameTitle>
-            <span className="flex items-center gap-1.5 font-mono text-[0.62rem] tracking-[0.1em] text-color_text/70 uppercase tnum">
-              <span className="size-1.5 rounded-full bg-color_accent" aria-hidden />
-              {onlineCount} çevrimiçi
-            </span>
+            <div className="flex items-center gap-2">
+              <LobbySwitcher options={myLobbies} current={sohbetLobbyId} onChange={onChangeSohbetLobby} />
+              {sohbetLobbyId ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenLobbyManagement(sohbetLobbyId)}
+                  aria-label="Grup ayarları"
+                  className="cursor-pointer text-color_textsecondary hover:text-color_accent"
+                >
+                  <Settings className="size-3.5" aria-hidden />
+                </button>
+              ) : canCreateLobby ? (
+                <button
+                  type="button"
+                  onClick={onOpenCreateDialog}
+                  aria-label="Yeni grup"
+                  className="cursor-pointer text-color_textsecondary hover:text-color_accent"
+                >
+                  <Plus className="size-3.5" aria-hidden />
+                </button>
+              ) : null}
+              <span className="flex items-center gap-1.5 font-mono text-[0.62rem] tracking-[0.1em] text-color_text/70 uppercase tnum">
+                <span className="size-1.5 rounded-full bg-color_accent" aria-hidden />
+                {onlineCount} çevrimiçi
+              </span>
+            </div>
           </FrameHeader>
           <FrameBody>
             <ChatRoom
               uid={me.uid}
-              players={players}
-              messages={messages}
-              onLoadOlder={onLoadOlderMessages}
-              loadingOlder={loadingOlderMessages}
-              hasMoreOlder={hasMoreOlderMessages}
-              typingUids={typingUids}
+              players={sohbetDisplayPlayers}
+              messages={sohbetLobbyId ? sohbetLobbyMessages.messages : messages}
+              onLoadOlder={sohbetLobbyId ? sohbetLobbyMessages.loadOlder : onLoadOlderMessages}
+              loadingOlder={sohbetLobbyId ? sohbetLobbyMessages.loadingOlder : loadingOlderMessages}
+              hasMoreOlder={sohbetLobbyId ? sohbetLobbyMessages.hasMoreOlder : hasMoreOlderMessages}
+              typingUids={sohbetLobbyId ? [] : typingUids}
               onSelectParticipant={setSelectedPlayerUid}
+              lobbyId={sohbetLobbyId}
             />
           </FrameBody>
         </Frame>
@@ -244,6 +346,50 @@ export function HomeLandingLoggedIn({
         onSelectTeam={() => {}}
         tournamentStarted={false}
       />
+
+      {managingLobbyId && (
+        <LobbyManagementPanel
+          lobby={myLobbies.find((l) => l.id === managingLobbyId)!}
+          members={katilimcilarLobbyId === managingLobbyId ? katilimcilarLobbyMembers : sohbetLobbyMembers}
+          players={players}
+          myUid={me.uid}
+          myFirstName={me.firstName}
+          open={true}
+          onOpenChange={(open) => !open && onCloseLobbyManagement()}
+          onLeft={onLeftManagedLobby}
+          onDeleted={onDeletedManagedLobby}
+        />
+      )}
+
+      <Dialog open={createDialogOpen} onOpenChange={(open) => !open && onCloseCreateDialog()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Yeni Grup</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const input = (e.target as HTMLFormElement).elements.namedItem("lobbyName") as HTMLInputElement;
+              onCreateLobby(input.value);
+            }}
+          >
+            <input
+              name="lobbyName"
+              maxLength={LOBBY_NAME_MAX_LENGTH}
+              placeholder="Grup adı"
+              className="w-full rounded-md border border-color_border1/70 bg-background px-3 py-1.5 text-sm text-color_text outline-none focus:border-color_accent"
+            />
+            {createError && (
+              <p role="alert" className="mt-2 text-sm text-color_remove">
+                {createError}
+              </p>
+            )}
+            <DialogFooter>
+              <Button type="submit">Oluştur</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

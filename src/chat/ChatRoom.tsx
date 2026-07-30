@@ -23,6 +23,7 @@ interface ChatRoomProps {
   hasMoreOlder: boolean;
   typingUids: string[];
   onSelectParticipant: (uid: string) => void;
+  lobbyId?: string | null;
 }
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -208,6 +209,7 @@ export function ChatRoom({
   hasMoreOlder,
   typingUids,
   onSelectParticipant,
+  lobbyId = null,
 }: ChatRoomProps) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -436,7 +438,7 @@ export function ChatRoom({
         {typingText && <p className="text-xs text-color_textsecondary italic">{typingText}</p>}
       </div>
 
-      <ChatComposer uid={uid} players={players} quoted={quoted} onClearQuote={() => setQuoted(null)} />
+      <ChatComposer uid={uid} players={players} quoted={quoted} onClearQuote={() => setQuoted(null)} lobbyId={lobbyId} />
       {deleteError && (
         <p role="alert" className="px-3 pb-2 text-xs text-color_remove sm:px-4">
           {deleteError}
