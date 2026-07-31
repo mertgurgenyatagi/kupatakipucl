@@ -98,6 +98,27 @@ describe("useLobbyMessages", () => {
     expect(result.current.messages).toEqual([]);
   });
 
+  it("unsubscribes from the old lobby's messages before subscribing to the new one (scaling-audit No. 03)", async () => {
+    const { rerender } = renderHook(({ lobbyId }) => useLobbyMessages(lobbyId), {
+      initialProps: { lobbyId: "lobby1" as string | null },
+    });
+    expect(mockOnSnapshot).toHaveBeenCalledTimes(1);
+
+    rerender({ lobbyId: "lobby2" });
+    expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+    expect(mockOnSnapshot).toHaveBeenCalledTimes(2);
+  });
+
+  it("unsubscribes from the lobby's messages when the switcher moves back to Genel (lobbyId -> null)", async () => {
+    const { rerender } = renderHook(({ lobbyId }) => useLobbyMessages(lobbyId), {
+      initialProps: { lobbyId: "lobby1" as string | null },
+    });
+    expect(mockOnSnapshot).toHaveBeenCalledTimes(1);
+
+    rerender({ lobbyId: null });
+    expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+  });
+
   it("stops loading when the listener errors", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { result } = renderHook(() => useLobbyMessages("lobby1"));

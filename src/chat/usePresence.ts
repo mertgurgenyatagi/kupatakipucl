@@ -1,58 +1,54 @@
 import { useEffect, useState } from "react";
-import { collection, doc, onSnapshot, setDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { onDisconnect, onValue, ref, remove, set } from "firebase/database";
+import { rtdb } from "../firebase";
 
-interface PresenceDoc {
-  lastSeen: number;
-}
+// Presence used to be a Firestore collection with a client-side heartbeat
+// every 20s and a live listener over the whole collection — meaning every
+// heartbeat write fanned out as a read to every other client watching the
+// online count, an O(writers × listeners) cost that could exhaust the daily
+// free-tier read budget in minutes at real concurrency (scaling-audit
+// No. 01, 2026-07-31). Realtime Database is built for exactly this: no
+// heartbeat at all, just a value plus a server-side onDisconnect() hook that
+// fires the instant the connection actually drops (tab closed, network
+// lost, browser crashed) — and it's metered on its own separate free tier,
+// entirely off the Firestore budget (scaling-audit No. 16). No staleness
+// window needed either: the server removes the entry itself, so the live
+// listener below is always accurate, not aged out client-side.
 
-// This project runs on Firestore, not Realtime Database, so there's no
-// server-side onDisconnect hook available — "online" here is approximated
-// client-side by a periodic heartbeat plus a recency check on read, the
-// same convention useTypingStatus.ts uses (chat-widget-round-01 Q7).
-const HEARTBEAT_MS = 20_000;
-const STALE_MS = 45_000;
-const RECHECK_MS = 10_000;
-
-async function heartbeat(uid: string): Promise<void> {
-  await setDoc(doc(db, "presence", uid), { lastSeen: Date.now() } satisfies PresenceDoc);
-}
-
-/** Writes a periodic heartbeat for `uid` while mounted; call once, near the
- *  top of the signed-in Home tree, so "online" tracks "has Home open." */
+/** Marks `uid` present while mounted, and lets Firebase's own server clear
+ *  it the moment the connection drops — call once, near the top of the
+ *  signed-in Home tree, so "online" tracks "has Home open." */
 export function usePresenceHeartbeat(uid: string | null): void {
   useEffect(() => {
     if (!uid) return;
 
-    heartbeat(uid).catch((err) => console.error("Failed to send presence heartbeat", err));
-    const id = setInterval(() => {
-      heartbeat(uid).catch((err) => console.error("Failed to send presence heartbeat", err));
-    }, HEARTBEAT_MS);
+    const myPresenceRef = ref(rtdb, `presence/${uid}`);
+    const connectedRef = ref(rtdb, ".info/connected");
 
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        heartbeat(uid).catch((err) => console.error("Failed to send presence heartbeat", err));
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
+    const unsubscribe = onValue(connectedRef, (snapshot) => {
+      if (snapshot.val() !== true) return;
+      onDisconnect(myPresenceRef)
+        .remove()
+        .then(() => set(myPresenceRef, true))
+        .catch((err) => console.error("Failed to register presence", err));
+    });
 
     return () => {
-      clearInterval(id);
-      document.removeEventListener("visibilitychange", handleVisibility);
+      unsubscribe();
+      remove(myPresenceRef).catch((err) => console.error("Failed to clear presence on unmount", err));
     };
   }, [uid]);
 }
 
-/** Count of participants with a fresh heartbeat right now. */
+/** Count of participants currently present. */
 export function useOnlineCount(): number {
-  const [docs, setDocs] = useState<PresenceDoc[]>([]);
-  const [, forceTick] = useState(0);
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, "presence"),
+    const unsubscribe = onValue(
+      ref(rtdb, "presence"),
       (snapshot) => {
-        setDocs(snapshot.docs.map((docSnap) => docSnap.data() as PresenceDoc));
+        setCount(snapshot.exists() ? Object.keys(snapshot.val() as Record<string, true>).length : 0);
       },
       (err: Error) => {
         console.error("Failed to load presence", err);
@@ -61,11 +57,5 @@ export function useOnlineCount(): number {
     return unsubscribe;
   }, []);
 
-  useEffect(() => {
-    const id = setInterval(() => forceTick((t) => t + 1), RECHECK_MS);
-    return () => clearInterval(id);
-  }, []);
-
-  const now = Date.now();
-  return docs.filter((d) => now - d.lastSeen < STALE_MS).length;
+  return count;
 }

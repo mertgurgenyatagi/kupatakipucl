@@ -2,6 +2,25 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { LoggedInHome } from "./LoggedInHome";
 import { Player } from "../profile/usePlayers";
+import { PostWithId } from "../forum/postTypes";
+
+function makePost(overrides: Partial<PostWithId> = {}): PostWithId {
+  return {
+    id: "p1",
+    uid: "uid1",
+    text: "Merhaba",
+    imageURL: null,
+    parentId: null,
+    createdAt: 1,
+    editedAt: null,
+    mentionedUids: [],
+    quotedPostId: null,
+    quotedAuthorUid: null,
+    quotedText: null,
+    likedByUids: [],
+    ...overrides,
+  };
+}
 
 const mockUseAuth = vi.fn();
 const mockUseProfile = vi.fn();
@@ -11,7 +30,6 @@ const mockUsePresenceHeartbeat = vi.fn();
 const mockUseOnlineCount = vi.fn();
 const mockUseTypingUsers = vi.fn();
 const mockUsePosts = vi.fn();
-const mockUsePostLikes = vi.fn();
 const mockSetPostLiked = vi.fn();
 const mockUseMyLobbies = vi.fn();
 const mockUseLobbyMembers = vi.fn();
@@ -40,10 +58,13 @@ vi.mock("../chat/useTypingStatus", () => ({
 vi.mock("../forum/usePosts", () => ({
   usePosts: () => mockUsePosts(),
 }));
-vi.mock("../forum/usePostLikes", () => ({
-  usePostLikes: () => mockUsePostLikes(),
-  setPostLiked: (...args: unknown[]) => mockSetPostLiked(...args),
-}));
+vi.mock("../forum/postLikes", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../forum/postLikes")>();
+  return {
+    ...actual,
+    setPostLiked: (...args: unknown[]) => mockSetPostLiked(...args),
+  };
+});
 vi.mock("../lobbies/useMyLobbies", () => ({
   useMyLobbies: (uid: string | null) => mockUseMyLobbies(uid),
 }));
@@ -132,7 +153,6 @@ describe("LoggedInHome", () => {
     mockUseOnlineCount.mockReturnValue(4);
     mockUseTypingUsers.mockReturnValue([]);
     mockUsePosts.mockReturnValue({ posts: [], loading: false });
-    mockUsePostLikes.mockReturnValue({ likesByPost: new Map(), loading: false });
     mockSetPostLiked.mockReset();
     mockUseMyLobbies.mockReturnValue({ lobbies: [], loading: false });
     mockUseLobbyMembers.mockReturnValue({ members: [], loading: false });
@@ -148,12 +168,6 @@ describe("LoggedInHome", () => {
 
   it("renders nothing while there's no signed-in user", () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
-    const { container } = render(<LoggedInHome players={players} />);
-    expect(container).toBeEmptyDOMElement();
-  });
-
-  it("renders nothing while any data source is still loading, including likes", () => {
-    mockUsePostLikes.mockReturnValue({ likesByPost: new Map(), loading: true });
     const { container } = render(<LoggedInHome players={players} />);
     expect(container).toBeEmptyDOMElement();
   });
@@ -185,36 +199,31 @@ describe("LoggedInHome", () => {
     expect(mockLoadOlder).toHaveBeenCalledTimes(1);
   });
 
-  it("optimistically applies a like before the write resolves, and keeps it after success", async () => {
+  it("calls setPostLiked with true when liking a post nobody's uid has liked yet", async () => {
     mockSetPostLiked.mockResolvedValue(undefined);
     render(<LoggedInHome players={players} />);
 
     fireEvent.click(screen.getByText("toggle-like"));
-    expect(screen.getByText("home-landing-loggedin:uid1:1:1:false:true:4:0")).toBeInTheDocument();
-
     await waitFor(() => expect(mockSetPostLiked).toHaveBeenCalledWith("p1", "uid1", true));
-    expect(screen.getByText("home-landing-loggedin:uid1:1:1:false:true:4:0")).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it("reverts the optimistic like and shows an error when the write fails", async () => {
+  it("shows an error when the like write fails", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockSetPostLiked.mockRejectedValue(new Error("permission-denied"));
     render(<LoggedInHome players={players} />);
 
     fireEvent.click(screen.getByText("toggle-like"));
-    expect(screen.getByText("home-landing-loggedin:uid1:1:1:false:true:4:0")).toBeInTheDocument();
-
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Beğeni kaydedilemedi, tekrar deneyin."));
-    expect(screen.getByText("home-landing-loggedin:uid1:1:0:false:true:4:0")).toBeInTheDocument();
     consoleErrorSpy.mockRestore();
   });
 
-  it("toggling back off calls setPostLiked with false", async () => {
-    mockUsePostLikes.mockReturnValue({ likesByPost: new Map([["p1", new Set(["uid1"])]]), loading: false });
+  it("calls setPostLiked with false when the post is already liked by this uid, per the live posts data", async () => {
+    mockUsePosts.mockReturnValue({ posts: [makePost({ id: "p1", likedByUids: ["uid1"] })], loading: false });
     mockSetPostLiked.mockResolvedValue(undefined);
     render(<LoggedInHome players={players} />);
 
+    expect(screen.getByText("home-landing-loggedin:uid1:1:1:false:true:4:0")).toBeInTheDocument();
     fireEvent.click(screen.getByText("toggle-like"));
     await waitFor(() => expect(mockSetPostLiked).toHaveBeenCalledWith("p1", "uid1", false));
   });

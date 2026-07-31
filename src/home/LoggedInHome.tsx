@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { useProfile } from "../profile/useProfile";
 import { usePredictionSubmitters } from "../predictions/usePredictionSubmitters";
@@ -6,7 +6,7 @@ import { useMessages } from "../chat/useMessages";
 import { usePresenceHeartbeat, useOnlineCount } from "../chat/usePresence";
 import { useTypingUsers } from "../chat/useTypingStatus";
 import { usePosts } from "../forum/usePosts";
-import { usePostLikes, setPostLiked, LikesByPost } from "../forum/usePostLikes";
+import { buildLikesByPost, setPostLiked } from "../forum/postLikes";
 import { deletePost } from "../forum/deletePost";
 import { editPost } from "../forum/editPost";
 import { resolveMentionedUids } from "../chat/chatMentions";
@@ -33,7 +33,6 @@ export function LoggedInHome({ players }: { players: Player[] }) {
   const { submitterUids, loading: submittersLoading } = usePredictionSubmitters();
   const { messages, loading: messagesLoading, loadOlder, loadingOlder, hasMoreOlder } = useMessages();
   const { posts, loading: postsLoading, refetch: refetchPosts } = usePosts();
-  const { likesByPost: fetchedLikes, loading: likesLoading } = usePostLikes();
 
   usePresenceHeartbeat(user?.uid ?? null);
   const onlineCount = useOnlineCount();
@@ -102,42 +101,25 @@ export function LoggedInHome({ players }: { players: Player[] }) {
     }
   }
 
-  // A local, optimistically-mutated overlay on top of the fetched likes —
-  // usePostLikes() is a one-time fetch (forum-widget-round-01 Q7: "not real
-  // time at all"), so without this a like you just tapped would only show
-  // up for you after the next full reload.
-  const [likesByPost, setLikesByPost] = useState<LikesByPost>(new Map());
   const [likeError, setLikeError] = useState<string | null>(null);
   const [forumActionError, setForumActionError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setLikesByPost(fetchedLikes);
-  }, [fetchedLikes]);
+  // Likes live directly on each post's own likedByUids array now, so this
+  // is a pure derivation from the already-live `posts` — no separate fetch,
+  // and no manual optimistic overlay needed either: Firestore's own
+  // local-write cache reflects a toggle immediately (and rolls it back on
+  // its own if the write ultimately fails), and `posts` follows along.
+  const likesByPost = useMemo(() => buildLikesByPost(posts), [posts]);
 
   async function handleToggleLike(postId: string) {
     if (!user) return;
     const uid = user.uid;
     const wasLiked = likesByPost.get(postId)?.has(uid) ?? false;
-
-    function applyLocally(liked: boolean) {
-      setLikesByPost((prev) => {
-        const next = new Map(prev);
-        const uids = new Set(next.get(postId) ?? []);
-        if (liked) uids.add(uid);
-        else uids.delete(uid);
-        next.set(postId, uids);
-        return next;
-      });
-    }
-
-    applyLocally(!wasLiked);
     setLikeError(null);
-
     try {
       await setPostLiked(postId, uid, !wasLiked);
     } catch (err) {
       console.error("Failed to toggle post like", err);
-      applyLocally(wasLiked);
       setLikeError("Beğeni kaydedilemedi, tekrar deneyin.");
     }
   }
@@ -167,7 +149,7 @@ export function LoggedInHome({ players }: { players: Player[] }) {
     }
   }
 
-  if (!user || profileLoading || submittersLoading || messagesLoading || postsLoading || likesLoading || !profile) {
+  if (!user || profileLoading || submittersLoading || messagesLoading || postsLoading || !profile) {
     return null;
   }
 

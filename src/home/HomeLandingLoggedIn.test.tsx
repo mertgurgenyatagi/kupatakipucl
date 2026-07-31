@@ -195,6 +195,7 @@ describe("HomeLandingLoggedIn", () => {
           quotedPostId: null,
           quotedAuthorUid: null,
           quotedText: null,
+          likedByUids: [],
         },
       ],
       likesByPost: new Map([["f1", new Set(["me"])]]),
@@ -294,7 +295,7 @@ describe("HomeLandingLoggedIn", () => {
   });
 
   describe("lobby-aware wiring", () => {
-    const lobby = { id: "lobby1", name: "Fener Grubu", createdByUid: "me", createdAt: 1, myJoinedAt: 100 };
+    const lobby = { id: "lobby1", name: "Fener Grubu", createdByUid: "me", createdAt: 1, myJoinedAt: 100, memberUids: ["me"] };
 
     it("renders the management panel for a lobby that's still present", () => {
       renderPage({ myLobbies: [lobby], managingLobbyId: "lobby1" });

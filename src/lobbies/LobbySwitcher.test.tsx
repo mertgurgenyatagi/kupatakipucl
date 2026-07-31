@@ -3,8 +3,8 @@ import { describe, it, expect, vi } from "vitest";
 import { LobbySwitcher, getLobbySwitcherLabel } from "./LobbySwitcher";
 import { MyLobby } from "./useMyLobbies";
 
-const lobbyA: MyLobby = { id: "lobbyA", name: "A Grubu", createdByUid: "c1", createdAt: 1, myJoinedAt: 100 };
-const lobbyB: MyLobby = { id: "lobbyB", name: "B Grubu", createdByUid: "c2", createdAt: 2, myJoinedAt: 200 };
+const lobbyA: MyLobby = { id: "lobbyA", name: "A Grubu", createdByUid: "c1", createdAt: 1, myJoinedAt: 100, memberUids: ["c1"] };
+const lobbyB: MyLobby = { id: "lobbyB", name: "B Grubu", createdByUid: "c2", createdAt: 2, myJoinedAt: 200, memberUids: ["c2"] };
 
 describe("getLobbySwitcherLabel", () => {
   it("returns Genel when current is null", () => {

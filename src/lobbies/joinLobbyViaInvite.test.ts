@@ -3,6 +3,8 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 
 const mockGetDoc = vi.fn();
 const mockSetDoc = vi.fn();
+const mockUpdateDoc = vi.fn();
+const mockArrayUnion = vi.fn((...uids: string[]) => ({ op: "union", uids }));
 const mockAddDoc = vi.fn();
 const mockDoc = vi.fn((_db: unknown, ...path: string[]) => ({ path }));
 const mockCollection = vi.fn((_db: unknown, ...path: string[]) => ({ path }));
@@ -11,6 +13,8 @@ vi.mock("firebase/firestore", () => ({
   doc: (...args: unknown[]) => mockDoc(...(args as [unknown, ...string[]])),
   getDoc: (...args: unknown[]) => mockGetDoc(...args),
   setDoc: (...args: unknown[]) => mockSetDoc(...args),
+  updateDoc: (...args: unknown[]) => mockUpdateDoc(...args),
+  arrayUnion: (...args: unknown[]) => mockArrayUnion(...(args as string[])),
   addDoc: (...args: unknown[]) => mockAddDoc(...args),
   collection: (...args: unknown[]) => mockCollection(...(args as [unknown, ...string[]])),
 }));
@@ -27,8 +31,10 @@ describe("joinLobbyViaInvite", () => {
   beforeEach(() => {
     mockGetDoc.mockReset();
     mockSetDoc.mockReset();
+    mockUpdateDoc.mockReset();
     mockAddDoc.mockReset();
     mockSetDoc.mockResolvedValue(undefined);
+    mockUpdateDoc.mockResolvedValue(undefined);
     mockAddDoc.mockResolvedValue({ id: "sysmsg1" });
   });
 
@@ -84,6 +90,11 @@ describe("joinLobbyViaInvite", () => {
     expect(mockSetDoc).toHaveBeenCalledWith(
       { path: ["lobbies", "lobby1", "members", "uid1"] },
       expect.objectContaining({ uid: "uid1", viaInviteId: "invite1" })
+    );
+    expect(mockArrayUnion).toHaveBeenCalledWith("uid1");
+    expect(mockUpdateDoc).toHaveBeenCalledWith(
+      { path: ["lobbies", "lobby1"] },
+      { memberUids: { op: "union", uids: ["uid1"] } }
     );
     expect(mockAddDoc.mock.calls[0][1]).toEqual(
       expect.objectContaining({ text: "Ahmet katıldı.", system: { kind: "joined", subjectUid: "uid1" } })

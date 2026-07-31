@@ -73,6 +73,18 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    // Precomputed leaderboard (functions/leaderboard, scaling-audit No.
+    // 08/09, 2026-07-31): recomputed by a Cloud Function on every
+    // predictions/results write, so clients read one doc instead of the
+    // full predictions + profiles collections on every visit. Public read
+    // (matches predictions/results' own public visibility); no client can
+    // write it at all — only the Cloud Function, running under the Admin
+    // SDK, which bypasses rules entirely.
+    match /leaderboardCache/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Tournament phase (src/tournament/useTournamentPhase.ts): the single
     // manual admin-set value driving notstarted/leaguephase/preknockout/
     // knockout site-wide (SPEC decision 2026-07-23 — pagemap intake round 1).
@@ -127,25 +139,13 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Typing indicator: ephemeral per-user "I'm typing" signal for the Home
-    // chat widget (chat-widget-round-01 Q5). Doc id is the uid, so there's
-    // at most one per person. Short-lived by client convention — anything
-    // more than a few seconds old is treated as stale by useTypingStatus.ts
-    // — rather than a TTL delete, so no extra write path is needed here.
-    match /typingStatus/{uid} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == uid;
-    }
-
-    // Presence: a periodic per-user heartbeat backing the chat widget's "N
-    // çevrimiçi" count (chat-widget-round-01 Q7). Same staleness convention
-    // as typingStatus above — this project runs on Firestore, not Realtime
-    // Database, so there's no server-side onDisconnect hook to lean on
-    // instead.
-    match /presence/{uid} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == uid;
-    }
+    // Typing indicator and presence both moved to Realtime Database
+    // (database.rules.json) — scaling-audit No. 01/02/16, 2026-07-31. A
+    // live Firestore listener over either collection, plus a client-side
+    // heartbeat, meant every write fanned out as a read to every other
+    // watcher; RTDB's server-side onDisconnect() hook needs no heartbeat at
+    // all, and is metered on its own separate free tier. See
+    // src/chat/usePresence.ts and src/chat/useTypingStatus.ts.
 
     // Forum posts: public read (pageAccess.ts allows the logged-out ST_NLI
     // state to view the forum — unlike chat, which is logged-in only in
@@ -180,6 +180,7 @@ service cloud.firestore {
         && request.resource.data.text is string
         && request.resource.data.text.size() <= 360
         && (request.resource.data.text.size() > 0 || request.resource.data.imageURL != null)
+        && request.resource.data.likedByUids == []
         && (
           request.resource.data.quotedPostId == null
           || (
@@ -187,46 +188,69 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/forumPosts/$(request.resource.data.quotedPostId)).data.uid == request.resource.data.quotedAuthorUid
           )
         );
-      allow update: if request.auth != null
-        && resource.data.uid == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'mentionedUids', 'editedAt'])
-        && request.resource.data.text is string
-        && request.resource.data.text.size() <= 360
-        && (request.resource.data.text.size() > 0 || resource.data.imageURL != null);
+      // Two shapes: the author editing text/mentions/editedAt (unchanged),
+      // or ANY signed-in user toggling their own uid in or out of
+      // likedByUids (forum-widget-round-01's like feature, moved off its
+      // own `postLikes` collection onto the post doc itself — scaling-audit
+      // No. 10, 2026-07-31). The like branch checks the symmetric
+      // difference is exactly the caller's own uid, so nobody can add or
+      // remove someone else's like while they're at it.
+      allow update: if request.auth != null && (
+        (
+          resource.data.uid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'mentionedUids', 'editedAt'])
+          && request.resource.data.text is string
+          && request.resource.data.text.size() <= 360
+          && (request.resource.data.text.size() > 0 || resource.data.imageURL != null)
+        ) || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedByUids'])
+          && request.resource.data.likedByUids is list
+          && (
+            request.resource.data.likedByUids.toSet().difference(resource.data.likedByUids.toSet()).hasOnly([request.auth.uid])
+            || resource.data.likedByUids.toSet().difference(request.resource.data.likedByUids.toSet()).hasOnly([request.auth.uid])
+          )
+        )
+      );
       allow delete: if request.auth != null
         && (resource.data.uid == request.auth.uid
             || (resource.data.parentId != null
                 && get(/databases/$(database)/documents/forumPosts/$(resource.data.parentId)).data.uid == request.auth.uid));
     }
 
-    // Post likes: a lightweight positive-signal toggle on forum posts —
-    // an explicit, deliberate exception to the site's usual no-gamification
-    // stance (forum-widget-round-01), not a default anyone should extend
-    // elsewhere without asking first. Doc id is `${postId}_${uid}`, so a
-    // user can only ever hold one like per post; public read (matches
-    // forumPosts), create/delete restricted to your own like.
-    match /postLikes/{likeId} {
-      allow read: if true;
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-      allow update: if false;
-      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
-    }
-
     // Special Lobby: private friend-group sub-scopes. Membership is a
     // subcollection (not an array field) specifically so joining can be
     // verified against a real invite via exists()/get() — see design doc
     // docs/superpowers/specs/2026-07-29-special-lobby-design.md.
+    //
+    // `memberUids` denormalizes that subcollection's uids onto the lobby doc
+    // itself (2026-07-31, scaling-audit No. 07) purely so the read rule
+    // below can check membership on the doc it's already reading, instead
+    // of paying a second exists() read on the members subcollection for
+    // every single fetch — including every snapshot useMyLobbies' live
+    // listener delivers, which was silently doubling that read cost. The
+    // members subcollection stays the real source of truth for who's
+    // actually a member (and is what the update rule's membership-sync
+    // branch below defers to); memberUids is kept in step with it on every
+    // join/leave/removal (joinLobbyViaInvite.ts, leaveLobby.ts,
+    // removeMember.ts) but is never itself the thing that authorizes one.
     match /lobbies/{lobbyId} {
-      allow read: if request.auth != null
-        && exists(/databases/$(database)/documents/lobbies/$(lobbyId)/members/$(request.auth.uid));
+      allow read: if request.auth != null && resource.data.memberUids.hasAny([request.auth.uid]);
       allow create: if request.auth != null
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 15
-        && request.resource.data.createdByUid == request.auth.uid;
-      // Two distinct shapes: a rename (any current member) or an ownership
-      // transfer (only the departing creator, only to an existing member —
-      // see leaveLobby.ts's ownership-transfer branch).
+        && request.resource.data.createdByUid == request.auth.uid
+        && request.resource.data.memberUids == [request.auth.uid];
+      // Three shapes: a rename (any current member), an ownership transfer
+      // (only the departing creator, only to an existing member — see
+      // leaveLobby.ts's ownership-transfer branch), or a memberUids sync.
+      // The sync branch doesn't re-derive who's allowed to join/leave/be
+      // removed — the members subcollection's own create/delete rules
+      // already fully authorize that — it only checks that this change is
+      // consistent with a real membership change in the very same request:
+      // exactly one uid gained, and it's the caller gaining their own
+      // membership; exactly one uid lost, and it's either the caller
+      // leaving or the creator removing someone.
       allow update: if request.auth != null && (
         (
           exists(/databases/$(database)/documents/lobbies/$(lobbyId)/members/$(request.auth.uid))
@@ -238,6 +262,24 @@ service cloud.firestore {
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['createdByUid'])
           && resource.data.createdByUid == request.auth.uid
           && exists(/databases/$(database)/documents/lobbies/$(lobbyId)/members/$(request.resource.data.createdByUid))
+        ) || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids'])
+          && request.resource.data.memberUids is list
+          && (
+            (
+              request.resource.data.memberUids.toSet().difference(resource.data.memberUids.toSet()).hasOnly([request.auth.uid])
+              && resource.data.memberUids.toSet().difference(request.resource.data.memberUids.toSet()).size() == 0
+              && existsAfter(/databases/$(database)/documents/lobbies/$(lobbyId)/members/$(request.auth.uid))
+            ) || (
+              resource.data.memberUids.toSet().difference(request.resource.data.memberUids.toSet()).hasOnly([request.auth.uid])
+              && request.resource.data.memberUids.toSet().difference(resource.data.memberUids.toSet()).size() == 0
+              && !existsAfter(/databases/$(database)/documents/lobbies/$(lobbyId)/members/$(request.auth.uid))
+            ) || (
+              resource.data.createdByUid == request.auth.uid
+              && request.resource.data.memberUids.toSet().difference(resource.data.memberUids.toSet()).size() == 0
+              && resource.data.memberUids.toSet().difference(request.resource.data.memberUids.toSet()).size() == 1
+            )
+          )
         )
       );
       allow delete: if request.auth != null && resource.data.createdByUid == request.auth.uid;

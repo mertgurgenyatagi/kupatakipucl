@@ -1,4 +1,4 @@
-import { deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { arrayRemove, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { LobbyMember, LobbyWithId } from "./lobbyTypes";
 import { sendLobbySystemMessage } from "./sendLobbyMessage";
@@ -28,4 +28,5 @@ export async function leaveLobby(
   // task-13 fix). Mirrors joinLobbyViaInvite.ts's create-then-announce order.
   await sendLobbySystemMessage(lobby.id, uid, "left", uid, leaverFirstName);
   await deleteDoc(doc(db, "lobbies", lobby.id, "members", uid));
+  await updateDoc(doc(db, "lobbies", lobby.id), { memberUids: arrayRemove(uid) });
 }

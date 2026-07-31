@@ -21,6 +21,11 @@ export interface ForumPost {
   quotedPostId: string | null;
   quotedAuthorUid: string | null;
   quotedText: string | null;
+  /** Every uid who's liked this post — denormalized here (not a separate
+   *  `postLikes` collection) so "N likes" and "did I like this" come for
+   *  free with the post itself, live, instead of a whole extra fetch
+   *  (scaling-audit No. 10, 2026-07-31). */
+  likedByUids: string[];
 }
 
 export interface PostWithId extends ForumPost {

@@ -8,7 +8,7 @@ vi.mock("firebase/auth", () => ({
   onAuthStateChanged: vi.fn(),
 }));
 
-vi.mock("./firebase", () => ({ auth: {}, db: {} }));
+vi.mock("./firebase", () => ({ auth: {}, db: {}, rtdb: {} }));
 
 vi.mock("firebase/firestore", () => ({
   collection: (_db: unknown, name: string) => ({ name }),
@@ -35,6 +35,19 @@ vi.mock("firebase/firestore", () => ({
     return () => {};
   },
   setDoc: () => Promise.resolve(undefined),
+}));
+
+vi.mock("firebase/database", () => ({
+  // Presence/typing (src/chat/usePresence.ts, useTypingStatus.ts) — a
+  // no-op passthrough is enough since neither is under test in this suite.
+  ref: (_db: unknown, path: string) => ({ path }),
+  onValue: (_ref: unknown, onNext: (snapshot: { exists: () => boolean; val: () => unknown }) => void) => {
+    onNext({ exists: () => false, val: () => null });
+    return () => {};
+  },
+  set: () => Promise.resolve(undefined),
+  remove: () => Promise.resolve(undefined),
+  onDisconnect: () => ({ remove: () => Promise.resolve(undefined) }),
 }));
 
 vi.mock("./auth/AuthProvider", () => ({

@@ -9,7 +9,7 @@ export async function createLobby(uid: string, name: string, creatorFirstName: s
   const memberRef = doc(db, "lobbies", lobbyRef.id, "members", uid);
   const systemMessageRef = doc(collection(db, "lobbies", lobbyRef.id, "messages"));
 
-  const lobby: Lobby = { name: trimmedName, createdByUid: uid, createdAt: Date.now() };
+  const lobby: Lobby = { name: trimmedName, createdByUid: uid, createdAt: Date.now(), memberUids: [uid] };
   const member: LobbyMember = { uid, joinedAt: Date.now(), viaInviteId: null };
   const systemMessage: LobbyMessage = {
     uid,

@@ -1,52 +1,109 @@
-import { useEffect, useState, useCallback } from "react";
-import { collection, onSnapshot } from "firebase/firestore";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { collection, doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { ForumPost, PostWithId } from "./postTypes";
 import { getCached, setCached } from "../lib/sessionCache";
+import { PAGE_SIZE, subscribeToRecentMessages, fetchOlderMessages } from "../chat/paginatedMessages";
 
 const CACHE_KEY = "forumPosts";
 
 /**
- * not-started-audit item 09/17: this used to be a one-shot `getDocs` over
- * the *entire* collection, re-run from scratch on every single post, like,
- * edit, or delete anywhere in the app via `refetch()` — expensive today,
- * and only getting more so as the season's post count grows with no
- * pagination in place. A live listener fixes both at once: one download,
- * then incremental diffs pushed by Firestore itself (including this
- * client's own pending writes, applied optimistically before the server
- * even round-trips) — so every write is reflected immediately, for
- * everyone, without ever re-fetching the whole collection again.
+ * The live window is capped at the most recent PAGE_SIZE posts, same shape
+ * as chat (paginatedMessages.ts) — no more re-downloading every post ever
+ * made on every app open (scaling-audit No. 04, 2026-07-31).
  *
- * `refetch` is kept as a no-op purely so existing call sites (`onPosted`,
- * `onRefetch` props threaded through PostForm/Forum/ThreadPopup/etc.) don't
- * all need touching — the listener already reflects every write on its own.
+ * Unlike chat, a reply can be much newer than its root post (a thread bumps
+ * to the top on a new reply, forum-round-01 Q2), so a reply arriving inside
+ * the live window can reference a root that's fallen outside it. Rather
+ * than render that reply as orphaned, `fetchMissingRoots` fetches just that
+ * root by id (one cheap doc read, not a re-fetch of anything else) and
+ * merges it in. `loadOlder` is the explicit "see further back" action, same
+ * pattern as chat's own fetchOlderMessages.
+ *
+ * Accepted trade-off: Forum.tsx's search filters whatever's currently
+ * loaded — unlike chat, which does a dedicated full-history fetch for
+ * search — so a thread nobody's touched that hasn't been paged into view
+ * won't surface in search until it has been. Fine at this friend-group's
+ * scale, revisit only if that ever proves wrong in practice.
  */
+async function fetchMissingRoots(known: Map<string, PostWithId>): Promise<PostWithId[]> {
+  const missingIds = new Set<string>();
+  known.forEach((post) => {
+    if (post.parentId && !known.has(post.parentId)) missingIds.add(post.parentId);
+  });
+  if (missingIds.size === 0) return [];
+
+  const fetched = await Promise.all(
+    Array.from(missingIds).map(async (id) => {
+      const snap = await getDoc(doc(db, "forumPosts", id));
+      return snap.exists() ? ({ id: snap.id, ...(snap.data() as ForumPost) } as PostWithId) : null;
+    })
+  );
+  return fetched.filter((p): p is PostWithId => p !== null);
+}
+
 export function usePosts() {
   const cached = getCached<PostWithId[]>(CACHE_KEY);
+  const byId = useRef(new Map<string, PostWithId>((cached ?? []).map((p) => [p.id, p])));
   const [posts, setPosts] = useState<PostWithId[]>(cached ?? []);
   const [loading, setLoading] = useState(cached === undefined);
+  const [hasMore, setHasMore] = useState(true);
+  const backfillToken = useRef(0);
+
+  const commit = useCallback(() => {
+    const next = Array.from(byId.current.values());
+    setCached(CACHE_KEY, next);
+    setPosts(next);
+  }, []);
+
+  const backfillRoots = useCallback(() => {
+    const token = ++backfillToken.current;
+    fetchMissingRoots(byId.current).then((roots) => {
+      if (roots.length === 0 || token !== backfillToken.current) return;
+      roots.forEach((root) => byId.current.set(root.id, root));
+      commit();
+    });
+  }, [commit]);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(
+    return subscribeToRecentMessages<ForumPost>(
       collection(db, "forumPosts"),
-      (snapshot) => {
-        const next = snapshot.docs.map((docSnap: { id: string; data: () => unknown }) => ({
-          id: docSnap.id,
-          ...(docSnap.data() as ForumPost),
-        }));
-        setCached(CACHE_KEY, next);
-        setPosts(next);
+      (docs) => {
+        docs.forEach((post) => byId.current.set(post.id, post));
+        commit();
         setLoading(false);
+        if (docs.length < PAGE_SIZE) setHasMore(false);
+        backfillRoots();
       },
       (err: Error) => {
         console.error("Failed to load forum posts", err);
         setLoading(false);
       }
     );
-    return unsubscribe;
-  }, []);
+  }, [commit, backfillRoots]);
+
+  const loadOlder = useCallback(async () => {
+    if (!hasMore) return;
+    const oldest = Array.from(byId.current.values()).reduce<number | null>(
+      (min, p) => (min === null || p.createdAt < min ? p.createdAt : min),
+      null
+    );
+    if (oldest === null) return;
+
+    try {
+      const docs = await fetchOlderMessages<ForumPost>(collection(db, "forumPosts"), oldest);
+      if (docs.length < PAGE_SIZE) setHasMore(false);
+      if (docs.length > 0) {
+        docs.forEach((post) => byId.current.set(post.id, post));
+        commit();
+      }
+      backfillRoots();
+    } catch (err) {
+      console.error("Failed to load older forum posts", err);
+    }
+  }, [commit, backfillRoots, hasMore]);
 
   const refetch = useCallback(() => {}, []);
 
-  return { posts, loading, refetch };
+  return { posts, loading, refetch, loadOlder, hasMore };
 }

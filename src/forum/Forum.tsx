@@ -19,6 +19,8 @@ interface ForumProps {
   onDeletePost: (postId: string) => void;
   onSaveEdit: (postId: string, text: string) => void;
   onRefetch: () => void;
+  onLoadOlder: () => Promise<void>;
+  hasMoreOlder: boolean;
   actionError?: string | null;
 }
 
@@ -40,11 +42,23 @@ export function Forum({
   onDeletePost,
   onSaveEdit,
   onRefetch,
+  onLoadOlder,
+  hasMoreOlder,
   actionError = null,
 }: ForumProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedRootId, setExpandedRootId] = useState<string | null>(null);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+
+  async function handleLoadOlder() {
+    setLoadingOlder(true);
+    try {
+      await onLoadOlder();
+    } finally {
+      setLoadingOlder(false);
+    }
+  }
 
   const playersByUid = useMemo(() => buildPlayersByUid(players), [players]);
   const stats = useMemo(() => computeThreadStats(posts), [posts]);
@@ -137,6 +151,19 @@ export function Forum({
                 />
               </div>
             ))}
+          </div>
+        )}
+
+        {!searchQuery.trim() && hasMoreOlder && (
+          <div className="flex justify-center py-6">
+            <button
+              type="button"
+              onClick={handleLoadOlder}
+              disabled={loadingOlder}
+              className="cursor-pointer rounded-full border border-color_border1/70 px-4 py-1.5 text-sm text-color_textsecondary outline-none transition-colors hover:text-color_accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_accent disabled:cursor-default disabled:opacity-60"
+            >
+              {loadingOlder ? "Yükleniyor…" : "Daha eski konuları yükle"}
+            </button>
           </div>
         )}
       </div>

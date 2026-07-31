@@ -15,6 +15,7 @@ function post(id: string, parentId: string | null, createdAt: number): PostWithI
     quotedPostId: null,
     quotedAuthorUid: null,
     quotedText: null,
+    likedByUids: [],
   };
 }
 

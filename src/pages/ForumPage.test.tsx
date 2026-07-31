@@ -8,7 +8,6 @@ const mockUseVisibilityState = vi.fn();
 const mockUseTournamentPhase = vi.fn();
 const mockUsePosts = vi.fn();
 const mockUsePlayers = vi.fn();
-const mockUsePostLikes = vi.fn();
 const mockSetPostLiked = vi.fn();
 const mockUseLeaderboard = vi.fn();
 const mockUseResults = vi.fn();
@@ -21,10 +20,13 @@ vi.mock("../state/useVisibilityState", () => ({ useVisibilityState: () => mockUs
 vi.mock("../tournament/useTournamentPhase", () => ({ useTournamentPhase: () => mockUseTournamentPhase() }));
 vi.mock("../forum/usePosts", () => ({ usePosts: () => mockUsePosts() }));
 vi.mock("../profile/usePlayers", () => ({ usePlayers: () => mockUsePlayers() }));
-vi.mock("../forum/usePostLikes", () => ({
-  usePostLikes: () => mockUsePostLikes(),
-  setPostLiked: (...args: unknown[]) => mockSetPostLiked(...args),
-}));
+vi.mock("../forum/postLikes", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../forum/postLikes")>();
+  return {
+    ...actual,
+    setPostLiked: (...args: unknown[]) => mockSetPostLiked(...args),
+  };
+});
 vi.mock("../leaderboard/useLeaderboard", () => ({ useLeaderboard: () => mockUseLeaderboard() }));
 vi.mock("../leaderboard/useResults", () => ({ useResults: () => mockUseResults() }));
 vi.mock("../forum/deletePost", () => ({ deletePost: (...args: unknown[]) => mockDeletePost(...args) }));
@@ -90,6 +92,7 @@ const POST1 = {
   quotedPostId: null,
   quotedAuthorUid: null,
   quotedText: null,
+  likedByUids: [],
 };
 const REPLY1 = { ...POST1, id: "reply1", parentId: "root1" };
 const PLAYER1 = { uid: "uid1", firstName: "Mert", lastName: "G", photoURL: "", createdAt: 1 };
@@ -100,9 +103,14 @@ describe("ForumPage", () => {
   beforeEach(() => {
     mockUseAuth.mockReturnValue({ user: { uid: "uid1" } });
     mockUseTournamentPhase.mockReturnValue("notstarted");
-    mockUsePosts.mockReturnValue({ posts: [POST1, REPLY1], loading: false, refetch: mockRefetch });
+    mockUsePosts.mockReturnValue({
+      posts: [POST1, REPLY1],
+      loading: false,
+      refetch: mockRefetch,
+      loadOlder: vi.fn().mockResolvedValue(undefined),
+      hasMore: false,
+    });
     mockUsePlayers.mockReturnValue({ players: [PLAYER1, PLAYER2], loading: false });
-    mockUsePostLikes.mockReturnValue({ likesByPost: new Map(), loading: false });
     mockUseLeaderboard.mockReturnValue({ entries: [ENTRY2], loading: false });
     mockUseResults.mockReturnValue({ results: {} });
     mockSetPostLiked.mockReset().mockResolvedValue(undefined);
@@ -125,7 +133,13 @@ describe("ForumPage", () => {
 
   it("shows a loading skeleton while posts, players, or likes are loading", () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
-    mockUsePosts.mockReturnValue({ posts: [], loading: true, refetch: mockRefetch });
+    mockUsePosts.mockReturnValue({
+      posts: [],
+      loading: true,
+      refetch: mockRefetch,
+      loadOlder: vi.fn().mockResolvedValue(undefined),
+      hasMore: false,
+    });
     render(<ForumPage />);
     expect(screen.getByTestId("forum-skeleton")).toBeInTheDocument();
   });

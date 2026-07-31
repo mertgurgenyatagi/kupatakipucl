@@ -18,7 +18,13 @@ import { LobbyManagementPanel } from "./LobbyManagementPanel";
 import { LobbyWithId, LobbyMember } from "./lobbyTypes";
 import { Player } from "../profile/usePlayers";
 
-const lobby: LobbyWithId = { id: "lobby1", name: "Fener Grubu", createdByUid: "creator1", createdAt: 0 };
+const lobby: LobbyWithId = {
+  id: "lobby1",
+  name: "Fener Grubu",
+  createdByUid: "creator1",
+  createdAt: 0,
+  memberUids: ["creator1"],
+};
 const members: LobbyMember[] = [
   { uid: "creator1", joinedAt: 0, viaInviteId: null },
   { uid: "uid2", joinedAt: 100, viaInviteId: "i1" },

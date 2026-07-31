@@ -49,6 +49,7 @@ export async function createPost(
     quotedPostId: quote?.postId ?? null,
     quotedAuthorUid: quote?.authorUid ?? null,
     quotedText: quote?.text ?? null,
+    likedByUids: [],
   };
   await addDoc(collection(db, "forumPosts"), post);
 }

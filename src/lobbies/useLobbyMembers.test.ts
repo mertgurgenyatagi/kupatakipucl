@@ -113,4 +113,37 @@ describe("useLobbyMembers", () => {
     renderHook(() => useLobbyMembers("lobby2"));
     expect(mockOnSnapshot).toHaveBeenCalledTimes(2);
   });
+
+  it("unsubscribes from the old lobby before subscribing to the new one when lobbyId changes (scaling-audit No. 03)", () => {
+    const { rerender } = renderHook(({ lobbyId }) => useLobbyMembers(lobbyId), {
+      initialProps: { lobbyId: "lobby1" as string | null },
+    });
+    expect(mockOnSnapshot).toHaveBeenCalledTimes(1);
+
+    rerender({ lobbyId: "lobby2" });
+    expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+    expect(mockOnSnapshot).toHaveBeenCalledTimes(2);
+  });
+
+  it("unsubscribes from the lobby when the switcher moves back to Genel (lobbyId -> null), not kept warm", () => {
+    const { rerender } = renderHook(({ lobbyId }) => useLobbyMembers(lobbyId), {
+      initialProps: { lobbyId: "lobby1" as string | null },
+    });
+    expect(mockOnSnapshot).toHaveBeenCalledTimes(1);
+
+    rerender({ lobbyId: null });
+    expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not unsubscribe the shared subscription if another mount for the same lobbyId is still active when one moves away", () => {
+    const first = renderHook(({ lobbyId }) => useLobbyMembers(lobbyId), {
+      initialProps: { lobbyId: "lobby1" as string | null },
+    });
+    renderHook(() => useLobbyMembers("lobby1"));
+    expect(mockOnSnapshot).toHaveBeenCalledTimes(1);
+
+    first.rerender({ lobbyId: "lobby2" });
+    expect(mockUnsubscribe).not.toHaveBeenCalled();
+    expect(mockOnSnapshot).toHaveBeenCalledTimes(2);
+  });
 });
