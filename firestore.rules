@@ -73,6 +73,18 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    // Precomputed leaderboard (functions/leaderboard, scaling-audit No.
+    // 08/09, 2026-07-31): recomputed by a Cloud Function on every
+    // predictions/results write, so clients read one doc instead of the
+    // full predictions + profiles collections on every visit. Public read
+    // (matches predictions/results' own public visibility); no client can
+    // write it at all — only the Cloud Function, running under the Admin
+    // SDK, which bypasses rules entirely.
+    match /leaderboardCache/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Tournament phase (src/tournament/useTournamentPhase.ts): the single
     // manual admin-set value driving notstarted/leaguephase/preknockout/
     // knockout site-wide (SPEC decision 2026-07-23 — pagemap intake round 1).
