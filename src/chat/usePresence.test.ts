@@ -1,91 +1,93 @@
 import { act, renderHook } from "@testing-library/react";
-import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
+import { vi, describe, it, expect, beforeEach } from "vitest";
 
-const mockSetDoc = vi.fn();
-const mockDoc = vi.fn((_db: unknown, path: string, id: string) => ({ path, id }));
-const mockCollection = vi.fn((_db: unknown, name: string) => ({ name }));
-const mockOnSnapshot = vi.fn();
+const mockRef = vi.fn((_db: unknown, path: string) => ({ path }));
+const mockOnValue = vi.fn();
+const mockSet = vi.fn();
+const mockRemove = vi.fn();
+const mockOnDisconnectRemove = vi.fn();
+const mockOnDisconnect = vi.fn((_ref: unknown) => ({ remove: mockOnDisconnectRemove }));
 const mockUnsubscribe = vi.fn();
 
-vi.mock("firebase/firestore", () => ({
-  doc: (...args: unknown[]) => mockDoc(...(args as [unknown, string, string])),
-  setDoc: (...args: unknown[]) => mockSetDoc(...args),
-  collection: (...args: unknown[]) => mockCollection(...(args as [unknown, string])),
-  onSnapshot: (...args: unknown[]) => mockOnSnapshot(...args),
+vi.mock("firebase/database", () => ({
+  ref: (...args: unknown[]) => mockRef(...(args as [unknown, string])),
+  onValue: (...args: unknown[]) => mockOnValue(...args),
+  set: (...args: unknown[]) => mockSet(...args),
+  remove: (...args: unknown[]) => mockRemove(...args),
+  onDisconnect: (...args: unknown[]) => mockOnDisconnect(...(args as [unknown])),
 }));
 
-vi.mock("../firebase", () => ({ db: {} }));
+vi.mock("../firebase", () => ({ rtdb: {} }));
 
 import { usePresenceHeartbeat, useOnlineCount } from "./usePresence";
 
-type SnapshotCallback = (snapshot: { docs: { data: () => unknown }[] }) => void;
-
-function setVisibility(state: DocumentVisibilityState) {
-  Object.defineProperty(document, "visibilityState", { value: state, configurable: true });
-  document.dispatchEvent(new Event("visibilitychange"));
-}
+type ConnectedCallback = (snapshot: { val: () => unknown }) => void;
+type PresenceCallback = (snapshot: { exists: () => boolean; val: () => unknown }) => void;
+type ErrorCallback = (err: Error) => void;
 
 describe("usePresenceHeartbeat", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    mockSetDoc.mockReset();
-    mockSetDoc.mockResolvedValue(undefined);
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("does nothing when there's no signed-in uid", () => {
-    renderHook(() => usePresenceHeartbeat(null));
-    expect(mockSetDoc).not.toHaveBeenCalled();
-  });
-
-  it("sends an immediate heartbeat on mount", () => {
-    renderHook(() => usePresenceHeartbeat("uid1"));
-    expect(mockDoc).toHaveBeenCalledWith({}, "presence", "uid1");
-    expect(mockSetDoc).toHaveBeenCalledTimes(1);
-  });
-
-  it("sends another heartbeat on each interval tick", () => {
-    renderHook(() => usePresenceHeartbeat("uid1"));
-    act(() => vi.advanceTimersByTime(20_000));
-    expect(mockSetDoc).toHaveBeenCalledTimes(2);
-    act(() => vi.advanceTimersByTime(20_000));
-    expect(mockSetDoc).toHaveBeenCalledTimes(3);
-  });
-
-  it("sends a heartbeat when the tab becomes visible again", () => {
-    renderHook(() => usePresenceHeartbeat("uid1"));
-    expect(mockSetDoc).toHaveBeenCalledTimes(1);
-    act(() => setVisibility("visible"));
-    expect(mockSetDoc).toHaveBeenCalledTimes(2);
-  });
-
-  it("stops sending heartbeats after unmount", () => {
-    const { unmount } = renderHook(() => usePresenceHeartbeat("uid1"));
-    unmount();
-    mockSetDoc.mockClear();
-    act(() => vi.advanceTimersByTime(60_000));
-    expect(mockSetDoc).not.toHaveBeenCalled();
-  });
-});
-
-describe("useOnlineCount", () => {
-  let capturedOnNext: SnapshotCallback;
+  let capturedConnectedCallback: ConnectedCallback;
 
   beforeEach(() => {
-    vi.useFakeTimers();
-    mockOnSnapshot.mockReset();
+    mockRef.mockClear();
+    mockOnValue.mockReset();
+    mockSet.mockReset().mockResolvedValue(undefined);
+    mockRemove.mockReset().mockResolvedValue(undefined);
+    mockOnDisconnect.mockClear();
+    mockOnDisconnectRemove.mockReset().mockResolvedValue(undefined);
     mockUnsubscribe.mockReset();
-    mockOnSnapshot.mockImplementation((_query: unknown, onNext: SnapshotCallback) => {
-      capturedOnNext = onNext;
+    mockOnValue.mockImplementation((_ref: unknown, onNext: ConnectedCallback) => {
+      capturedConnectedCallback = onNext;
       return mockUnsubscribe;
     });
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
+  it("does nothing when there's no signed-in uid", () => {
+    renderHook(() => usePresenceHeartbeat(null));
+    expect(mockOnValue).not.toHaveBeenCalled();
+  });
+
+  it("registers a server-side onDisconnect cleanup and sets presence once connected", async () => {
+    renderHook(() => usePresenceHeartbeat("uid1"));
+    expect(mockRef).toHaveBeenCalledWith({}, "presence/uid1");
+
+    await act(async () => {
+      capturedConnectedCallback({ val: () => true });
+      await Promise.resolve();
+    });
+
+    expect(mockOnDisconnect).toHaveBeenCalledWith({ path: "presence/uid1" });
+    expect(mockOnDisconnectRemove).toHaveBeenCalledTimes(1);
+    expect(mockSet).toHaveBeenCalledWith({ path: "presence/uid1" }, true);
+  });
+
+  it("does not set presence while not yet connected", () => {
+    renderHook(() => usePresenceHeartbeat("uid1"));
+    capturedConnectedCallback({ val: () => false });
+    expect(mockOnDisconnect).not.toHaveBeenCalled();
+    expect(mockSet).not.toHaveBeenCalled();
+  });
+
+  it("removes presence and unsubscribes on unmount", () => {
+    const { unmount } = renderHook(() => usePresenceHeartbeat("uid1"));
+    unmount();
+    expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+    expect(mockRemove).toHaveBeenCalledWith({ path: "presence/uid1" });
+  });
+});
+
+describe("useOnlineCount", () => {
+  let capturedOnNext: PresenceCallback;
+  let capturedOnError: ErrorCallback;
+
+  beforeEach(() => {
+    mockOnValue.mockReset();
+    mockUnsubscribe.mockReset();
+    mockOnValue.mockImplementation((_ref: unknown, onNext: PresenceCallback, onError: ErrorCallback) => {
+      capturedOnNext = onNext;
+      capturedOnError = onError;
+      return mockUnsubscribe;
+    });
   });
 
   it("starts at zero", () => {
@@ -93,28 +95,29 @@ describe("useOnlineCount", () => {
     expect(result.current).toBe(0);
   });
 
-  it("counts everyone with a fresh heartbeat", () => {
+  it("counts every uid present in the snapshot", () => {
     const { result } = renderHook(() => useOnlineCount());
-    const now = Date.now();
     act(() => {
-      capturedOnNext({ docs: [{ data: () => ({ lastSeen: now }) }, { data: () => ({ lastSeen: now }) }] });
+      capturedOnNext({ exists: () => true, val: () => ({ uid1: true, uid2: true }) });
     });
     expect(result.current).toBe(2);
   });
 
-  it("stops counting a heartbeat once it goes stale", () => {
+  it("returns zero when the snapshot doesn't exist (nobody online)", () => {
     const { result } = renderHook(() => useOnlineCount());
-    const start = Date.now();
     act(() => {
-      capturedOnNext({ docs: [{ data: () => ({ lastSeen: start }) }] });
-    });
-    expect(result.current).toBe(1);
-
-    act(() => {
-      vi.setSystemTime(start + 46_000);
-      vi.advanceTimersByTime(46_000);
+      capturedOnNext({ exists: () => false, val: () => null });
     });
     expect(result.current).toBe(0);
+  });
+
+  it("logs and stays at zero when the listener errors", () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { result } = renderHook(() => useOnlineCount());
+    act(() => capturedOnError(new Error("permission-denied")));
+    expect(result.current).toBe(0);
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to load presence", expect.any(Error));
+    consoleErrorSpy.mockRestore();
   });
 
   it("unsubscribes on unmount", () => {
