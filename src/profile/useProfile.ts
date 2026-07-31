@@ -3,13 +3,16 @@ import { doc, deleteDoc, onSnapshot, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "../firebase";
 import { Profile } from "./profileTypes";
-import { compressImage } from "../lib/compressImage";
+import { compressImage, IMMUTABLE_CACHE_CONTROL } from "../lib/compressImage";
 import { getCached, setCached, deleteCached } from "../lib/sessionCache";
 
-// Profile photos only ever render in small avatar frames (size-6 to
-// size-8 in most spots, a bit larger on the profile page itself) — 256px
-// is generous headroom for that, and keeps uploads tiny.
-const PROFILE_PHOTO_MAX_DIMENSION = 256;
+// Profile photos only ever render in small avatar frames — the single
+// largest use anywhere on the site is 56px (Home's greeting avatar), most
+// are 20-40px. 96px covers that with some retina headroom; quality 0.5 is
+// a deliberately aggressive trade given a free-tier Storage budget with a
+// hard billing killswitch behind it, not a soft cost ceiling (2026-07-31).
+const PROFILE_PHOTO_MAX_DIMENSION = 96;
+const PROFILE_PHOTO_QUALITY = 0.5;
 
 function cacheKey(uid: string): string {
   return `profile:${uid}`;
@@ -118,9 +121,12 @@ export async function saveProfile(
   lastName: string,
   photoFile: File
 ): Promise<Profile> {
-  const compressed = await compressImage(photoFile, { maxDimension: PROFILE_PHOTO_MAX_DIMENSION });
-  const photoRef = ref(storage, `profile-photos/${uid}`);
-  await uploadBytes(photoRef, compressed);
+  const compressed = await compressImage(photoFile, {
+    maxDimension: PROFILE_PHOTO_MAX_DIMENSION,
+    quality: PROFILE_PHOTO_QUALITY,
+  });
+  const photoRef = ref(storage, `profile-photos/${uid}-${Date.now()}`);
+  await uploadBytes(photoRef, compressed, { cacheControl: IMMUTABLE_CACHE_CONTROL });
   const photoURL = await getDownloadURL(photoRef);
   const profile: Profile = { firstName, lastName, photoURL, createdAt: Date.now() };
   await setDoc(doc(db, "profiles", uid), profile);
@@ -133,26 +139,47 @@ export async function updateProfilePhoto(
   current: Profile,
   photoFile: File
 ): Promise<Profile> {
-  const compressed = await compressImage(photoFile, { maxDimension: PROFILE_PHOTO_MAX_DIMENSION });
-  const photoRef = ref(storage, `profile-photos/${uid}`);
-  await uploadBytes(photoRef, compressed);
+  const compressed = await compressImage(photoFile, {
+    maxDimension: PROFILE_PHOTO_MAX_DIMENSION,
+    quality: PROFILE_PHOTO_QUALITY,
+  });
+  const photoRef = ref(storage, `profile-photos/${uid}-${Date.now()}`);
+  await uploadBytes(photoRef, compressed, { cacheControl: IMMUTABLE_CACHE_CONTROL });
   const photoURL = await getDownloadURL(photoRef);
   const profile: Profile = { ...current, photoURL };
   await setDoc(doc(db, "profiles", uid), profile);
   setCached(cacheKey(uid), profile);
+  // Each upload now gets its own never-reused path (so the immutable cache
+  // header above is safe to set), which means — unlike the old fixed-path
+  // scheme, where a re-upload overwrote the previous object for free — the
+  // previous photo is now an orphan and has to be cleaned up explicitly, or
+  // Storage usage would grow with every photo change instead of staying flat.
+  // Best-effort: a delete failing here shouldn't undo the photo change that
+  // already succeeded.
+  if (current.photoURL) {
+    try {
+      await deleteObject(ref(storage, current.photoURL));
+    } catch (err) {
+      console.error("Failed to delete previous profile photo from storage", err);
+    }
+  }
   return profile;
 }
 
-export async function deleteProfile(uid: string): Promise<void> {
+export async function deleteProfile(uid: string, photoURL: string | null): Promise<void> {
   await deleteDoc(doc(db, "profiles", uid));
   deleteCached(cacheKey(uid));
   // not-started-audit item 08: the photo used to stay in Storage forever,
   // publicly readable at a predictable URL, for an account that's otherwise
   // fully gone. Best-effort — a missing/already-deleted object shouldn't
   // surface as a failure of the (already-committed) profile deletion.
-  try {
-    await deleteObject(ref(storage, `profile-photos/${uid}`));
-  } catch (err) {
-    console.error("Failed to delete profile photo from storage", err);
+  // Deletes by the profile's own stored photoURL (rather than a guessed
+  // fixed path) since each upload now lives at its own unique path.
+  if (photoURL) {
+    try {
+      await deleteObject(ref(storage, photoURL));
+    } catch (err) {
+      console.error("Failed to delete profile photo from storage", err);
+    }
   }
 }

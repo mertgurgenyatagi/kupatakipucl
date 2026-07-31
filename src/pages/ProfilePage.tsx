@@ -171,7 +171,7 @@ export function ProfilePage() {
     setDeleting(true);
     setDeleteError(null);
     try {
-      await Promise.all([deleteProfile(uid), deletePrediction(uid)]);
+      await Promise.all([deleteProfile(uid, displayedProfile?.photoURL ?? null), deletePrediction(uid)]);
       await signOut(auth);
       setDeleteConfirmOpen(false);
       navigate("/");

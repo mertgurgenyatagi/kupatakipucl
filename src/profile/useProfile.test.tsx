@@ -30,6 +30,7 @@ vi.mock("firebase/storage", () => ({
 vi.mock("../firebase", () => ({ db: {}, storage: {} }));
 
 import { useProfile, saveProfile, updateProfilePhoto, deleteProfile } from "./useProfile";
+import { IMMUTABLE_CACHE_CONTROL } from "../lib/compressImage";
 
 type SnapshotCallback = (snapshot: { exists: () => boolean; data: () => unknown }) => void;
 type ErrorCallback = (err: Error) => void;
@@ -178,12 +179,14 @@ describe("updateProfilePhoto", () => {
     mockUploadBytes.mockReset();
     mockGetDownloadURL.mockReset();
     mockSetDoc.mockReset();
+    mockDeleteObject.mockReset();
   });
 
   it("uploads the new photo and writes the profile doc, preserving name and createdAt", async () => {
     mockUploadBytes.mockResolvedValue(undefined);
     mockGetDownloadURL.mockResolvedValue("https://example.com/new-photo.jpg");
     mockSetDoc.mockResolvedValue(undefined);
+    mockDeleteObject.mockResolvedValue(undefined);
 
     const current = { firstName: "Mert", lastName: "G", photoURL: "old-url", createdAt: 123 };
     const file = new File(["data"], "new-photo.jpg", { type: "image/jpeg" });
@@ -198,6 +201,54 @@ describe("updateProfilePhoto", () => {
       createdAt: 123,
     });
   });
+
+  it("uploads to a fresh per-upload path (not the old fixed uid path) with an immutable cache-control", async () => {
+    mockUploadBytes.mockResolvedValue(undefined);
+    mockGetDownloadURL.mockResolvedValue("https://example.com/new-photo.jpg");
+    mockSetDoc.mockResolvedValue(undefined);
+    mockDeleteObject.mockResolvedValue(undefined);
+
+    const current = { firstName: "Mert", lastName: "G", photoURL: "old-url", createdAt: 123 };
+    const file = new File(["data"], "new-photo.jpg", { type: "image/jpeg" });
+    await updateProfilePhoto("uid1", current, file);
+
+    const [, uploadPath] = mockRef.mock.calls[0];
+    expect(uploadPath).toMatch(/^profile-photos\/uid1-\d+$/);
+    expect(mockUploadBytes).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      { cacheControl: IMMUTABLE_CACHE_CONTROL }
+    );
+  });
+
+  it("best-effort deletes the previous photo (by its stored URL) after a successful update", async () => {
+    mockUploadBytes.mockResolvedValue(undefined);
+    mockGetDownloadURL.mockResolvedValue("https://example.com/new-photo.jpg");
+    mockSetDoc.mockResolvedValue(undefined);
+    mockDeleteObject.mockResolvedValue(undefined);
+
+    const current = { firstName: "Mert", lastName: "G", photoURL: "https://example.com/old-photo.jpg", createdAt: 123 };
+    const file = new File(["data"], "new-photo.jpg", { type: "image/jpeg" });
+    await updateProfilePhoto("uid1", current, file);
+
+    expect(mockDeleteObject).toHaveBeenCalledTimes(1);
+    expect(mockRef).toHaveBeenCalledWith({}, "https://example.com/old-photo.jpg");
+  });
+
+  it("does not throw, and still returns the updated profile, when deleting the old photo fails", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockUploadBytes.mockResolvedValue(undefined);
+    mockGetDownloadURL.mockResolvedValue("https://example.com/new-photo.jpg");
+    mockSetDoc.mockResolvedValue(undefined);
+    mockDeleteObject.mockRejectedValue(new Error("object-not-found"));
+
+    const current = { firstName: "Mert", lastName: "G", photoURL: "https://example.com/old-photo.jpg", createdAt: 123 };
+    const file = new File(["data"], "new-photo.jpg", { type: "image/jpeg" });
+    const result = await updateProfilePhoto("uid1", current, file);
+
+    expect(result.photoURL).toBe("https://example.com/new-photo.jpg");
+    consoleErrorSpy.mockRestore();
+  });
 });
 
 describe("deleteProfile", () => {
@@ -209,24 +260,30 @@ describe("deleteProfile", () => {
   it("deletes the profile doc for the given uid", async () => {
     mockDeleteDoc.mockResolvedValue(undefined);
     mockDeleteObject.mockResolvedValue(undefined);
-    await deleteProfile("uid1");
+    await deleteProfile("uid1", "https://example.com/photo.jpg");
     expect(mockDeleteDoc).toHaveBeenCalledTimes(1);
     expect(mockDeleteDoc).toHaveBeenCalledWith({ collection: "profiles", id: "uid1" });
   });
 
-  it("also deletes the profile photo from storage", async () => {
+  it("also deletes the profile photo from storage, by its stored URL", async () => {
     mockDeleteDoc.mockResolvedValue(undefined);
     mockDeleteObject.mockResolvedValue(undefined);
-    await deleteProfile("uid1");
+    await deleteProfile("uid1", "https://example.com/photo.jpg");
     expect(mockDeleteObject).toHaveBeenCalledTimes(1);
-    expect(mockRef).toHaveBeenCalledWith({}, "profile-photos/uid1");
+    expect(mockRef).toHaveBeenCalledWith({}, "https://example.com/photo.jpg");
+  });
+
+  it("skips the storage delete entirely when there's no photoURL", async () => {
+    mockDeleteDoc.mockResolvedValue(undefined);
+    await deleteProfile("uid1", null);
+    expect(mockDeleteObject).not.toHaveBeenCalled();
   });
 
   it("does not throw when the photo delete fails (e.g. already gone)", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockDeleteDoc.mockResolvedValue(undefined);
     mockDeleteObject.mockRejectedValue(new Error("object-not-found"));
-    await expect(deleteProfile("uid1")).resolves.toBeUndefined();
+    await expect(deleteProfile("uid1", "https://example.com/photo.jpg")).resolves.toBeUndefined();
     consoleErrorSpy.mockRestore();
   });
 });

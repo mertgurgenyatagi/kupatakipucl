@@ -297,7 +297,7 @@ describe("ProfilePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Profili sil" }));
     fireEvent.click(screen.getByText("Evet, sil"));
 
-    await waitFor(() => expect(mockDeleteProfile).toHaveBeenCalledWith("uid1"));
+    await waitFor(() => expect(mockDeleteProfile).toHaveBeenCalledWith("uid1", "photo-url"));
     expect(mockDeletePrediction).toHaveBeenCalledWith("uid1");
     await waitFor(() => expect(mockSignOut).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByText("home-page")).toBeInTheDocument());

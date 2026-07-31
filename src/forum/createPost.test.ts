@@ -21,6 +21,7 @@ vi.mock("firebase/storage", () => ({
 vi.mock("../firebase", () => ({ db: {}, storage: {} }));
 
 import { createPost } from "./createPost";
+import { IMMUTABLE_CACHE_CONTROL } from "../lib/compressImage";
 
 const fakeFile = new File(["fake-image-bytes"], "photo.png", { type: "image/png" });
 
@@ -73,6 +74,18 @@ describe("createPost", () => {
     expect(mockUploadBytes).toHaveBeenCalledTimes(1);
     const [, written] = mockAddDoc.mock.calls[0];
     expect(written).toMatchObject({ uid: "uid1", text: "", imageURL: "https://example.com/image.png", parentId: null });
+  });
+
+  it("uploads with an immutable cache-control (the path is never reused per upload)", async () => {
+    mockUploadBytes.mockResolvedValue(undefined);
+    mockGetDownloadURL.mockResolvedValue("https://example.com/image.png");
+    mockAddDoc.mockResolvedValue(undefined);
+    await createPost("uid1", "", fakeFile, null);
+    expect(mockUploadBytes).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      { cacheControl: IMMUTABLE_CACHE_CONTROL }
+    );
   });
 
   it("writes the given parentId for a reply", async () => {

@@ -1,3 +1,12 @@
+/**
+ * Every image this site stores is uploaded under a path that's never reused
+ * (a fresh `uid-timestamp` per upload, not a fixed filename) — so a cached
+ * copy at a given URL is never stale, it's either the current photo/image or
+ * an orphan nobody links to anymore. Safe to mark as far-future + immutable:
+ * repeat viewers hit the browser cache instead of Storage egress at all.
+ */
+export const IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable";
+
 export interface CompressImageOptions {
   /** Longest side, in pixels, to downscale to (aspect ratio preserved). */
   maxDimension: number;
