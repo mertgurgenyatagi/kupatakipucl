@@ -4,6 +4,14 @@ export interface Lobby {
   name: string;
   createdByUid: string;
   createdAt: number;
+  /** Denormalized from the `members` subcollection so the read rule below
+   *  can check "am I a member" on the lobby doc itself — one read instead
+   *  of the doc plus a separate exists() sub-read on every fetch, including
+   *  every snapshot useMyLobbies' live listener delivers (scaling-audit
+   *  No. 07, 2026-07-31). The `members` subcollection stays the source of
+   *  truth for per-member data (joinedAt, viaInviteId); this is purely a
+   *  cheap membership-check mirror, kept in sync on every join/leave/removal. */
+  memberUids: string[];
 }
 
 export interface LobbyWithId extends Lobby {

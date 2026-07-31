@@ -221,17 +221,36 @@ service cloud.firestore {
     // subcollection (not an array field) specifically so joining can be
     // verified against a real invite via exists()/get() — see design doc
     // docs/superpowers/specs/2026-07-29-special-lobby-design.md.
+    //
+    // `memberUids` denormalizes that subcollection's uids onto the lobby doc
+    // itself (2026-07-31, scaling-audit No. 07) purely so the read rule
+    // below can check membership on the doc it's already reading, instead
+    // of paying a second exists() read on the members subcollection for
+    // every single fetch — including every snapshot useMyLobbies' live
+    // listener delivers, which was silently doubling that read cost. The
+    // members subcollection stays the real source of truth for who's
+    // actually a member (and is what the update rule's membership-sync
+    // branch below defers to); memberUids is kept in step with it on every
+    // join/leave/removal (joinLobbyViaInvite.ts, leaveLobby.ts,
+    // removeMember.ts) but is never itself the thing that authorizes one.
     match /lobbies/{lobbyId} {
-      allow read: if request.auth != null
-        && exists(/databases/$(database)/documents/lobbies/$(lobbyId)/members/$(request.auth.uid));
+      allow read: if request.auth != null && resource.data.memberUids.hasAny([request.auth.uid]);
       allow create: if request.auth != null
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 15
-        && request.resource.data.createdByUid == request.auth.uid;
-      // Two distinct shapes: a rename (any current member) or an ownership
-      // transfer (only the departing creator, only to an existing member —
-      // see leaveLobby.ts's ownership-transfer branch).
+        && request.resource.data.createdByUid == request.auth.uid
+        && request.resource.data.memberUids == [request.auth.uid];
+      // Three shapes: a rename (any current member), an ownership transfer
+      // (only the departing creator, only to an existing member — see
+      // leaveLobby.ts's ownership-transfer branch), or a memberUids sync.
+      // The sync branch doesn't re-derive who's allowed to join/leave/be
+      // removed — the members subcollection's own create/delete rules
+      // already fully authorize that — it only checks that this change is
+      // consistent with a real membership change in the very same request:
+      // exactly one uid gained, and it's the caller gaining their own
+      // membership; exactly one uid lost, and it's either the caller
+      // leaving or the creator removing someone.
       allow update: if request.auth != null && (
         (
           exists(/databases/$(database)/documents/lobbies/$(lobbyId)/members/$(request.auth.uid))
@@ -243,6 +262,24 @@ service cloud.firestore {
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['createdByUid'])
           && resource.data.createdByUid == request.auth.uid
           && exists(/databases/$(database)/documents/lobbies/$(lobbyId)/members/$(request.resource.data.createdByUid))
+        ) || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids'])
+          && request.resource.data.memberUids is list
+          && (
+            (
+              request.resource.data.memberUids.toSet().difference(resource.data.memberUids.toSet()).hasOnly([request.auth.uid])
+              && resource.data.memberUids.toSet().difference(request.resource.data.memberUids.toSet()).size() == 0
+              && existsAfter(/databases/$(database)/documents/lobbies/$(lobbyId)/members/$(request.auth.uid))
+            ) || (
+              resource.data.memberUids.toSet().difference(request.resource.data.memberUids.toSet()).hasOnly([request.auth.uid])
+              && request.resource.data.memberUids.toSet().difference(resource.data.memberUids.toSet()).size() == 0
+              && !existsAfter(/databases/$(database)/documents/lobbies/$(lobbyId)/members/$(request.auth.uid))
+            ) || (
+              resource.data.createdByUid == request.auth.uid
+              && request.resource.data.memberUids.toSet().difference(resource.data.memberUids.toSet()).size() == 0
+              && resource.data.memberUids.toSet().difference(request.resource.data.memberUids.toSet()).size() == 1
+            )
+          )
         )
       );
       allow delete: if request.auth != null && resource.data.createdByUid == request.auth.uid;

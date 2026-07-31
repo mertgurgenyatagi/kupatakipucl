@@ -43,7 +43,7 @@ describe("createLobby", () => {
     expect(batch.set).toHaveBeenCalledTimes(3);
     expect(batch.set).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ name: "Fener Grubu", createdByUid: "uid1" })
+      expect.objectContaining({ name: "Fener Grubu", createdByUid: "uid1", memberUids: ["uid1"] })
     );
     expect(batch.set).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ uid: "uid1", viaInviteId: null }));
     expect(batch.set).toHaveBeenCalledWith(

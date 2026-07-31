@@ -1,5 +1,5 @@
 // src/lobbies/joinLobbyViaInvite.ts
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { arrayUnion, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { LobbyInvite, LobbyMember, LOBBY_MAX_JOINED } from "./lobbyTypes";
 import { sendLobbySystemMessage } from "./sendLobbyMessage";
@@ -39,6 +39,7 @@ export async function joinLobbyViaInvite(
 
   const member: LobbyMember = { uid, joinedAt: Date.now(), viaInviteId: inviteId };
   await setDoc(doc(db, "lobbies", invite.lobbyId, "members", uid), member);
+  await updateDoc(doc(db, "lobbies", invite.lobbyId), { memberUids: arrayUnion(uid) });
   await sendLobbySystemMessage(invite.lobbyId, uid, "joined", uid, joinerFirstName);
 
   return { outcome: "joined", lobbyId: invite.lobbyId };
