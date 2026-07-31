@@ -4,8 +4,10 @@ import { db } from "../firebase";
 
 /** Just the set of uids with a `predictions/{uid}` doc — who has submitted,
  *  not what they submitted. Full-collection fetch, same pattern as
- *  usePosts.ts/usePlayers.ts: fine at this friend-group's scale (~30-50
- *  people), no pagination needed. */
+ *  usePlayers.ts: a one-shot fetch (not a live listener), so cost is
+ *  O(page visits), not O(visits × listeners) — fine up to the site's real
+ *  target of ~500 participants; only worth revisiting if that target grows
+ *  by an order of magnitude (scaling-audit No. 13, 2026-07-31). */
 export function usePredictionSubmitters() {
   const [submitterUids, setSubmitterUids] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);

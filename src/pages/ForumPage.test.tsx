@@ -100,7 +100,13 @@ describe("ForumPage", () => {
   beforeEach(() => {
     mockUseAuth.mockReturnValue({ user: { uid: "uid1" } });
     mockUseTournamentPhase.mockReturnValue("notstarted");
-    mockUsePosts.mockReturnValue({ posts: [POST1, REPLY1], loading: false, refetch: mockRefetch });
+    mockUsePosts.mockReturnValue({
+      posts: [POST1, REPLY1],
+      loading: false,
+      refetch: mockRefetch,
+      loadOlder: vi.fn().mockResolvedValue(undefined),
+      hasMore: false,
+    });
     mockUsePlayers.mockReturnValue({ players: [PLAYER1, PLAYER2], loading: false });
     mockUsePostLikes.mockReturnValue({ likesByPost: new Map(), loading: false });
     mockUseLeaderboard.mockReturnValue({ entries: [ENTRY2], loading: false });
@@ -125,7 +131,13 @@ describe("ForumPage", () => {
 
   it("shows a loading skeleton while posts, players, or likes are loading", () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
-    mockUsePosts.mockReturnValue({ posts: [], loading: true, refetch: mockRefetch });
+    mockUsePosts.mockReturnValue({
+      posts: [],
+      loading: true,
+      refetch: mockRefetch,
+      loadOlder: vi.fn().mockResolvedValue(undefined),
+      hasMore: false,
+    });
     render(<ForumPage />);
     expect(screen.getByTestId("forum-skeleton")).toBeInTheDocument();
   });

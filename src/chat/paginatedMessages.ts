@@ -10,11 +10,13 @@ import {
   Unsubscribe,
 } from "firebase/firestore";
 
-// Both the global chat and every lobby's chat cap their live window to the
-// most recent page — older history is reachable on demand via
-// fetchOlderMessages, a one-time (non-live) fetch. Shared here rather than
-// duplicated between useMessages.ts and useLobbyMessages.ts.
-export const MESSAGE_PAGE_SIZE = 50;
+// Global chat, every lobby's chat, and the forum feed (usePosts.ts) all cap
+// their live window to the most recent page — older history is reachable on
+// demand via fetchOlderMessages, a one-time (non-live) fetch. Shared here
+// rather than duplicated across useMessages.ts, useLobbyMessages.ts, and
+// usePosts.ts. Named generically (not MESSAGE_PAGE_SIZE) since it now bounds
+// forum posts too, not just chat messages.
+export const PAGE_SIZE = 50;
 
 interface WithCreatedAt {
   createdAt: number;
@@ -30,7 +32,7 @@ export function subscribeToRecentMessages<T extends WithCreatedAt>(
   onError: (err: Error) => void
 ): Unsubscribe {
   return onSnapshot(
-    query(messagesCollection, orderBy("createdAt", "desc"), limit(MESSAGE_PAGE_SIZE)),
+    query(messagesCollection, orderBy("createdAt", "desc"), limit(PAGE_SIZE)),
     (snapshot) => onNext(snapshot.docs.map((d) => toDocWithId<T>(d)).reverse()),
     onError
   );
@@ -41,7 +43,7 @@ export async function fetchOlderMessages<T extends WithCreatedAt>(
   beforeCreatedAt: number
 ): Promise<(T & { id: string })[]> {
   const snapshot = await getDocs(
-    query(messagesCollection, orderBy("createdAt", "desc"), startAfter(beforeCreatedAt), limit(MESSAGE_PAGE_SIZE))
+    query(messagesCollection, orderBy("createdAt", "desc"), startAfter(beforeCreatedAt), limit(PAGE_SIZE))
   );
   return snapshot.docs.map((d) => toDocWithId<T>(d)).reverse();
 }

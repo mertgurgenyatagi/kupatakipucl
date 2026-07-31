@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { collection } from "firebase/firestore";
 import { db } from "../firebase";
 import { LobbyMessage } from "./lobbyTypes";
-import { MESSAGE_PAGE_SIZE, subscribeToRecentMessages, fetchOlderMessages } from "../chat/paginatedMessages";
+import { PAGE_SIZE, subscribeToRecentMessages, fetchOlderMessages } from "../chat/paginatedMessages";
 
 export interface LobbyMessageWithId extends LobbyMessage {
   id: string;
@@ -31,7 +31,7 @@ export function useLobbyMessages(lobbyId: string | null) {
       (docs) => {
         setLiveMessages(docs);
         setLoading(false);
-        if (docs.length < MESSAGE_PAGE_SIZE) setHasMoreOlder(false);
+        if (docs.length < PAGE_SIZE) setHasMoreOlder(false);
       },
       (err: Error) => {
         console.error("Failed to load lobby messages", err);
@@ -51,7 +51,7 @@ export function useLobbyMessages(lobbyId: string | null) {
         collection(db, "lobbies", lobbyId, "messages"),
         oldest.createdAt
       );
-      if (docs.length < MESSAGE_PAGE_SIZE) setHasMoreOlder(false);
+      if (docs.length < PAGE_SIZE) setHasMoreOlder(false);
       if (docs.length > 0) setOlderMessages((prev) => [...docs, ...prev]);
     } catch (err) {
       console.error("Failed to load older lobby messages", err);

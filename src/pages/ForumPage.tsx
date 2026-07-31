@@ -41,7 +41,7 @@ export function ForumPage() {
   const { user } = useAuth();
   const state = useVisibilityState();
   const phase = useTournamentPhase();
-  const { posts, loading: postsLoading, refetch } = usePosts();
+  const { posts, loading: postsLoading, refetch, loadOlder, hasMore } = usePosts();
   const { players, loading: playersLoading } = usePlayers();
   const { likesByPost: fetchedLikes, loading: likesLoading } = usePostLikes();
   const { entries } = useLeaderboard();
@@ -136,6 +136,8 @@ export function ForumPage() {
         onDeletePost={handleDeletePost}
         onSaveEdit={handleSaveEdit}
         onRefetch={refetch}
+        onLoadOlder={loadOlder}
+        hasMoreOlder={hasMore}
         actionError={actionError}
       />
       <ParticipantPopup

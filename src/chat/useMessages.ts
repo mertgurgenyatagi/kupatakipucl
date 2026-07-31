@@ -4,7 +4,7 @@ import { collection } from "firebase/firestore";
 import { db } from "../firebase";
 import { Message } from "./messageTypes";
 import { getCached, setCached } from "../lib/sessionCache";
-import { MESSAGE_PAGE_SIZE, subscribeToRecentMessages, fetchOlderMessages } from "./paginatedMessages";
+import { PAGE_SIZE, subscribeToRecentMessages, fetchOlderMessages } from "./paginatedMessages";
 
 export interface MessageWithId extends Message {
   id: string;
@@ -27,7 +27,7 @@ export function useMessages() {
         setCached(CACHE_KEY, docs);
         setLiveMessages(docs);
         setLoading(false);
-        if (docs.length < MESSAGE_PAGE_SIZE) setHasMoreOlder(false);
+        if (docs.length < PAGE_SIZE) setHasMoreOlder(false);
       },
       (err: Error) => {
         console.error("Failed to load messages", err);
@@ -43,7 +43,7 @@ export function useMessages() {
     setLoadingOlder(true);
     try {
       const docs = await fetchOlderMessages<Message>(collection(db, "messages"), oldest.createdAt);
-      if (docs.length < MESSAGE_PAGE_SIZE) setHasMoreOlder(false);
+      if (docs.length < PAGE_SIZE) setHasMoreOlder(false);
       if (docs.length > 0) setOlderMessages((prev) => [...docs, ...prev]);
     } catch (err) {
       console.error("Failed to load older messages", err);

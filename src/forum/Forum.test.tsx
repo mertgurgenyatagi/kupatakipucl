@@ -43,6 +43,8 @@ function renderForum(overrides: Partial<ComponentProps<typeof Forum>> = {}) {
       onDeletePost={vi.fn()}
       onSaveEdit={vi.fn()}
       onRefetch={vi.fn()}
+      onLoadOlder={vi.fn().mockResolvedValue(undefined)}
+      hasMoreOlder={false}
       {...overrides}
     />
   );
@@ -111,5 +113,24 @@ describe("Forum", () => {
   it("shows a passed-through action error", () => {
     renderForum({ actionError: "Gönderi silinemedi, tekrar deneyin." });
     expect(screen.getByRole("alert")).toHaveTextContent("Gönderi silinemedi, tekrar deneyin.");
+  });
+
+  it("does not show a load-older affordance when there's nothing older", () => {
+    renderForum({ hasMoreOlder: false });
+    expect(screen.queryByText("Daha eski konuları yükle")).not.toBeInTheDocument();
+  });
+
+  it("shows and wires up a load-older button when there's more history", async () => {
+    const onLoadOlder = vi.fn().mockResolvedValue(undefined);
+    renderForum({ hasMoreOlder: true, onLoadOlder });
+    fireEvent.click(screen.getByText("Daha eski konuları yükle"));
+    expect(onLoadOlder).toHaveBeenCalledTimes(1);
+  });
+
+  it("hides the load-older button while actively searching", () => {
+    renderForum({ hasMoreOlder: true, posts: [makePost({ text: "Arsenal" })] });
+    fireEvent.click(screen.getByLabelText("Forumda ara"));
+    fireEvent.change(screen.getByPlaceholderText("Forumda ara…"), { target: { value: "Arsenal" } });
+    expect(screen.queryByText("Daha eski konuları yükle")).not.toBeInTheDocument();
   });
 });
