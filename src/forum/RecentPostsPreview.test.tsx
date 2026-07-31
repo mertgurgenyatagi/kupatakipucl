@@ -20,6 +20,7 @@ function post(overrides: Partial<PostWithId>): PostWithId {
     quotedPostId: null,
     quotedAuthorUid: null,
     quotedText: null,
+    likedByUids: [],
     ...overrides,
   };
 }

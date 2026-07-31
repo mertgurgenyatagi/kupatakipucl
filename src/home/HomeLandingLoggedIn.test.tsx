@@ -195,6 +195,7 @@ describe("HomeLandingLoggedIn", () => {
           quotedPostId: null,
           quotedAuthorUid: null,
           quotedText: null,
+          likedByUids: [],
         },
       ],
       likesByPost: new Map([["f1", new Set(["me"])]]),

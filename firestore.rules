@@ -180,6 +180,7 @@ service cloud.firestore {
         && request.resource.data.text is string
         && request.resource.data.text.size() <= 360
         && (request.resource.data.text.size() > 0 || request.resource.data.imageURL != null)
+        && request.resource.data.likedByUids == []
         && (
           request.resource.data.quotedPostId == null
           || (
@@ -187,29 +188,33 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/forumPosts/$(request.resource.data.quotedPostId)).data.uid == request.resource.data.quotedAuthorUid
           )
         );
-      allow update: if request.auth != null
-        && resource.data.uid == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'mentionedUids', 'editedAt'])
-        && request.resource.data.text is string
-        && request.resource.data.text.size() <= 360
-        && (request.resource.data.text.size() > 0 || resource.data.imageURL != null);
+      // Two shapes: the author editing text/mentions/editedAt (unchanged),
+      // or ANY signed-in user toggling their own uid in or out of
+      // likedByUids (forum-widget-round-01's like feature, moved off its
+      // own `postLikes` collection onto the post doc itself — scaling-audit
+      // No. 10, 2026-07-31). The like branch checks the symmetric
+      // difference is exactly the caller's own uid, so nobody can add or
+      // remove someone else's like while they're at it.
+      allow update: if request.auth != null && (
+        (
+          resource.data.uid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'mentionedUids', 'editedAt'])
+          && request.resource.data.text is string
+          && request.resource.data.text.size() <= 360
+          && (request.resource.data.text.size() > 0 || resource.data.imageURL != null)
+        ) || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedByUids'])
+          && request.resource.data.likedByUids is list
+          && (
+            request.resource.data.likedByUids.toSet().difference(resource.data.likedByUids.toSet()).hasOnly([request.auth.uid])
+            || resource.data.likedByUids.toSet().difference(request.resource.data.likedByUids.toSet()).hasOnly([request.auth.uid])
+          )
+        )
+      );
       allow delete: if request.auth != null
         && (resource.data.uid == request.auth.uid
             || (resource.data.parentId != null
                 && get(/databases/$(database)/documents/forumPosts/$(resource.data.parentId)).data.uid == request.auth.uid));
-    }
-
-    // Post likes: a lightweight positive-signal toggle on forum posts —
-    // an explicit, deliberate exception to the site's usual no-gamification
-    // stance (forum-widget-round-01), not a default anyone should extend
-    // elsewhere without asking first. Doc id is `${postId}_${uid}`, so a
-    // user can only ever hold one like per post; public read (matches
-    // forumPosts), create/delete restricted to your own like.
-    match /postLikes/{likeId} {
-      allow read: if true;
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-      allow update: if false;
-      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
     }
 
     // Special Lobby: private friend-group sub-scopes. Membership is a

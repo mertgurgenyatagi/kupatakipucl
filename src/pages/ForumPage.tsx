@@ -1,5 +1,5 @@
 // src/pages/ForumPage.tsx
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { useVisibilityState } from "../state/useVisibilityState";
 import { isPageAllowed } from "../state/pageAccess";
@@ -10,7 +10,7 @@ import { assignRanks } from "../leaderboard/ranking";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { usePosts } from "../forum/usePosts";
 import { usePlayers } from "../profile/usePlayers";
-import { usePostLikes, setPostLiked, LikesByPost } from "../forum/usePostLikes";
+import { buildLikesByPost, setPostLiked } from "../forum/postLikes";
 import { deletePost } from "../forum/deletePost";
 import { editPost } from "../forum/editPost";
 import { resolveMentionedUids } from "../chat/chatMentions";
@@ -43,18 +43,13 @@ export function ForumPage() {
   const phase = useTournamentPhase();
   const { posts, loading: postsLoading, refetch, loadOlder, hasMore } = usePosts();
   const { players, loading: playersLoading } = usePlayers();
-  const { likesByPost: fetchedLikes, loading: likesLoading } = usePostLikes();
   const { entries } = useLeaderboard();
   const { results } = useResults();
 
-  const [likesByPost, setLikesByPost] = useState<LikesByPost>(new Map());
   const [actionError, setActionError] = useState<string | null>(null);
   const [selectedParticipantUid, setSelectedParticipantUid] = useState<string | null>(null);
 
-  useEffect(() => {
-    setLikesByPost(fetchedLikes);
-  }, [fetchedLikes]);
-
+  const likesByPost = useMemo(() => buildLikesByPost(posts), [posts]);
   const rankedEntries = useMemo(() => assignRanks(entries), [entries]);
   const selectedRanked = rankedEntries.find((r) => r.entry.uid === selectedParticipantUid) ?? null;
 
@@ -66,24 +61,14 @@ export function ForumPage() {
     if (!user) return;
     const uid = user.uid;
     const wasLiked = likesByPost.get(postId)?.has(uid) ?? false;
-
-    function applyLocally(liked: boolean) {
-      setLikesByPost((prev) => {
-        const next = new Map(prev);
-        const uids = new Set(next.get(postId) ?? []);
-        if (liked) uids.add(uid);
-        else uids.delete(uid);
-        next.set(postId, uids);
-        return next;
-      });
-    }
-
-    applyLocally(!wasLiked);
+    // No manual optimistic state here: `posts` is already a live listener,
+    // so Firestore's own local-write cache reflects the toggled
+    // likedByUids immediately (and rolls it back on its own if the write
+    // ultimately fails) — the derived `likesByPost` just follows along.
     try {
       await setPostLiked(postId, uid, !wasLiked);
     } catch (err) {
       console.error("Failed to toggle post like", err);
-      applyLocally(wasLiked);
     }
   }
 
@@ -122,7 +107,7 @@ export function ForumPage() {
     );
   }
 
-  if (postsLoading || playersLoading || likesLoading) return <ForumSkeleton />;
+  if (postsLoading || playersLoading) return <ForumSkeleton />;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col p-4 sm:p-6 lg:min-h-0 lg:flex-1">
