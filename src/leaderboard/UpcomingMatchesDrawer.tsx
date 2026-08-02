@@ -1,72 +1,15 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type MouseEvent,
-  type UIEvent,
-} from "react";
+import { useEffect, useMemo, useRef, useState, type UIEvent } from "react";
 import { ChevronUp, ChevronDown, Loader2 } from "lucide-react";
 import { getUpcomingFixtures } from "./upcomingFixtures";
 import { resolveNow } from "../tournament/now";
-import { TEAM_BY_ID } from "../predictions/teams";
 import { TeamResult } from "./teamResultTypes";
-import { TeamCrest } from "./TeamCrest";
+import { FixtureRow } from "./FixtureRow";
 
 const INITIAL_COUNT = 10;
 const BATCH_SIZE = 10;
 const LOAD_DELAY_MS = 550;
 const SCROLL_THRESHOLD_PX = 32;
 const PANEL_ID = "upcoming-matches-panel";
-
-const DATE_FMT = new Intl.DateTimeFormat("tr-TR", {
-  day: "2-digit",
-  month: "short",
-  timeZone: "Europe/Istanbul",
-});
-const TIME_FMT = new Intl.DateTimeFormat("tr-TR", {
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-  timeZone: "Europe/Istanbul",
-});
-
-// Home place · home crest-over-code | date/time | away crest-over-code ·
-// away place. Code sits *under* its crest (Mert: "write the team codes
-// under the badge rather than to the side") rather than beside it — which
-// also happens to fix an earlier bug: with crest and code side by side as
-// separate grid tracks, the fixed-width tracks (two crests + a wide date/
-// time column) left the flexible name tracks *negative* room in this
-// column's real 300px width (the page grid's fixed hero-column width, see
-// LeaderboardPage's MAIN_ROW), so they silently collapsed to 0 — text
-// present in the DOM, invisible on screen. Stacking removes a whole pair of
-// horizontal tracks, so there's real room left over for date/time (Mert:
-// "give more space to date and time").
-const ROW_GRID_COLUMNS = "1.25rem minmax(0,1fr) 5rem minmax(0,1fr) 1.25rem";
-
-function place(results: Record<string, TeamResult>, teamId: string): string {
-  const position = results[teamId]?.position;
-  return position ? String(position) : "-";
-}
-
-/** Clickable, but intentionally does nothing yet — Mert's own spec: "clickable
- *  but does nothing." Reserved for a future match-detail view. */
-function handleMatchClick() {}
-function handleMatchKeyDown(e: KeyboardEvent) {
-  if (e.key === "Enter" || e.key === " ") {
-    e.preventDefault();
-    handleMatchClick();
-  }
-}
-
-/** The crest+name for one side of a fixture, its own clickable target broken
- *  out of the match row's big clickable zone (stops propagation) — one
- *  object per Mert's spec, so the name underlines whenever any part of it,
- *  crest included, is hovered. */
-function handleTeamClick(e: MouseEvent) {
-  e.stopPropagation();
-}
 
 /**
  * The hero carousel's bottom drawer. Collapsed, it's a full-width bar peeking
@@ -144,62 +87,9 @@ export function UpcomingMatchesDrawer({
           onScroll={handleScroll}
           className="no-scrollbar min-h-0 flex-1 overflow-y-auto border-t border-color_border1/70 pt-2"
         >
-          {shown.map((fixture) => {
-            const home = TEAM_BY_ID[fixture.homeTeamId];
-            const away = TEAM_BY_ID[fixture.awayTeamId];
-            const kickoff = new Date(fixture.kickoffUtc);
-            return (
-              <div key={fixture.id} className="h-24 px-2">
-                {/* A div, not a <button> — a real <button> can't contain the
-                    home/away crest+name buttons below (invalid nesting). */}
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={handleMatchClick}
-                  onKeyDown={handleMatchKeyDown}
-                  className="grid h-full w-full cursor-pointer items-center gap-1.5 rounded-lg px-2 transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-color_hoverfill focus-visible:bg-color_hoverfill"
-                  style={{ gridTemplateColumns: ROW_GRID_COLUMNS }}
-                >
-                  <span className="font-mono text-xs text-color_textsecondary tnum">
-                    {place(results, home.id)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleTeamClick}
-                    className="group flex cursor-pointer flex-col items-center gap-1"
-                  >
-                    <TeamCrest teamId={home.id} className="size-7" />
-                    <span className="truncate font-display text-sm font-medium text-color_text group-hover:underline">
-                      {home.shortName}
-                    </span>
-                  </button>
-
-                  <span className="flex flex-col items-center justify-center leading-tight">
-                    <span className="font-mono text-sm text-color_text tnum">
-                      {DATE_FMT.format(kickoff)}
-                    </span>
-                    <span className="font-mono text-sm text-color_textsecondary tnum">
-                      {TIME_FMT.format(kickoff)}
-                    </span>
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={handleTeamClick}
-                    className="group flex cursor-pointer flex-col items-center gap-1"
-                  >
-                    <TeamCrest teamId={away.id} className="size-7" />
-                    <span className="truncate font-display text-sm font-medium text-color_text group-hover:underline">
-                      {away.shortName}
-                    </span>
-                  </button>
-                  <span className="font-mono text-xs text-color_textsecondary tnum">
-                    {place(results, away.id)}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+          {shown.map((fixture) => (
+            <FixtureRow key={fixture.id} fixture={fixture} results={results} />
+          ))}
 
           {loadingMore && (
             <div className="flex items-center justify-center py-3">
