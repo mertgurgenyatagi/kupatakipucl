@@ -17,22 +17,30 @@ interface NavLink {
 
 // No nav distinction yet between league phase / pre-knockout / knockout —
 // all three started phases share the same link set per login state.
-const NOTSTARTED_LOGGEDOUT_LINKS: NavLink[] = [{ path: "/", label: "Ana Sayfa" }];
+// Hakkında (About) is static content, ungated in every VisibilityState —
+// same precedent as Ana Sayfa, appended last in every link set below.
+const NOTSTARTED_LOGGEDOUT_LINKS: NavLink[] = [
+  { path: "/", label: "Ana Sayfa" },
+  { path: "/about", label: "Hakkında" },
+];
 const NOTSTARTED_LOGGEDIN_LINKS: NavLink[] = [
   { path: "/", label: "Ana Sayfa" },
   { path: "/forum", label: "Forum" },
+  { path: "/about", label: "Hakkında" },
 ];
 // Forum dropped for logged-out visitors here (previously included) — round-1
 // pagemap answer: forum is logged-in-only in every phase now, no exceptions.
 const STARTED_LOGGEDOUT_LINKS: NavLink[] = [
   { path: "/", label: "Ana Sayfa" },
   { path: "/leaderboard", label: "Puan Durumu" },
+  { path: "/about", label: "Hakkında" },
 ];
 const STARTED_LOGGEDIN_LINKS: NavLink[] = [
   { path: "/", label: "Ana Sayfa" },
   { path: "/leaderboard", label: "Puan Durumu" },
   { path: "/forum", label: "Forum" },
   { path: "/stats", label: "İstatistikler" },
+  { path: "/about", label: "Hakkında" },
 ];
 
 const NAV_LINKS: Record<VisibilityState, NavLink[]> = {

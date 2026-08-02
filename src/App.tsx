@@ -4,6 +4,7 @@ import { ProfileGate } from "./profile/ProfileGate";
 import { AppShell } from "./shell/AppShell";
 import { ErrorBoundary } from "./shell/ErrorBoundary";
 import { HomePage } from "./pages/HomePage";
+import { AboutPage } from "./pages/AboutPage";
 import { PredictionsPage } from "./pages/PredictionsPage";
 import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { ForumPage } from "./pages/ForumPage";
@@ -21,6 +22,7 @@ export function App() {
             <AppShell>
               <Routes>
                 <Route path="/" element={<HomePage />} />
+                <Route path="/about" element={<AboutPage />} />
                 <Route path="/predictions" element={<PredictionsPage />} />
                 <Route path="/leaderboard" element={<LeaderboardPage />} />
                 <Route path="/forum" element={<ForumPage />} />
