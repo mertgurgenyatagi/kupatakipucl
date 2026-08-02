@@ -27,7 +27,7 @@ const PAGE_SHELL =
 // narrower for its two stacked frames, col 3 a fixed 300px matching
 // HomeHero's established width on logged-in Home, col 4 wide for standings.
 const CELL_ROW =
-  "grid min-w-0 flex-1 gap-4 lg:h-full lg:min-h-0 lg:grid-cols-[1.3fr_0.9fr_300px_1fr] lg:gap-5 [&>*]:min-h-0 [&>*]:min-w-0";
+  "grid min-w-0 flex-1 gap-4 lg:h-full lg:min-h-0 lg:grid-cols-[1.04fr_1.16fr_300px_1fr] lg:gap-5 [&>*]:min-h-0 [&>*]:min-w-0";
 const CELL = "h-[26rem] lg:h-full animate-cotton-rise";
 
 // This page never has a signed-in viewer (it's the loggedout_leaguephase
@@ -69,7 +69,7 @@ export function HomeLandingLoggedOutStarted({ results, players, entries }: HomeL
         <LeagueTableList results={results} onSelectTeam={handleSelectTeam} />
 
         <div className="flex min-h-0 flex-col gap-4 lg:gap-5">
-          <Frame className="h-28 shrink-0 animate-cotton-rise" style={{ animationDelay: "60ms" }}>
+          <Frame className="min-h-0 flex-[35] animate-cotton-rise" style={{ animationDelay: "60ms" }}>
             <FrameHeader tone="navy">
               <FrameTitle className="text-base text-color_text sm:text-lg">Yaklaşan Maçlar</FrameTitle>
             </FrameHeader>
@@ -78,7 +78,7 @@ export function HomeLandingLoggedOutStarted({ results, players, entries }: HomeL
             </FrameBody>
           </Frame>
 
-          <Frame className="min-h-0 flex-1 animate-cotton-rise" style={{ animationDelay: "120ms" }}>
+          <Frame className="min-h-0 flex-[65] animate-cotton-rise" style={{ animationDelay: "120ms" }}>
             <FrameHeader tone="navy">
               <FrameTitle className="text-base text-color_text sm:text-lg">Forum</FrameTitle>
             </FrameHeader>

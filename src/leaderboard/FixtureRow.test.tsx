@@ -43,4 +43,11 @@ describe("FixtureRow", () => {
     const [rowButton] = screen.getAllByRole("button");
     expect(() => fireEvent.click(rowButton)).not.toThrow();
   });
+
+  it("compact mode still renders both teams' short names and both places", () => {
+    render(<FixtureRow fixture={fixture} results={{}} compact />);
+    expect(screen.getByText("AJA")).toBeInTheDocument();
+    expect(screen.getByText("ARS")).toBeInTheDocument();
+    expect(screen.getAllByText("-")).toHaveLength(2);
+  });
 });

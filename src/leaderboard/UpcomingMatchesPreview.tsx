@@ -29,7 +29,7 @@ export function UpcomingMatchesPreview({ results }: { results: Record<string, Te
   return (
     <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
       {upcoming.map((fixture) => (
-        <FixtureRow key={fixture.id} fixture={fixture} results={results} />
+        <FixtureRow key={fixture.id} fixture={fixture} results={results} compact />
       ))}
     </div>
   );
