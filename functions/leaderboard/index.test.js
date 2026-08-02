@@ -1,4 +1,12 @@
-const { isPickCorrect, computeScore, assignRanks, buildRankSnapshotEntries, rankSnapshotDocId } = require("./index");
+const {
+  isPickCorrect,
+  computeScore,
+  assignRanks,
+  buildRankSnapshotEntries,
+  rankSnapshotDocId,
+  computeBracketScore,
+  buildLeaderboardEntries,
+} = require("./index");
 
 describe("isPickCorrect", () => {
   it("is correct within 2 positions", () => {
@@ -72,5 +80,120 @@ describe("rankSnapshotDocId", () => {
     expect(rankSnapshotDocId(undefined)).toBeNull();
     expect(rankSnapshotDocId(null)).toBeNull();
     expect(rankSnapshotDocId("4")).toBeNull();
+  });
+});
+
+describe("computeBracketScore", () => {
+  it("returns 0 when there is no bracket submission", () => {
+    expect(computeBracketScore(undefined, { ro16Teams: {}, winners: {} })).toBe(0);
+  });
+
+  it("stacks RO16+QF+SF+Final for a fully correct bracket run", () => {
+    const picks = { "ro16-1": "Arsenal", "qf-1": "Arsenal", "sf-1": "Arsenal", final: "Arsenal" };
+    const bracketState = {
+      ro16Teams: {},
+      winners: { "ro16-1": "Arsenal", "qf-1": "Arsenal", "sf-1": "Arsenal", final: "Arsenal" },
+    };
+    expect(computeBracketScore(picks, bracketState)).toBe(3 + 4 + 5 + 6);
+  });
+
+  it("awards 0 for an incorrect pick", () => {
+    const picks = { "ro16-1": "Napoli" };
+    const bracketState = { ro16Teams: {}, winners: { "ro16-1": "Arsenal" } };
+    expect(computeBracketScore(picks, bracketState)).toBe(0);
+  });
+});
+
+describe("recomputeLeaderboard combined scoring (via buildLeaderboardEntries)", () => {
+  it("gives a participant with only a bracket prediction their bracket points and 0 league points", () => {
+    const profilesById = new Map([["uid1", { firstName: "A", lastName: "B", photoURL: "" }]]);
+    const predictionsById = new Map();
+    const bracketPredictionsById = new Map([["uid1", { picks: { "ro16-1": "Arsenal" }, submittedAt: 1 }]]);
+    const results = {};
+    const bracketState = { ro16Teams: {}, winners: { "ro16-1": "Arsenal" } };
+
+    const entries = buildLeaderboardEntries({
+      profilesById,
+      predictionsById,
+      bracketPredictionsById,
+      results,
+      bracketState,
+    });
+
+    expect(entries).toEqual([
+      {
+        uid: "uid1",
+        firstName: "A",
+        lastName: "B",
+        photoURL: "",
+        points: 3,
+        ranking: undefined,
+        submittedAt: undefined,
+      },
+    ]);
+  });
+
+  it("gives a participant with only a league prediction their league points and 0 bracket points", () => {
+    const profilesById = new Map([["uid1", { firstName: "A", lastName: "B", photoURL: "" }]]);
+    const predictionsById = new Map([["uid1", { ranking: ["a"], submittedAt: 1 }]]);
+    const bracketPredictionsById = new Map();
+    const results = { a: { position: 1 } };
+    const bracketState = { ro16Teams: {}, winners: {} };
+
+    const entries = buildLeaderboardEntries({
+      profilesById,
+      predictionsById,
+      bracketPredictionsById,
+      results,
+      bracketState,
+    });
+
+    expect(entries).toEqual([
+      {
+        uid: "uid1",
+        firstName: "A",
+        lastName: "B",
+        photoURL: "",
+        points: 3,
+        ranking: ["a"],
+        submittedAt: 1,
+      },
+    ]);
+  });
+
+  it("combines league and bracket points for a participant with both", () => {
+    const profilesById = new Map([["uid1", { firstName: "A", lastName: "B", photoURL: "" }]]);
+    const predictionsById = new Map([["uid1", { ranking: ["a"], submittedAt: 1 }]]);
+    const bracketPredictionsById = new Map([["uid1", { picks: { "ro16-1": "Arsenal" }, submittedAt: 2 }]]);
+    const results = { a: { position: 1 } };
+    const bracketState = { ro16Teams: {}, winners: { "ro16-1": "Arsenal" } };
+
+    const entries = buildLeaderboardEntries({
+      profilesById,
+      predictionsById,
+      bracketPredictionsById,
+      results,
+      bracketState,
+    });
+
+    expect(entries[0].points).toBe(3 + 3);
+  });
+
+  it("skips a uid with no profile even if they have a bracket prediction", () => {
+    const profilesById = new Map();
+    const predictionsById = new Map();
+    const bracketPredictionsById = new Map([["uid1", { picks: { "ro16-1": "Arsenal" }, submittedAt: 1 }]]);
+    const results = {};
+    const bracketState = { ro16Teams: {}, winners: { "ro16-1": "Arsenal" } };
+
+    const entries = buildLeaderboardEntries({
+      profilesById,
+      predictionsById,
+      bracketPredictionsById,
+      results,
+      bracketState,
+    });
+
+    expect(entries).toEqual([]);
   });
 });
