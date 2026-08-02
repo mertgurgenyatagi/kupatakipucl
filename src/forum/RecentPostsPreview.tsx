@@ -8,7 +8,7 @@ import { computeThreadStats } from "./threadStats";
 import { timeAgo } from "./forumTime";
 import { ForumImageThumb } from "./ForumImageThumb";
 import { ThreadPopup } from "./ThreadPopup";
-import { fullName, firstNameOnly, avatarSrc } from "../profile/deletedAccount";
+import { fullName, firstNameOnly, avatarSrc, initials } from "../profile/deletedAccount";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
@@ -27,10 +27,6 @@ interface RecentPostsPreviewProps {
    *  home-page cell without turning into the full thread view (that's what
    *  /forum is for). */
   limit?: number;
-}
-
-function initials(firstName: string, lastName: string) {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
 /**
@@ -107,7 +103,7 @@ export function RecentPostsPreview({
                 <Avatar className="size-8 shrink-0">
                   <AvatarImage src={avatarSrc(author)} alt="" />
                   <AvatarFallback className="font-mono text-[0.6rem] text-color_textsecondary">
-                    {author ? initials(author.firstName, author.lastName) : "?"}
+                    {initials(author)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
