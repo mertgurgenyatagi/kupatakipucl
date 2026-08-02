@@ -2,14 +2,17 @@
 import { useEffect, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
+import { useAuth } from "../auth/AuthProvider";
 import { Profile } from "./profileTypes";
 import { getCached, setCached } from "../lib/sessionCache";
 
-export interface Player extends Profile {
+export interface Player extends Omit<Profile, "lastName"> {
   uid: string;
+  // Optional, not just on a deleted account: absent whenever this player's
+  // data came from `publicProfiles` (a logged-out session never receives
+  // lastName at all — see the 2026-08-02 name-privacy design spec).
+  lastName?: string;
 }
-
-const CACHE_KEY = "players";
 
 /**
  * not-started-audit item 09: was a one-shot `getDocs`, cached for the
@@ -18,21 +21,41 @@ const CACHE_KEY = "players";
  * anyone already on the site until a hard reload. Live listener now, same
  * "show cached immediately, let the first snapshot silently reconcile it"
  * pattern useMessages.ts already established.
+ *
+ * Auth-aware since 2026-08-02: signed-in visitors subscribe to `profiles`
+ * (full data, including lastName); signed-out visitors subscribe to
+ * `publicProfiles` (lastName never present — Firestore rules can't filter
+ * individual fields out of a read, so this is a genuinely separate,
+ * separately-gated collection, not a client-side redaction). Cache keys are
+ * split by source so a mid-session login/logout can't serve one shape's
+ * cached data through the other's listener before the first live snapshot
+ * lands.
  */
 export function usePlayers() {
-  const cached = getCached<Player[]>(CACHE_KEY);
-  const [players, setPlayers] = useState<Player[]>(cached ?? []);
-  const [loading, setLoading] = useState(cached === undefined);
+  const { user } = useAuth();
+  const source = user ? "profiles" : "publicProfiles";
+  const cacheKey = user ? "players:full" : "players:public";
+
+  const [players, setPlayers] = useState<Player[]>(() => getCached<Player[]>(cacheKey) ?? []);
+  const [loading, setLoading] = useState(() => getCached<Player[]>(cacheKey) === undefined);
 
   useEffect(() => {
+    const cached = getCached<Player[]>(cacheKey);
+    if (cached !== undefined) {
+      setPlayers(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
     const unsubscribe = onSnapshot(
-      collection(db, "profiles"),
+      collection(db, source),
       (snapshot) => {
         const next = snapshot.docs.map((docSnap: { id: string; data: () => unknown }) => ({
           uid: docSnap.id,
           ...(docSnap.data() as Profile),
         }));
-        setCached(CACHE_KEY, next);
+        setCached(cacheKey, next);
         setPlayers(next);
         setLoading(false);
       },
@@ -42,7 +65,7 @@ export function usePlayers() {
       }
     );
     return unsubscribe;
-  }, []);
+  }, [source, cacheKey]);
 
   return { players, loading };
 }
