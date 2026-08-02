@@ -53,3 +53,27 @@ describe("isPageAllowed", () => {
     }
   });
 });
+
+describe("isPageAllowed for bracket", () => {
+  it("allows bracket for every logged-in state, in every phase", () => {
+    for (const state of [
+      "loggedin_notstarted",
+      "loggedin_leaguephase",
+      "loggedin_preknockout",
+      "loggedin_knockout",
+    ] as const) {
+      expect(isPageAllowed("bracket", state)).toBe(true);
+    }
+  });
+
+  it("blocks bracket for every logged-out state", () => {
+    for (const state of [
+      "loggedout_notstarted",
+      "loggedout_leaguephase",
+      "loggedout_preknockout",
+      "loggedout_knockout",
+    ] as const) {
+      expect(isPageAllowed("bracket", state)).toBe(false);
+    }
+  });
+});

@@ -1,7 +1,7 @@
 import { VisibilityState, getVisibilityState } from "./visibilityState";
 import { TournamentPhase, STARTED_PHASES } from "../tournament/tournamentPhase";
 
-export type PageKey = "predictions" | "leaderboard" | "forum" | "stats" | "profile";
+export type PageKey = "predictions" | "leaderboard" | "forum" | "stats" | "profile" | "bracket";
 
 const ALL_PHASES: readonly TournamentPhase[] = ["notstarted", ...STARTED_PHASES];
 
@@ -18,6 +18,7 @@ const PAGE_ACCESS: Record<PageKey, VisibilityState[]> = {
   forum: statesFor(ALL_PHASES, [true]),
   stats: statesFor(STARTED_PHASES, [true]),
   profile: statesFor(ALL_PHASES, [true]),
+  bracket: statesFor(ALL_PHASES, [true]),
 };
 
 export function isPageAllowed(page: PageKey, state: VisibilityState): boolean {
