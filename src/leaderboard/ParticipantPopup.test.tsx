@@ -192,6 +192,24 @@ describe("ParticipantPopup", () => {
     consoleErrorSpy.mockRestore();
   });
 
+  it("does not fetch the survey and shows a sign-in message instead, when the viewer isn't logged in", async () => {
+    render(
+      <ParticipantPopup
+        ranked={{ entry: baseEntry, rank: 3 }}
+        entries={[baseEntry, otherEntry]}
+        players={PLAYERS}
+        results={{}}
+        onOpenChange={() => {}}
+        onSelectTeam={() => {}}
+        tournamentStarted={true}
+        viewerLoggedIn={false}
+      />
+    );
+    expect(await screen.findByText("Anket cevaplarını görmek için giriş yapmalısınız.")).toBeInTheDocument();
+    await waitFor(() => expect(mockGetDocs).toHaveBeenCalled()); // devMatches still loads
+    expect(mockGetDoc).not.toHaveBeenCalled(); // but the survey read is skipped
+  });
+
   it("shows a distinct, non-alarming message when the participant has no survey doc at all", async () => {
     render(
       <ParticipantPopup

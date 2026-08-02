@@ -16,6 +16,7 @@ import { editPost } from "../forum/editPost";
 import { resolveMentionedUids } from "../chat/chatMentions";
 import { Forum } from "../forum/Forum";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageUnavailable } from "@/components/ui/page-unavailable";
 
 function ForumSkeleton() {
   return (
@@ -98,13 +99,7 @@ export function ForumPage() {
   }
 
   if (!isPageAllowed("forum", state)) {
-    return (
-      <div className="flex h-full flex-1 items-center px-5 sm:px-8 lg:px-12">
-        <p className="font-display text-2xl text-color_textsecondary italic">
-          Bu bölüm şu anda kullanılamıyor.
-        </p>
-      </div>
-    );
+    return <PageUnavailable />;
   }
 
   if (postsLoading || playersLoading) return <ForumSkeleton />;
@@ -133,6 +128,7 @@ export function ForumPage() {
         onOpenChange={handlePopupOpenChange}
         onSelectTeam={() => {}}
         tournamentStarted={phase !== "notstarted"}
+        viewerLoggedIn={Boolean(user)}
       />
     </div>
   );

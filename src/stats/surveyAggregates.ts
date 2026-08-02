@@ -1,4 +1,5 @@
 import { MessiOrRonaldo } from "../predictions/surveyTypes";
+import { MESSI_RONALDO_LABEL } from "../predictions/surveyLabels";
 
 export interface CountBar {
   label: string;
@@ -19,11 +20,6 @@ export function computeFootballKnowledgeDistribution(levels: number[]): CountBar
 }
 
 const MESSI_OR_RONALDO_OPTIONS: MessiOrRonaldo[] = ["messi", "ronaldo", "no-opinion"];
-const MESSI_OR_RONALDO_LABELS: Record<MessiOrRonaldo, string> = {
-  messi: "Messi",
-  ronaldo: "Ronaldo",
-  "no-opinion": "Fikrim yok",
-};
 
 export function computeMessiRonaldoDistribution(picks: MessiOrRonaldo[]): CountBar[] {
   const counts = new Map<MessiOrRonaldo, number>(MESSI_OR_RONALDO_OPTIONS.map((o) => [o, 0]));
@@ -31,7 +27,7 @@ export function computeMessiRonaldoDistribution(picks: MessiOrRonaldo[]): CountB
     counts.set(pick, (counts.get(pick) ?? 0) + 1);
   });
   return MESSI_OR_RONALDO_OPTIONS.map((pick) => ({
-    label: MESSI_OR_RONALDO_LABELS[pick],
+    label: MESSI_RONALDO_LABEL[pick],
     count: counts.get(pick) ?? 0,
   }));
 }

@@ -15,6 +15,7 @@ import { buildScoringExampleWindow, pickFallbackTeam } from "../predictions/scor
 import { AutoAdvance } from "../signup/AutoAdvance";
 import { BounceCheck } from "../signup/BounceCheck";
 import { sharpVariants } from "../signup/transitions";
+import { PAGE_UNAVAILABLE_MESSAGE } from "@/components/ui/page-unavailable";
 
 // The scoring-example beat (index 1) is the only one with a visual.
 const SCORING_EXAMPLE_BEAT_INDEX = 1;
@@ -45,7 +46,7 @@ export function PredictionsPage() {
   const [error, setError] = useState<string | null>(null);
 
   if (!isPageAllowed("predictions", state)) {
-    return <p>Bu bölüm şu anda kullanılamıyor.</p>;
+    return <p>{PAGE_UNAVAILABLE_MESSAGE}</p>;
   }
 
   if (loading) return null;

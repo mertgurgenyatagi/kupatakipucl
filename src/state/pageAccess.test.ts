@@ -16,9 +16,9 @@ describe("isPageAllowed", () => {
     expect(isPageAllowed("stats", "loggedin_notstarted")).toBe(false);
   });
 
-  it("allows leaderboard and forum (not stats/predictions) for a logged-out visitor once started, in every started phase", () => {
+  it("allows forum (not leaderboard/stats/predictions) for a logged-out visitor once started, in every started phase", () => {
     for (const state of ["loggedout_leaguephase", "loggedout_preknockout", "loggedout_knockout"] as const) {
-      expect(isPageAllowed("leaderboard", state)).toBe(true);
+      expect(isPageAllowed("leaderboard", state)).toBe(false);
       expect(isPageAllowed("forum", state)).toBe(true);
       expect(isPageAllowed("stats", state)).toBe(false);
       expect(isPageAllowed("predictions", state)).toBe(false);

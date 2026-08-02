@@ -121,6 +121,10 @@ export function HomeLandingLoggedOutStarted({ results, players, entries }: HomeL
         }}
         onSelectTeam={handleSelectTeam}
         tournamentStarted
+        // This composition never has a signed-in viewer — the quiz-answers
+        // widget stays gated behind the same viewerLoggedIn flag Forum uses,
+        // rather than removing the popup/standings column outright.
+        viewerLoggedIn={false}
       />
       <TeamPopup
         teamId={selectedTeamId}

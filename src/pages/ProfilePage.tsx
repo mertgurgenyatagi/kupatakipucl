@@ -25,6 +25,7 @@ import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageUnavailable } from "@/components/ui/page-unavailable";
 import {
   Dialog,
   DialogContent,
@@ -135,13 +136,7 @@ export function ProfilePage() {
   }, []);
 
   if (!isPageAllowed("profile", state)) {
-    return (
-      <div className="flex h-full flex-1 items-center px-5 sm:px-8 lg:px-12">
-        <p className="font-display text-2xl text-color_textsecondary italic">
-          Bu bölüm şu anda kullanılamıyor.
-        </p>
-      </div>
-    );
+    return <PageUnavailable />;
   }
 
   if (profileLoading || predictionLoading || entriesLoading) return <ProfileSkeleton />;

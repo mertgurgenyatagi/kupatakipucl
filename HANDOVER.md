@@ -6,6 +6,24 @@ This file is meant to be pruned/rewritten as things get resolved or folded into 
 
 ---
 
+## 2026-08-02 — Codebase cleanup + Puan Durumu/quiz-answer login gating, merged to `main`
+
+Built and merged (branch `minor-tweaks-cleanup`): two unrelated pieces of work done in the same branch — a general cleanup pass, and two access-control fixes flagged directly by Mert.
+
+**Cleanup pass**, mostly working straight off `PROJECT_STATE.md` §13's dead-code/hygiene list: deleted `PlaceholderPage.tsx`, `SubmissionCounter.tsx`, and `LeaderboardCells.tsx` (`ParticipantCountCell`/`CurrentLeaderCell`) — all confirmed zero-caller; deleted the entire `team_logos/` asset directory (36 tracked PNGs, unreferenced anywhere); trimmed unused shadcn-vendor exports (`DialogTrigger`, `TableFooter`, `TableCaption`, `AvatarBadge`) and a leftover Next.js `"use client"` directive off `table.tsx`. Centralized the "Bu bölüm şu anda kullanılamıyor." gate string (previously duplicated across 6 files) into a new `src/components/ui/page-unavailable.tsx`; deduped `stats/surveyAggregates.ts`'s copy of `MESSI_OR_RONALDO_LABELS` to import `predictions/surveyLabels.ts`'s instead. Rewrote `scripts/set-dev-config.mjs`, which had gone stale against `DevConfig`'s real shape (still wrote a `tournamentActive` boolean that hasn't existed since the `phaseOverride` enum rework) and was silently no-oping every phase-override call.
+
+**Access-control fixes**, both direct requests:
+1. **Puan Durumu (`/leaderboard`) is now signed-in only** — `state/pageAccess.ts` and `AppShell.tsx`'s nav both changed from `statesFor(STARTED_PHASES, [true, false])` to `[true]`, same shape Stats already used. A logged-out visitor once the tournament's started no longer sees the nav link or gets anything but the standard blocked message at the route itself.
+2. **`ParticipantPopup`'s quiz-answers widget is no longer reachable by a logged-out viewer.** New optional `viewerLoggedIn` prop (default `true`): when `false`, the `surveyResponses` read is skipped outright (rather than attempted and shown as a permission error) and a plain "giriş yapmalısınız" message renders instead. Wired to `viewerLoggedIn={Boolean(user)}` in `ForumPage.tsx` (the one page a logged-out visitor can still open this popup from, since Forum's been open to logged-out visitors since the previous entry below) and to `viewerLoggedIn={false}` in `HomeLandingLoggedOutStarted.tsx` (never has a signed-in viewer by construction).
+
+**Note on scope, since it went back and forth this session**: the first pass at fix #2 also *removed* Home's participant-standings column (`LeaderboardTable`) and `ParticipantPopup` outright, on the reasoning that it was the one leak and the cleanest fix — and widened `LeagueTableList` to show full team names in the freed space. Mert corrected this: Home's 4-column layout (including the standings column and popup) should stay exactly as it was: only the actual `/leaderboard` route needed gating, and the quiz-answer leak should be closed via the `viewerLoggedIn` flag, not by deleting the widget. That's the version that shipped — `LeagueTableList` is back to showing `team.shortName`, not `team.name`.
+
+**Verified**: `tsc -b` clean, full suite green (108 test files / 774 tests) before merge.
+
+**Open follow-up, same backlog as every other entry below**: `PROJECT_STATE.md` §4's page-access matrix now has a second stale point beyond what's already noted — it still describes Leaderboard as "visible logged in or out, once started," which is no longer true. Mechanical update, not urgent.
+
+---
+
 ## 2026-08-02 — Home's logged-out league-phase composition, merged to `main`
 
 Built and merged (branch `home-loggedout-leaguephase`): the `loggedout_leaguephase` `VisibilityState` — one of the two Home states still showing the generic `[Placeholder]` skeleton per `PROJECT_STATE.md` §6.1 — now has a real composition. Design spec at `docs/superpowers/specs/2026-08-02-home-loggedout-leaguephase-design.md`, implementation plan at `docs/superpowers/plans/2026-08-02-home-loggedout-leaguephase.md`. Built from a hand-drawn wireframe: a 4-column bento (league table | upcoming fixtures + forum preview | hero carousel | participant standings), routed via a new early return in `HomePage.tsx`.
