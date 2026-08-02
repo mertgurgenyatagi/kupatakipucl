@@ -124,4 +124,22 @@ describe("ReplyRow", () => {
     fireEvent.click(screen.getByText("Mert G"));
     expect(onSelectParticipant).toHaveBeenCalledWith("uid1");
   });
+
+  it("disables the like button and does not call onToggleLike when logged out", () => {
+    const onToggleLike = vi.fn();
+    renderRow({ uid: null, onToggleLike });
+    const likeButton = screen.getByLabelText("Beğenmek için giriş yapmalısın");
+    expect(likeButton).toBeDisabled();
+    fireEvent.click(likeButton);
+    expect(onToggleLike).not.toHaveBeenCalled();
+  });
+
+  it("disables the like button in compact mode too when logged out", () => {
+    const onToggleLike = vi.fn();
+    renderRow({ uid: null, onToggleLike, compact: true });
+    const likeButton = screen.getByLabelText("Beğenmek için giriş yapmalısın");
+    expect(likeButton).toBeDisabled();
+    fireEvent.click(likeButton);
+    expect(onToggleLike).not.toHaveBeenCalled();
+  });
 });

@@ -7,13 +7,9 @@ import { ReplyRow } from "./ReplyRow";
 import { ForumImageThumb } from "./ForumImageThumb";
 import { timeAgo } from "./forumTime";
 import { splitMentionSegments } from "../chat/chatMentions";
-import { fullName, avatarSrc } from "../profile/deletedAccount";
+import { fullName, avatarSrc, initials } from "../profile/deletedAccount";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-
-function initials(firstName: string, lastName: string) {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-}
 
 const PREVIEW_REPLY_COUNT = 3;
 const LONG_TEXT_THRESHOLD = 200;
@@ -74,7 +70,7 @@ export function ThreadCard({
           <Avatar className="size-8 shrink-0">
             <AvatarImage src={avatarSrc(author)} alt="" />
             <AvatarFallback className="font-mono text-[0.6rem] text-color_textsecondary">
-              {author ? initials(author.firstName, author.lastName) : "?"}
+              {initials(author)}
             </AvatarFallback>
           </Avatar>
           <span className="min-w-0 text-left">
@@ -128,12 +124,17 @@ export function ThreadCard({
       <div className="flex shrink-0 items-center gap-3.5">
         <button
           type="button"
-          onClick={() => onToggleLike(post.id)}
+          onClick={() => uid && onToggleLike(post.id)}
+          disabled={!uid}
           aria-pressed={liked}
-          aria-label={liked ? "Beğeniyi geri al" : "Beğen"}
+          aria-label={!uid ? "Beğenmek için giriş yapmalısın" : liked ? "Beğeniyi geri al" : "Beğen"}
           className={cn(
-            "-ml-1.5 flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 outline-none transition-colors duration-150 ease-[var(--ease-cotton)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent",
-            liked ? "text-color_accent" : "text-color_textsecondary hover:text-color_accent"
+            "-ml-1.5 flex items-center gap-1 rounded-full px-1.5 py-0.5 outline-none transition-colors duration-150 ease-[var(--ease-cotton)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent",
+            !uid
+              ? "cursor-default text-color_textsecondary"
+              : liked
+                ? "cursor-pointer text-color_accent"
+                : "cursor-pointer text-color_textsecondary hover:text-color_accent"
           )}
         >
           <Heart className="size-3.5" fill={liked ? "currentColor" : "none"} strokeWidth={2} aria-hidden />

@@ -132,4 +132,19 @@ describe("ThreadCard", () => {
     fireEvent.click(screen.getByLabelText("Beğen"));
     expect(onToggleLike).toHaveBeenCalledWith("root1");
   });
+
+  it("disables the like button and does not call onToggleLike when logged out", () => {
+    const onToggleLike = vi.fn();
+    renderCard({ uid: null, onToggleLike });
+    const likeButton = screen.getByLabelText("Beğenmek için giriş yapmalısın");
+    expect(likeButton).toBeDisabled();
+    fireEvent.click(likeButton);
+    expect(onToggleLike).not.toHaveBeenCalled();
+  });
+
+  it("still shows the like count when logged out", () => {
+    const likesByPost = new Map([["root1", new Set(["uid2"])]]);
+    renderCard({ uid: null, likesByPost });
+    expect(screen.getByText("1")).toBeInTheDocument();
+  });
 });
