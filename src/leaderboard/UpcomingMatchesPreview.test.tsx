@@ -25,4 +25,12 @@ describe("UpcomingMatchesPreview", () => {
     fireEvent.click(firstTeamButton);
     expect(onSelectTeam).toHaveBeenCalledTimes(1);
   });
+
+  it("clicking a fixture row fires onSelectFixture with that fixture's id", () => {
+    const onSelectFixture = vi.fn();
+    render(<UpcomingMatchesPreview results={{}} onSelectFixture={onSelectFixture} />);
+    const [firstRowButton] = screen.getAllByRole("button");
+    fireEvent.click(firstRowButton);
+    expect(onSelectFixture).toHaveBeenCalledTimes(1);
+  });
 });

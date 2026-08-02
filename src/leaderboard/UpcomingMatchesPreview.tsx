@@ -16,9 +16,11 @@ const PREVIEW_COUNT = 3;
 export function UpcomingMatchesPreview({
   results,
   onSelectTeam,
+  onSelectFixture,
 }: {
   results: Record<string, TeamResult>;
   onSelectTeam?: (teamId: string) => void;
+  onSelectFixture?: (fixtureId: string) => void;
 }) {
   const upcoming = useMemo(() => getUpcomingFixtures(resolveNow()).slice(0, PREVIEW_COUNT), []);
 
@@ -35,7 +37,14 @@ export function UpcomingMatchesPreview({
   return (
     <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
       {upcoming.map((fixture) => (
-        <FixtureRow key={fixture.id} fixture={fixture} results={results} compact onSelectTeam={onSelectTeam} />
+        <FixtureRow
+          key={fixture.id}
+          fixture={fixture}
+          results={results}
+          compact
+          onSelectTeam={onSelectTeam}
+          onSelectFixture={onSelectFixture}
+        />
       ))}
     </div>
   );
