@@ -79,13 +79,13 @@ describe("AppShell nav gating", () => {
     expect(screen.queryByText("İstatistikler")).not.toBeInTheDocument();
   });
 
-  it("shows leaderboard but not forum, stats or predictions when started and not logged in", () => {
+  it("shows leaderboard and forum but not stats or predictions when started and not logged in", () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
     mockUseTournamentPhase.mockReturnValue("leaguephase");
     renderShell();
     expect(screen.getByText("Puan Durumu")).toBeInTheDocument();
+    expect(screen.getByText("Forum")).toBeInTheDocument();
     expect(screen.getByText("Hakkında")).toBeInTheDocument();
-    expect(screen.queryByText("Forum")).not.toBeInTheDocument();
     expect(screen.queryByText("İstatistikler")).not.toBeInTheDocument();
     expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
   });

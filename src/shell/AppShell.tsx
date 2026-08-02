@@ -28,11 +28,12 @@ const NOTSTARTED_LOGGEDIN_LINKS: NavLink[] = [
   { path: "/forum", label: "Forum" },
   { path: "/about", label: "Hakkında" },
 ];
-// Forum dropped for logged-out visitors here (previously included) — round-1
-// pagemap answer: forum is logged-in-only in every phase now, no exceptions.
+// Forum re-added for logged-out visitors 2026-08-02, reversing the earlier
+// round-1 pagemap closure — see src/state/pageAccess.ts's matching comment.
 const STARTED_LOGGEDOUT_LINKS: NavLink[] = [
   { path: "/", label: "Ana Sayfa" },
   { path: "/leaderboard", label: "Puan Durumu" },
+  { path: "/forum", label: "Forum" },
   { path: "/about", label: "Hakkında" },
 ];
 const STARTED_LOGGEDIN_LINKS: NavLink[] = [
