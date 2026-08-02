@@ -28,21 +28,12 @@ function place(results: Record<string, TeamResult>, teamId: string): string {
   return position ? String(position) : "-";
 }
 
-/** Clickable, but intentionally does nothing yet — Mert's own spec: "clickable
- *  but does nothing." Reserved for a future match-detail view. */
-function handleMatchClick() {}
-function handleMatchKeyDown(e: KeyboardEvent) {
-  if (e.key === "Enter" || e.key === " ") {
-    e.preventDefault();
-    handleMatchClick();
-  }
-}
-
 export function FixtureRow({
   fixture,
   results,
   compact = false,
   onSelectTeam,
+  onSelectFixture,
 }: {
   fixture: Fixture;
   results: Record<string, TeamResult>;
@@ -54,10 +45,23 @@ export function FixtureRow({
    *  TeamPopup. Undefined for the drawer (unchanged, still just stops
    *  propagation with no further effect). */
   onSelectTeam?: (teamId: string) => void;
+  /** Fires with the fixture's id when the row itself (not a team) is
+   *  clicked — opens MatchupPopup.tsx. */
+  onSelectFixture?: (fixtureId: string) => void;
 }) {
   const home = TEAM_BY_ID[fixture.homeTeamId];
   const away = TEAM_BY_ID[fixture.awayTeamId];
   const kickoff = new Date(fixture.kickoffUtc);
+
+  function handleMatchClick() {
+    onSelectFixture?.(fixture.id);
+  }
+  function handleMatchKeyDown(e: KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleMatchClick();
+    }
+  }
 
   return (
     <div className={compact ? "h-[4.5rem] px-2" : "h-24 px-2"}>

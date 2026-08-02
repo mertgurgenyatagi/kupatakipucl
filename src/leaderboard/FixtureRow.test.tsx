@@ -38,7 +38,16 @@ describe("FixtureRow", () => {
     expect(screen.getByText("1")).toBeInTheDocument();
   });
 
-  it("the row itself is clickable but has no observable click side effect", () => {
+  it("clicking the row fires onSelectFixture with the fixture's id", () => {
+    const onSelectFixture = vi.fn();
+    render(<FixtureRow fixture={fixture} results={{}} onSelectFixture={onSelectFixture} />);
+    const [rowButton] = screen.getAllByRole("button");
+    fireEvent.click(rowButton);
+    expect(onSelectFixture).toHaveBeenCalledWith("m1");
+    expect(onSelectFixture).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not throw when the row is clicked and no onSelectFixture is provided", () => {
     render(<FixtureRow fixture={fixture} results={{}} />);
     const [rowButton] = screen.getAllByRole("button");
     expect(() => fireEvent.click(rowButton)).not.toThrow();
