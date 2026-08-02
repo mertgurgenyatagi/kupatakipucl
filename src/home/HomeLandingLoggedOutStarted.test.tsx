@@ -15,8 +15,17 @@ vi.mock("../leaderboard/LeagueTableList", () => ({
 }));
 
 vi.mock("../leaderboard/UpcomingMatchesPreview", () => ({
-  UpcomingMatchesPreview: ({ onSelectTeam }: { onSelectTeam: (id: string) => void }) => (
-    <button onClick={() => onSelectTeam("arsenal")}>upcoming-preview</button>
+  UpcomingMatchesPreview: ({
+    onSelectTeam,
+    onSelectFixture,
+  }: {
+    onSelectTeam: (id: string) => void;
+    onSelectFixture?: (id: string) => void;
+  }) => (
+    <div>
+      <button onClick={() => onSelectTeam("arsenal")}>upcoming-preview</button>
+      <button onClick={() => onSelectFixture?.("fixture-1")}>upcoming-preview-fixture</button>
+    </div>
   ),
 }));
 
@@ -59,7 +68,22 @@ vi.mock("../leaderboard/ParticipantPopup", () => ({
 }));
 
 vi.mock("../leaderboard/TeamPopup", () => ({
-  TeamPopup: ({ teamId }: { teamId: string | null }) => <div>team-popup:{teamId ?? "closed"}</div>,
+  TeamPopup: ({
+    teamId,
+    onSelectFixture,
+  }: {
+    teamId: string | null;
+    onSelectFixture?: (id: string) => void;
+  }) => (
+    <div>
+      <span>team-popup:{teamId ?? "closed"}</span>
+      <button onClick={() => onSelectFixture?.("fixture-2")}>team-popup-select-fixture</button>
+    </div>
+  ),
+}));
+
+vi.mock("../leaderboard/MatchupPopup", () => ({
+  MatchupPopup: ({ fixtureId }: { fixtureId: string | null }) => <div>matchup-popup:{fixtureId ?? "closed"}</div>,
 }));
 
 const player = { uid: "player-1", firstName: "Ada", photoURL: "", createdAt: 1 };
@@ -110,5 +134,16 @@ describe("HomeLandingLoggedOutStarted", () => {
     fireEvent.click(screen.getByText("select-participant"));
     expect(screen.getByText("participant-popup:player-1:false")).toBeInTheDocument();
     expect(screen.getByText("team-popup:closed")).toBeInTheDocument();
+  });
+
+  it("opens the Matchup Popup when a fixture is selected from the upcoming-matches preview or from TeamPopup's match history", () => {
+    render(<HomeLandingLoggedOutStarted results={{}} players={[]} entries={[]} />);
+    expect(screen.getByText("matchup-popup:closed")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("upcoming-preview-fixture"));
+    expect(screen.getByText("matchup-popup:fixture-1")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("team-popup-select-fixture"));
+    expect(screen.getByText("matchup-popup:fixture-2")).toBeInTheDocument();
   });
 });

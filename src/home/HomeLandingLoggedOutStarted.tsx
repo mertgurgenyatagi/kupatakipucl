@@ -9,6 +9,7 @@ import { LeaderboardTable } from "../leaderboard/LeaderboardTable";
 import { HomeHero } from "./HomeHero";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { TeamPopup } from "../leaderboard/TeamPopup";
+import { MatchupPopup } from "../leaderboard/MatchupPopup";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
 import type { TeamResult } from "../leaderboard/teamResultTypes";
 import type { Player } from "../profile/usePlayers";
@@ -50,15 +51,23 @@ export function HomeLandingLoggedOutStarted({ results, players, entries }: HomeL
 
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
+  const [selectedFixtureId, setSelectedFixtureId] = useState<string | null>(null);
   const selectedRanked = rankedEntries.find((r) => r.entry.uid === selectedUid) ?? null;
 
   const handleSelectTeam = useCallback((teamId: string) => {
     setSelectedTeamId(teamId);
     setSelectedUid(null);
+    setSelectedFixtureId(null);
   }, []);
   const handleSelectParticipant = useCallback((uid: string) => {
     setSelectedUid(uid);
     setSelectedTeamId(null);
+    setSelectedFixtureId(null);
+  }, []);
+  const handleSelectFixture = useCallback((fixtureId: string) => {
+    setSelectedFixtureId(fixtureId);
+    setSelectedTeamId(null);
+    setSelectedUid(null);
   }, []);
 
   if (postsLoading) return null;
@@ -76,7 +85,7 @@ export function HomeLandingLoggedOutStarted({ results, players, entries }: HomeL
               ratio regardless of how tall its own content actually is. */}
           <Frame className="h-60 shrink-0 animate-cotton-rise" style={{ animationDelay: "60ms" }}>
             <FrameBody>
-              <UpcomingMatchesPreview results={results} onSelectTeam={handleSelectTeam} />
+              <UpcomingMatchesPreview results={results} onSelectTeam={handleSelectTeam} onSelectFixture={handleSelectFixture} />
             </FrameBody>
           </Frame>
 
@@ -136,7 +145,21 @@ export function HomeLandingLoggedOutStarted({ results, players, entries }: HomeL
         }}
         onSelectParticipant={handleSelectParticipant}
         onSelectTeam={handleSelectTeam}
+        onSelectFixture={handleSelectFixture}
         tournamentStarted
+      />
+      <MatchupPopup
+        fixtureId={selectedFixtureId}
+        onOpenChange={(open) => {
+          if (!open) setSelectedFixtureId(null);
+        }}
+        phase="leaguephase"
+        tournamentStarted
+        entries={entries}
+        players={players}
+        results={results}
+        onSelectTeam={handleSelectTeam}
+        onSelectParticipant={handleSelectParticipant}
       />
     </div>
   );
