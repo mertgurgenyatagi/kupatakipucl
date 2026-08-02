@@ -58,7 +58,6 @@ async function recomputeLeaderboard() {
     entries.push({
       uid: doc.id,
       firstName: profile.firstName,
-      lastName: profile.lastName,
       photoURL: profile.photoURL,
       points: computeScore(prediction.ranking, results),
       ranking: prediction.ranking,
