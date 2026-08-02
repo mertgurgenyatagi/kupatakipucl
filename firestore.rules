@@ -97,6 +97,20 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    // Bracket state (src/bracket/useBracketState.ts): the real-world RO16
+    // draw (which two teams play each of the 8 first-round matchups) and
+    // each real matchup's winner as the knockout rounds actually conclude
+    // (GREAT_LEAP_SPEC.md §5.1, §7.2). Hand-edited directly, exactly like
+    // `results`/`tournamentState` — no admin UI (§1.2). Public read (same
+    // visibility as results/tournamentState). Write left open to any
+    // signed-in user for now, same temporary trust-the-friend-group
+    // convention as results/tournamentState — not to be tightened per
+    // §1.2.
+    match /bracketState/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
     // Dev-only tooling (src/devpanel): simulates tournament phase/date and
     // match outcomes so timing-dependent features can be tested without
     // waiting on real calendar dates. Pre-launch, no real users yet — same
