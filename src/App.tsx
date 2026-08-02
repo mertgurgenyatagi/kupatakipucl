@@ -5,6 +5,7 @@ import { AppShell } from "./shell/AppShell";
 import { ErrorBoundary } from "./shell/ErrorBoundary";
 import { HomePage } from "./pages/HomePage";
 import { PredictionsPage } from "./pages/PredictionsPage";
+import { BracketPage } from "./pages/BracketPage";
 import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { ForumPage } from "./pages/ForumPage";
 import { StatsPage } from "./pages/StatsPage";
@@ -22,6 +23,7 @@ export function App() {
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/predictions" element={<PredictionsPage />} />
+                <Route path="/bracket" element={<BracketPage />} />
                 <Route path="/leaderboard" element={<LeaderboardPage />} />
                 <Route path="/forum" element={<ForumPage />} />
                 <Route path="/stats" element={<StatsPage />} />
