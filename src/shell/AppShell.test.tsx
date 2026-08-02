@@ -61,6 +61,7 @@ describe("AppShell nav gating", () => {
     mockUseTournamentPhase.mockReturnValue("notstarted");
     renderShell();
     expect(screen.getByText("Ana Sayfa")).toBeInTheDocument();
+    expect(screen.getByText("Hakkında")).toBeInTheDocument();
     expect(screen.queryByText("Forum")).not.toBeInTheDocument();
     expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
     expect(screen.queryByText("Puan Durumu")).not.toBeInTheDocument();
@@ -72,6 +73,7 @@ describe("AppShell nav gating", () => {
     mockUseTournamentPhase.mockReturnValue("notstarted");
     renderShell();
     expect(screen.getByText("Forum")).toBeInTheDocument();
+    expect(screen.getByText("Hakkında")).toBeInTheDocument();
     expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
     expect(screen.queryByText("Puan Durumu")).not.toBeInTheDocument();
     expect(screen.queryByText("İstatistikler")).not.toBeInTheDocument();
@@ -82,6 +84,7 @@ describe("AppShell nav gating", () => {
     mockUseTournamentPhase.mockReturnValue("leaguephase");
     renderShell();
     expect(screen.getByText("Puan Durumu")).toBeInTheDocument();
+    expect(screen.getByText("Hakkında")).toBeInTheDocument();
     expect(screen.queryByText("Forum")).not.toBeInTheDocument();
     expect(screen.queryByText("İstatistikler")).not.toBeInTheDocument();
     expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
@@ -92,7 +95,7 @@ describe("AppShell nav gating", () => {
     for (const phase of ["leaguephase", "preknockout", "knockout"] as TournamentPhase[]) {
       mockUseTournamentPhase.mockReturnValue(phase);
       renderShell();
-      for (const label of ["Puan Durumu", "Forum", "İstatistikler"]) {
+      for (const label of ["Puan Durumu", "Forum", "İstatistikler", "Hakkında"]) {
         expect(screen.getAllByText(label).length).toBeGreaterThan(0);
       }
       expect(screen.queryByText("Predictions")).not.toBeInTheDocument();

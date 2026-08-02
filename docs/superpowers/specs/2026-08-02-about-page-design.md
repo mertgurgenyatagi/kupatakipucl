@@ -11,15 +11,23 @@ Explicitly out of scope (cut during brainstorming): a detailed scoring/rules exp
 
 ## Content
 
-In order, top to bottom:
+**Revised after Mert reacted with a hand-drawn wireframe** (two-column: dense text block + small contact line bottom-left; logo emblem + a connected-circle timeline stacked top-right). Rebuilt to match the sketch's structure rather than the original vertical-poster layout below.
 
-1. **Hero**: giant `kupatakip-logo-white.svg` mark + the `#kupatakipucl` wordmark (same two-weight split AppShell's header already uses: `font-[450]` "#kupatakip" + `font-thin` "ucl"), scaled far larger than anywhere else in the app — this page is the one place the mark gets to be the hero.
-2. **Essence statement** — a pull-quote paragraph, not an explainer:
+Two-column composition, left column top-to-bottom / right column top-to-bottom:
+
+1. **Essence statement** (left, top) — a short pull-quote opening line, word-by-word animated (the signature moment), followed by three plain prose paragraphs continuing the same idea. Mood over mechanics throughout — no rules, no personal bio:
    > "Otuz altı takım. Tek bir sıralama. Ve bunu gereğinden fazla ciddiye alan bir avuç arkadaş.
    >
-   > Her sezon başında aynı soru ortaya atılır: kim daha iyi biliyor? Kupatakip, bu sorunun cevabını bulmanın yolu — tahminini yap, tabloyu izle, kazananı hatırla."
-3. **Key dates strip**: a quiet, factual ticker row — Aug 26 2026 (teams determined / signup closes), Sep 8 2026 (league phase starts — reuse `TOURNAMENT_START_ISO` from `src/home/deadlines.ts` rather than a second literal), Jan 27 2027 (league phase ends), Feb 26 2027 (RO16 draw, round 2 opens), Mar 9 2027 (RO16 begins, round 2 closes). The four non-Sept-8 dates aren't wired anywhere else in the codebase yet; they're real, fixed UEFA-format dates (per project history), declared locally in this component with a comment noting they have no other consumer today — same pattern `TOURNAMENT_START_ISO` itself established.
-4. **Back-to-home link**: small, corner-anchored, matching the nav's `font-mono` uppercase link styling.
+   > Kimse sadece eğlenmek için oynamıyor — grup sohbetinde aylarca süren tartışmalar var, unutulmayan tahminler var, her sezon yeniden açılan hesaplar var.
+   >
+   > Puan tablosu aslında bir sıralamadan fazlası: kimin hafızası daha güçlü, kimin cesareti daha fazla, kimin şansı daha yaver gidiyor — hepsinin sessiz kaydı.
+   >
+   > Turnuva bitince kupa kalkıyor, iddialar bitmiyor. Önümüzdeki sezon, aynı soru yeniden sorulacak."
+2. **Contact info** (left, bottom): a small "İletişim" label + `mert.gurgenyatagi@gmail.com` as a `mailto:` link — explicitly confirmed with Mert as email-only, no bio text ("I was born in etc etc" — his words for what to avoid).
+3. **Giant logo** (right, top): `kupatakip-logo-white.svg` alone, no repeated wordmark text (the persistent nav header already shows `#kupatakipucl`) — this is literally the real logo the sketch's hand-drawn circle+star represents, not a generic placeholder.
+4. **Key-dates timeline** (right, below logo): rendered as a connected-node stepper, not text chips — Aug 26 2026 (teams determined / signup closes), Sep 8 2026 (league phase starts — reuses `TOURNAMENT_START_ISO` from `src/home/deadlines.ts` rather than a second literal), Jan 27 2027 (league phase ends), Feb 26 2027 (RO16 draw, round 2 opens), Mar 9 2027 (RO16 begins, round 2 closes). A stepper is justified here (unlike a generic numbered-marker default) because these dates are a genuine chronological sequence. The four non-Sept-8 dates have no other consumer in the codebase yet — same situation `TOURNAMENT_START_ISO` itself was in before it got its own file.
+
+No explicit back-to-home link — the persistent top nav's "Ana Sayfa" link already covers it, and the sketch doesn't show one.
 
 ## Visual design
 
@@ -30,8 +38,8 @@ Established during frontend-design pass, self-checked against generic-AI-slop de
   - Hero wordmark: weight 800–900, `clamp(4rem, 9vw, 9rem)`, tight tracking.
   - Essence statement: weight 300 at 1.5–2rem, generous leading; 2–3 words lifted to heavier weight + `color_accent` for rhythm.
   - Date strip: `.tnum` tabular-nums, uppercase, wide tracking — quiet scoreboard-ticker feel, matching the countdown digits' existing `font-mono uppercase tracking-[0.22em]` convention.
-- **Layout**: NOT another `Frame`-based bento grid (every other page already does that) — a single asymmetric vertical composition instead: giant centered logo up top (~35–40vh), essence statement in a wide left-aligned column below with generous negative space, date strip anchored near the bottom as a horizontal row, back-link tucked in a corner. `DustHaze` as the full-bleed background, same as `HomeLandingLoggedOut`.
-- **Signature motion**: the essence statement's words animate in once on load, each settling from a thin variable-font weight to its resting weight, staggered left-to-right, using the site's `EASE_COTTON` curve (`[0.22, 0.61, 0.36, 1]`, matching `HomeLandingLoggedOut.tsx`'s constant). Skipped entirely under `prefers-reduced-motion` (render at resting weight immediately, no animation), consistent with the rest of the app.
+- **Layout**: NOT another `Frame`-based bento grid (every other page already does that) — a two-column composition per Mert's wireframe instead: `grid-cols-[1.15fr_0.85fr]` on desktop, text+contact on the left, logo+timeline on the right, both columns full-height and vertically distributed (`justify-between` on the left, top-anchored on the right). `DustHaze` as the full-bleed background, same as `HomeLandingLoggedOut`.
+- **Signature motion**: the essence statement's opening line animates in once on load, each word settling from a thin variable-font weight to its resting weight, staggered left-to-right, using the site's `EASE_COTTON` curve (`[0.22, 0.61, 0.36, 1]`, matching `HomeLandingLoggedOut.tsx`'s constant); the prose paragraphs that follow continue the same stagger rhythm as plain fade/rise blocks. Skipped entirely under `prefers-reduced-motion` (render at resting weight immediately, no animation), consistent with the rest of the app.
 
 ## Architecture
 
