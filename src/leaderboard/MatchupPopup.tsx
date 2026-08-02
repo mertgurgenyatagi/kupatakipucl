@@ -103,19 +103,19 @@ function MatchupCenter({ fixture, outcome }: { fixture: Fixture; outcome: MatchO
   );
 }
 
-function TeamStatPair({ result }: { result: TeamResult | undefined }) {
+function TeamStatPair({ result, tournamentStarted }: { result: TeamResult | undefined; tournamentStarted: boolean }) {
   return (
     <div className="flex items-baseline justify-center gap-4">
       <span className="flex items-baseline gap-1.5">
         <span className="font-mono text-[0.55rem] tracking-[0.18em] text-color_textsecondary uppercase">Sıra</span>
         <span className="font-display text-sm leading-none font-bold text-color_text tnum">
-          {result ? `#${result.position}` : "-"}
+          {tournamentStarted && result ? `#${result.position}` : "-"}
         </span>
       </span>
       <span className="flex items-baseline gap-1.5">
         <span className="font-mono text-[0.55rem] tracking-[0.18em] text-color_textsecondary uppercase">Puan</span>
         <span className="font-display text-sm leading-none font-bold text-color_text tnum">
-          {result ? result.points : "-"}
+          {tournamentStarted && result ? result.points : "-"}
         </span>
       </span>
     </div>
@@ -191,7 +191,7 @@ function TeamColumn({
 }) {
   return (
     <div className="flex min-h-0 flex-col gap-2">
-      <TeamStatPair result={result} />
+      <TeamStatPair result={result} tournamentStarted={tournamentStarted} />
       <div className={cn(WIDGET_BLOCK, "min-h-0 flex-1")}>
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-1.5 py-1.5">
           {!tournamentStarted ? (

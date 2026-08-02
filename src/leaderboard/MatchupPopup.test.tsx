@@ -166,10 +166,8 @@ describe("MatchupPopup", () => {
       />
     );
     expect((await screen.findAllByText("Turnuva başlamadan bu bilgi görüntülenemez.")).length).toBe(2);
-    // Only the predictor-list widget is gated on tournamentStarted; the
-    // rank/points pair above it (TeamStatPair) renders from `results`
-    // unconditionally — real component behavior, not asserted away here.
     expect(screen.queryByText("Ada Lovelace")).not.toBeInTheDocument();
+    expect(screen.queryByText("#3")).not.toBeInTheDocument();
   });
 
   it("shows the final score instead of kickoff time once the fixture outcome is decided", async () => {
