@@ -23,7 +23,6 @@ import { TeamResult } from "./teamResultTypes";
 const baseEntry: LeaderboardEntry = {
   uid: "uid1",
   firstName: "Ada",
-  lastName: "Lovelace",
   photoURL: "a.png",
   points: 9,
   ranking: [TEAMS[0].id, TEAMS[1].id],
@@ -33,11 +32,15 @@ const baseEntry: LeaderboardEntry = {
 const otherEntry: LeaderboardEntry = {
   uid: "uid2",
   firstName: "Alan",
-  lastName: "Turing",
   photoURL: "b.png",
   points: 6,
   ranking: [TEAMS[2].id],
 };
+
+const PLAYERS = [
+  { uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", createdAt: 1 },
+  { uid: "uid2", firstName: "Alan", lastName: "Turing", photoURL: "b.png", createdAt: 1 },
+];
 
 const results: Record<string, TeamResult> = {
   [TEAMS[0].id]: { position: 1, points: 15, goalDifference: 6, goalsFor: 10, goalsAgainst: 4, matchesPlayed: 5 },
@@ -56,6 +59,7 @@ describe("ParticipantPopup", () => {
       <ParticipantPopup
         ranked={null}
         entries={[baseEntry]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={() => {}}
         onSelectTeam={() => {}}
@@ -71,6 +75,7 @@ describe("ParticipantPopup", () => {
       <ParticipantPopup
         ranked={{ entry: baseEntry, rank: 3 }}
         entries={[baseEntry, otherEntry]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={() => {}}
         onSelectTeam={() => {}}
@@ -83,11 +88,28 @@ describe("ParticipantPopup", () => {
     expect(screen.getByText("9")).toBeInTheDocument();
   });
 
+  it("shows first-name-only when players has no lastName for this uid (logged-out data)", async () => {
+    render(
+      <ParticipantPopup
+        ranked={{ entry: baseEntry, rank: 3 }}
+        entries={[baseEntry, otherEntry]}
+        players={[{ uid: "uid1", firstName: "Ada", photoURL: "a.png", createdAt: 1 }]}
+        results={{}}
+        onOpenChange={() => {}}
+        onSelectTeam={() => {}}
+        tournamentStarted={true}
+      />
+    );
+    expect(await screen.findByText("Ada")).toBeInTheDocument();
+    expect(screen.queryByText("Ada Lovelace")).not.toBeInTheDocument();
+  });
+
   it("lists the full predicted order with the team table's own stat columns (O/A/Y/AV/P)", async () => {
     render(
       <ParticipantPopup
         ranked={{ entry: baseEntry, rank: 3 }}
         entries={[baseEntry, otherEntry]}
+        players={PLAYERS}
         results={results}
         onOpenChange={() => {}}
         onSelectTeam={() => {}}
@@ -109,6 +131,7 @@ describe("ParticipantPopup", () => {
       <ParticipantPopup
         ranked={{ entry: baseEntry, rank: 3 }}
         entries={[baseEntry, otherEntry]}
+        players={PLAYERS}
         results={results}
         onOpenChange={() => {}}
         onSelectTeam={onSelectTeam}
@@ -137,6 +160,7 @@ describe("ParticipantPopup", () => {
       <ParticipantPopup
         ranked={{ entry: baseEntry, rank: 3 }}
         entries={[baseEntry, otherEntry]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={() => {}}
         onSelectTeam={() => {}}
@@ -157,6 +181,7 @@ describe("ParticipantPopup", () => {
       <ParticipantPopup
         ranked={{ entry: baseEntry, rank: 3 }}
         entries={[baseEntry, otherEntry]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={() => {}}
         onSelectTeam={() => {}}
@@ -172,6 +197,7 @@ describe("ParticipantPopup", () => {
       <ParticipantPopup
         ranked={{ entry: baseEntry, rank: 3 }}
         entries={[baseEntry, otherEntry]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={() => {}}
         onSelectTeam={() => {}}
@@ -186,6 +212,7 @@ describe("ParticipantPopup", () => {
       <ParticipantPopup
         ranked={{ entry: baseEntry, rank: 3 }}
         entries={[baseEntry, otherEntry]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={() => {}}
         onSelectTeam={() => {}}
@@ -202,6 +229,7 @@ describe("ParticipantPopup", () => {
       <ParticipantPopup
         ranked={{ entry: baseEntry, rank: 3 }}
         entries={[baseEntry, otherEntry]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={() => {}}
         onSelectTeam={() => {}}
@@ -218,6 +246,7 @@ describe("ParticipantPopup", () => {
       <ParticipantPopup
         ranked={{ entry: baseEntry, rank: 3 }}
         entries={[baseEntry, otherEntry]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={onOpenChange}
         onSelectTeam={() => {}}
@@ -246,6 +275,7 @@ describe("ParticipantPopup", () => {
         <ParticipantPopup
           ranked={{ entry: baseEntry, rank: 3 }}
           entries={[baseEntry, otherEntry]}
+          players={PLAYERS}
           results={results}
           onOpenChange={() => {}}
           onSelectTeam={() => {}}
@@ -264,6 +294,7 @@ describe("ParticipantPopup", () => {
         <ParticipantPopup
           ranked={{ entry: baseEntry, rank: 3 }}
           entries={[baseEntry, otherEntry]}
+          players={PLAYERS}
           results={results}
           onOpenChange={() => {}}
           onSelectTeam={() => {}}

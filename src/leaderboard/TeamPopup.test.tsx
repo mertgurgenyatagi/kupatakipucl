@@ -26,7 +26,6 @@ const TEAM_FIXTURES = FIXTURES.filter(
 const entryA: LeaderboardEntry = {
   uid: "uid1",
   firstName: "Ada",
-  lastName: "Lovelace",
   photoURL: "a.png",
   points: 9,
   ranking: [TEAM.id, OTHER_TEAM.id],
@@ -35,11 +34,15 @@ const entryA: LeaderboardEntry = {
 const entryB: LeaderboardEntry = {
   uid: "uid2",
   firstName: "Alan",
-  lastName: "Turing",
   photoURL: "b.png",
   points: 6,
   ranking: [OTHER_TEAM.id, TEAM.id],
 };
+
+const PLAYERS = [
+  { uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", createdAt: 1 },
+  { uid: "uid2", firstName: "Alan", lastName: "Turing", photoURL: "b.png", createdAt: 1 },
+];
 
 // Position/points chosen outside 1-11 so they can't collide with the
 // starting-XI pitch diagram's own marker text.
@@ -58,6 +61,7 @@ describe("TeamPopup", () => {
       <TeamPopup
         teamId={null}
         entries={[entryA]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
@@ -74,6 +78,7 @@ describe("TeamPopup", () => {
       <TeamPopup
         teamId={TEAM.id}
         entries={[entryA, entryB]}
+        players={PLAYERS}
         results={results}
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
@@ -92,6 +97,7 @@ describe("TeamPopup", () => {
       <TeamPopup
         teamId={TEAM.id}
         entries={[entryA]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
@@ -107,6 +113,7 @@ describe("TeamPopup", () => {
       <TeamPopup
         teamId={TEAM.id}
         entries={[entryA]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
@@ -125,6 +132,7 @@ describe("TeamPopup", () => {
       <TeamPopup
         teamId={TEAM.id}
         entries={[entryA, entryB]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={() => {}}
         onSelectParticipant={onSelectParticipant}
@@ -137,11 +145,29 @@ describe("TeamPopup", () => {
     expect(onSelectParticipant).toHaveBeenCalledWith("uid1");
   });
 
+  it("shows first-name-only when players has no lastName for this uid (logged-out data)", async () => {
+    render(
+      <TeamPopup
+        teamId={TEAM.id}
+        entries={[entryA]}
+        players={[{ uid: "uid1", firstName: "Ada", photoURL: "a.png", createdAt: 1 }]}
+        results={{}}
+        onOpenChange={() => {}}
+        onSelectParticipant={() => {}}
+        onSelectTeam={() => {}}
+        tournamentStarted={true}
+      />
+    );
+    expect(await screen.findByText("Ada")).toBeInTheDocument();
+    expect(screen.queryByText("Ada Lovelace")).not.toBeInTheDocument();
+  });
+
   it("shows a distinct message when no participant predicted this team", async () => {
     render(
       <TeamPopup
         teamId={TEAM.id}
         entries={[]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
@@ -161,6 +187,7 @@ describe("TeamPopup", () => {
       <TeamPopup
         teamId={TEAM.id}
         entries={[entryA]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
@@ -189,6 +216,7 @@ describe("TeamPopup", () => {
       <TeamPopup
         teamId={TEAM.id}
         entries={[entryA]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
@@ -210,6 +238,7 @@ describe("TeamPopup", () => {
       <TeamPopup
         teamId={TEAM.id}
         entries={[entryA]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={onOpenChange}
         onSelectParticipant={() => {}}
@@ -226,6 +255,7 @@ describe("TeamPopup", () => {
       <TeamPopup
         teamId={TEAM.id}
         entries={[entryA]}
+        players={PLAYERS}
         results={{}}
         onOpenChange={() => {}}
         onSelectParticipant={() => {}}
@@ -243,6 +273,7 @@ describe("TeamPopup", () => {
         <TeamPopup
           teamId={TEAM.id}
           entries={[entryA, entryB]}
+          players={PLAYERS}
           results={results}
           onOpenChange={() => {}}
           onSelectParticipant={() => {}}
@@ -260,6 +291,7 @@ describe("TeamPopup", () => {
         <TeamPopup
           teamId={TEAM.id}
           entries={[entryA]}
+          players={PLAYERS}
           results={results}
           onOpenChange={() => {}}
           onSelectParticipant={() => {}}

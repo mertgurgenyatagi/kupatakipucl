@@ -15,6 +15,7 @@ import { TeamRanker } from "../predictions/TeamRanker";
 import { RankingList } from "../predictions/RankingList";
 import { TEAMS } from "../predictions/teams";
 import { useLeaderboard } from "../leaderboard/useLeaderboard";
+import { usePlayers } from "../profile/usePlayers";
 import { useResults } from "../leaderboard/useResults";
 import { assignRanks } from "../leaderboard/ranking";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
@@ -96,6 +97,7 @@ export function ProfilePage() {
   const { response: survey, loading: surveyLoading, error: surveyError } = useSurveyResponse(uid);
   const { entries, loading: entriesLoading } = useLeaderboard();
   const { results } = useResults();
+  const { players } = usePlayers();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [localProfile, setLocalProfile] = useState<Profile | null>(null);
@@ -429,6 +431,7 @@ export function ProfilePage() {
       <ParticipantPopup
         ranked={selectedRanked}
         entries={entries}
+        players={players}
         results={results}
         onOpenChange={handlePopupOpenChange}
         onSelectTeam={handleSelectTeam}
@@ -437,6 +440,7 @@ export function ProfilePage() {
       <TeamPopup
         teamId={selectedTeamId}
         entries={entries}
+        players={players}
         results={results}
         onOpenChange={handleTeamPopupOpenChange}
         onSelectParticipant={handleSelectParticipant}

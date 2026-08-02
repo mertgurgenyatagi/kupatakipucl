@@ -46,7 +46,7 @@ describe("useLeaderboard", () => {
   });
 
   it("returns the precomputed entries once the cache doc loads", async () => {
-    const entries = [{ uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", points: 9, ranking: ["arsenal"] }];
+    const entries = [{ uid: "uid1", firstName: "Ada", photoURL: "a.png", points: 9, ranking: ["arsenal"] }];
     const { result } = renderHook(() => useLeaderboard());
     act(() => capturedOnNext({ exists: () => true, data: () => ({ entries, computedAt: 100 }) }));
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -58,7 +58,7 @@ describe("useLeaderboard", () => {
     act(() => capturedOnNext({ exists: () => true, data: () => ({ entries: [], computedAt: 100 }) }));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    const updated = [{ uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", points: 12, ranking: [] }];
+    const updated = [{ uid: "uid1", firstName: "Ada", photoURL: "a.png", points: 12, ranking: [] }];
     act(() => capturedOnNext({ exists: () => true, data: () => ({ entries: updated, computedAt: 200 }) }));
     expect(result.current.entries).toEqual(updated);
   });

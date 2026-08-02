@@ -9,6 +9,9 @@ import {
 import { XIcon } from "lucide-react";
 import { TEAM_BY_ID, teamCrestSrc } from "../predictions/teams";
 import { LeaderboardEntry } from "./leaderboardTypes";
+import { Player } from "../profile/usePlayers";
+import { buildPlayersByUid } from "../profile/playersByUid";
+import { fullName, initials as sharedInitials } from "../profile/deletedAccount";
 import { TeamResult } from "./teamResultTypes";
 import { getTeamDossier, TeamDossier, DossierPlayer } from "./teamDossier";
 import { getTeamMatchHistory, getNextMatch, getPastMatches, ResultLetter } from "./teamMatchHistory";
@@ -36,6 +39,9 @@ interface TeamPopupProps {
    *  and where each of them stands on the real leaderboard (see
    *  teamPredictors.ts), not just to look up one of them. */
   entries: LeaderboardEntry[];
+  /** Needed to resolve lastName for signed-in viewers — LeaderboardEntry no
+   *  longer carries it (2026-08-02 name-privacy change). */
+  players: Player[];
   results: Record<string, TeamResult>;
   onOpenChange: (open: boolean) => void;
   /** Selecting a predictor closes this popup and opens theirs — the two
@@ -64,10 +70,6 @@ function initials(name: string) {
     .map((part) => part.charAt(0))
     .join("")
     .toUpperCase();
-}
-
-function participantInitials(firstName: string, lastName: string) {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
 /** "Lucas Silva" -> "L. Silva" — short enough to sit under a pitch marker
@@ -471,6 +473,7 @@ function StatList({
 export const TeamPopup = memo(function TeamPopup({
   teamId,
   entries,
+  players,
   results,
   onOpenChange,
   onSelectParticipant,
@@ -479,6 +482,7 @@ export const TeamPopup = memo(function TeamPopup({
   tournamentStarted,
 }: TeamPopupProps) {
   const t: TeamPopupTuning = { ...DEFAULT_TEAM_POPUP_TUNING, ...tuning };
+  const playersByUid = useMemo(() => buildPlayersByUid(players), [players]);
 
   // Same "keep showing the last real content while the exit animation
   // plays" trick as ParticipantPopup — `teamId` goes null the instant the
@@ -661,14 +665,14 @@ export const TeamPopup = memo(function TeamPopup({
                                 className="bg-secondary font-mono text-color_secondary"
                                 style={{ fontSize: `${(t.rowAvatar * 0.343).toFixed(3)}rem` }}
                               >
-                                {participantInitials(p.entry.firstName, p.entry.lastName)}
+                                {sharedInitials({ firstName: p.entry.firstName, lastName: playersByUid.get(p.entry.uid)?.lastName })}
                               </AvatarFallback>
                             </Avatar>
                             <span
                               className="min-w-0 flex-1 truncate font-display font-medium text-color_text group-hover:underline"
                               style={{ fontSize: `${t.fsName}rem` }}
                             >
-                              {p.entry.firstName} {p.entry.lastName}
+                              {fullName({ firstName: p.entry.firstName, lastName: playersByUid.get(p.entry.uid)?.lastName })}
                             </span>
                             <span
                               className={cn(ROW_RANK_W, "shrink-0 text-right font-mono text-color_textsecondary tnum")}

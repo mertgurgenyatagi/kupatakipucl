@@ -128,6 +128,7 @@ export function ForumPage() {
       <ParticipantPopup
         ranked={selectedRanked}
         entries={entries}
+        players={players}
         results={results}
         onOpenChange={handlePopupOpenChange}
         onSelectTeam={() => {}}

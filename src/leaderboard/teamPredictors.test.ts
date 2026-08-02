@@ -4,7 +4,7 @@ import { LeaderboardEntry } from "./leaderboardTypes";
 import { TeamResult } from "./teamResultTypes";
 
 function entry(uid: string, points: number, ranking: string[]): LeaderboardEntry {
-  return { uid, firstName: uid, lastName: "", photoURL: "", points, ranking };
+  return { uid, firstName: uid, photoURL: "", points, ranking };
 }
 
 describe("getTeamPredictors", () => {

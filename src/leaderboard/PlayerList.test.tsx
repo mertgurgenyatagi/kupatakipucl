@@ -29,7 +29,7 @@ describe("PlayerList", () => {
         players={players}
         showFullNames={true}
         leaderboardEntries={[
-          { uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", points: 3, ranking: [TEAMS[0].id] },
+          { uid: "uid1", firstName: "Ada", photoURL: "a.png", points: 3, ranking: [TEAMS[0].id] },
         ]}
       />
     );

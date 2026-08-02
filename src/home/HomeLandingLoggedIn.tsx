@@ -13,6 +13,7 @@ import { useCountdown } from "./useCountdown";
 import { TOURNAMENT_START_ISO } from "./deadlines";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { buildPlayersByUid } from "../profile/playersByUid";
+import { initials } from "../profile/deletedAccount";
 import { LobbySwitcher, getLobbySwitcherLabel } from "../lobbies/LobbySwitcher";
 import { LobbyManagementPanel } from "../lobbies/LobbyManagementPanel";
 import type { MyLobby } from "../lobbies/useMyLobbies";
@@ -60,10 +61,6 @@ interface HomeLandingLoggedInProps {
   onCloseCreateDialog: () => void;
   onCreateLobby: (name: string) => void;
   createError: string | null;
-}
-
-function initials(firstName: string, lastName: string) {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
 function MiniCountdownDigit({ value, label }: { value: number; label: string }) {
@@ -153,7 +150,6 @@ export function HomeLandingLoggedIn({
         entry: {
           uid: selectedPlayer.uid,
           firstName: selectedPlayer.firstName,
-          lastName: selectedPlayer.lastName,
           photoURL: selectedPlayer.photoURL,
           points: 0,
           ranking: [],
@@ -185,7 +181,7 @@ export function HomeLandingLoggedIn({
             <Avatar className="size-14 shrink-0">
               <AvatarImage src={me.photoURL} alt="" />
               <AvatarFallback className="font-mono text-sm text-color_textsecondary">
-                {initials(me.firstName, me.lastName)}
+                {initials(me)}
               </AvatarFallback>
             </Avatar>
             <p className="min-w-0 truncate font-display text-xl text-color_text sm:text-2xl">
@@ -344,6 +340,7 @@ export function HomeLandingLoggedIn({
       <ParticipantPopup
         ranked={selectedRanked}
         entries={[]}
+        players={players}
         results={{}}
         onOpenChange={(open) => {
           if (!open) setSelectedPlayerUid(null);

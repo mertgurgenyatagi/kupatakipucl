@@ -7,7 +7,7 @@ import { LeaderboardEntry } from "./leaderboardTypes";
 const FIXTURES_BY_ORDER = [...FIXTURES].sort((a, b) => a.order - b.order);
 
 function entry(uid: string, ranking: string[]): LeaderboardEntry {
-  return { uid, firstName: uid, lastName: "", photoURL: "", points: 0, ranking };
+  return { uid, firstName: uid, photoURL: "", points: 0, ranking };
 }
 
 describe("computeRankHistory", () => {

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Player } from "../profile/usePlayers";
 import { buildPlayersByUid } from "../profile/playersByUid";
+import { fullName, initials } from "../profile/deletedAccount";
 import { LobbyMember, LobbyWithId, LOBBY_NAME_MAX_LENGTH } from "./lobbyTypes";
 import { renameLobby } from "./renameLobby";
 import { generateLobbyInvite } from "./generateLobbyInvite";
@@ -23,10 +24,6 @@ interface LobbyManagementPanelProps {
   onOpenChange: (open: boolean) => void;
   onLeft: () => void;
   onDeleted: () => void;
-}
-
-function initials(firstName: string, lastName: string) {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
 export function LobbyManagementPanel({
@@ -164,11 +161,11 @@ export function LobbyManagementPanel({
                     <Avatar className="size-6 shrink-0">
                       <AvatarImage src={player?.photoURL} alt="" />
                       <AvatarFallback className="font-mono text-[0.6rem] text-color_textsecondary">
-                        {player ? initials(player.firstName, player.lastName) : "?"}
+                        {initials(player)}
                       </AvatarFallback>
                     </Avatar>
                     <span className="min-w-0 flex-1 truncate text-sm text-color_text">
-                      {player ? `${player.firstName} ${player.lastName}` : "Bilinmeyen katılımcı"}
+                      {player ? fullName(player) : "Bilinmeyen katılımcı"}
                     </span>
                     {member.uid === lobby.createdByUid && (
                       <Crown className="size-3.5 shrink-0 text-color_gold" aria-label="Kurucu" />

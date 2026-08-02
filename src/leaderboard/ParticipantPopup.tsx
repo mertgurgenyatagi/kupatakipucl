@@ -2,6 +2,9 @@ import { memo, useEffect, useMemo, useState } from "react";
 import { XIcon } from "lucide-react";
 import { RankedEntry } from "./ranking";
 import { LeaderboardEntry } from "./leaderboardTypes";
+import { Player } from "../profile/usePlayers";
+import { buildPlayersByUid } from "../profile/playersByUid";
+import { fullName, initials } from "../profile/deletedAccount";
 import { TeamResult } from "./teamResultTypes";
 import { qualificationBand } from "./qualification";
 import { isPickCorrect } from "./scoring";
@@ -29,6 +32,9 @@ interface ParticipantPopupProps {
   /** All participants — needed to reconstruct relative rank at each
    *  historical checkpoint (see rankHistory.ts), not just the selected one. */
   entries: LeaderboardEntry[];
+  /** Needed to resolve lastName for signed-in viewers — LeaderboardEntry no
+   *  longer carries it (2026-08-02 name-privacy change). */
+  players: Player[];
   /** Live team results — the predictions widget shows the same O/A/Y/AV/P
    *  columns as the real team table ("identical to team table," full stop,
    *  stats included), just row-ordered by this participant's prediction
@@ -57,10 +63,6 @@ function NotViewablePlaceholder() {
       {NOT_VIEWABLE_MESSAGE}
     </p>
   );
-}
-
-function initials(firstName: string, lastName: string) {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
 function signed(n: number): string {
@@ -211,6 +213,7 @@ function RankHistoryChart({
 export const ParticipantPopup = memo(function ParticipantPopup({
   ranked,
   entries,
+  players,
   results,
   onOpenChange,
   onSelectTeam,
@@ -227,6 +230,11 @@ export const ParticipantPopup = memo(function ParticipantPopup({
 
   const displayed = ranked ?? lastRanked;
   const displayedUid = displayed?.entry.uid ?? null;
+
+  const playersByUid = useMemo(() => buildPlayersByUid(players), [players]);
+  const displayedPlayer = displayedUid
+    ? { firstName: displayed!.entry.firstName, lastName: playersByUid.get(displayedUid)?.lastName }
+    : null;
 
   const { outcomes } = useDevMatches();
   const { response: survey, loading: surveyLoading, error: surveyError } = useSurveyResponse(
@@ -275,16 +283,16 @@ export const ParticipantPopup = memo(function ParticipantPopup({
                 <Avatar className="size-12 shrink-0 sm:size-14">
                   <AvatarImage src={displayed.entry.photoURL} alt="" />
                   <AvatarFallback className="bg-color_accent/20 font-mono text-sm text-color_text">
-                    {initials(displayed.entry.firstName, displayed.entry.lastName)}
+                    {initials(displayedPlayer)}
                   </AvatarFallback>
                 </Avatar>
 
                 <div className="min-w-0 flex-1">
                   <DialogTitle className="truncate font-display text-lg font-semibold tracking-[-0.01em] text-color_text sm:text-xl">
-                    {displayed.entry.firstName} {displayed.entry.lastName}
+                    {fullName(displayedPlayer)}
                   </DialogTitle>
                   <DialogDescription className="sr-only">
-                    {displayed.entry.firstName} {displayed.entry.lastName} katılımcı popup'ı: sıra,
+                    {fullName(displayedPlayer)} katılımcı popup'ı: sıra,
                     puan, tahminler, anket cevapları ve zaman içindeki sıralaması.
                   </DialogDescription>
 

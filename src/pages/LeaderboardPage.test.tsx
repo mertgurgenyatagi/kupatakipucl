@@ -6,6 +6,7 @@ import { TEAMS } from "../predictions/teams";
 
 const mockUseVisibilityState = vi.fn();
 const mockUseLeaderboard = vi.fn();
+const mockUsePlayers = vi.fn();
 const mockUseResults = vi.fn();
 const mockUseTournamentPhase = vi.fn();
 
@@ -17,6 +18,10 @@ vi.mock("../leaderboard/useLeaderboard", () => ({
   useLeaderboard: () => mockUseLeaderboard(),
 }));
 
+vi.mock("../profile/usePlayers", () => ({
+  usePlayers: () => mockUsePlayers(),
+}));
+
 vi.mock("../leaderboard/useResults", () => ({
   useResults: () => mockUseResults(),
 }));
@@ -25,9 +30,12 @@ vi.mock("../tournament/useTournamentPhase", () => ({
   useTournamentPhase: () => mockUseTournamentPhase(),
 }));
 
+const PLAYERS = [{ uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", createdAt: 1 }];
+
 describe("LeaderboardPage", () => {
   beforeEach(() => {
     mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
+    mockUsePlayers.mockReturnValue({ players: PLAYERS, loading: false });
     mockUseResults.mockReturnValue({ results: {}, loading: false });
     mockUseTournamentPhase.mockReturnValue("notstarted");
   });
@@ -47,7 +55,7 @@ describe("LeaderboardPage", () => {
 
   it("renders the leaderboard table once loaded", () => {
     mockUseLeaderboard.mockReturnValue({
-      entries: [{ uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", points: 42, ranking: [] }],
+      entries: [{ uid: "uid1", firstName: "Ada", photoURL: "a.png", points: 42, ranking: [] }],
       loading: false,
     });
     render(<LeaderboardPage />);
@@ -57,7 +65,7 @@ describe("LeaderboardPage", () => {
 
   it("composes the team table and the hero carousel alongside the standings, once loaded", () => {
     mockUseLeaderboard.mockReturnValue({
-      entries: [{ uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", points: 9, ranking: [] }],
+      entries: [{ uid: "uid1", firstName: "Ada", photoURL: "a.png", points: 9, ranking: [] }],
       loading: false,
     });
     render(<LeaderboardPage />);

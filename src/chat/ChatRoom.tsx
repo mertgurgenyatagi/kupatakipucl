@@ -10,7 +10,7 @@ import { buildChatItems, formatMessageTime, ChatItem } from "./chatGrouping";
 import { splitMentionSegments } from "./chatMentions";
 import { ChatComposer } from "./ChatComposer";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { fullName, firstNameOnly, avatarSrc, DELETED_ACCOUNT_LABEL } from "../profile/deletedAccount";
+import { fullName, firstNameOnly, avatarSrc, initials } from "../profile/deletedAccount";
 import { QuotedMessage } from "./sendMessage";
 import { cn } from "@/lib/utils";
 
@@ -36,10 +36,6 @@ interface ChatRoomProps {
 }
 
 const SEARCH_DEBOUNCE_MS = 300;
-
-function initials(firstName: string, lastName: string) {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-}
 
 function typingLineText(typingUids: string[], players: Player[]): string | null {
   if (typingUids.length === 0) return null;
@@ -118,12 +114,12 @@ function MessageRow({
           type="button"
           onClick={() => onSelectParticipant(message.uid)}
           className="shrink-0 cursor-pointer"
-          aria-label={author ? `${author.firstName} ${author.lastName}` : DELETED_ACCOUNT_LABEL}
+          aria-label={fullName(author)}
         >
           <Avatar className="size-6">
             <AvatarImage src={avatarSrc(author)} alt="" />
             <AvatarFallback className="font-mono text-[0.55rem] text-color_textsecondary">
-              {author ? initials(author.firstName, author.lastName) : "?"}
+              {initials(author)}
             </AvatarFallback>
           </Avatar>
         </button>

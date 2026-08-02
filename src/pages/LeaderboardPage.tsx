@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useVisibilityState } from "../state/useVisibilityState";
 import { isPageAllowed } from "../state/pageAccess";
 import { useLeaderboard } from "../leaderboard/useLeaderboard";
+import { usePlayers } from "../profile/usePlayers";
 import { useResults } from "../leaderboard/useResults";
 import { useTournamentPhase } from "../tournament/useTournamentPhase";
 import { LeaderboardTable } from "../leaderboard/LeaderboardTable";
@@ -90,6 +91,7 @@ function LedgerSkeleton() {
 export function LeaderboardPage() {
   const state = useVisibilityState();
   const { entries, loading } = useLeaderboard();
+  const { players } = usePlayers();
   const { results } = useResults();
   const phase = useTournamentPhase();
   const [hoveredUid, setHoveredUid] = useState<string | null>(null);
@@ -158,6 +160,7 @@ export function LeaderboardPage() {
         <LeaderboardHero results={results} />
         <LeaderboardTable
           entries={entries}
+          players={players}
           revealCorrectness={phase !== "notstarted"}
           onHoverEntry={setHoveredUid}
           onSelectEntry={handleSelectParticipant}
@@ -166,6 +169,7 @@ export function LeaderboardPage() {
       <ParticipantPopup
         ranked={selectedRanked}
         entries={entries}
+        players={players}
         results={results}
         onOpenChange={handlePopupOpenChange}
         onSelectTeam={handleSelectTeam}
@@ -174,6 +178,7 @@ export function LeaderboardPage() {
       <TeamPopup
         teamId={selectedTeamId}
         entries={entries}
+        players={players}
         results={results}
         onOpenChange={handleTeamPopupOpenChange}
         onSelectParticipant={handleSelectParticipant}

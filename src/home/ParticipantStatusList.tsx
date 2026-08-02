@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import { Player } from "../profile/usePlayers";
+import { fullName, initials } from "../profile/deletedAccount";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
@@ -9,10 +10,6 @@ interface ParticipantStatusListProps {
   /** Opens that player's participant popup — omitted wherever the caller
    *  hasn't wired one up, in which case rows are plain, non-interactive. */
   onSelectPlayer?: (uid: string) => void;
-}
-
-function initials(firstName: string, lastName: string) {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
 /**
@@ -25,9 +22,7 @@ function initials(firstName: string, lastName: string) {
  * its name, a leftover from the dark-theme rework).
  */
 export function ParticipantStatusList({ players, submitterUids, onSelectPlayer }: ParticipantStatusListProps) {
-  const sorted = [...players].sort((a, b) =>
-    `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "tr")
-  );
+  const sorted = [...players].sort((a, b) => fullName(a).localeCompare(fullName(b), "tr"));
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -60,11 +55,11 @@ export function ParticipantStatusList({ players, submitterUids, onSelectPlayer }
                 <Avatar className="size-8 shrink-0">
                   <AvatarImage src={player.photoURL} alt="" />
                   <AvatarFallback className="font-mono text-[0.6rem] text-color_textsecondary">
-                    {initials(player.firstName, player.lastName)}
+                    {initials(player)}
                   </AvatarFallback>
                 </Avatar>
                 <span className="min-w-0 flex-1 truncate font-display text-sm text-color_text">
-                  {player.firstName} {player.lastName}
+                  {fullName(player)}
                 </span>
                 <span
                   aria-label={submitted ? "Tahminini gönderdi" : "Henüz göndermedi"}

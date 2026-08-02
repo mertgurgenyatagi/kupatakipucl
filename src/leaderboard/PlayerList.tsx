@@ -1,6 +1,7 @@
 import { Player } from "../profile/usePlayers";
 import { LeaderboardEntry } from "./leaderboardTypes";
 import { TEAMS } from "../predictions/teams";
+import { fullName } from "../profile/deletedAccount";
 
 interface PlayerListProps {
   players: Player[];
@@ -30,7 +31,7 @@ export function PlayerList({ players, showFullNames, leaderboardEntries }: Playe
         return (
           <li key={player.uid}>
             <img src={player.photoURL} alt="" />
-            {player.firstName} {player.lastName}
+            {fullName(player)}
             {leaderboardEntries && (entry ? ` — ${rankingNames(entry.ranking)}` : " — tahmin göndermedi")}
           </li>
         );

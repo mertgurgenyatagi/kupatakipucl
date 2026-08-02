@@ -1,5 +1,8 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { LeaderboardEntry } from "./leaderboardTypes";
+import { Player } from "../profile/usePlayers";
+import { buildPlayersByUid } from "../profile/playersByUid";
+import { fullName, initials } from "../profile/deletedAccount";
 import { assignRanks } from "./ranking";
 import {
   Table,
@@ -15,6 +18,9 @@ import { cn } from "@/lib/utils";
 
 interface LeaderboardTableProps {
   entries: LeaderboardEntry[];
+  /** Needed to resolve lastName for signed-in viewers — LeaderboardEntry no
+   *  longer carries it (2026-08-02 name-privacy change). */
+  players: Player[];
   /** Gate for the hover highlight — true once the tournament has started
    *  (DESIGN-SPEC: the brief's "only active after starting"). */
   revealCorrectness?: boolean;
@@ -26,10 +32,6 @@ interface LeaderboardTableProps {
    *  uses this to open that participant's dossier popup. Same gate as the
    *  hover highlight: only live once correctness is actually revealable. */
   onSelectEntry?: (uid: string) => void;
-}
-
-function initials(firstName: string, lastName: string) {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
 /**
@@ -52,11 +54,13 @@ function initials(firstName: string, lastName: string) {
  */
 export const LeaderboardTable = memo(function LeaderboardTable({
   entries,
+  players,
   revealCorrectness = false,
   onHoverEntry,
   onSelectEntry,
 }: LeaderboardTableProps) {
   const ranked = assignRanks(entries);
+  const playersByUid = useMemo(() => buildPlayersByUid(players), [players]);
 
   return (
     <Frame className="h-full animate-cotton-rise border-color_border1/35">
@@ -132,7 +136,7 @@ export const LeaderboardTable = memo(function LeaderboardTable({
                         <Avatar className="size-8">
                           <AvatarImage src={entry.photoURL} alt="" />
                           <AvatarFallback className="bg-secondary font-mono text-[0.6rem] text-color_secondary">
-                            {initials(entry.firstName, entry.lastName)}
+                            {initials({ firstName: entry.firstName, lastName: playersByUid.get(entry.uid)?.lastName })}
                           </AvatarFallback>
                         </Avatar>
                       </TableCell>
@@ -143,7 +147,7 @@ export const LeaderboardTable = memo(function LeaderboardTable({
                       <TableCell className="w-full py-3 align-middle">
                         <span className="flex min-w-0 items-baseline gap-3">
                           <span className="truncate font-display text-sm font-medium text-color_text">
-                            {entry.firstName} {entry.lastName}
+                            {fullName({ firstName: entry.firstName, lastName: playersByUid.get(entry.uid)?.lastName })}
                           </span>
                         </span>
                       </TableCell>

@@ -59,7 +59,7 @@ export function HomePage() {
         showFullNames={loggedIn}
         leaderboardEntries={started ? entries : undefined}
       />
-      {started && <LeaderboardTable entries={entries} />}
+      {started && <LeaderboardTable entries={entries} players={players} />}
     </div>
   );
 }

@@ -1,11 +1,8 @@
 import { LeaderboardEntry } from "./leaderboardTypes";
+import { initials } from "../profile/deletedAccount";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Frame, FrameHeader, FrameMeta } from "@/components/ui/frame";
 import { cn } from "@/lib/utils";
-
-function initials(firstName: string, lastName: string) {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-}
 
 /**
  * Small companion cells to the standings frame (DESIGN-SPEC §0b, "other cells
@@ -73,12 +70,12 @@ export function CurrentLeaderCell({
           <Avatar className="size-12 shrink-0 opacity-95 grayscale-[35%]">
             <AvatarImage src={leader.photoURL} alt="" />
             <AvatarFallback className="bg-color_border1/40 font-mono text-xs text-color_text">
-              {initials(leader.firstName, leader.lastName)}
+              {initials({ firstName: leader.firstName })}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
             <p className="truncate font-display text-2xl leading-tight font-medium text-color_text">
-              {leader.firstName} {leader.lastName}
+              {leader.firstName}
             </p>
             <p className="mt-0.5 font-mono text-[0.72rem] tracking-[0.08em] text-color_textsecondary tnum">
               {leader.points} puan

@@ -3,7 +3,7 @@ import { assignRanks } from "./ranking";
 import { LeaderboardEntry } from "./leaderboardTypes";
 
 function entry(uid: string, points: number): LeaderboardEntry {
-  return { uid, firstName: uid, lastName: "", photoURL: "", points, ranking: [] };
+  return { uid, firstName: uid, photoURL: "", points, ranking: [] };
 }
 
 describe("assignRanks", () => {
