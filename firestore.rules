@@ -111,6 +111,23 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    // Bracket predictions (src/bracket/bracketPredictionTypes.ts): each
+    // user's one-time knockout-bracket submission (GREAT_LEAP_SPEC.md
+    // §5.2 — "one submission, one time, no revisions", unlike
+    // predictions/{uid} which can be resubmitted). Read is public, same
+    // stance as predictions/{uid}. Only the owner can create their own
+    // doc, exactly once — there is no update or delete path at all, which
+    // is what actually enforces "no revisions" (the client's one-time-door
+    // UI alone is not a security boundary).
+    match /bracketPredictions/{uid} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.picks is map
+        && request.resource.data.picks.size() == 15;
+      allow update, delete: if false;
+    }
+
     // Dev-only tooling (src/devpanel): simulates tournament phase/date and
     // match outcomes so timing-dependent features can be tested without
     // waiting on real calendar dates. Pre-launch, no real users yet — same
