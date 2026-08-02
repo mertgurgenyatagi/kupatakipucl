@@ -85,6 +85,20 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Per-matchday rank snapshots (src/leaderboard/rankSnapshotTypes.ts):
+    // one doc per matchday recording each participant's rank at that point
+    // in the season, so a real rank-history chart can be drawn later
+    // (GREAT_LEAP_SPEC.md §7.1 — src/leaderboard/rankHistory.ts's existing
+    // computeRankHistory only replays dev-only devMatches, not usable in
+    // production). Written only by functions/leaderboard's Cloud Function
+    // inside the same recomputeLeaderboard() pass that writes
+    // leaderboardCache/current — same Cloud-Function-only convention as
+    // that collection.
+    match /rankSnapshots/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Tournament phase (src/tournament/useTournamentPhase.ts): the single
     // manual admin-set value driving notstarted/leaguephase/preknockout/
     // knockout site-wide (SPEC decision 2026-07-23 — pagemap intake round 1).
