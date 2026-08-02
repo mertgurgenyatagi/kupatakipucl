@@ -10,6 +10,7 @@ const PLAYERS = [
 
 const LOBBY_MESSAGES = {
   messages: [],
+  loading: false,
   loadOlder: vi.fn(),
   loadingOlder: false,
   hasMoreOlder: false,
@@ -52,7 +53,14 @@ describe("ChatCell", () => {
   });
 
   it("shows the settings gear once a Special Lobby is active", () => {
-    const lobby: MyLobby = { id: "lobby1", name: "Arkadaşlar", createdByUid: "uid1", createdAt: 1, myJoinedAt: 1 };
+    const lobby: MyLobby = {
+      id: "lobby1",
+      name: "Arkadaşlar",
+      createdByUid: "uid1",
+      createdAt: 1,
+      myJoinedAt: 1,
+      memberUids: ["uid1"],
+    };
     render(<ChatCell {...baseProps()} myLobbies={[lobby]} sohbetLobbyId="lobby1" />);
     expect(screen.getByLabelText("Özel lobi ayarları")).toBeInTheDocument();
   });

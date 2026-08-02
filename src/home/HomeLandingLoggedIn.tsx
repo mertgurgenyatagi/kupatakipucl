@@ -5,10 +5,10 @@ import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ChatRoom } from "../chat/ChatRoom";
 import { RecentPostsPreview, ForumPreviewFooter } from "../forum/RecentPostsPreview";
 import { ParticipantStatusList } from "./ParticipantStatusList";
 import { HomeHero } from "./HomeHero";
+import { ChatCell } from "./ChatCell";
 import { useCountdown } from "./useCountdown";
 import { TOURNAMENT_START_ISO } from "./deadlines";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
@@ -163,9 +163,6 @@ export function HomeLandingLoggedIn({
     : null;
 
   const playersByUid = buildPlayersByUid(players);
-  const sohbetDisplayPlayers = sohbetLobbyId
-    ? sohbetLobbyMembers.map((m) => playersByUid.get(m.uid)).filter((p): p is Player => p !== undefined)
-    : players;
   const katilimcilarDisplayPlayers = katilimcilarLobbyId
     ? katilimcilarLobbyMembers.map((m) => playersByUid.get(m.uid)).filter((p): p is Player => p !== undefined)
     : players;
@@ -292,53 +289,25 @@ export function HomeLandingLoggedIn({
 
         <HomeHero className={CELL} style={{ animationDelay: "180ms" }} />
 
-        <Frame className={CELL} style={{ animationDelay: "240ms" }}>
-          <FrameHeader tone="navy">
-            <FrameTitle className="text-base text-color_text sm:text-lg">
-              {getLobbySwitcherLabel(myLobbies, sohbetLobbyId)}
-            </FrameTitle>
-            <div className="flex items-center gap-2">
-              {sohbetLobbyId && (
-                <button
-                  type="button"
-                  onClick={() => onOpenLobbyManagement(sohbetLobbyId)}
-                  aria-label="Özel lobi ayarları"
-                  className="cursor-pointer text-color_textsecondary hover:text-color_accent"
-                >
-                  <Settings className="size-3.5" aria-hidden />
-                </button>
-              )}
-              <span className="flex items-center gap-1.5 font-mono text-[0.62rem] tracking-[0.1em] text-color_text/70 uppercase tnum">
-                <span className="size-1.5 rounded-full bg-color_accent" aria-hidden />
-                {onlineCount} çevrimiçi
-              </span>
-              <LobbySwitcher options={myLobbies} current={sohbetLobbyId} onChange={onChangeSohbetLobby} />
-            </div>
-          </FrameHeader>
-          <FrameBody>
-            {/* `players` (global) vs `mentionCandidates` (lobby-scoped) is a
-                deliberate split: author lookup has to see everyone who ever
-                posted, including people who have since left or been removed
-                from this lobby — otherwise their historical messages fall
-                through to deletedAccount.ts's "Silindi", which specifically
-                means "this account was deleted", not "this person left", and
-                leaving is meant to be quiet (Round 3). Who you can @-mention
-                is a genuinely lobby-scoped question, so that keeps the
-                filtered list (2026-07-30, final-review fix). */}
-            <ChatRoom
-              uid={me.uid}
-              players={players}
-              mentionCandidates={sohbetDisplayPlayers}
-              messages={sohbetLobbyId ? sohbetLobbyMessages.messages : messages}
-              onLoadOlder={sohbetLobbyId ? sohbetLobbyMessages.loadOlder : onLoadOlderMessages}
-              loadingOlder={sohbetLobbyId ? sohbetLobbyMessages.loadingOlder : loadingOlderMessages}
-              hasMoreOlder={sohbetLobbyId ? sohbetLobbyMessages.hasMoreOlder : hasMoreOlderMessages}
-              typingUids={sohbetLobbyId ? [] : typingUids}
-              onSelectParticipant={setSelectedPlayerUid}
-              lobbyId={sohbetLobbyId}
-            />
-          </FrameBody>
-        </Frame>
+        <ChatCell
+          className={CELL}
+          style={{ animationDelay: "240ms" }}
+          myUid={me.uid}
+          players={players}
+          myLobbies={myLobbies}
+          sohbetLobbyId={sohbetLobbyId}
+          onChangeSohbetLobby={onChangeSohbetLobby}
+          onOpenLobbyManagement={onOpenLobbyManagement}
+          sohbetLobbyMembers={sohbetLobbyMembers}
+          sohbetLobbyMessages={sohbetLobbyMessages}
+          messages={messages}
+          onLoadOlderMessages={onLoadOlderMessages}
+          loadingOlderMessages={loadingOlderMessages}
+          hasMoreOlderMessages={hasMoreOlderMessages}
+          onlineCount={onlineCount}
+          typingUids={typingUids}
+          onSelectParticipant={setSelectedPlayerUid}
+        />
       </div>
 
       <ParticipantPopup
