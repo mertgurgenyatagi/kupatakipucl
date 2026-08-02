@@ -67,10 +67,11 @@ function rankSnapshotDocId(currentMatchday) {
  * a more incremental update here.
  */
 async function recomputeLeaderboard() {
-  const [predictionsSnap, profilesSnap, resultsSnap] = await Promise.all([
+  const [predictionsSnap, profilesSnap, resultsSnap, tournamentStateSnap] = await Promise.all([
     db.collection("predictions").get(),
     db.collection("profiles").get(),
     db.collection("results").get(),
+    db.doc("tournamentState/current").get(),
   ]);
 
   const profilesById = new Map(profilesSnap.docs.map((doc) => [doc.id, doc.data()]));
@@ -97,6 +98,24 @@ async function recomputeLeaderboard() {
   entries.sort((a, b) => b.points - a.points);
 
   await db.doc("leaderboardCache/current").set({ entries, computedAt: Date.now() });
+
+  // Rank snapshots (GREAT_LEAP_SPEC.md §7.1): only written once a real
+  // matchday is set (tournamentState/current.currentMatchday, hand-bumped
+  // — §1.2, no admin UI). Scoring-agnostic on purpose: this just snapshots
+  // whatever `points` each entry already has above, so a future scoring
+  // change (e.g. Plan 2 adding bracket points) flows through automatically.
+  //
+  // Note: `.exists` is a boolean property on Admin SDK DocumentSnapshots,
+  // not a method call like on the client SDK.
+  const currentMatchday = tournamentStateSnap.exists ? tournamentStateSnap.data().currentMatchday : undefined;
+  const snapshotDocId = rankSnapshotDocId(currentMatchday);
+  if (snapshotDocId) {
+    await db.doc(`rankSnapshots/${snapshotDocId}`).set({
+      matchday: currentMatchday,
+      entries: buildRankSnapshotEntries(entries),
+      computedAt: Date.now(),
+    });
+  }
 }
 
 exports.recomputeLeaderboardOnPrediction = onDocumentWritten("predictions/{uid}", async () => {
