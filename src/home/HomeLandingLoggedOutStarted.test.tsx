@@ -15,7 +15,9 @@ vi.mock("../leaderboard/LeagueTableList", () => ({
 }));
 
 vi.mock("../leaderboard/UpcomingMatchesPreview", () => ({
-  UpcomingMatchesPreview: () => <div>upcoming-preview</div>,
+  UpcomingMatchesPreview: ({ onSelectTeam }: { onSelectTeam: (id: string) => void }) => (
+    <button onClick={() => onSelectTeam("arsenal")}>upcoming-preview</button>
+  ),
 }));
 
 vi.mock("../forum/RecentPostsPreview", () => ({
@@ -83,6 +85,12 @@ describe("HomeLandingLoggedOutStarted", () => {
     fireEvent.click(screen.getByText("league-table-list"));
     expect(screen.getByText("team-popup:ajax")).toBeInTheDocument();
     expect(screen.getByText("participant-popup:closed")).toBeInTheDocument();
+  });
+
+  it("selecting a team from the upcoming-matches widget also opens TeamPopup", () => {
+    render(<HomeLandingLoggedOutStarted results={{}} players={[player]} entries={[]} />);
+    fireEvent.click(screen.getByText("upcoming-preview"));
+    expect(screen.getByText("team-popup:arsenal")).toBeInTheDocument();
   });
 
   it("selecting a participant (from the forum widget or the standings) opens ParticipantPopup and closes TeamPopup", () => {

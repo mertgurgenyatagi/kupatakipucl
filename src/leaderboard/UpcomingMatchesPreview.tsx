@@ -13,7 +13,13 @@ const PREVIEW_COUNT = 3;
  * Mert's own convention (see FixtureRow.tsx), the rows stay clickable but
  * inert, consistent with the drawer everywhere else fixtures show up.
  */
-export function UpcomingMatchesPreview({ results }: { results: Record<string, TeamResult> }) {
+export function UpcomingMatchesPreview({
+  results,
+  onSelectTeam,
+}: {
+  results: Record<string, TeamResult>;
+  onSelectTeam?: (teamId: string) => void;
+}) {
   const upcoming = useMemo(() => getUpcomingFixtures(resolveNow()).slice(0, PREVIEW_COUNT), []);
 
   if (upcoming.length === 0) {
@@ -29,7 +35,7 @@ export function UpcomingMatchesPreview({ results }: { results: Record<string, Te
   return (
     <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
       {upcoming.map((fixture) => (
-        <FixtureRow key={fixture.id} fixture={fixture} results={results} compact />
+        <FixtureRow key={fixture.id} fixture={fixture} results={results} compact onSelectTeam={onSelectTeam} />
       ))}
     </div>
   );

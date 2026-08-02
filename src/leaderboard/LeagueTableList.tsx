@@ -44,6 +44,20 @@ export function LeagueTableList({ results, onSelectTeam }: LeagueTableListProps)
     <Frame className="h-full animate-cotton-rise border-color_border1/35">
       <FrameBody>
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-2 sm:px-3">
+          {/* Same column labels as TeamTable's own header (S / Takım /
+              O / A / Y / AV / P) — no sort affordance here, just static
+              labels, since this list isn't sortable. */}
+          <div className="flex h-5 items-center gap-2 border-b border-color_border1 px-2 font-mono text-[0.6rem] font-medium tracking-[0.18em] text-color_textsecondary uppercase">
+            <span className="w-1 shrink-0" aria-hidden />
+            <span className="w-6 shrink-0">S</span>
+            <span className="size-7 shrink-0" aria-hidden />
+            <span className="min-w-0 flex-1">Takım</span>
+            <span className="w-6 shrink-0 text-right">O</span>
+            <span className="w-6 shrink-0 text-right">A</span>
+            <span className="w-6 shrink-0 text-right">Y</span>
+            <span className="w-8 shrink-0 text-right">AV</span>
+            <span className="w-8 shrink-0 text-right">P</span>
+          </div>
           <ul>
             {ordered.map((team, index) => {
               const result = results[team.id];
@@ -54,7 +68,7 @@ export function LeagueTableList({ results, onSelectTeam }: LeagueTableListProps)
                   onClick={() => onSelectTeam?.(team.id)}
                   style={{ animationDelay: `${Math.min(index * 16, 500)}ms` }}
                   className={cn(
-                    "flex h-12 animate-cotton-rise cursor-pointer items-center gap-3 border-b border-color_border1/50 px-2 transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill",
+                    "flex h-12 animate-cotton-rise cursor-pointer items-center gap-2 border-b border-color_border1/50 px-2 transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill",
                     !result && "opacity-55"
                   )}
                 >

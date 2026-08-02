@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { UpcomingMatchesPreview } from "./UpcomingMatchesPreview";
 
@@ -16,5 +16,13 @@ describe("UpcomingMatchesPreview", () => {
     render(<UpcomingMatchesPreview results={{}} />);
     expect(screen.queryByLabelText("Yaklaşan maçları göster")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Yaklaşan maçları kapat")).not.toBeInTheDocument();
+  });
+
+  it("clicking a team fires onSelectTeam with that team's id", () => {
+    const onSelectTeam = vi.fn();
+    render(<UpcomingMatchesPreview results={{}} onSelectTeam={onSelectTeam} />);
+    const [, firstTeamButton] = screen.getAllByRole("button");
+    fireEvent.click(firstTeamButton);
+    expect(onSelectTeam).toHaveBeenCalledTimes(1);
   });
 });

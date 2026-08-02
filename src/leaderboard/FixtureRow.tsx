@@ -1,4 +1,4 @@
-import { type KeyboardEvent, type MouseEvent } from "react";
+import { type KeyboardEvent } from "react";
 import { TEAM_BY_ID } from "../predictions/teams";
 import { Fixture } from "../devpanel/fixtures";
 import { TeamResult } from "./teamResultTypes";
@@ -38,17 +38,11 @@ function handleMatchKeyDown(e: KeyboardEvent) {
   }
 }
 
-/** Its own clickable target broken out of the row's big clickable zone
- *  (stops propagation) — one object per Mert's spec, so the name underlines
- *  whenever any part of it, crest included, is hovered. */
-function handleTeamClick(e: MouseEvent) {
-  e.stopPropagation();
-}
-
 export function FixtureRow({
   fixture,
   results,
   compact = false,
+  onSelectTeam,
 }: {
   fixture: Fixture;
   results: Record<string, TeamResult>;
@@ -57,6 +51,10 @@ export function FixtureRow({
    *  of stacked, everything sized down a notch. The drawer itself keeps its
    *  default (non-compact) rows unchanged. */
   compact?: boolean;
+  /** Fires with a team's id when its crest/name is clicked — opens
+   *  TeamPopup. Undefined for the drawer (unchanged, still just stops
+   *  propagation with no further effect). */
+  onSelectTeam?: (teamId: string) => void;
 }) {
   const home = TEAM_BY_ID[fixture.homeTeamId];
   const away = TEAM_BY_ID[fixture.awayTeamId];
@@ -79,7 +77,10 @@ export function FixtureRow({
         </span>
         <button
           type="button"
-          onClick={handleTeamClick}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectTeam?.(home.id);
+          }}
           className={cn(
             "group flex cursor-pointer items-center",
             compact ? "flex-row justify-center gap-1.5" : "flex-col gap-1"
@@ -107,7 +108,10 @@ export function FixtureRow({
 
         <button
           type="button"
-          onClick={handleTeamClick}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectTeam?.(away.id);
+          }}
           className={cn(
             "group flex cursor-pointer items-center",
             compact ? "flex-row justify-center gap-1.5" : "flex-col gap-1"

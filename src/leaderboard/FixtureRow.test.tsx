@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { FixtureRow } from "./FixtureRow";
 import { Fixture } from "../devpanel/fixtures";
 
@@ -49,5 +49,25 @@ describe("FixtureRow", () => {
     expect(screen.getByText("AJA")).toBeInTheDocument();
     expect(screen.getByText("ARS")).toBeInTheDocument();
     expect(screen.getAllByText("-")).toHaveLength(2);
+  });
+
+  it("clicking the home team fires onSelectTeam with the home team's id, without bubbling to the row's own no-op handler", () => {
+    const onSelectTeam = vi.fn();
+    render(<FixtureRow fixture={fixture} results={{}} onSelectTeam={onSelectTeam} />);
+    fireEvent.click(screen.getByText("AJA"));
+    expect(onSelectTeam).toHaveBeenCalledWith("ajax");
+    expect(onSelectTeam).toHaveBeenCalledTimes(1);
+  });
+
+  it("clicking the away team fires onSelectTeam with the away team's id", () => {
+    const onSelectTeam = vi.fn();
+    render(<FixtureRow fixture={fixture} results={{}} onSelectTeam={onSelectTeam} />);
+    fireEvent.click(screen.getByText("ARS"));
+    expect(onSelectTeam).toHaveBeenCalledWith("arsenal");
+  });
+
+  it("does not throw when a team is clicked and no onSelectTeam is provided (the drawer's own usage)", () => {
+    render(<FixtureRow fixture={fixture} results={{}} />);
+    expect(() => fireEvent.click(screen.getByText("AJA"))).not.toThrow();
   });
 });
