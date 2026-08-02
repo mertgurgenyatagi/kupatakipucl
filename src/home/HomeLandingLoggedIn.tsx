@@ -5,10 +5,10 @@ import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { RecentPostsPreview, ForumPreviewFooter } from "../forum/RecentPostsPreview";
 import { ParticipantStatusList } from "./ParticipantStatusList";
 import { HomeHero } from "./HomeHero";
 import { ChatCell } from "./ChatCell";
+import { ForumCell } from "./ForumCell";
 import { useCountdown } from "./useCountdown";
 import { TOURNAMENT_START_ISO } from "./deadlines";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
@@ -258,34 +258,21 @@ export function HomeLandingLoggedIn({
           </FrameBody>
         </Frame>
 
-        <Frame className={CELL} style={{ animationDelay: "120ms" }}>
-          <FrameHeader tone="navy">
-            <FrameTitle className="text-base text-color_text sm:text-lg">
-              <Link to="/forum" className="cursor-pointer no-underline hover:underline">
-                Forum
-              </Link>
-            </FrameTitle>
-          </FrameHeader>
-          <FrameBody>
-            <RecentPostsPreview
-              posts={posts}
-              players={players}
-              uid={me.uid}
-              likesByPost={likesByPost}
-              onToggleLike={onToggleLike}
-              onSelectParticipant={setSelectedPlayerUid}
-              onDeletePost={onDeletePost}
-              onSaveEdit={onSaveEdit}
-              onRefetch={onRefetchPosts}
-            />
-            {(likeError || forumActionError) && (
-              <p role="alert" className="shrink-0 px-5 pb-2 text-[0.72rem] text-color_remove sm:px-6">
-                {likeError ?? forumActionError}
-              </p>
-            )}
-            <ForumPreviewFooter />
-          </FrameBody>
-        </Frame>
+        <ForumCell
+          className={CELL}
+          style={{ animationDelay: "120ms" }}
+          posts={posts}
+          players={players}
+          myUid={me.uid}
+          likesByPost={likesByPost}
+          onToggleLike={onToggleLike}
+          onSelectParticipant={setSelectedPlayerUid}
+          onDeletePost={onDeletePost}
+          onSaveEdit={onSaveEdit}
+          onRefetchPosts={onRefetchPosts}
+          likeError={likeError}
+          forumActionError={forumActionError}
+        />
 
         <HomeHero className={CELL} style={{ animationDelay: "180ms" }} />
 
