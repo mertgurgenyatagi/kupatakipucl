@@ -17,6 +17,7 @@ vi.mock("firebase/firestore", () => ({
 vi.mock("../firebase", () => ({ db: {} }));
 
 import { useBracketPrediction, saveBracketPrediction } from "./useBracketPrediction";
+import { MatchupId } from "./bracketStructure";
 
 type SnapshotCallback = (snapshot: { exists: () => boolean; data: () => unknown }) => void;
 
@@ -64,7 +65,7 @@ describe("saveBracketPrediction", () => {
     mockGetDoc.mockResolvedValue({ exists: () => false });
     mockSetDoc.mockResolvedValue(undefined);
 
-    const result = await saveBracketPrediction("uid1", { "ro16-1": "Arsenal" });
+    const result = await saveBracketPrediction("uid1", { "ro16-1": "Arsenal" } as Record<MatchupId, string>);
 
     expect(result.picks).toEqual({ "ro16-1": "Arsenal" });
     expect(typeof result.submittedAt).toBe("number");
@@ -74,7 +75,9 @@ describe("saveBracketPrediction", () => {
   it("throws if a prediction already exists, and does not call setDoc", async () => {
     mockGetDoc.mockResolvedValue({ exists: () => true, data: () => ({ picks: {}, submittedAt: 1 }) });
 
-    await expect(saveBracketPrediction("uid1", { "ro16-1": "Arsenal" })).rejects.toThrow(
+    await expect(
+      saveBracketPrediction("uid1", { "ro16-1": "Arsenal" } as Record<MatchupId, string>)
+    ).rejects.toThrow(
       "Bracket prediction already submitted"
     );
     expect(mockSetDoc).not.toHaveBeenCalled();
