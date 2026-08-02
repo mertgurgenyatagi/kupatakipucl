@@ -27,6 +27,15 @@ vi.mock("../signup/SignupFlow", () => ({
   ),
 }));
 
+// Defaults to "notstarted" so the file's 6 pre-existing tests (which never
+// set a phase) keep exercising exactly today's behavior.
+const mockUsePhase = vi.fn(() => "notstarted");
+
+vi.mock("../tournament/useTournamentPhase", () => ({ useTournamentPhase: () => mockUsePhase() }));
+vi.mock("./RegistrationClosedScreen", () => ({
+  RegistrationClosedScreen: () => <div>registration-closed</div>,
+}));
+
 const noProfile = { profile: null, loading: false };
 const noSurvey = { response: null, loading: false };
 const hasProfile = { profile: { firstName: "Mert", lastName: "G", photoURL: "url", createdAt: 1 }, loading: false };
@@ -127,5 +136,63 @@ describe("ProfileGate", () => {
     );
 
     expect(screen.getByText("signup-flow:uid2")).toBeInTheDocument();
+  });
+});
+
+describe("ProfileGate registration closing", () => {
+  it("shows RegistrationClosedScreen for a never-onboarded user once the phase has started", () => {
+    mockUseAuth.mockReturnValue({ user: { uid: "uid1" }, loading: false });
+    mockUseProfile.mockReturnValue({ profile: null, loading: false });
+    mockUseSurveyResponse.mockReturnValue({ response: null, loading: false });
+    mockUsePhase.mockReturnValue("leaguephase");
+    render(
+      <ProfileGate>
+        <div>real-app</div>
+      </ProfileGate>
+    );
+    expect(screen.getByText("registration-closed")).toBeInTheDocument();
+    expect(screen.queryByText("real-app")).not.toBeInTheDocument();
+  });
+
+  it("still shows SignupFlow for a never-onboarded user while notstarted", () => {
+    mockUseAuth.mockReturnValue({ user: { uid: "uid1" }, loading: false });
+    mockUseProfile.mockReturnValue({ profile: null, loading: false });
+    mockUseSurveyResponse.mockReturnValue({ response: null, loading: false });
+    mockUsePhase.mockReturnValue("notstarted");
+    render(
+      <ProfileGate>
+        <div>real-app</div>
+      </ProfileGate>
+    );
+    expect(screen.queryByText("registration-closed")).not.toBeInTheDocument();
+  });
+
+  it("does not block a user who has a profile but abandoned mid-quiz, even once started", () => {
+    // Reuses the file's existing `hasProfile` constant (already declared
+    // with a full, valid Profile shape including createdAt — see the top of
+    // this file) rather than a fresh inline literal.
+    mockUseAuth.mockReturnValue({ user: { uid: "uid1" }, loading: false });
+    mockUseProfile.mockReturnValue(hasProfile);
+    mockUseSurveyResponse.mockReturnValue({ response: null, loading: false });
+    mockUsePhase.mockReturnValue("knockout");
+    render(
+      <ProfileGate>
+        <div>real-app</div>
+      </ProfileGate>
+    );
+    expect(screen.queryByText("registration-closed")).not.toBeInTheDocument();
+  });
+
+  it("does not affect a fully onboarded user once started", () => {
+    mockUseAuth.mockReturnValue({ user: { uid: "uid1" }, loading: false });
+    mockUseProfile.mockReturnValue(hasProfile);
+    mockUseSurveyResponse.mockReturnValue({ response: { messiOrRonaldo: "messi" }, loading: false });
+    mockUsePhase.mockReturnValue("knockout");
+    render(
+      <ProfileGate>
+        <div>real-app</div>
+      </ProfileGate>
+    );
+    expect(screen.getByText("real-app")).toBeInTheDocument();
   });
 });
