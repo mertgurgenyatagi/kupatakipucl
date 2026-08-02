@@ -20,6 +20,8 @@ import { useResults } from "../leaderboard/useResults";
 import { assignRanks } from "../leaderboard/ranking";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { TeamPopup } from "../leaderboard/TeamPopup";
+import { MatchupPopup } from "../leaderboard/MatchupPopup";
+import { useTournamentPhase } from "../tournament/useTournamentPhase";
 import { CameraIcon } from "lucide-react";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -99,6 +101,7 @@ export function ProfilePage() {
   const { entries, loading: entriesLoading } = useLeaderboard();
   const { results } = useResults();
   const { players } = usePlayers();
+  const phase = useTournamentPhase();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [localProfile, setLocalProfile] = useState<Profile | null>(null);
@@ -116,6 +119,7 @@ export function ProfilePage() {
 
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [selectedFixtureId, setSelectedFixtureId] = useState<string | null>(null);
 
   // Same cross-linked-popup pattern as LeaderboardPage.tsx: selecting one
   // clears the other, and both are stable callbacks since ParticipantPopup/
@@ -126,12 +130,22 @@ export function ProfilePage() {
   const handleTeamPopupOpenChange = useCallback((open: boolean) => {
     if (!open) setSelectedTeamId(null);
   }, []);
+  const handleFixturePopupOpenChange = useCallback((open: boolean) => {
+    if (!open) setSelectedFixtureId(null);
+  }, []);
   const handleSelectParticipant = useCallback((participantUid: string) => {
     setSelectedUid(participantUid);
     setSelectedTeamId(null);
+    setSelectedFixtureId(null);
   }, []);
   const handleSelectTeam = useCallback((teamId: string) => {
     setSelectedTeamId(teamId);
+    setSelectedUid(null);
+    setSelectedFixtureId(null);
+  }, []);
+  const handleSelectFixture = useCallback((fixtureId: string) => {
+    setSelectedFixtureId(fixtureId);
+    setSelectedTeamId(null);
     setSelectedUid(null);
   }, []);
 
@@ -440,7 +454,19 @@ export function ProfilePage() {
         onOpenChange={handleTeamPopupOpenChange}
         onSelectParticipant={handleSelectParticipant}
         onSelectTeam={handleSelectTeam}
+        onSelectFixture={handleSelectFixture}
         tournamentStarted={predictionLocked}
+      />
+      <MatchupPopup
+        fixtureId={selectedFixtureId}
+        onOpenChange={handleFixturePopupOpenChange}
+        phase={phase}
+        tournamentStarted={predictionLocked}
+        entries={entries}
+        players={players}
+        results={results}
+        onSelectTeam={handleSelectTeam}
+        onSelectParticipant={handleSelectParticipant}
       />
 
       <Dialog

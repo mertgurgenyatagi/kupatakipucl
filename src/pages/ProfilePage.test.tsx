@@ -2,6 +2,8 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { ProfilePage } from "./ProfilePage";
+import { TEAMS } from "../predictions/teams";
+import { FIXTURES } from "../devpanel/fixtures";
 
 const mockUseAuth = vi.fn();
 const mockUseVisibilityState = vi.fn();
@@ -14,7 +16,20 @@ const mockDeletePrediction = vi.fn();
 const mockUseSurveyResponse = vi.fn();
 const mockUseLeaderboard = vi.fn();
 const mockUseResults = vi.fn();
+const mockUseTournamentPhase = vi.fn();
 const mockSignOut = vi.fn();
+// TeamPopup/MatchupPopup both call useDevMatches (getDocs against the real
+// "devMatches" collection) unconditionally on every render, regardless of
+// whether their own dialog is open. Left unmocked, that's a real network
+// call to Firestore on every test in this file — flaky and noisy (observed
+// "permission-denied" console errors during development of this test).
+// Mocking the hook itself (rather than raw firebase/firestore, which
+// usePlayers.ts also depends on via onSnapshot and isn't otherwise mocked
+// in this file) keeps this scoped to just the match-outcomes data.
+const mockUseDevMatches = vi.fn();
+vi.mock("../devpanel/useDevMatches", () => ({
+  useDevMatches: () => mockUseDevMatches(),
+}));
 
 vi.mock("../auth/AuthProvider", () => ({
   useAuth: () => mockUseAuth(),
@@ -22,6 +37,10 @@ vi.mock("../auth/AuthProvider", () => ({
 
 vi.mock("../state/useVisibilityState", () => ({
   useVisibilityState: () => mockUseVisibilityState(),
+}));
+
+vi.mock("../tournament/useTournamentPhase", () => ({
+  useTournamentPhase: () => mockUseTournamentPhase(),
 }));
 
 vi.mock("../profile/useProfile", () => ({
@@ -101,6 +120,8 @@ describe("ProfilePage", () => {
     mockUseSurveyResponse.mockReturnValue({ response: null, loading: false, error: false });
     mockUseLeaderboard.mockReturnValue({ entries: [], loading: false });
     mockUseResults.mockReturnValue({ results: {}, loading: false });
+    mockUseTournamentPhase.mockReturnValue("notstarted");
+    mockUseDevMatches.mockReturnValue({ outcomes: {}, loading: false, refetch: () => {} });
     mockUpdateProfilePhoto.mockReset();
     mockSavePrediction.mockReset();
     mockDeleteProfile.mockReset();
@@ -241,6 +262,28 @@ describe("ProfilePage", () => {
     renderPage();
     fireEvent.click(screen.getByText("Arsenal"));
     expect(screen.getByText(/takım dosyası/)).toBeInTheDocument();
+  });
+
+  it("opens the Matchup Popup when a match row is clicked inside TeamPopup", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
+    mockUseTournamentPhase.mockReturnValue("leaguephase");
+    const fixture = FIXTURES[0];
+    const homeTeam = TEAMS.find((t) => t.id === fixture.homeTeamId)!;
+    const awayTeam = TEAMS.find((t) => t.id === fixture.awayTeamId)!;
+    mockUsePrediction.mockReturnValue({
+      prediction: { ranking: [fixture.homeTeamId, fixture.awayTeamId], submittedAt: 1, updatedAt: 1 },
+      loading: false,
+    });
+    renderPage();
+
+    fireEvent.click(await screen.findByText(homeTeam.name));
+    // TeamPopup is now open on the home team; its match-history row for
+    // this fixture is the row itself, not the nested opponent-team button.
+    const opponentTeamButton = (await screen.findByText(awayTeam.shortName)).closest("button")!;
+    const row = opponentTeamButton.closest('[role="button"]')!;
+    fireEvent.click(row);
+
+    expect(await screen.findAllByRole("dialog")).toHaveLength(1);
   });
 
   it("shows the average position everyone predicted for each team, once the tournament has started", () => {
