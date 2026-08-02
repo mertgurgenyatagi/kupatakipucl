@@ -9,13 +9,16 @@ function statesFor(phases: readonly TournamentPhase[], logins: readonly boolean[
   return phases.flatMap((phase) => logins.map((isLoggedIn) => getVisibilityState(isLoggedIn, phase)));
 }
 
-// Rules below come from onboarding/pagemap-questionnaires/pagemap-round-01.md
-// (round 1 answers): forum is logged-in-only in every phase now (previously
-// open to logged-out visitors once started — Q3 explicitly closed that).
+// Reopened to logged-out visitors 2026-08-02 (reversing the closure noted
+// below) for every started phase — same statesFor(STARTED_PHASES, [true,
+// false]) shape as `leaderboard` already uses. Posting/replying/liking stay
+// signed-in-only regardless (enforced both in the UI and, independently, by
+// firestore.rules' forumPosts create/update rules) — see the name-privacy
+// design spec for why this pairs with the profiles/publicProfiles split.
 const PAGE_ACCESS: Record<PageKey, VisibilityState[]> = {
   predictions: statesFor(ALL_PHASES, [true]),
   leaderboard: statesFor(STARTED_PHASES, [true, false]),
-  forum: statesFor(ALL_PHASES, [true]),
+  forum: [...statesFor(ALL_PHASES, [true]), ...statesFor(STARTED_PHASES, [false])],
   stats: statesFor(STARTED_PHASES, [true]),
   profile: statesFor(ALL_PHASES, [true]),
 };
