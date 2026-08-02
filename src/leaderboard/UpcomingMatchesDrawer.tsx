@@ -41,8 +41,10 @@ const PANEL_ID = "upcoming-matches-panel";
  */
 export function UpcomingMatchesDrawer({
   results,
+  onSelectFixture,
 }: {
   results: Record<string, TeamResult>;
+  onSelectFixture?: (fixtureId: string) => void;
 }) {
   const allUpcoming = useMemo(() => getUpcomingFixtures(resolveNow()), []);
   const [open, setOpen] = useState(false);
@@ -98,7 +100,7 @@ export function UpcomingMatchesDrawer({
           className="no-scrollbar min-h-0 flex-1 overflow-y-auto border-t border-color_border1/70 pt-2"
         >
           {shown.map((fixture) => (
-            <FixtureRow key={fixture.id} fixture={fixture} results={results} />
+            <FixtureRow key={fixture.id} fixture={fixture} results={results} onSelectFixture={onSelectFixture} />
           ))}
 
           {loadingMore && (

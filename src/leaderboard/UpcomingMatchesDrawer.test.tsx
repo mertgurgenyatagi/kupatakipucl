@@ -20,4 +20,13 @@ describe("UpcomingMatchesDrawer", () => {
     // fixture row must have rendered post-open.
     expect(screen.getAllByText(/^[A-Z]{2,4}$/).length).toBeGreaterThan(0);
   });
+
+  it("clicking a fixture row fires onSelectFixture with that fixture's id", () => {
+    const onSelectFixture = vi.fn();
+    render(<UpcomingMatchesDrawer results={{}} onSelectFixture={onSelectFixture} />);
+    fireEvent.click(screen.getByRole("button", { name: "Yaklaşan maçları göster" }));
+    const [, firstRowButton] = screen.getAllByRole("button");
+    fireEvent.click(firstRowButton);
+    expect(onSelectFixture).toHaveBeenCalledTimes(1);
+  });
 });
