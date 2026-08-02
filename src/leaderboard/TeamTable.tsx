@@ -19,6 +19,7 @@ interface TeamTableProps {
    *  leaderboard's own row click: PAGE_BRIEFING.txt's team popup is
    *  "identical for started and not started." */
   onSelectTeam?: (teamId: string) => void;
+  className?: string;
 }
 
 // O · A · Y · AV · P — the standard compact Turkish league-table header set
@@ -251,7 +252,7 @@ function TeamTableHalf({
  * both halves. Before any result exists it degrades to an honest, quiet
  * roster of all 36 teams.
  */
-export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTableProps) {
+export function TeamTable({ results, highlightedTeamIds, onSelectTeam, className }: TeamTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("position");
   const hasResults = Object.keys(results).length > 0;
 
@@ -261,7 +262,7 @@ export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTab
     const half = Math.ceil(TEAMS.length / 2);
     const halves = [TEAMS.slice(0, half), TEAMS.slice(half)];
     return (
-      <div className="relative h-full">
+      <div className={cn("relative h-full", className)} data-testid="team-table">
         <FrameHandle />
         <Frame className="relative z-10 h-full animate-cotton-rise border-color_border1/35">
         <FrameBody className="flex-row gap-3 px-3 py-1.5 sm:px-4">
@@ -361,7 +362,7 @@ export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTab
   const right = sorted.slice(half);
 
   return (
-    <div className="relative h-full">
+    <div className={cn("relative h-full", className)} data-testid="team-table">
       <FrameHandle />
       <Frame className="relative z-10 h-full animate-cotton-rise border-color_border1/35">
         <FrameBody className="min-h-0 gap-2 px-3 py-1 sm:px-4">
