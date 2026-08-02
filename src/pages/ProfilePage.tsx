@@ -16,6 +16,9 @@ import { RankingList } from "../predictions/RankingList";
 import { TEAMS } from "../predictions/teams";
 import { useLeaderboard } from "../leaderboard/useLeaderboard";
 import { useResults } from "../leaderboard/useResults";
+import { useBracketPrediction } from "../bracket/useBracketPrediction";
+import { useAllBracketPredictions } from "../bracket/useAllBracketPredictions";
+import { BracketProfileView } from "../bracket/BracketProfileView";
 import { assignRanks } from "../leaderboard/ranking";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { TeamPopup } from "../leaderboard/TeamPopup";
@@ -96,6 +99,8 @@ export function ProfilePage() {
   const { response: survey, loading: surveyLoading, error: surveyError } = useSurveyResponse(uid);
   const { entries, loading: entriesLoading } = useLeaderboard();
   const { results } = useResults();
+  const { prediction: bracketPrediction } = useBracketPrediction(uid);
+  const { predictions: allBracketPredictions } = useAllBracketPredictions();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [localProfile, setLocalProfile] = useState<Profile | null>(null);
@@ -425,6 +430,17 @@ export function ProfilePage() {
       </div>
       </div>
       </div>
+
+      {bracketPrediction && (
+        <Frame>
+          <FrameHeader>
+            <FrameTitle>Eleme Turu Tahmininiz</FrameTitle>
+          </FrameHeader>
+          <FrameBody>
+            <BracketProfileView prediction={bracketPrediction} allPredictions={allBracketPredictions} />
+          </FrameBody>
+        </Frame>
+      )}
 
       <ParticipantPopup
         ranked={selectedRanked}
