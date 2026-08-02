@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { doc, deleteDoc, onSnapshot, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "../firebase";
 import { Profile } from "./profileTypes";
@@ -129,7 +129,14 @@ export async function saveProfile(
   await uploadBytes(photoRef, compressed, { cacheControl: IMMUTABLE_CACHE_CONTROL });
   const photoURL = await getDownloadURL(photoRef);
   const profile: Profile = { firstName, lastName, photoURL, createdAt: Date.now() };
-  await setDoc(doc(db, "profiles", uid), profile);
+  const batch = writeBatch(db);
+  batch.set(doc(db, "profiles", uid), profile);
+  batch.set(doc(db, "publicProfiles", uid), {
+    firstName: profile.firstName,
+    photoURL: profile.photoURL,
+    createdAt: profile.createdAt,
+  });
+  await batch.commit();
   setCached(cacheKey(uid), profile);
   return profile;
 }
@@ -147,7 +154,14 @@ export async function updateProfilePhoto(
   await uploadBytes(photoRef, compressed, { cacheControl: IMMUTABLE_CACHE_CONTROL });
   const photoURL = await getDownloadURL(photoRef);
   const profile: Profile = { ...current, photoURL };
-  await setDoc(doc(db, "profiles", uid), profile);
+  const batch = writeBatch(db);
+  batch.set(doc(db, "profiles", uid), profile);
+  batch.set(doc(db, "publicProfiles", uid), {
+    firstName: profile.firstName,
+    photoURL: profile.photoURL,
+    createdAt: profile.createdAt,
+  });
+  await batch.commit();
   setCached(cacheKey(uid), profile);
   // Each upload now gets its own never-reused path (so the immutable cache
   // header above is safe to set), which means — unlike the old fixed-path
@@ -167,7 +181,10 @@ export async function updateProfilePhoto(
 }
 
 export async function deleteProfile(uid: string, photoURL: string | null): Promise<void> {
-  await deleteDoc(doc(db, "profiles", uid));
+  const batch = writeBatch(db);
+  batch.delete(doc(db, "profiles", uid));
+  batch.delete(doc(db, "publicProfiles", uid));
+  await batch.commit();
   deleteCached(cacheKey(uid));
   // not-started-audit item 08: the photo used to stay in Storage forever,
   // publicly readable at a predictable URL, for an account that's otherwise

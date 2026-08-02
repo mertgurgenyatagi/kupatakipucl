@@ -3,16 +3,17 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 import { clearSessionCache } from "../lib/sessionCache";
 
 const mockOnSnapshot = vi.fn();
-const mockSetDoc = vi.fn();
-const mockDeleteDoc = vi.fn();
+const mockSet = vi.fn();
+const mockDelete = vi.fn();
+const mockCommit = vi.fn();
+const mockWriteBatch = vi.fn((_db: unknown) => ({ set: mockSet, delete: mockDelete, commit: mockCommit }));
 const mockDoc = vi.fn((_db: unknown, collection: string, id: string) => ({ collection, id }));
 const mockUnsubscribe = vi.fn();
 
 vi.mock("firebase/firestore", () => ({
   doc: (...args: unknown[]) => mockDoc(...(args as [unknown, string, string])),
   onSnapshot: (...args: unknown[]) => mockOnSnapshot(...args),
-  setDoc: (...args: unknown[]) => mockSetDoc(...args),
-  deleteDoc: (...args: unknown[]) => mockDeleteDoc(...args),
+  writeBatch: (...args: unknown[]) => mockWriteBatch(...(args as [unknown])),
 }));
 
 const mockUploadBytes = vi.fn();
@@ -53,7 +54,7 @@ describe("useProfile", () => {
     captured = [];
     mockOnSnapshot.mockReset();
     mockUnsubscribe.mockReset();
-    mockSetDoc.mockReset();
+    mockSet.mockReset();
     clearSessionCache();
     mockOnSnapshot.mockImplementation(
       (docRef: { id: string }, onNext: SnapshotCallback, onError: ErrorCallback) => {
@@ -152,19 +153,29 @@ describe("saveProfile", () => {
   beforeEach(() => {
     mockUploadBytes.mockReset();
     mockGetDownloadURL.mockReset();
-    mockSetDoc.mockReset();
+    mockSet.mockReset();
+    mockCommit.mockReset().mockResolvedValue(undefined);
+    mockWriteBatch.mockClear();
   });
 
-  it("uploads the photo, then writes the profile doc with the resulting URL", async () => {
+  it("uploads the photo, then batches profiles + publicProfiles writes with the resulting URL", async () => {
     mockUploadBytes.mockResolvedValue(undefined);
     mockGetDownloadURL.mockResolvedValue("https://example.com/photo.jpg");
-    mockSetDoc.mockResolvedValue(undefined);
 
     const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
     const result = await saveProfile("uid1", "Mert", "G", file);
 
     expect(mockUploadBytes).toHaveBeenCalledTimes(1);
-    expect(mockSetDoc).toHaveBeenCalledTimes(1);
+    expect(mockSet).toHaveBeenCalledTimes(2);
+    expect(mockSet).toHaveBeenCalledWith(
+      { collection: "profiles", id: "uid1" },
+      { firstName: "Mert", lastName: "G", photoURL: "https://example.com/photo.jpg", createdAt: expect.any(Number) }
+    );
+    expect(mockSet).toHaveBeenCalledWith(
+      { collection: "publicProfiles", id: "uid1" },
+      { firstName: "Mert", photoURL: "https://example.com/photo.jpg", createdAt: expect.any(Number) }
+    );
+    expect(mockCommit).toHaveBeenCalledTimes(1);
     expect(result).toEqual({
       firstName: "Mert",
       lastName: "G",
@@ -178,14 +189,15 @@ describe("updateProfilePhoto", () => {
   beforeEach(() => {
     mockUploadBytes.mockReset();
     mockGetDownloadURL.mockReset();
-    mockSetDoc.mockReset();
+    mockSet.mockReset();
+    mockCommit.mockReset().mockResolvedValue(undefined);
+    mockWriteBatch.mockClear();
     mockDeleteObject.mockReset();
   });
 
-  it("uploads the new photo and writes the profile doc, preserving name and createdAt", async () => {
+  it("uploads the new photo and batches profiles + publicProfiles writes, preserving name and createdAt", async () => {
     mockUploadBytes.mockResolvedValue(undefined);
     mockGetDownloadURL.mockResolvedValue("https://example.com/new-photo.jpg");
-    mockSetDoc.mockResolvedValue(undefined);
     mockDeleteObject.mockResolvedValue(undefined);
 
     const current = { firstName: "Mert", lastName: "G", photoURL: "old-url", createdAt: 123 };
@@ -193,7 +205,16 @@ describe("updateProfilePhoto", () => {
     const result = await updateProfilePhoto("uid1", current, file);
 
     expect(mockUploadBytes).toHaveBeenCalledTimes(1);
-    expect(mockSetDoc).toHaveBeenCalledTimes(1);
+    expect(mockSet).toHaveBeenCalledTimes(2);
+    expect(mockSet).toHaveBeenCalledWith(
+      { collection: "profiles", id: "uid1" },
+      { firstName: "Mert", lastName: "G", photoURL: "https://example.com/new-photo.jpg", createdAt: 123 }
+    );
+    expect(mockSet).toHaveBeenCalledWith(
+      { collection: "publicProfiles", id: "uid1" },
+      { firstName: "Mert", photoURL: "https://example.com/new-photo.jpg", createdAt: 123 }
+    );
+    expect(mockCommit).toHaveBeenCalledTimes(1);
     expect(result).toEqual({
       firstName: "Mert",
       lastName: "G",
@@ -205,7 +226,6 @@ describe("updateProfilePhoto", () => {
   it("uploads to a fresh per-upload path (not the old fixed uid path) with an immutable cache-control", async () => {
     mockUploadBytes.mockResolvedValue(undefined);
     mockGetDownloadURL.mockResolvedValue("https://example.com/new-photo.jpg");
-    mockSetDoc.mockResolvedValue(undefined);
     mockDeleteObject.mockResolvedValue(undefined);
 
     const current = { firstName: "Mert", lastName: "G", photoURL: "old-url", createdAt: 123 };
@@ -224,7 +244,6 @@ describe("updateProfilePhoto", () => {
   it("best-effort deletes the previous photo (by its stored URL) after a successful update", async () => {
     mockUploadBytes.mockResolvedValue(undefined);
     mockGetDownloadURL.mockResolvedValue("https://example.com/new-photo.jpg");
-    mockSetDoc.mockResolvedValue(undefined);
     mockDeleteObject.mockResolvedValue(undefined);
 
     const current = { firstName: "Mert", lastName: "G", photoURL: "https://example.com/old-photo.jpg", createdAt: 123 };
@@ -239,7 +258,6 @@ describe("updateProfilePhoto", () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockUploadBytes.mockResolvedValue(undefined);
     mockGetDownloadURL.mockResolvedValue("https://example.com/new-photo.jpg");
-    mockSetDoc.mockResolvedValue(undefined);
     mockDeleteObject.mockRejectedValue(new Error("object-not-found"));
 
     const current = { firstName: "Mert", lastName: "G", photoURL: "https://example.com/old-photo.jpg", createdAt: 123 };
@@ -253,20 +271,22 @@ describe("updateProfilePhoto", () => {
 
 describe("deleteProfile", () => {
   beforeEach(() => {
-    mockDeleteDoc.mockReset();
+    mockDelete.mockReset();
+    mockCommit.mockReset().mockResolvedValue(undefined);
+    mockWriteBatch.mockClear();
     mockDeleteObject.mockReset();
   });
 
-  it("deletes the profile doc for the given uid", async () => {
-    mockDeleteDoc.mockResolvedValue(undefined);
+  it("deletes both the profile and publicProfile docs for the given uid, in one batch", async () => {
     mockDeleteObject.mockResolvedValue(undefined);
     await deleteProfile("uid1", "https://example.com/photo.jpg");
-    expect(mockDeleteDoc).toHaveBeenCalledTimes(1);
-    expect(mockDeleteDoc).toHaveBeenCalledWith({ collection: "profiles", id: "uid1" });
+    expect(mockDelete).toHaveBeenCalledTimes(2);
+    expect(mockDelete).toHaveBeenCalledWith({ collection: "profiles", id: "uid1" });
+    expect(mockDelete).toHaveBeenCalledWith({ collection: "publicProfiles", id: "uid1" });
+    expect(mockCommit).toHaveBeenCalledTimes(1);
   });
 
   it("also deletes the profile photo from storage, by its stored URL", async () => {
-    mockDeleteDoc.mockResolvedValue(undefined);
     mockDeleteObject.mockResolvedValue(undefined);
     await deleteProfile("uid1", "https://example.com/photo.jpg");
     expect(mockDeleteObject).toHaveBeenCalledTimes(1);
@@ -274,14 +294,12 @@ describe("deleteProfile", () => {
   });
 
   it("skips the storage delete entirely when there's no photoURL", async () => {
-    mockDeleteDoc.mockResolvedValue(undefined);
     await deleteProfile("uid1", null);
     expect(mockDeleteObject).not.toHaveBeenCalled();
   });
 
   it("does not throw when the photo delete fails (e.g. already gone)", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    mockDeleteDoc.mockResolvedValue(undefined);
     mockDeleteObject.mockRejectedValue(new Error("object-not-found"));
     await expect(deleteProfile("uid1", "https://example.com/photo.jpg")).resolves.toBeUndefined();
     consoleErrorSpy.mockRestore();
