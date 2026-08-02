@@ -116,6 +116,13 @@ describe("ThreadPopup", () => {
     expect(screen.queryByPlaceholderText("Yanıt yaz…")).not.toBeInTheDocument();
   });
 
+  it("does not show the quote button on replies when logged out", async () => {
+    const reply = makePost({ id: "r1", parentId: "root1", uid: "uid2", text: "bir yanıt" });
+    renderPopup({ uid: null, posts: [makePost(), reply] });
+    await screen.findByText("bir yanıt");
+    expect(screen.queryByLabelText("Alıntıla")).not.toBeInTheDocument();
+  });
+
   it("calls onOpenChange(false) when the close button is activated", async () => {
     const onOpenChange = vi.fn();
     renderPopup({ onOpenChange });

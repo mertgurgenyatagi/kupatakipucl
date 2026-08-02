@@ -9,15 +9,11 @@ import { PostForm } from "./PostForm";
 import { ForumImageThumb } from "./ForumImageThumb";
 import { timeAgo } from "./forumTime";
 import { splitMentionSegments } from "../chat/chatMentions";
-import { fullName, avatarSrc } from "../profile/deletedAccount";
+import { fullName, avatarSrc, initials } from "../profile/deletedAccount";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Frame, FrameBody } from "@/components/ui/frame";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-
-function initials(firstName: string, lastName: string) {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-}
 
 // How long the flash lingers before it starts fading (forum-round-03 Q4:
 // "highlights it for a brief second, fading out") — the fade itself is the
@@ -132,7 +128,7 @@ export function ThreadPopup({
                 <Avatar className="size-8 shrink-0">
                   <AvatarImage src={avatarSrc(author)} alt="" />
                   <AvatarFallback className="font-mono text-[0.6rem] text-color_textsecondary">
-                    {author ? initials(author.firstName, author.lastName) : "?"}
+                    {initials(author)}
                   </AvatarFallback>
                 </Avatar>
                 <span className="min-w-0 text-left">
@@ -256,7 +252,7 @@ export function ThreadPopup({
                             if (el) rowRefs.current.set(reply.id, el);
                             else rowRefs.current.delete(reply.id);
                           }}
-                          onQuote={handleQuote}
+                          onQuote={uid ? handleQuote : undefined}
                           onSaveEdit={onSaveEdit}
                           onDelete={onDelete}
                           onJumpToQuote={handleJumpToQuote}
