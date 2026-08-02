@@ -1,3 +1,4 @@
+import { Fragment, useEffect, useState } from "react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import { DustHaze } from "../home/DustHaze";
 import { TOURNAMENT_START_ISO } from "../home/deadlines";
@@ -7,29 +8,31 @@ import { cn } from "@/lib/utils";
 // own copy of the same curve, so every page's motion reads as one system.
 const EASE_COTTON = [0.22, 0.61, 0.36, 1] as const;
 
-// Essence, not rules and not a bio (explicitly cut during brainstorming) —
-// what the project *is* in spirit. Line 1 is the signature word-by-word
-// reveal (see wordVariants below); the rest reads as continuing prose.
-const ESSENCE_LINE_1 =
-  "Otuz altı takım. Tek bir sıralama. Ve bunu gereğinden fazla ciddiye alan bir avuç arkadaş.".split(" ");
-const EMPHASIS_WORDS = new Set(["sıralama.", "ciddiye"]);
-
+// Plain and factual, not dramatic or emotional (explicit call) — what the
+// project literally is, described matter-of-factly. Line 1 gets the
+// signature word-by-word reveal (see wordVariants below); the rest is
+// plain prose continuing the same idea.
+const ESSENCE_LINE_1 = "Kupatakip, Şampiyonlar Ligi lig aşaması için düzenlenen bir tahmin oyunudur.".split(" ");
 const PROSE_PARAGRAPHS = [
-  "Kimse sadece eğlenmek için oynamıyor — grup sohbetinde aylarca süren tartışmalar var, unutulmayan tahminler var, her sezon yeniden açılan hesaplar var.",
-  "Puan tablosu aslında bir sıralamadan fazlası: kimin hafızası daha güçlü, kimin cesareti daha fazla, kimin şansı daha yaver gidiyor — hepsinin sessiz kaydı.",
-  "Turnuva bitince kupa kalkıyor, iddialar bitmiyor. Önümüzdeki sezon, aynı soru yeniden sorulacak.",
+  "36 takım, katılımcılar tarafından tahmin edilen sıraya göre dizilir.",
+  "Sonuçlar açıklandıkça tahminler gerçek tabloyla karşılaştırılır ve puan durumu güncellenir.",
+  "Oyun, aynı arkadaş grubu tarafından her sezon yeniden düzenlenir.",
 ];
 
 // Real, fixed UEFA-format dates (the project's own hard-dates record).
 // TOURNAMENT_START_ISO is the only one with a live consumer elsewhere
-// (src/home/deadlines.ts) — the other four have no other consumer yet,
-// same situation that constant was in before it got its own file.
+// (src/home/deadlines.ts) — the others have no other consumer yet, same
+// situation that constant was in before it got its own file. The last
+// entry's date is a rough placeholder (Mert: "not important, dates will
+// be changed anyway") — there's no real knockout-phase-end date fixed
+// yet, unlike the other five.
 const KEY_DATES: { label: string; date: Date }[] = [
-  { label: "Takımlar Belli Olur", date: new Date("2026-08-26T00:00:00+03:00") },
-  { label: "Lig Aşaması Başlar", date: new Date(TOURNAMENT_START_ISO) },
-  { label: "Lig Aşaması Biter", date: new Date("2027-01-27T00:00:00+03:00") },
-  { label: "Son 16 Kurası", date: new Date("2027-02-26T00:00:00+03:00") },
-  { label: "Son 16 Başlar", date: new Date("2027-03-09T00:00:00+03:00") },
+  { label: "Lig Tahminleri Açılır", date: new Date("2026-08-26T00:00:00+03:00") },
+  { label: "Lig Tahminleri Kapanır", date: new Date(TOURNAMENT_START_ISO) },
+  { label: "Lig Aşaması", date: new Date("2027-01-27T00:00:00+03:00") },
+  { label: "Eleme Tahminleri Açılır", date: new Date("2027-02-26T00:00:00+03:00") },
+  { label: "Eleme Tahminleri Kapanır", date: new Date("2027-03-09T00:00:00+03:00") },
+  { label: "Eleme Aşaması", date: new Date("2027-05-30T00:00:00+03:00") },
 ];
 
 const TR_MONTHS_SHORT = [
@@ -51,23 +54,49 @@ function formatChipDate(d: Date): string {
   return `${String(d.getDate()).padStart(2, "0")} ${TR_MONTHS_SHORT[d.getMonth()]}`;
 }
 
+type DateStatus = "past" | "current" | "future";
+
+function getDateStatus(date: Date, now: number, currentThreshold: number | null): DateStatus {
+  if (date.getTime() < now) return "past";
+  if (currentThreshold !== null && date.getTime() === currentThreshold) return "current";
+  return "future";
+}
+
+// Holds the reveal at its hidden (invisible) state until the real Inter
+// Variable font has actually finished loading — without this, the giant
+// hero text paints once in the browser's fallback font, then visibly
+// snaps to Inter a moment later (worse here than elsewhere in the app
+// because this text is so large/prominent). document.fonts.ready is the
+// standard signal for "the font used on this page is ready to render."
+function useFontsReady(): boolean {
+  const [ready, setReady] = useState(
+    () => typeof document === "undefined" || !("fonts" in document) || document.fonts.status === "loaded"
+  );
+  useEffect(() => {
+    if (ready || typeof document === "undefined" || !("fonts" in document)) return;
+    let cancelled = false;
+    document.fonts.ready.then(() => {
+      if (!cancelled) setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready]);
+  return ready;
+}
+
 const logoIn: Variants = {
   hidden: { opacity: 0, y: -10 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: EASE_COTTON } },
 };
 
 // The signature moment: line 1's words settle from a thin variable-font
-// weight to their resting weight, staggered left-to-right — the statement
-// reads as "found" rather than faded in. The prose paragraphs that follow
-// continue the same stagger rhythm as plain block reveals (see
-// essenceContainer's single staggerChildren covering both).
+// weight to their resting weight, staggered left-to-right. The prose
+// paragraphs that follow continue the same stagger rhythm as plain block
+// reveals (see essenceContainer's single staggerChildren covering both).
 const wordVariants: Variants = {
   hidden: { opacity: 0, y: 6, fontWeight: 100 },
   visible: { opacity: 1, y: 0, fontWeight: 300, transition: { duration: 0.5, ease: EASE_COTTON } },
-};
-const wordVariantsEmphasis: Variants = {
-  hidden: { opacity: 0, y: 6, fontWeight: 100 },
-  visible: { opacity: 1, y: 0, fontWeight: 700, transition: { duration: 0.5, ease: EASE_COTTON } },
 };
 const proseIn: Variants = {
   hidden: { opacity: 0, y: 8 },
@@ -75,26 +104,22 @@ const proseIn: Variants = {
 };
 const essenceContainer: Variants = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.045, delayChildren: 0.35 } },
+  visible: { transition: { staggerChildren: 0.045, delayChildren: 0.3 } },
 };
 const timelineIn: Variants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.6, ease: EASE_COTTON, delay: 1.3 } },
+  visible: { opacity: 1, transition: { duration: 0.6, ease: EASE_COTTON, delay: 1.1 } },
 };
 const contactIn: Variants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.6, ease: EASE_COTTON, delay: 1.7 } },
+  visible: { opacity: 1, transition: { duration: 0.6, ease: EASE_COTTON, delay: 1.5 } },
 };
 
 function EssenceLine({ words }: { words: string[] }) {
   return (
     <p className="flex flex-wrap gap-x-[0.4em] gap-y-1">
       {words.map((word, i) => (
-        <motion.span
-          key={i}
-          variants={EMPHASIS_WORDS.has(word) ? wordVariantsEmphasis : wordVariants}
-          className={cn(EMPHASIS_WORDS.has(word) ? "text-color_accent" : "text-color_text")}
-        >
+        <motion.span key={i} variants={wordVariants} className="text-color_text">
           {word}
         </motion.span>
       ))}
@@ -104,50 +129,81 @@ function EssenceLine({ words }: { words: string[] }) {
 
 // A stepper, not a decoration: the 5 dates are a genuine chronological
 // sequence (signup close → league start → league end → RO16 draw → RO16
-// start), so a connected-node timeline encodes something real about the
-// content rather than just numbering it.
+// start). Past nodes are filled, the next upcoming one blinks as the
+// current stage, everything after it stays hollow/future.
 function DateTimeline() {
+  const now = Date.now();
+  const upcoming = KEY_DATES.find((item) => item.date.getTime() >= now);
+  const currentThreshold = upcoming ? upcoming.date.getTime() : null;
+
   return (
-    <div className="relative flex w-full max-w-md items-start justify-between">
-      <div aria-hidden className="absolute top-[6px] right-2 left-2 h-px bg-color_border1" />
-      {KEY_DATES.map((item) => (
-        <div key={item.label} className="relative z-10 flex flex-col items-center gap-3">
-          <span className="size-3.5 shrink-0 rounded-full bg-color_gold" />
-          <span className="tnum font-display text-base font-semibold text-color_text sm:text-lg">
-            {formatChipDate(item.date)}
-          </span>
-          <span className="max-w-[5.5rem] text-center font-mono text-[0.6rem] leading-tight tracking-[0.12em] text-color_textsecondary uppercase">
-            {item.label}
-          </span>
-        </div>
-      ))}
+    <div className="flex w-full max-w-4xl items-start">
+      {KEY_DATES.map((item, i) => {
+        const status = getDateStatus(item.date, now, currentThreshold);
+        const isFuture = status === "future";
+        const isCurrent = status === "current";
+        return (
+          <Fragment key={item.label}>
+            {i > 0 && <div aria-hidden className="mt-2.5 h-px flex-1 bg-color_border1" />}
+            <div className="flex flex-col items-center gap-3">
+              <span
+                className={cn(
+                  "size-5 shrink-0 rounded-full",
+                  isFuture ? "border-2 border-color_text bg-transparent" : "bg-color_text",
+                  isCurrent && "animate-pulse"
+                )}
+              />
+              <span
+                className={cn(
+                  "tnum font-display text-lg font-semibold",
+                  isFuture ? "text-color_textsecondary" : "text-color_text",
+                  isCurrent && "animate-pulse"
+                )}
+              >
+                {formatChipDate(item.date)}
+              </span>
+              <span
+                className={cn(
+                  "max-w-[5.5rem] text-center font-mono text-[0.58rem] leading-tight tracking-[0.1em] uppercase",
+                  isFuture ? "text-color_textsecondary/70" : "text-color_textsecondary",
+                  isCurrent && "animate-pulse"
+                )}
+              >
+                {item.label}
+              </span>
+            </div>
+          </Fragment>
+        );
+      })}
     </div>
   );
 }
 
 /**
  * /about — static across every VisibilityState (no gating). Single
- * no-scroll viewport. Two-column poster composition (dense essence text +
- * contact info on the left, giant logo + a real-sequence date timeline on
- * the right) per Mert's own wireframe — deliberately not another Frame/
- * bento grid like every other page.
+ * no-scroll viewport, desktop-only (mobile deliberately not tuned here).
+ * Two-column poster composition per Mert's own wireframe: centered,
+ * matter-of-fact essence text + contact info on the left, giant logo + a
+ * real-sequence date timeline on the right.
  */
 export function AboutPage() {
   const reduceMotion = useReducedMotion();
+  const fontsReady = useFontsReady();
   const initial = reduceMotion ? "visible" : "hidden";
+  const animate = fontsReady ? "visible" : "hidden";
 
   return (
     <section className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
       <DustHaze />
       <div className="absolute inset-0 bg-linear-to-t from-background via-background/30 to-transparent" />
 
-      <div className="relative z-10 mx-auto grid h-full min-h-0 w-full max-w-[1400px] grid-cols-1 gap-10 px-6 py-6 sm:px-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16 lg:px-14 lg:py-9">
-        <div className="flex min-h-0 flex-col justify-between gap-8">
+      <div className="relative z-10 mx-auto grid h-full min-h-0 w-full max-w-[1500px] grid-cols-[0.85fr_1.3fr] gap-12 px-14 py-9">
+        <div className="flex min-h-0 flex-col items-start justify-center gap-10">
           <motion.div
             initial={initial}
-            animate="visible"
+            animate={animate}
             variants={essenceContainer}
-            className="flex flex-col gap-5 font-display text-xl leading-snug font-light text-balance sm:text-2xl"
+            className="flex max-w-xl flex-col gap-5 font-display text-2xl leading-snug font-light"
           >
             <EssenceLine words={ESSENCE_LINE_1} />
             {PROSE_PARAGRAPHS.map((paragraph, i) => (
@@ -157,7 +213,12 @@ export function AboutPage() {
             ))}
           </motion.div>
 
-          <motion.div initial={initial} animate="visible" variants={contactIn} className="flex flex-col gap-1">
+          <motion.div
+            initial={initial}
+            animate={animate}
+            variants={contactIn}
+            className="flex flex-col items-start gap-1"
+          >
             <span className="font-mono text-[0.62rem] tracking-[0.2em] text-color_textsecondary uppercase">
               İletişim
             </span>
@@ -173,13 +234,13 @@ export function AboutPage() {
         <div className="flex min-h-0 flex-col items-center justify-center gap-20">
           <motion.img
             initial={initial}
-            animate="visible"
+            animate={animate}
             variants={logoIn}
             src="/brand/kupatakip-logo-white.svg"
             alt="#kupatakipucl"
-            className="h-[clamp(9rem,26vh,15rem)] w-auto"
+            className="h-[clamp(11rem,32vh,18rem)] w-auto"
           />
-          <motion.div initial={initial} animate="visible" variants={timelineIn}>
+          <motion.div initial={initial} animate={animate} variants={timelineIn} className="w-full">
             <DateTimeline />
           </motion.div>
         </div>
