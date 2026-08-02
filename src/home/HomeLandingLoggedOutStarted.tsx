@@ -69,7 +69,7 @@ export function HomeLandingLoggedOutStarted({ results, players, entries }: HomeL
         <LeagueTableList results={results} onSelectTeam={handleSelectTeam} />
 
         <div className="flex min-h-0 flex-col gap-4 lg:gap-5">
-          <Frame className="h-[13rem] animate-cotton-rise lg:h-1/2" style={{ animationDelay: "60ms" }}>
+          <Frame className="h-28 shrink-0 animate-cotton-rise" style={{ animationDelay: "60ms" }}>
             <FrameHeader tone="navy">
               <FrameTitle className="text-base text-color_text sm:text-lg">Yaklaşan Maçlar</FrameTitle>
             </FrameHeader>
@@ -78,7 +78,7 @@ export function HomeLandingLoggedOutStarted({ results, players, entries }: HomeL
             </FrameBody>
           </Frame>
 
-          <Frame className="h-[13rem] animate-cotton-rise lg:h-1/2" style={{ animationDelay: "120ms" }}>
+          <Frame className="min-h-0 flex-1 animate-cotton-rise" style={{ animationDelay: "120ms" }}>
             <FrameHeader tone="navy">
               <FrameTitle className="text-base text-color_text sm:text-lg">Forum</FrameTitle>
             </FrameHeader>

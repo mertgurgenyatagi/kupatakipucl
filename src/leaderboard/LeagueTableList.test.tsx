@@ -8,7 +8,7 @@ describe("LeagueTableList", () => {
     render(<LeagueTableList results={{}} />);
     const rows = screen.getAllByRole("listitem");
     expect(rows).toHaveLength(TEAMS.length);
-    expect(screen.getByText(TEAMS[0].name)).toBeInTheDocument();
+    expect(screen.getByText(TEAMS[0].shortName)).toBeInTheDocument();
     expect(rows[0].textContent).toContain("--");
   });
 
@@ -22,8 +22,8 @@ describe("LeagueTableList", () => {
       />
     );
     const rows = screen.getAllByRole("listitem");
-    expect(rows[0]).toHaveTextContent(TEAMS[5].name);
-    expect(rows[1]).toHaveTextContent(TEAMS[2].name);
+    expect(rows[0]).toHaveTextContent(TEAMS[5].shortName);
+    expect(rows[1]).toHaveTextContent(TEAMS[2].shortName);
   });
 
   it("shows a direct-qualification tick for positions 1-8, a playoff tick for 9-24, and none for 25-36", () => {
@@ -46,7 +46,7 @@ describe("LeagueTableList", () => {
   it("calls onSelectTeam with the team id when a row is clicked", () => {
     const onSelectTeam = vi.fn();
     render(<LeagueTableList results={{}} onSelectTeam={onSelectTeam} />);
-    fireEvent.click(screen.getByText(TEAMS[0].name));
+    fireEvent.click(screen.getByText(TEAMS[0].shortName));
     expect(onSelectTeam).toHaveBeenCalledWith(TEAMS[0].id);
   });
 });

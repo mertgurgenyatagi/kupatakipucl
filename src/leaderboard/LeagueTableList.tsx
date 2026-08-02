@@ -54,7 +54,7 @@ export function LeagueTableList({ results, onSelectTeam }: LeagueTableListProps)
                   onClick={() => onSelectTeam?.(team.id)}
                   style={{ animationDelay: `${Math.min(index * 16, 500)}ms` }}
                   className={cn(
-                    "flex h-14 animate-cotton-rise cursor-pointer items-center gap-3 border-b border-color_border1/50 px-2 transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill",
+                    "flex h-12 animate-cotton-rise cursor-pointer items-center gap-3 border-b border-color_border1/50 px-2 transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill",
                     !result && "opacity-55"
                   )}
                 >
@@ -65,12 +65,12 @@ export function LeagueTableList({ results, onSelectTeam }: LeagueTableListProps)
                   <span className="w-6 shrink-0 font-mono text-xs tracking-tight text-color_textsecondary tnum">
                     {result ? String(result.position) : "--"}
                   </span>
-                  <TeamCrest teamId={team.id} className="size-8 shrink-0" />
+                  <TeamCrest teamId={team.id} className="size-7 shrink-0" />
                   <span
                     className="min-w-0 flex-1 truncate font-display text-sm font-medium text-color_text"
                     title={team.name}
                   >
-                    {team.name}
+                    {team.shortName}
                   </span>
                   <span className="w-6 shrink-0 text-right font-mono text-xs tracking-tight text-color_textsecondary tnum">
                     {result?.matchesPlayed ?? "-"}

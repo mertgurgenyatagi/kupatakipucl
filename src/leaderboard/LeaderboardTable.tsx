@@ -119,7 +119,7 @@ export const LeaderboardTable = memo(function LeaderboardTable({
                     >
                       {/* Rank — color_accent only for rank 01, the one earned
                           distinction (§16, the plaque). */}
-                      <TableCell className="py-3 pl-3 align-middle">
+                      <TableCell className="py-2.5 pl-3 align-middle">
                         <span
                           className={cn(
                             "font-mono text-xs tracking-tight tnum",
@@ -132,8 +132,8 @@ export const LeaderboardTable = memo(function LeaderboardTable({
 
                       {/* Photo — full saturation by default (Mert: "no
                           need to hover"). */}
-                      <TableCell className="py-2 pr-0 pl-0 align-middle">
-                        <Avatar className="size-8">
+                      <TableCell className="py-1.5 pr-0 pl-0 align-middle">
+                        <Avatar className="size-7">
                           <AvatarImage src={entry.photoURL} alt="" />
                           <AvatarFallback className="bg-secondary font-mono text-[0.6rem] text-color_secondary">
                             {initials({ firstName: entry.firstName, lastName: playersByUid.get(entry.uid)?.lastName })}
@@ -144,7 +144,7 @@ export const LeaderboardTable = memo(function LeaderboardTable({
                       {/* Name — the ledger signature. When canReveal, the
                           row's hover (above) drives a highlight on the team
                           table instead of popping up a card here. */}
-                      <TableCell className="w-full py-3 align-middle">
+                      <TableCell className="w-full py-2.5 align-middle">
                         <span className="flex min-w-0 items-baseline gap-3">
                           <span className="truncate font-display text-sm font-medium text-color_text">
                             {fullName({ firstName: entry.firstName, lastName: playersByUid.get(entry.uid)?.lastName })}
@@ -153,7 +153,7 @@ export const LeaderboardTable = memo(function LeaderboardTable({
                       </TableCell>
 
                       {/* Points — aligned right, tabular (the Ledger Rule) */}
-                      <TableCell className="py-3 pr-4 text-right align-middle">
+                      <TableCell className="py-2.5 pr-4 text-right align-middle">
                         <span
                           className={cn(
                             "font-mono text-sm tracking-tight tnum",
