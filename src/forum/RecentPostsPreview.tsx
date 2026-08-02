@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 interface RecentPostsPreviewProps {
   posts: PostWithId[];
   players: Player[];
-  uid: string;
+  uid: string | null;
   /** postId -> set of uids who liked it. */
   likesByPost: Map<string, Set<string>>;
   onToggleLike: (postId: string) => void;
@@ -86,7 +86,7 @@ export function RecentPostsPreview({
           const author = playersByUid.get(post.uid);
           const threadStats = stats.get(post.id) ?? { replyCount: 0, lastActivityAt: post.createdAt, latestReply: null };
           const likedBy = likesByPost.get(post.id);
-          const liked = likedBy?.has(uid) ?? false;
+          const liked = uid ? (likedBy?.has(uid) ?? false) : false;
           const likeCount = likedBy?.size ?? 0;
           const replyAuthor = threadStats.latestReply ? playersByUid.get(threadStats.latestReply.uid) : undefined;
 
@@ -122,13 +122,18 @@ export function RecentPostsPreview({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onToggleLike(post.id);
+                        if (uid) onToggleLike(post.id);
                       }}
+                      disabled={!uid}
                       aria-pressed={liked}
-                      aria-label={liked ? "Beğeniyi geri al" : "Beğen"}
+                      aria-label={!uid ? "Beğenmek için giriş yapmalısın" : liked ? "Beğeniyi geri al" : "Beğen"}
                       className={cn(
-                        "-ml-1.5 flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 outline-none transition-colors duration-150 ease-[var(--ease-cotton)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent",
-                        liked ? "text-color_accent" : "text-color_textsecondary hover:text-color_accent"
+                        "-ml-1.5 flex items-center gap-1 rounded-full px-1.5 py-0.5 outline-none transition-colors duration-150 ease-[var(--ease-cotton)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent",
+                        !uid
+                          ? "cursor-default text-color_textsecondary"
+                          : liked
+                            ? "cursor-pointer text-color_accent"
+                            : "cursor-pointer text-color_textsecondary hover:text-color_accent"
                       )}
                     >
                       <Heart className="size-3.5" fill={liked ? "currentColor" : "none"} strokeWidth={2} aria-hidden />

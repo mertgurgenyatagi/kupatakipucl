@@ -157,6 +157,37 @@ describe("RecentPostsPreview", () => {
   });
 });
 
+describe("RecentPostsPreview — logged out (uid null)", () => {
+  it("renders the like button disabled with a sign-in-prompt label", () => {
+    renderPreview({ posts: [post({})], uid: null });
+    const likeButton = screen.getByRole("button", { name: "Beğenmek için giriş yapmalısın" });
+    expect(likeButton).toBeDisabled();
+  });
+
+  it("does not call onToggleLike when the disabled like button is clicked", () => {
+    const onToggleLike = vi.fn();
+    renderPreview({ posts: [post({})], uid: null, onToggleLike });
+    fireEvent.click(screen.getByRole("button", { name: "Beğenmek için giriş yapmalısın" }));
+    expect(onToggleLike).not.toHaveBeenCalled();
+  });
+
+  it("still shows the like count for a logged-out viewer", () => {
+    renderPreview({
+      posts: [post({})],
+      uid: null,
+      likesByPost: new Map([["p1", new Set(["someone-else"])]]),
+    });
+    const likeButton = screen.getByRole("button", { name: "Beğenmek için giriş yapmalısın" });
+    expect(within(likeButton).getByText("1")).toBeInTheDocument();
+  });
+
+  it("the row itself still opens the thread popup for a logged-out viewer", () => {
+    renderPreview({ posts: [post({ text: "Tıklanabilir" })], uid: null });
+    fireEvent.click(screen.getByText("Tıklanabilir"));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+});
+
 describe("ForumPreviewFooter", () => {
   it("links through to the full forum", () => {
     render(
