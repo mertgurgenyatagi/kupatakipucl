@@ -46,10 +46,9 @@ export function FixtureRow({
 }: {
   fixture: Fixture;
   results: Record<string, TeamResult>;
-  /** Home's UpcomingMatchesPreview needs a much shorter row than the
-   *  drawer's own — same content, crest+code laid out side by side instead
-   *  of stacked, everything sized down a notch. The drawer itself keeps its
-   *  default (non-compact) rows unchanged. */
+  /** Home's UpcomingMatchesPreview lays crest+code side by side instead of
+   *  stacked (narrower per row), everything else full-sized same as the
+   *  drawer's own rows. The drawer itself keeps its default layout. */
   compact?: boolean;
   /** Fires with a team's id when its crest/name is clicked — opens
    *  TeamPopup. Undefined for the drawer (unchanged, still just stops
@@ -61,7 +60,7 @@ export function FixtureRow({
   const kickoff = new Date(fixture.kickoffUtc);
 
   return (
-    <div className={compact ? "h-9 px-2" : "h-24 px-2"}>
+    <div className={compact ? "h-[4.5rem] px-2" : "h-24 px-2"}>
       {/* A div, not a <button> — a real <button> can't contain the
           home/away crest+name buttons below (invalid nesting). */}
       <div
@@ -72,9 +71,7 @@ export function FixtureRow({
         className="grid h-full w-full cursor-pointer items-center gap-1.5 rounded-lg px-2 transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-color_hoverfill focus-visible:bg-color_hoverfill"
         style={{ gridTemplateColumns: ROW_GRID_COLUMNS }}
       >
-        <span className={cn("font-mono text-color_textsecondary tnum", compact ? "text-[0.6rem]" : "text-xs")}>
-          {place(results, home.id)}
-        </span>
+        <span className="font-mono text-xs text-color_textsecondary tnum">{place(results, home.id)}</span>
         <button
           type="button"
           onClick={(e) => {
@@ -83,27 +80,18 @@ export function FixtureRow({
           }}
           className={cn(
             "group flex cursor-pointer items-center",
-            compact ? "flex-row justify-center gap-1.5" : "flex-col gap-1"
+            compact ? "flex-row justify-center gap-2" : "flex-col gap-1"
           )}
         >
-          <TeamCrest teamId={home.id} className={compact ? "size-4" : "size-7"} />
-          <span
-            className={cn(
-              "truncate font-display font-medium text-color_text group-hover:underline",
-              compact ? "text-[0.68rem]" : "text-sm"
-            )}
-          >
+          <TeamCrest teamId={home.id} className="size-7" />
+          <span className="truncate font-display text-sm font-medium text-color_text group-hover:underline">
             {home.shortName}
           </span>
         </button>
 
-        <span className={cn("flex flex-col items-center justify-center", compact ? "leading-none" : "leading-tight")}>
-          <span className={cn("font-mono text-color_text tnum", compact ? "text-[0.62rem]" : "text-sm")}>
-            {DATE_FMT.format(kickoff)}
-          </span>
-          <span className={cn("font-mono text-color_textsecondary tnum", compact ? "text-[0.58rem]" : "text-sm")}>
-            {TIME_FMT.format(kickoff)}
-          </span>
+        <span className="flex flex-col items-center justify-center leading-tight">
+          <span className="font-mono text-sm text-color_text tnum">{DATE_FMT.format(kickoff)}</span>
+          <span className="font-mono text-sm text-color_textsecondary tnum">{TIME_FMT.format(kickoff)}</span>
         </span>
 
         <button
@@ -114,22 +102,15 @@ export function FixtureRow({
           }}
           className={cn(
             "group flex cursor-pointer items-center",
-            compact ? "flex-row justify-center gap-1.5" : "flex-col gap-1"
+            compact ? "flex-row justify-center gap-2" : "flex-col gap-1"
           )}
         >
-          <TeamCrest teamId={away.id} className={compact ? "size-4" : "size-7"} />
-          <span
-            className={cn(
-              "truncate font-display font-medium text-color_text group-hover:underline",
-              compact ? "text-[0.68rem]" : "text-sm"
-            )}
-          >
+          <TeamCrest teamId={away.id} className="size-7" />
+          <span className="truncate font-display text-sm font-medium text-color_text group-hover:underline">
             {away.shortName}
           </span>
         </button>
-        <span className={cn("font-mono text-color_textsecondary tnum", compact ? "text-[0.6rem]" : "text-xs")}>
-          {place(results, away.id)}
-        </span>
+        <span className="font-mono text-xs text-color_textsecondary tnum">{place(results, away.id)}</span>
       </div>
     </div>
   );

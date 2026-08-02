@@ -69,13 +69,18 @@ export function HomeLandingLoggedOutStarted({ results, players, entries }: HomeL
         <LeagueTableList results={results} onSelectTeam={handleSelectTeam} />
 
         <div className="flex min-h-0 flex-col gap-4 lg:gap-5">
-          <Frame className="min-h-0 flex-[38] animate-cotton-rise" style={{ animationDelay: "60ms" }}>
+          {/* Content-driven height, not a flex-grow share of the column —
+              this frame holds exactly 3 fixed-height compact rows, so it
+              should size to fit them and nothing more, handing every
+              remaining pixel to Forum below rather than claiming a fixed
+              ratio regardless of how tall its own content actually is. */}
+          <Frame className="h-60 shrink-0 animate-cotton-rise" style={{ animationDelay: "60ms" }}>
             <FrameBody>
               <UpcomingMatchesPreview results={results} onSelectTeam={handleSelectTeam} />
             </FrameBody>
           </Frame>
 
-          <Frame className="min-h-0 flex-[62] animate-cotton-rise" style={{ animationDelay: "120ms" }}>
+          <Frame className="min-h-0 flex-1 animate-cotton-rise" style={{ animationDelay: "120ms" }}>
             <FrameHeader tone="navy">
               <FrameTitle className="text-base text-color_text sm:text-lg">Forum</FrameTitle>
             </FrameHeader>

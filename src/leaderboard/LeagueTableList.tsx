@@ -47,7 +47,7 @@ export function LeagueTableList({ results, onSelectTeam }: LeagueTableListProps)
           {/* Same column labels as TeamTable's own header (S / Takım /
               O / A / Y / AV / P) — no sort affordance here, just static
               labels, since this list isn't sortable. */}
-          <div className="flex h-5 items-center gap-2 border-b border-color_border1 px-2 font-mono text-[0.6rem] font-medium tracking-[0.18em] text-color_textsecondary uppercase">
+          <div className="flex h-[1.875rem] items-center gap-2 border-b border-color_border1 px-2 font-mono text-[0.6rem] font-medium tracking-[0.18em] text-color_textsecondary uppercase">
             <span className="w-1 shrink-0" aria-hidden />
             <span className="w-6 shrink-0">S</span>
             <span className="size-7 shrink-0" aria-hidden />

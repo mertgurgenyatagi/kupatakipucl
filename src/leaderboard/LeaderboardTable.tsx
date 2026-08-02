@@ -90,7 +90,6 @@ export const LeaderboardTable = memo(function LeaderboardTable({
               </TableHeader>
               <TableBody>
                 {ranked.map(({ entry, rank }, index) => {
-                  const leader = rank === 1;
                   const canReveal = revealCorrectness && entry.ranking.length > 0;
                   return (
                     <TableRow
@@ -113,19 +112,11 @@ export const LeaderboardTable = memo(function LeaderboardTable({
                       aria-haspopup={canReveal ? "dialog" : undefined}
                       className={cn(
                         "group animate-cotton-rise border-b border-color_border1/60 transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill",
-                        leader && "bg-color_accent/[0.07]",
                         canReveal && "cursor-pointer outline-none focus-visible:bg-color_hoverfill focus-visible:ring-1 focus-visible:ring-color_border2/50 focus-visible:ring-inset"
                       )}
                     >
-                      {/* Rank — color_accent only for rank 01, the one earned
-                          distinction (§16, the plaque). */}
                       <TableCell className="py-2.5 pl-3 align-middle">
-                        <span
-                          className={cn(
-                            "font-mono text-xs tracking-tight tnum",
-                            leader ? "text-color_accent" : "text-color_textsecondary"
-                          )}
-                        >
+                        <span className="font-mono text-xs tracking-tight text-color_textsecondary tnum">
                           {String(rank).padStart(2, "0")}
                         </span>
                       </TableCell>
@@ -154,12 +145,7 @@ export const LeaderboardTable = memo(function LeaderboardTable({
 
                       {/* Points — aligned right, tabular (the Ledger Rule) */}
                       <TableCell className="py-2.5 pr-4 text-right align-middle">
-                        <span
-                          className={cn(
-                            "font-mono text-sm tracking-tight tnum",
-                            leader ? "font-semibold text-color_accent" : "font-medium text-color_text"
-                          )}
-                        >
+                        <span className="font-mono text-sm font-medium tracking-tight text-color_text tnum">
                           {entry.points}
                         </span>
                       </TableCell>
