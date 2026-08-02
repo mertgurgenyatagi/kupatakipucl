@@ -35,6 +35,10 @@ const mockUseMyLobbies = vi.fn();
 const mockUseLobbyMembers = vi.fn();
 const mockUseLobbyMessages = vi.fn();
 const mockCreateLobby = vi.fn();
+const mockUseTournamentPhase = vi.fn();
+const mockUseBracketState = vi.fn();
+const mockUseBracketPrediction = vi.fn();
+const mockUseRankSnapshots = vi.fn();
 
 vi.mock("../auth/AuthProvider", () => ({
   useAuth: () => mockUseAuth(),
@@ -76,6 +80,21 @@ vi.mock("../lobbies/useLobbyMessages", () => ({
 }));
 vi.mock("../lobbies/createLobby", () => ({
   createLobby: (...args: unknown[]) => mockCreateLobby(...args),
+}));
+vi.mock("../tournament/useTournamentPhase", () => ({
+  useTournamentPhase: () => mockUseTournamentPhase(),
+}));
+vi.mock("../bracket/useBracketState", () => ({
+  useBracketState: () => mockUseBracketState(),
+}));
+vi.mock("../bracket/useBracketPrediction", () => ({
+  useBracketPrediction: (uid: string | null) => mockUseBracketPrediction(uid),
+}));
+vi.mock("../leaderboard/useRankSnapshots", () => ({
+  useRankSnapshots: () => mockUseRankSnapshots(),
+}));
+vi.mock("./StartedHomeLoggedIn", () => ({
+  StartedHomeLoggedIn: () => <div>started-home-loggedin</div>,
 }));
 
 vi.mock("./HomeLandingLoggedIn", () => ({
@@ -164,44 +183,52 @@ describe("LoggedInHome", () => {
       hasMoreOlder: false,
     });
     mockCreateLobby.mockReset();
+    mockUseTournamentPhase.mockReturnValue("notstarted");
+    mockUseBracketState.mockReturnValue({ bracketState: { ro16Teams: {}, winners: {} }, loading: false });
+    mockUseBracketPrediction.mockReturnValue({ prediction: null, loading: false });
+    mockUseRankSnapshots.mockReturnValue({ snapshots: [], loading: false });
   });
+
+  function renderLoggedInHome() {
+    return render(<LoggedInHome players={players} results={{}} entries={[]} />);
+  }
 
   it("renders nothing while there's no signed-in user", () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
-    const { container } = render(<LoggedInHome players={players} />);
+    const { container } = renderLoggedInHome();
     expect(container).toBeEmptyDOMElement();
   });
 
   it("renders nothing if the profile hasn't loaded yet (shouldn't normally happen post-ProfileGate)", () => {
     mockUseProfile.mockReturnValue({ profile: null, loading: false });
-    const { container } = render(<LoggedInHome players={players} />);
+    const { container } = renderLoggedInHome();
     expect(container).toBeEmptyDOMElement();
   });
 
   it("combines the auth uid with the fetched profile into `me` and renders the view", () => {
-    render(<LoggedInHome players={players} />);
+    renderLoggedInHome();
     expect(screen.getByText("home-landing-loggedin:uid1:1:0:false:true:4:0")).toBeInTheDocument();
   });
 
   it("sends a presence heartbeat for the signed-in uid", () => {
-    render(<LoggedInHome players={players} />);
+    renderLoggedInHome();
     expect(mockUsePresenceHeartbeat).toHaveBeenCalledWith("uid1");
   });
 
   it("excludes the current user from their own typing-users list", () => {
-    render(<LoggedInHome players={players} />);
+    renderLoggedInHome();
     expect(mockUseTypingUsers).toHaveBeenCalledWith("uid1");
   });
 
   it("wires the loadOlder callback from useMessages through to the view", () => {
-    render(<LoggedInHome players={players} />);
+    renderLoggedInHome();
     fireEvent.click(screen.getByText("load-older"));
     expect(mockLoadOlder).toHaveBeenCalledTimes(1);
   });
 
   it("calls setPostLiked with true when liking a post nobody's uid has liked yet", async () => {
     mockSetPostLiked.mockResolvedValue(undefined);
-    render(<LoggedInHome players={players} />);
+    renderLoggedInHome();
 
     fireEvent.click(screen.getByText("toggle-like"));
     await waitFor(() => expect(mockSetPostLiked).toHaveBeenCalledWith("p1", "uid1", true));
@@ -211,7 +238,7 @@ describe("LoggedInHome", () => {
   it("shows an error when the like write fails", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockSetPostLiked.mockRejectedValue(new Error("permission-denied"));
-    render(<LoggedInHome players={players} />);
+    renderLoggedInHome();
 
     fireEvent.click(screen.getByText("toggle-like"));
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Beğeni kaydedilemedi, tekrar deneyin."));
@@ -221,7 +248,7 @@ describe("LoggedInHome", () => {
   it("calls setPostLiked with false when the post is already liked by this uid, per the live posts data", async () => {
     mockUsePosts.mockReturnValue({ posts: [makePost({ id: "p1", likedByUids: ["uid1"] })], loading: false });
     mockSetPostLiked.mockResolvedValue(undefined);
-    render(<LoggedInHome players={players} />);
+    renderLoggedInHome();
 
     expect(screen.getByText("home-landing-loggedin:uid1:1:1:false:true:4:0")).toBeInTheDocument();
     fireEvent.click(screen.getByText("toggle-like"));
@@ -233,7 +260,7 @@ describe("LoggedInHome", () => {
       lobbies: [{ id: "lobby1", name: "Fener Grubu", createdByUid: "uid1", createdAt: 1, myJoinedAt: 100 }],
       loading: false,
     });
-    render(<LoggedInHome players={players} />);
+    renderLoggedInHome();
     expect(screen.getByText("my-lobbies:Fener Grubu")).toBeInTheDocument();
   });
 
@@ -244,13 +271,13 @@ describe("LoggedInHome", () => {
   it("clears the managed lobby id once that lobby disappears from myLobbies", async () => {
     const lobby = { id: "lobby1", name: "Fener Grubu", createdByUid: "uid1", createdAt: 1, myJoinedAt: 100 };
     mockUseMyLobbies.mockReturnValue({ lobbies: [lobby], loading: false });
-    const { rerender } = render(<LoggedInHome players={players} />);
+    const { rerender } = renderLoggedInHome();
 
     fireEvent.click(screen.getByText("open-management"));
     expect(screen.getByText("managing-lobby:lobby1")).toBeInTheDocument();
 
     mockUseMyLobbies.mockReturnValue({ lobbies: [], loading: false });
-    rerender(<LoggedInHome players={players} />);
+    rerender(<LoggedInHome players={players} results={{}} entries={[]} />);
 
     await waitFor(() => expect(screen.getByText("managing-lobby:none")).toBeInTheDocument());
   });
@@ -260,7 +287,7 @@ describe("LoggedInHome", () => {
       lobbies: [{ id: "lobby1", name: "Fener Grubu", createdByUid: "uid1", createdAt: 1, myJoinedAt: 100 }],
       loading: false,
     });
-    render(<LoggedInHome players={players} />);
+    renderLoggedInHome();
     fireEvent.click(screen.getByText("open-management"));
     expect(screen.getByText("managing-lobby:lobby1")).toBeInTheDocument();
   });
@@ -273,7 +300,20 @@ describe("LoggedInHome", () => {
       ],
       loading: false,
     });
-    render(<LoggedInHome players={players} />);
+    renderLoggedInHome();
     expect(screen.getByText("sohbet-lobby:lobbyNew:katilimcilar-lobby:lobbyNew")).toBeInTheDocument();
+  });
+
+  it("renders HomeLandingLoggedIn (unchanged) when the phase is notstarted", () => {
+    renderLoggedInHome();
+    expect(screen.getByText(/home-landing-loggedin/)).toBeInTheDocument();
+    expect(screen.queryByText("started-home-loggedin")).not.toBeInTheDocument();
+  });
+
+  it("renders StartedHomeLoggedIn instead, for every started phase", () => {
+    mockUseTournamentPhase.mockReturnValue("knockout");
+    renderLoggedInHome();
+    expect(screen.getByText("started-home-loggedin")).toBeInTheDocument();
+    expect(screen.queryByText(/home-landing-loggedin/)).not.toBeInTheDocument();
   });
 });

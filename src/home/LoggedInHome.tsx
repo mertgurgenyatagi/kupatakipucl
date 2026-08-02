@@ -16,7 +16,14 @@ import { useLobbyMembers } from "../lobbies/useLobbyMembers";
 import { useLobbyMessages } from "../lobbies/useLobbyMessages";
 import { createLobby } from "../lobbies/createLobby";
 import { LOBBY_MAX_OWNED, LOBBY_MAX_JOINED } from "../lobbies/lobbyTypes";
+import { useTournamentPhase } from "../tournament/useTournamentPhase";
+import { useBracketState } from "../bracket/useBracketState";
+import { useBracketPrediction } from "../bracket/useBracketPrediction";
+import { useRankSnapshots } from "../leaderboard/useRankSnapshots";
+import { StartedHomeLoggedIn } from "./StartedHomeLoggedIn";
 import type { Player } from "../profile/usePlayers";
+import type { LeaderboardEntry } from "../leaderboard/leaderboardTypes";
+import type { TeamResult } from "../leaderboard/teamResultTypes";
 
 /**
  * Data-fetching wrapper around HomeLandingLoggedIn, kept as its own
@@ -27,7 +34,15 @@ import type { Player } from "../profile/usePlayers";
  * component solely on the loggedin_notstarted branch, so the other 7
  * visibility states (including every logged-out one) never trigger it.
  */
-export function LoggedInHome({ players }: { players: Player[] }) {
+export function LoggedInHome({
+  players,
+  results,
+  entries,
+}: {
+  players: Player[];
+  results: Record<string, TeamResult>;
+  entries: LeaderboardEntry[];
+}) {
   const { user } = useAuth();
   const { profile, loading: profileLoading } = useProfile(user?.uid ?? null);
   const { submitterUids, loading: submittersLoading } = usePredictionSubmitters();
@@ -39,6 +54,12 @@ export function LoggedInHome({ players }: { players: Player[] }) {
   const typingUids = useTypingUsers(user?.uid ?? "");
 
   const { lobbies: myLobbies } = useMyLobbies(user?.uid ?? null);
+
+  const phase = useTournamentPhase();
+  const started = phase !== "notstarted";
+  const { bracketState } = useBracketState();
+  const { prediction: bracketPrediction } = useBracketPrediction(started ? (user?.uid ?? null) : null);
+  const { snapshots } = useRankSnapshots();
 
   const [sohbetLobbyId, setSohbetLobbyId] = useState<string | null>(null);
   const [katilimcilarLobbyId, setKatilimcilarLobbyId] = useState<string | null>(null);
@@ -151,6 +172,41 @@ export function LoggedInHome({ players }: { players: Player[] }) {
 
   if (!user || profileLoading || submittersLoading || messagesLoading || postsLoading || !profile) {
     return null;
+  }
+
+  if (started) {
+    return (
+      <StartedHomeLoggedIn
+        me={{ uid: user.uid, ...profile }}
+        players={players}
+        results={results}
+        entries={entries}
+        phase={phase}
+        bracketState={bracketState}
+        bracketPrediction={bracketPrediction}
+        snapshots={snapshots}
+        messages={messages}
+        onLoadOlderMessages={loadOlder}
+        loadingOlderMessages={loadingOlder}
+        hasMoreOlderMessages={hasMoreOlder}
+        onlineCount={onlineCount}
+        typingUids={typingUids}
+        posts={posts}
+        likesByPost={likesByPost}
+        onToggleLike={handleToggleLike}
+        likeError={likeError}
+        onDeletePost={handleDeletePost}
+        onSaveEdit={handleSaveEdit}
+        onRefetchPosts={refetchPosts}
+        forumActionError={forumActionError}
+        myLobbies={myLobbies}
+        sohbetLobbyId={sohbetLobbyId}
+        onChangeSohbetLobby={setSohbetLobbyId}
+        sohbetLobbyMembers={sohbetLobbyMembers.members}
+        sohbetLobbyMessages={sohbetLobbyMessages}
+        onOpenLobbyManagement={setManagingLobbyId}
+      />
+    );
   }
 
   return (
