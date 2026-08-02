@@ -47,6 +47,13 @@ describe("LeaderboardPage", () => {
     expect(screen.getByText("Bu bölüm şu anda kullanılamıyor.")).toBeInTheDocument();
   });
 
+  it("shows the blocked message for a logged-out visitor even once the tournament has started", () => {
+    mockUseVisibilityState.mockReturnValue("loggedout_leaguephase");
+    mockUseLeaderboard.mockReturnValue({ entries: [], loading: false });
+    render(<LeaderboardPage />);
+    expect(screen.getByText("Bu bölüm şu anda kullanılamıyor.")).toBeInTheDocument();
+  });
+
   it("shows a skeleton placeholder while the leaderboard is loading", () => {
     mockUseLeaderboard.mockReturnValue({ entries: [], loading: true });
     render(<LeaderboardPage />);

@@ -68,15 +68,17 @@ vi.mock("../leaderboard/ParticipantPopup", () => ({
     ranked,
     players,
     tournamentStarted,
+    viewerLoggedIn,
     onOpenChange,
   }: {
     ranked: { entry: { uid: string } } | null;
     players: { uid: string }[];
     tournamentStarted: boolean;
+    viewerLoggedIn: boolean;
     onOpenChange: (open: boolean) => void;
   }) => (
     <div>
-      <p>participant-popup:{ranked?.entry.uid ?? "none"}:{players.length}:{String(tournamentStarted)}</p>
+      <p>participant-popup:{ranked?.entry.uid ?? "none"}:{players.length}:{String(tournamentStarted)}:{String(viewerLoggedIn)}</p>
       <button onClick={() => onOpenChange(false)}>close-popup</button>
     </div>
   ),
@@ -191,9 +193,9 @@ describe("ForumPage", () => {
     mockUseTournamentPhase.mockReturnValue("notstarted");
     render(<ForumPage />);
     fireEvent.click(screen.getByText("select-participant"));
-    expect(screen.getByText("participant-popup:uid2:2:false")).toBeInTheDocument();
+    expect(screen.getByText("participant-popup:uid2:2:false:true")).toBeInTheDocument();
     fireEvent.click(screen.getByText("close-popup"));
-    expect(screen.getByText("participant-popup:none:2:false")).toBeInTheDocument();
+    expect(screen.getByText("participant-popup:none:2:false:true")).toBeInTheDocument();
   });
 
   it("passes tournamentStarted=true to the participant popup once the tournament has started", () => {
@@ -201,6 +203,15 @@ describe("ForumPage", () => {
     mockUseTournamentPhase.mockReturnValue("leaguephase");
     render(<ForumPage />);
     fireEvent.click(screen.getByText("select-participant"));
-    expect(screen.getByText("participant-popup:uid2:2:true")).toBeInTheDocument();
+    expect(screen.getByText("participant-popup:uid2:2:true:true")).toBeInTheDocument();
+  });
+
+  it("passes viewerLoggedIn=false to the participant popup for a logged-out visitor", () => {
+    mockUseVisibilityState.mockReturnValue("loggedout_leaguephase");
+    mockUseAuth.mockReturnValue({ user: null });
+    mockUseTournamentPhase.mockReturnValue("leaguephase");
+    render(<ForumPage />);
+    fireEvent.click(screen.getByText("select-participant"));
+    expect(screen.getByText("participant-popup:uid2:2:true:false")).toBeInTheDocument();
   });
 });

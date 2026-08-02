@@ -30,9 +30,10 @@ const NOTSTARTED_LOGGEDIN_LINKS: NavLink[] = [
 ];
 // Forum re-added for logged-out visitors 2026-08-02, reversing the earlier
 // round-1 pagemap closure — see src/state/pageAccess.ts's matching comment.
+// Leaderboard is signed-in-only (participant standings shouldn't be
+// browsable, let alone linked from the nav, without an account).
 const STARTED_LOGGEDOUT_LINKS: NavLink[] = [
   { path: "/", label: "Ana Sayfa" },
-  { path: "/leaderboard", label: "Puan Durumu" },
   { path: "/forum", label: "Forum" },
   { path: "/about", label: "Hakkında" },
 ];

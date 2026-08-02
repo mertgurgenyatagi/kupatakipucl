@@ -53,6 +53,14 @@ interface ParticipantPopupProps {
    *  every widget below shows a plain "not viewable yet" placeholder instead
    *  of fetching or rendering real content. */
   tournamentStarted: boolean;
+  /** Quiz answers are the one widget here that shouldn't be visible to a
+   *  logged-out viewer (predictions/rank-history stay public, same as the
+   *  team table). Defaults to true since every call site but Forum's
+   *  logged-out-open page is always signed-in-only. When false, the survey
+   *  read is skipped entirely (matches firestore.rules' `surveyResponses`
+   *  gate — signed-in only — rather than attempting a read we already know
+   *  fails and showing that as an error). */
+  viewerLoggedIn?: boolean;
 }
 
 const NOT_VIEWABLE_MESSAGE = "Turnuva başlamadan bu bilgi görüntülenemez.";
@@ -194,7 +202,10 @@ function RankHistoryChart({
  * Quiz answers are a real, deliberate reversal of SPEC.md §4/§8d's original
  * "survey stays aggregate-only" decision — see useSurveyResponse.ts and
  * firestore.rules for the read-access change this required (deployed
- * 2026-07-23). The "can't be displayed" fallback is reserved for an actual
+ * 2026-07-23). Still gated to signed-in viewers only (`viewerLoggedIn`,
+ * relevant now that Forum opens this popup to logged-out visitors too) —
+ * the read is skipped rather than attempted and shown as an error. The
+ * "can't be displayed" fallback is reserved for an actual
  * read failure; a participant who simply never took the survey (every
  * seeded dummy participant, for instance) gets its own honest, distinct
  * message instead of looking like a bug.
@@ -218,6 +229,7 @@ export const ParticipantPopup = memo(function ParticipantPopup({
   onOpenChange,
   onSelectTeam,
   tournamentStarted,
+  viewerLoggedIn = true,
 }: ParticipantPopupProps) {
   // Keep rendering the last real participant while the dialog animates
   // closed — `ranked` goes null the instant the parent clears selection,
@@ -238,7 +250,7 @@ export const ParticipantPopup = memo(function ParticipantPopup({
 
   const { outcomes } = useDevMatches();
   const { response: survey, loading: surveyLoading, error: surveyError } = useSurveyResponse(
-    tournamentStarted ? displayedUid : null
+    tournamentStarted && viewerLoggedIn ? displayedUid : null
   );
 
   const rankHistory = useMemo(
@@ -432,6 +444,10 @@ export const ParticipantPopup = memo(function ParticipantPopup({
                   <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-2">
                     {!tournamentStarted ? (
                       <NotViewablePlaceholder />
+                    ) : !viewerLoggedIn ? (
+                      <p className="py-2 font-display text-sm text-color_textsecondary italic">
+                        Anket cevaplarını görmek için giriş yapmalısınız.
+                      </p>
                     ) : survey ? (
                       <div className="flex flex-col gap-4">
                         {[

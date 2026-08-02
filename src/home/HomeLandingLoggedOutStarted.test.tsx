@@ -47,8 +47,14 @@ vi.mock("../leaderboard/LeaderboardTable", () => ({
 }));
 
 vi.mock("../leaderboard/ParticipantPopup", () => ({
-  ParticipantPopup: ({ ranked }: { ranked: { entry: { uid: string } } | null }) => (
-    <div>participant-popup:{ranked ? ranked.entry.uid : "closed"}</div>
+  ParticipantPopup: ({
+    ranked,
+    viewerLoggedIn,
+  }: {
+    ranked: { entry: { uid: string } } | null;
+    viewerLoggedIn?: boolean;
+  }) => (
+    <div>participant-popup:{ranked ? ranked.entry.uid : "closed"}:{String(viewerLoggedIn)}</div>
   ),
 }));
 
@@ -84,7 +90,7 @@ describe("HomeLandingLoggedOutStarted", () => {
     render(<HomeLandingLoggedOutStarted results={{}} players={[player]} entries={[]} />);
     fireEvent.click(screen.getByText("league-table-list"));
     expect(screen.getByText("team-popup:ajax")).toBeInTheDocument();
-    expect(screen.getByText("participant-popup:closed")).toBeInTheDocument();
+    expect(screen.getByText("participant-popup:closed:false")).toBeInTheDocument();
   });
 
   it("selecting a team from the upcoming-matches widget also opens TeamPopup", () => {
@@ -93,7 +99,7 @@ describe("HomeLandingLoggedOutStarted", () => {
     expect(screen.getByText("team-popup:arsenal")).toBeInTheDocument();
   });
 
-  it("selecting a participant (from the forum widget or the standings) opens ParticipantPopup and closes TeamPopup", () => {
+  it("selecting a participant (from the forum widget or the standings) opens ParticipantPopup and closes TeamPopup, with viewerLoggedIn always false", () => {
     render(
       <HomeLandingLoggedOutStarted
         results={{}}
@@ -102,7 +108,7 @@ describe("HomeLandingLoggedOutStarted", () => {
       />
     );
     fireEvent.click(screen.getByText("select-participant"));
-    expect(screen.getByText("participant-popup:player-1")).toBeInTheDocument();
+    expect(screen.getByText("participant-popup:player-1:false")).toBeInTheDocument();
     expect(screen.getByText("team-popup:closed")).toBeInTheDocument();
   });
 });
