@@ -190,7 +190,14 @@ describe("MatchupPopup", () => {
     expect(await screen.findByText("1 - 0")).toBeInTheDocument();
   });
 
-  it("shows the round label and the knockout not-built placeholder when phase is knockout", async () => {
+  // A fixture resolved via FIXTURES.find(...) — which `fixture` always is,
+  // see MatchupPopup.tsx — is always a real league-phase fixture, no matter
+  // what the ambient global `phase` prop currently is (an admin can flip
+  // the app-wide phase to "knockout" while historical league fixtures are
+  // still opened from TeamPopup's match history). This is the exact bug
+  // fixed by keying the header/content mode on `isKnockoutFixture` instead
+  // of the `phase` prop directly.
+  it("still shows the league view (matchday header + real predictor list) for a real fixture even when the global phase is knockout", async () => {
     render(
       <MatchupPopup
         fixtureId={FIXTURE.id}
@@ -204,9 +211,10 @@ describe("MatchupPopup", () => {
         onSelectParticipant={() => {}}
       />
     );
-    expect(await screen.findByText("ELEME TURU")).toBeInTheDocument();
-    expect(screen.getAllByText("Bu özellik henüz mevcut değil.").length).toBe(2);
-    expect(screen.queryByText("Ada Lovelace")).not.toBeInTheDocument();
+    expect(await screen.findByText(`${FIXTURE.matchday}. HAFTA`)).toBeInTheDocument();
+    expect(screen.queryByText("ELEME TURU")).not.toBeInTheDocument();
+    expect(screen.queryByText("Bu özellik henüz mevcut değil.")).not.toBeInTheDocument();
+    expect((await screen.findAllByText("Ada Lovelace")).length).toBeGreaterThan(0);
   });
 
   it("clicking a team calls onSelectTeam with that team's id", async () => {

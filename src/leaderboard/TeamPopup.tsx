@@ -153,8 +153,10 @@ function ResultDot({ result }: { result: ResultLetter }) {
  *  context: literal home/away like the source, each side's own goal tally
  *  on the outer edges instead of live-table place, and the time swaps for
  *  a result dot once the fixture is decided. Unlike UpcomingMatchesDrawer's
- *  team buttons (which do nothing yet), these actually navigate — clicking
- *  either side re-opens this popup for that team. */
+ *  team buttons (which do nothing yet), these actually navigate: clicking
+ *  either side's crest+code closes this popup and re-opens it for that
+ *  team, while clicking the row itself (anywhere outside those two nested
+ *  buttons) opens MatchupPopup for this fixture via `onSelectFixture`. */
 function MatchRow({
   fixtureId,
   homeId,

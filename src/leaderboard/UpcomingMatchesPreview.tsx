@@ -9,9 +9,10 @@ const PREVIEW_COUNT = 3;
 /**
  * Home's logged-out league-phase "upcoming matches" widget — the same
  * fixture rows as UpcomingMatchesDrawer, but always-open and fixed at 3: no
- * collapse chrome, no infinite scroll, no scroll container at all. Per
- * Mert's own convention (see FixtureRow.tsx), the rows stay clickable but
- * inert, consistent with the drawer everywhere else fixtures show up.
+ * collapse chrome, no infinite scroll, no scroll container at all. Rows
+ * open MatchupPopup on click (via `onSelectFixture`, same as the drawer);
+ * a team's crest/name within a row is a separate click target that opens
+ * TeamPopup instead (via `onSelectTeam`), unchanged.
  */
 export function UpcomingMatchesPreview({
   results,

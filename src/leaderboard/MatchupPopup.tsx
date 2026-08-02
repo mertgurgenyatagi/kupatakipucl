@@ -30,9 +30,10 @@ interface MatchupPopupProps {
    *  as TeamPopup's teamId. */
   fixtureId: string | null;
   onOpenChange: (open: boolean) => void;
-  /** Drives the header label (matchday vs. round name) and which per-team
-   *  widget renders (predictor list vs. the not-yet-built advance-pick
-   *  placeholder). */
+  /** Gates whether the two-column rank/points/predictor detail grid renders
+   *  at all (hidden pre-tournament). Does NOT drive the header label or
+   *  which per-team widget renders — those depend on whether `fixture`
+   *  itself is a real FIXTURES entry, not on the ambient global phase. */
   phase: TournamentPhase;
   tournamentStarted: boolean;
   entries: LeaderboardEntry[];
@@ -171,19 +172,20 @@ function PredictorList({
   );
 }
 
-/** One team's detail column — rank/points, then the predictor list (league
- *  phase / pre-knockout) or the knockout placeholder below it. Not rendered
- *  at all pre-tournament — see MatchupPopup's own notstarted branch. */
+/** One team's detail column — rank/points, then the predictor list (any
+ *  real, FIXTURES-sourced fixture) or the knockout placeholder below it.
+ *  Not rendered at all pre-tournament — see MatchupPopup's own notstarted
+ *  branch. */
 function TeamColumn({
   result,
-  phase,
+  isKnockoutFixture,
   tournamentStarted,
   predictors,
   playersByUid,
   onSelectParticipant,
 }: {
   result: TeamResult | undefined;
-  phase: TournamentPhase;
+  isKnockoutFixture: boolean;
   tournamentStarted: boolean;
   predictors: TeamPredictor[];
   playersByUid: Map<string, Player>;
@@ -196,7 +198,7 @@ function TeamColumn({
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-1.5 py-1.5">
           {!tournamentStarted ? (
             <Placeholder message={NOT_STARTED_MESSAGE} />
-          ) : phase === "knockout" ? (
+          ) : isKnockoutFixture ? (
             <Placeholder message={KNOCKOUT_NOT_BUILT_MESSAGE} />
           ) : (
             <PredictorList predictors={predictors} playersByUid={playersByUid} onSelectParticipant={onSelectParticipant} />
@@ -215,13 +217,18 @@ function TeamColumn({
  * history already reads — real production per-fixture outcomes don't exist
  * yet, a pre-existing gap this inherits rather than solves).
  *
- * Three phase-driven content modes: bare fixture card pre-tournament
- * (nothing else exists yet to show), fixture card + real rank/points +
- * predictor list once the league phase is running, and a real-but-
- * currently-unreachable knockout branch — no knockout fixture data exists
- * anywhere in the app yet, so nothing can trigger this today; it only
- * renders when a caller (currently only this component's own tests) passes
- * phase="knockout" directly.
+ * Three content modes: bare fixture card pre-tournament (nothing else
+ * exists yet to show), fixture card + real rank/points + predictor list for
+ * any real fixture (everything `fixture` can ever resolve to, since it's
+ * always looked up via `FIXTURES.find(...)` and FIXTURES holds only league-
+ * phase matches), and a real-but-currently-unreachable knockout branch — no
+ * knockout fixture data exists anywhere in the app yet, so nothing can
+ * trigger this today. The knockout mode is driven by `isKnockoutFixture`
+ * (whether `fixture` is a member of FIXTURES), deliberately NOT by the
+ * ambient `phase` prop — a historical league fixture opened while the
+ * global tournament phase is "knockout" must still show its real league
+ * content, not this placeholder. `phase` only gates whether the two-column
+ * detail grid renders at all (pre- vs. post-tournament-start).
  */
 export const MatchupPopup = memo(function MatchupPopup({
   fixtureId,
@@ -245,6 +252,10 @@ export const MatchupPopup = memo(function MatchupPopup({
 
   const displayedId = fixtureId ?? lastFixtureId;
   const fixture = displayedId ? (FIXTURES.find((f) => f.id === displayedId) ?? null) : null;
+  // fixture is always resolved via FIXTURES.find above, so this can only be
+  // true for a fixture that ISN'T actually in FIXTURES — i.e. never, today.
+  // Reference equality holds because .find returns the actual array element.
+  const isKnockoutFixture = fixture !== null && !FIXTURES.includes(fixture);
 
   const { outcomes } = useDevMatches();
   const outcome: MatchOutcome = fixture ? (outcomes[fixture.id] ?? "notplayed") : "notplayed";
@@ -261,7 +272,7 @@ export const MatchupPopup = memo(function MatchupPopup({
     [fixture, tournamentStarted, entries, results]
   );
 
-  const headerLabel = fixture ? (phase === "knockout" ? "ELEME TURU" : `${fixture.matchday}. HAFTA`) : "";
+  const headerLabel = fixture ? (isKnockoutFixture ? "ELEME TURU" : `${fixture.matchday}. HAFTA`) : "";
 
   return (
     <Dialog open={fixtureId !== null} onOpenChange={onOpenChange}>
@@ -327,7 +338,7 @@ export const MatchupPopup = memo(function MatchupPopup({
                 <div className="grid min-h-0 flex-1 grid-cols-2 gap-3">
                   <TeamColumn
                     result={results[home.id]}
-                    phase={phase}
+                    isKnockoutFixture={isKnockoutFixture}
                     tournamentStarted={tournamentStarted}
                     predictors={homePredictors}
                     playersByUid={playersByUid}
@@ -335,7 +346,7 @@ export const MatchupPopup = memo(function MatchupPopup({
                   />
                   <TeamColumn
                     result={results[away.id]}
-                    phase={phase}
+                    isKnockoutFixture={isKnockoutFixture}
                     tournamentStarted={tournamentStarted}
                     predictors={awayPredictors}
                     playersByUid={playersByUid}

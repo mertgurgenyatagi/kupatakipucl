@@ -283,7 +283,12 @@ describe("ProfilePage", () => {
     const row = opponentTeamButton.closest('[role="button"]')!;
     fireEvent.click(row);
 
-    expect(await screen.findAllByRole("dialog")).toHaveLength(1);
+    // Dialog count alone can't tell TeamPopup and MatchupPopup apart (both
+    // would leave exactly one dialog open — TeamPopup's own if the wiring
+    // were broken and the click were a no-op, MatchupPopup's if it worked).
+    // Assert on MatchupPopup's own matchday header text instead, which only
+    // it renders, to prove it's specifically the popup that opened.
+    expect(await screen.findByText(`${fixture.matchday}. HAFTA`)).toBeInTheDocument();
   });
 
   it("shows the average position everyone predicted for each team, once the tournament has started", () => {
