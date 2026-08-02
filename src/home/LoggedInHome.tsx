@@ -55,7 +55,7 @@ export function LoggedInHome({
 
   const { lobbies: myLobbies } = useMyLobbies(user?.uid ?? null);
 
-  const phase = useTournamentPhase();
+  const { phase } = useTournamentPhase();
   const started = phase !== "notstarted";
   const { bracketState } = useBracketState();
   const { prediction: bracketPrediction } = useBracketPrediction(started ? (user?.uid ?? null) : null);

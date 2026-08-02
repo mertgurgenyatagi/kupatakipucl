@@ -58,7 +58,7 @@ beforeEach(() => {
 describe("AppShell nav gating", () => {
   it("shows only Home when not started and not logged in", () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
-    mockUseTournamentPhase.mockReturnValue("notstarted");
+    mockUseTournamentPhase.mockReturnValue({ phase: "notstarted", loading: false });
     renderShell();
     expect(screen.getByText("Ana Sayfa")).toBeInTheDocument();
     expect(screen.queryByText("Forum")).not.toBeInTheDocument();
@@ -69,7 +69,7 @@ describe("AppShell nav gating", () => {
 
   it("shows forum (but never a Predictions link) when not started but logged in", () => {
     mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
-    mockUseTournamentPhase.mockReturnValue("notstarted");
+    mockUseTournamentPhase.mockReturnValue({ phase: "notstarted", loading: false });
     renderShell();
     expect(screen.getByText("Forum")).toBeInTheDocument();
     expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
@@ -79,7 +79,7 @@ describe("AppShell nav gating", () => {
 
   it("shows leaderboard but not forum, stats or predictions when started and not logged in", () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
-    mockUseTournamentPhase.mockReturnValue("leaguephase");
+    mockUseTournamentPhase.mockReturnValue({ phase: "leaguephase", loading: false });
     renderShell();
     expect(screen.getByText("Puan Durumu")).toBeInTheDocument();
     expect(screen.queryByText("Forum")).not.toBeInTheDocument();
@@ -90,7 +90,7 @@ describe("AppShell nav gating", () => {
   it("shows every started link when logged in, but never a Predictions link, in any of the three phases", () => {
     mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
     for (const phase of ["leaguephase", "preknockout", "knockout"] as TournamentPhase[]) {
-      mockUseTournamentPhase.mockReturnValue(phase);
+      mockUseTournamentPhase.mockReturnValue({ phase, loading: false });
       renderShell();
       for (const label of ["Puan Durumu", "Forum", "İstatistikler"]) {
         expect(screen.getAllByText(label).length).toBeGreaterThan(0);
@@ -101,7 +101,7 @@ describe("AppShell nav gating", () => {
 
   it("shows LoginButton when logged out and LogoutButton when logged in", () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
-    mockUseTournamentPhase.mockReturnValue("notstarted");
+    mockUseTournamentPhase.mockReturnValue({ phase: "notstarted", loading: false });
     renderShell();
     expect(screen.getByText("Sign in with Google")).toBeInTheDocument();
 
@@ -115,7 +115,7 @@ describe("NAV_LINKS matches PAGE_ACCESS", () => {
   it.each(STATE_FIXTURES)("shows exactly the pages isPageAllowed grants for $state", ({ user, phase, state }) => {
     expect(getVisibilityState(user !== null, phase)).toBe(state);
     mockUseAuth.mockReturnValue({ user, loading: false });
-    mockUseTournamentPhase.mockReturnValue(phase);
+    mockUseTournamentPhase.mockReturnValue({ phase, loading: false });
     renderShell();
 
     const renderedPaths = screen
@@ -134,7 +134,7 @@ describe("NAV_LINKS matches PAGE_ACCESS", () => {
 describe("account-slot avatar/name link", () => {
   it("renders a link to /profile with the user's avatar and first name when logged in with a profile", () => {
     mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
-    mockUseTournamentPhase.mockReturnValue("notstarted");
+    mockUseTournamentPhase.mockReturnValue({ phase: "notstarted", loading: false });
     mockUseProfile.mockReturnValue({
       profile: { firstName: "Mert", lastName: "G", photoURL: "photo-url", createdAt: 1 },
       loading: false,
@@ -146,14 +146,14 @@ describe("account-slot avatar/name link", () => {
 
   it("does not render the avatar/name link when logged out", () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
-    mockUseTournamentPhase.mockReturnValue("notstarted");
+    mockUseTournamentPhase.mockReturnValue({ phase: "notstarted", loading: false });
     renderShell();
     expect(screen.queryAllByRole("link").map((l) => l.getAttribute("href"))).not.toContain("/profile");
   });
 
   it("does not render the avatar/name link when logged in but no profile exists yet", () => {
     mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
-    mockUseTournamentPhase.mockReturnValue("notstarted");
+    mockUseTournamentPhase.mockReturnValue({ phase: "notstarted", loading: false });
     mockUseProfile.mockReturnValue({ profile: null, loading: false });
     renderShell();
     expect(screen.queryAllByRole("link").map((l) => l.getAttribute("href"))).not.toContain("/profile");

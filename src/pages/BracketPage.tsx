@@ -24,11 +24,18 @@ const INTRO_TEXT = BRACKET_INTRO_BEATS.map((beat) => beat.text).join(" ");
 
 export function BracketPage() {
   const { user } = useAuth();
-  const phase = useTournamentPhase();
+  const { phase, loading: phaseLoading } = useTournamentPhase();
   const { bracketState } = useBracketState();
   const { prediction, loading: predictionLoading } = useBracketPrediction(user?.uid ?? null);
   const [step, setStep] = useState<FlowStep>("intro");
   const [submitting, setSubmitting] = useState(false);
+
+  // Wait for the real phase before making any gating decision below — the
+  // pre-load default ("notstarted") would otherwise fail the preknockout
+  // check on every fresh mount and bounce straight back to "/" via
+  // `replace`, before the real value has a chance to arrive (this was the
+  // root cause of the CTA link appearing to do nothing).
+  if (phaseLoading) return null;
 
   const visibilityState = getVisibilityState(!!user, phase);
   if (!isPageAllowed("bracket", visibilityState)) {

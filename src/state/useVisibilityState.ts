@@ -4,6 +4,6 @@ import { getVisibilityState, VisibilityState } from "./visibilityState";
 
 export function useVisibilityState(): VisibilityState {
   const { user } = useAuth();
-  const phase = useTournamentPhase();
+  const { phase } = useTournamentPhase();
   return getVisibilityState(Boolean(user), phase);
 }

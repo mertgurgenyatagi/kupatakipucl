@@ -48,7 +48,7 @@ const NAV_LINKS: Record<VisibilityState, NavLink[]> = {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
-  const phase = useTournamentPhase();
+  const { phase } = useTournamentPhase();
   const location = useLocation();
   const state = getVisibilityState(Boolean(user), phase);
   const links = NAV_LINKS[state];

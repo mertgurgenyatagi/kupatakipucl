@@ -183,7 +183,7 @@ describe("LoggedInHome", () => {
       hasMoreOlder: false,
     });
     mockCreateLobby.mockReset();
-    mockUseTournamentPhase.mockReturnValue("notstarted");
+    mockUseTournamentPhase.mockReturnValue({ phase: "notstarted", loading: false });
     mockUseBracketState.mockReturnValue({ bracketState: { ro16Teams: {}, winners: {} }, loading: false });
     mockUseBracketPrediction.mockReturnValue({ prediction: null, loading: false });
     mockUseRankSnapshots.mockReturnValue({ snapshots: [], loading: false });
@@ -311,7 +311,7 @@ describe("LoggedInHome", () => {
   });
 
   it("renders StartedHomeLoggedIn instead, for every started phase", () => {
-    mockUseTournamentPhase.mockReturnValue("knockout");
+    mockUseTournamentPhase.mockReturnValue({ phase: "knockout", loading: false });
     renderLoggedInHome();
     expect(screen.getByText("started-home-loggedin")).toBeInTheDocument();
     expect(screen.queryByText(/home-landing-loggedin/)).not.toBeInTheDocument();

@@ -57,7 +57,7 @@ describe("HomePage", () => {
     mockUseResults.mockReturnValue(emptyResults);
     mockUsePlayers.mockReturnValue(emptyPlayers);
     mockUseLeaderboard.mockReturnValue(emptyLeaderboard);
-    mockUseTournamentPhase.mockReturnValue("notstarted");
+    mockUseTournamentPhase.mockReturnValue({ phase: "notstarted", loading: false });
     mockUseBracketState.mockReturnValue(emptyBracketState);
   });
 
@@ -85,14 +85,14 @@ describe("HomePage", () => {
 
   it("loggedout_leaguephase: routes to StartedHomeLoggedOut, not the old BLURB skeleton", () => {
     mockUseVisibilityState.mockReturnValue("loggedout_leaguephase");
-    mockUseTournamentPhase.mockReturnValue("leaguephase");
+    mockUseTournamentPhase.mockReturnValue({ phase: "leaguephase", loading: false });
     render(<HomePage />);
     expect(screen.getByText("started-home-loggedout")).toBeInTheDocument();
   });
 
   it("loggedin_knockout: routes to LoggedInHome, not the old BLURB skeleton", () => {
     mockUseVisibilityState.mockReturnValue("loggedin_knockout");
-    mockUseTournamentPhase.mockReturnValue("knockout");
+    mockUseTournamentPhase.mockReturnValue({ phase: "knockout", loading: false });
     mockUsePlayers.mockReturnValue({ players: [{ uid: "a" }], loading: false });
     render(<HomePage />);
     expect(screen.getByText("logged-in-home:1")).toBeInTheDocument();
@@ -100,7 +100,7 @@ describe("HomePage", () => {
 
   it("waits for bracketState before rendering the signed-out started composition", () => {
     mockUseVisibilityState.mockReturnValue("loggedout_leaguephase");
-    mockUseTournamentPhase.mockReturnValue("leaguephase");
+    mockUseTournamentPhase.mockReturnValue({ phase: "leaguephase", loading: false });
     mockUseBracketState.mockReturnValue({ bracketState: { ro16Teams: {}, winners: {} }, loading: true });
     const { container } = render(<HomePage />);
     expect(container).toBeEmptyDOMElement();

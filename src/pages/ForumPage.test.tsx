@@ -102,7 +102,7 @@ const ENTRY2 = { uid: "uid2", firstName: "Ada", lastName: "Lovelace", photoURL: 
 describe("ForumPage", () => {
   beforeEach(() => {
     mockUseAuth.mockReturnValue({ user: { uid: "uid1" } });
-    mockUseTournamentPhase.mockReturnValue("notstarted");
+    mockUseTournamentPhase.mockReturnValue({ phase: "notstarted", loading: false });
     mockUsePosts.mockReturnValue({
       posts: [POST1, REPLY1],
       loading: false,
@@ -184,7 +184,7 @@ describe("ForumPage", () => {
 
   it("opens the participant popup with the right rank/tournamentStarted, and closes it", () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
-    mockUseTournamentPhase.mockReturnValue("notstarted");
+    mockUseTournamentPhase.mockReturnValue({ phase: "notstarted", loading: false });
     render(<ForumPage />);
     fireEvent.click(screen.getByText("select-participant"));
     expect(screen.getByText("participant-popup:uid2:false")).toBeInTheDocument();
@@ -194,7 +194,7 @@ describe("ForumPage", () => {
 
   it("passes tournamentStarted=true to the participant popup once the tournament has started", () => {
     mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
-    mockUseTournamentPhase.mockReturnValue("leaguephase");
+    mockUseTournamentPhase.mockReturnValue({ phase: "leaguephase", loading: false });
     render(<ForumPage />);
     fireEvent.click(screen.getByText("select-participant"));
     expect(screen.getByText("participant-popup:uid2:true")).toBeInTheDocument();

@@ -10,7 +10,7 @@ import { StartedHomeLoggedOut } from "../home/StartedHomeLoggedOut";
 
 export function HomePage() {
   const state = useVisibilityState();
-  const phase = useTournamentPhase();
+  const { phase } = useTournamentPhase();
   const loggedIn = state.startsWith("loggedin_");
 
   const { results, loading: resultsLoading } = useResults();

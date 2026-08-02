@@ -29,7 +29,7 @@ vi.mock("../signup/SignupFlow", () => ({
 
 // Defaults to "notstarted" so the file's 6 pre-existing tests (which never
 // set a phase) keep exercising exactly today's behavior.
-const mockUsePhase = vi.fn(() => "notstarted");
+const mockUsePhase = vi.fn(() => ({ phase: "notstarted", loading: false }));
 
 vi.mock("../tournament/useTournamentPhase", () => ({ useTournamentPhase: () => mockUsePhase() }));
 vi.mock("./RegistrationClosedScreen", () => ({
@@ -144,7 +144,7 @@ describe("ProfileGate registration closing", () => {
     mockUseAuth.mockReturnValue({ user: { uid: "uid1" }, loading: false });
     mockUseProfile.mockReturnValue({ profile: null, loading: false });
     mockUseSurveyResponse.mockReturnValue({ response: null, loading: false });
-    mockUsePhase.mockReturnValue("leaguephase");
+    mockUsePhase.mockReturnValue({ phase: "leaguephase", loading: false });
     render(
       <ProfileGate>
         <div>real-app</div>
@@ -158,7 +158,7 @@ describe("ProfileGate registration closing", () => {
     mockUseAuth.mockReturnValue({ user: { uid: "uid1" }, loading: false });
     mockUseProfile.mockReturnValue({ profile: null, loading: false });
     mockUseSurveyResponse.mockReturnValue({ response: null, loading: false });
-    mockUsePhase.mockReturnValue("notstarted");
+    mockUsePhase.mockReturnValue({ phase: "notstarted", loading: false });
     render(
       <ProfileGate>
         <div>real-app</div>
@@ -174,7 +174,7 @@ describe("ProfileGate registration closing", () => {
     mockUseAuth.mockReturnValue({ user: { uid: "uid1" }, loading: false });
     mockUseProfile.mockReturnValue(hasProfile);
     mockUseSurveyResponse.mockReturnValue({ response: null, loading: false });
-    mockUsePhase.mockReturnValue("knockout");
+    mockUsePhase.mockReturnValue({ phase: "knockout", loading: false });
     render(
       <ProfileGate>
         <div>real-app</div>
@@ -187,7 +187,7 @@ describe("ProfileGate registration closing", () => {
     mockUseAuth.mockReturnValue({ user: { uid: "uid1" }, loading: false });
     mockUseProfile.mockReturnValue(hasProfile);
     mockUseSurveyResponse.mockReturnValue({ response: { messiOrRonaldo: "messi" }, loading: false });
-    mockUsePhase.mockReturnValue("knockout");
+    mockUsePhase.mockReturnValue({ phase: "knockout", loading: false });
     render(
       <ProfileGate>
         <div>real-app</div>

@@ -91,7 +91,7 @@ export function LeaderboardPage() {
   const state = useVisibilityState();
   const { entries, loading } = useLeaderboard();
   const { results } = useResults();
-  const phase = useTournamentPhase();
+  const { phase } = useTournamentPhase();
   const [hoveredUid, setHoveredUid] = useState<string | null>(null);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);

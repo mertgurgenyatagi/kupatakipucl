@@ -16,7 +16,7 @@ export function RegistrationClosedScreen() {
   const { results, loading: resultsLoading } = useResults();
   const { entries, loading: leaderboardLoading } = useLeaderboard();
   const { bracketState, loading: bracketLoading } = useBracketState();
-  const phase = useTournamentPhase();
+  const { phase } = useTournamentPhase();
 
   if (resultsLoading || leaderboardLoading || bracketLoading) return null;
 

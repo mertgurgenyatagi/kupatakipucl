@@ -48,7 +48,25 @@ describe("useTournamentPhase", () => {
 
   it("defaults to notstarted before the tournamentState doc arrives", () => {
     const { result } = renderHook(() => useTournamentPhase());
-    expect(result.current).toBe("notstarted");
+    expect(result.current.phase).toBe("notstarted");
+  });
+
+  it("reports loading until the tournamentState doc arrives (and, in dev, until devConfig arrives too)", () => {
+    const { result } = renderHook(() => useTournamentPhase());
+    expect(result.current.loading).toBe(true);
+    fireTournamentState({ phase: "preknockout" });
+    // Still loading: devConfig/state hasn't delivered its first snapshot yet,
+    // so it isn't known whether a dev override should win instead.
+    expect(result.current.loading).toBe(true);
+    fireDevConfig({ phaseOverride: null });
+    expect(result.current.loading).toBe(false);
+  });
+
+  it("does not depend on devConfig loading when DEV is false", () => {
+    vi.stubEnv("DEV", false);
+    const { result } = renderHook(() => useTournamentPhase());
+    fireTournamentState({ phase: "leaguephase" });
+    expect(result.current.loading).toBe(false);
   });
 
   it("defaults to notstarted when the tournamentState doc doesn't exist", () => {
@@ -56,21 +74,21 @@ describe("useTournamentPhase", () => {
     act(() => {
       callbacks["tournamentState/current"]({ exists: () => false, data: () => ({}) });
     });
-    expect(result.current).toBe("notstarted");
+    expect(result.current.phase).toBe("notstarted");
   });
 
   it("reflects the real phase once the tournamentState doc loads", () => {
     const { result } = renderHook(() => useTournamentPhase());
     fireTournamentState({ phase: "knockout" });
-    expect(result.current).toBe("knockout");
+    expect(result.current.phase).toBe("knockout");
   });
 
   it("dev panel override forces a different phase even when the real doc says otherwise", () => {
     const { result } = renderHook(() => useTournamentPhase());
     fireTournamentState({ phase: "leaguephase" });
-    expect(result.current).toBe("leaguephase");
+    expect(result.current.phase).toBe("leaguephase");
     fireDevConfig({ phaseOverride: "preknockout" });
-    expect(result.current).toBe("preknockout");
+    expect(result.current.phase).toBe("preknockout");
   });
 
   it("ignores the dev override when DEV is false", () => {
@@ -79,13 +97,13 @@ describe("useTournamentPhase", () => {
     fireTournamentState({ phase: "leaguephase" });
     // useDevConfig itself never subscribes to devConfig/state when DEV is
     // false, so there's no override callback to fire here at all.
-    expect(result.current).toBe("leaguephase");
+    expect(result.current.phase).toBe("leaguephase");
   });
 
   it("falls back to the real doc when the dev config has no explicit override", () => {
     const { result } = renderHook(() => useTournamentPhase());
     fireTournamentState({ phase: "preknockout" });
     fireDevConfig({ phaseOverride: null });
-    expect(result.current).toBe("preknockout");
+    expect(result.current.phase).toBe("preknockout");
   });
 });

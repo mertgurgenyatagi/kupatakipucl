@@ -29,7 +29,7 @@ describe("LeaderboardPage", () => {
   beforeEach(() => {
     mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     mockUseResults.mockReturnValue({ results: {}, loading: false });
-    mockUseTournamentPhase.mockReturnValue("notstarted");
+    mockUseTournamentPhase.mockReturnValue({ phase: "notstarted", loading: false });
   });
 
   it("shows the blocked message when the page isn't allowed for this state", () => {

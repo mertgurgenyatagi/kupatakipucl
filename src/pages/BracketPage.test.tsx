@@ -13,7 +13,9 @@ vi.mock("../bracket/useBracketPrediction", () => ({
   useBracketPrediction: (uid: string | null) => mockUseBracketPrediction(uid),
   saveBracketPrediction: (...args: unknown[]) => mockSaveBracketPrediction(...args),
 }));
-vi.mock("../tournament/useTournamentPhase", () => ({ useTournamentPhase: () => "preknockout" }));
+vi.mock("../tournament/useTournamentPhase", () => ({
+  useTournamentPhase: () => ({ phase: "preknockout", loading: false }),
+}));
 
 import { BracketPage } from "./BracketPage";
 

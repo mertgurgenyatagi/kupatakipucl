@@ -40,7 +40,7 @@ function ForumSkeleton() {
 export function ForumPage() {
   const { user } = useAuth();
   const state = useVisibilityState();
-  const phase = useTournamentPhase();
+  const { phase } = useTournamentPhase();
   const { posts, loading: postsLoading, refetch, loadOlder, hasMore } = usePosts();
   const { players, loading: playersLoading } = usePlayers();
   const { entries } = useLeaderboard();

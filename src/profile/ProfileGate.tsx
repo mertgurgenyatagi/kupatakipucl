@@ -31,14 +31,14 @@ export function ProfileGate({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading } = useProfile(user?.uid ?? null);
   const { response: survey, loading: surveyLoading } = useSurveyResponse(user?.uid ?? null);
-  const phase = useTournamentPhase();
+  const { phase, loading: phaseLoading } = useTournamentPhase();
   const [completed, setCompleted] = useState(false);
 
   useEffect(() => {
     setCompleted(false);
   }, [user?.uid]);
 
-  if (authLoading || (user && (profileLoading || surveyLoading))) {
+  if (authLoading || phaseLoading || (user && (profileLoading || surveyLoading))) {
     return null;
   }
 
