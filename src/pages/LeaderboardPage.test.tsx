@@ -1,5 +1,5 @@
 // src/pages/LeaderboardPage.test.tsx
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { LeaderboardPage } from "./LeaderboardPage";
 import { TEAMS } from "../predictions/teams";
@@ -80,5 +80,15 @@ describe("LeaderboardPage", () => {
     // the hero carousel that replaced the stat widgets in this column.
     expect(screen.getAllByText(TEAMS[0].shortName).length).toBeGreaterThan(0);
     expect(screen.getAllByTestId("hero-image").length).toBeGreaterThan(0);
+  });
+
+  it("opens the Matchup Popup when a fixture row in the hero drawer is clicked", () => {
+    mockUseTournamentPhase.mockReturnValue("leaguephase");
+    mockUseLeaderboard.mockReturnValue({ entries: [], loading: false });
+    render(<LeaderboardPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Yaklaşan maçları göster" }));
+    const buttons = screen.getAllByRole("button");
+    fireEvent.click(buttons[1]); // the first fixture row's own click target
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });

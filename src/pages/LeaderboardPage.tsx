@@ -11,6 +11,7 @@ import { TeamTable } from "../leaderboard/TeamTable";
 import { LeaderboardHero } from "../leaderboard/LeaderboardHero";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { TeamPopup } from "../leaderboard/TeamPopup";
+import { MatchupPopup } from "../leaderboard/MatchupPopup";
 import { evaluatePicks } from "../leaderboard/scoring";
 import { assignRanks } from "../leaderboard/ranking";
 import { Frame } from "@/components/ui/frame";
@@ -98,6 +99,7 @@ export function LeaderboardPage() {
   const [hoveredUid, setHoveredUid] = useState<string | null>(null);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [selectedFixtureId, setSelectedFixtureId] = useState<string | null>(null);
 
   // The hovered participant's currently-correct teams — recomputed only
   // when the hover target or the live results change, not on every render.
@@ -117,24 +119,35 @@ export function LeaderboardPage() {
   const rankedEntries = useMemo(() => assignRanks(entries), [entries]);
   const selectedRanked = rankedEntries.find((r) => r.entry.uid === selectedUid) ?? null;
 
-  // Stable identity — ParticipantPopup/TeamPopup are both memoized, and an
-  // inline arrow function here would defeat that on every hover-driven
-  // re-render. The two popups are mutually exclusive: selecting one clears
-  // the other, since they cross-link into each other (a team's predictors
-  // list opens a participant; a participant's predictions grid opens a
-  // team) and stacking two Dialogs isn't worth the backdrop/z-index mess.
+  // Stable identity — ParticipantPopup/TeamPopup/MatchupPopup are all
+  // memoized, and an inline arrow function here would defeat that on every
+  // hover-driven re-render. The three popups are mutually exclusive:
+  // selecting one clears the other two, since they cross-link into each
+  // other (a team's predictors list opens a participant; a participant's
+  // predictions grid opens a team; a fixture opens either team) and
+  // stacking multiple Dialogs isn't worth the backdrop/z-index mess.
   const handlePopupOpenChange = useCallback((open: boolean) => {
     if (!open) setSelectedUid(null);
   }, []);
   const handleTeamPopupOpenChange = useCallback((open: boolean) => {
     if (!open) setSelectedTeamId(null);
   }, []);
+  const handleFixturePopupOpenChange = useCallback((open: boolean) => {
+    if (!open) setSelectedFixtureId(null);
+  }, []);
   const handleSelectParticipant = useCallback((uid: string) => {
     setSelectedUid(uid);
     setSelectedTeamId(null);
+    setSelectedFixtureId(null);
   }, []);
   const handleSelectTeam = useCallback((teamId: string) => {
     setSelectedTeamId(teamId);
+    setSelectedUid(null);
+    setSelectedFixtureId(null);
+  }, []);
+  const handleSelectFixture = useCallback((fixtureId: string) => {
+    setSelectedFixtureId(fixtureId);
+    setSelectedTeamId(null);
     setSelectedUid(null);
   }, []);
 
@@ -152,7 +165,7 @@ export function LeaderboardPage() {
           highlightedTeamIds={highlightedTeamIds}
           onSelectTeam={handleSelectTeam}
         />
-        <LeaderboardHero results={results} />
+        <LeaderboardHero results={results} onSelectFixture={handleSelectFixture} />
         <LeaderboardTable
           entries={entries}
           players={players}
@@ -178,7 +191,19 @@ export function LeaderboardPage() {
         onOpenChange={handleTeamPopupOpenChange}
         onSelectParticipant={handleSelectParticipant}
         onSelectTeam={handleSelectTeam}
+        onSelectFixture={handleSelectFixture}
         tournamentStarted={phase !== "notstarted"}
+      />
+      <MatchupPopup
+        fixtureId={selectedFixtureId}
+        onOpenChange={handleFixturePopupOpenChange}
+        phase={phase}
+        tournamentStarted={phase !== "notstarted"}
+        entries={entries}
+        players={players}
+        results={results}
+        onSelectTeam={handleSelectTeam}
+        onSelectParticipant={handleSelectParticipant}
       />
     </div>
   );
