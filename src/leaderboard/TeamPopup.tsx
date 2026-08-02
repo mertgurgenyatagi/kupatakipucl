@@ -51,6 +51,9 @@ interface TeamPopupProps {
   /** Clicking a team in match history re-opens this same popup for that
    *  other team. */
   onSelectTeam: (teamId: string) => void;
+  /** Fires with a fixture's id when a match-history row (not a team within
+   *  it) is clicked — opens MatchupPopup.tsx for that fixture. */
+  onSelectFixture?: (fixtureId: string) => void;
   /** Before the tournament starts, every widget in this dossier — pitch
    *  diagram, stat lists, rank/points, match history, and "who predicted
    *  this team" — shows a plain "not viewable yet" placeholder instead of
@@ -144,16 +147,6 @@ function ResultDot({ result }: { result: ResultLetter }) {
   );
 }
 
-/** Clickable, but intentionally does nothing yet — same pattern as
- *  UpcomingMatchesDrawer.tsx: reserved for a future match-detail view. */
-function handleMatchupClick() {}
-function handleMatchupKeyDown(e: KeyboardEvent) {
-  if (e.key === "Enter" || e.key === " ") {
-    e.preventDefault();
-    handleMatchupClick();
-  }
-}
-
 /** One match row — copied from UpcomingMatchesDrawer's own construct
  *  (crest-over-code stacked, centered date/time, the whole row and each
  *  side's crest+code independently clickable) and reworked for this
@@ -163,6 +156,7 @@ function handleMatchupKeyDown(e: KeyboardEvent) {
  *  team buttons (which do nothing yet), these actually navigate — clicking
  *  either side re-opens this popup for that team. */
 function MatchRow({
+  fixtureId,
   homeId,
   awayId,
   homeGoals,
@@ -171,7 +165,9 @@ function MatchRow({
   result,
   t,
   onSelectTeam,
+  onSelectFixture,
 }: {
+  fixtureId: string;
   homeId: string;
   awayId: string;
   homeGoals: number | null;
@@ -180,12 +176,24 @@ function MatchRow({
   result: ResultLetter | null;
   t: TeamPopupTuning;
   onSelectTeam: (teamId: string) => void;
+  onSelectFixture?: (fixtureId: string) => void;
 }) {
   const home = TEAM_BY_ID[homeId];
   const away = TEAM_BY_ID[awayId];
   const kickoff = new Date(kickoffUtc);
   const nameStyle: CSSProperties = { fontSize: `${t.fsName}rem` };
   const crestStyle: CSSProperties = { width: `${t.rowAvatar}rem`, height: `${t.rowAvatar}rem` };
+
+  function handleMatchupClick() {
+    onSelectFixture?.(fixtureId);
+  }
+  function handleMatchupKeyDown(e: KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleMatchupClick();
+    }
+  }
+
   return (
     // A div, not a <button> — a real <button> can't contain the home/away
     // crest+code buttons below (invalid nesting), same reasoning as
@@ -478,6 +486,7 @@ export const TeamPopup = memo(function TeamPopup({
   onOpenChange,
   onSelectParticipant,
   onSelectTeam,
+  onSelectFixture,
   tuning,
   tournamentStarted,
 }: TeamPopupProps) {
@@ -696,6 +705,7 @@ export const TeamPopup = memo(function TeamPopup({
                         {nextMatch ? (
                           <div className="shrink-0 border-b border-color_border1/40">
                             <MatchRow
+                              fixtureId={nextMatch.fixtureId}
                               homeId={nextMatch.home ? team.id : nextMatch.opponentId}
                               awayId={nextMatch.home ? nextMatch.opponentId : team.id}
                               homeGoals={null}
@@ -704,6 +714,7 @@ export const TeamPopup = memo(function TeamPopup({
                               result={null}
                               t={t}
                               onSelectTeam={onSelectTeam}
+                              onSelectFixture={onSelectFixture}
                             />
                           </div>
                         ) : (
@@ -720,6 +731,7 @@ export const TeamPopup = memo(function TeamPopup({
                             pastMatches.map((m) => (
                               <div key={m.fixtureId} className="border-b border-color_border1/30 last:border-0">
                                 <MatchRow
+                                  fixtureId={m.fixtureId}
                                   homeId={m.home ? team.id : m.opponentId}
                                   awayId={m.home ? m.opponentId : team.id}
                                   homeGoals={m.home ? m.teamGoals : m.opponentGoals}
@@ -728,6 +740,7 @@ export const TeamPopup = memo(function TeamPopup({
                                   result={m.result}
                                   t={t}
                                   onSelectTeam={onSelectTeam}
+                                  onSelectFixture={onSelectFixture}
                                 />
                               </div>
                             ))

@@ -232,6 +232,32 @@ describe("TeamPopup", () => {
     expect(onSelectTeam).toHaveBeenCalledWith(nextOpponentId);
   });
 
+  it("clicking a match-history row (not a team) fires onSelectFixture with that fixture's id", async () => {
+    const onSelectFixture = vi.fn();
+    render(
+      <TeamPopup
+        teamId={TEAM.id}
+        entries={[entryA]}
+        players={PLAYERS}
+        results={{}}
+        onOpenChange={() => {}}
+        onSelectParticipant={() => {}}
+        onSelectTeam={() => {}}
+        onSelectFixture={onSelectFixture}
+        tournamentStarted={true}
+      />
+    );
+    const nextOpponentId =
+      TEAM_FIXTURES[0].homeTeamId === TEAM.id ? TEAM_FIXTURES[0].awayTeamId : TEAM_FIXTURES[0].homeTeamId;
+    const nextOpponentCode = TEAM_BY_ID_SHORT(nextOpponentId);
+    // The row itself, not the nested team button inside it — climb from the
+    // found text up to the row's own outer role="button" div.
+    const opponentTeamButton = (await screen.findByText(nextOpponentCode)).closest("button")!;
+    const row = opponentTeamButton.closest('[role="button"]')!;
+    fireEvent.click(row);
+    expect(onSelectFixture).toHaveBeenCalledWith(TEAM_FIXTURES[0].id);
+  });
+
   it("calls onOpenChange(false) when the close button is activated", async () => {
     const onOpenChange = vi.fn();
     render(
