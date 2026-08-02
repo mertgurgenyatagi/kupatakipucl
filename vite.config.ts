@@ -1,6 +1,7 @@
 /// <reference types="vitest" />
 import path from "node:path";
 import { defineConfig } from "vite";
+import { configDefaults } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
@@ -16,5 +17,6 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./test/setup.ts"],
+    exclude: [...configDefaults.exclude, "functions/**"],
   },
 });

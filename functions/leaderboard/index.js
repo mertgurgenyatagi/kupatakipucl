@@ -27,6 +27,35 @@ function computeScore(ranking, results) {
   return score;
 }
 
+// Mirrors src/leaderboard/ranking.ts's assignRanks exactly — the client had
+// this already (used to render the live leaderboard); the server didn't,
+// and rank snapshots (GREAT_LEAP_SPEC.md §7.1) need a real rank number per
+// entry, not just a sorted list.
+function assignRanks(entries) {
+  let lastPoints = null;
+  let lastRank = 0;
+  return entries.map((entry, index) => {
+    if (lastPoints === null || entry.points !== lastPoints) {
+      lastRank = index + 1;
+      lastPoints = entry.points;
+    }
+    return { entry, rank: lastRank };
+  });
+}
+
+function buildRankSnapshotEntries(entries) {
+  return assignRanks(entries).map(({ entry, rank }) => ({
+    uid: entry.uid,
+    points: entry.points,
+    rank,
+  }));
+}
+
+function rankSnapshotDocId(currentMatchday) {
+  if (typeof currentMatchday !== "number") return null;
+  return String(currentMatchday);
+}
+
 /**
  * Recomputes the whole leaderboard and writes it to a single doc
  * (leaderboardCache/current) that every client just reads live, instead of
@@ -77,3 +106,9 @@ exports.recomputeLeaderboardOnPrediction = onDocumentWritten("predictions/{uid}"
 exports.recomputeLeaderboardOnResult = onDocumentWritten("results/{teamId}", async () => {
   await recomputeLeaderboard();
 });
+
+exports.isPickCorrect = isPickCorrect;
+exports.computeScore = computeScore;
+exports.assignRanks = assignRanks;
+exports.buildRankSnapshotEntries = buildRankSnapshotEntries;
+exports.rankSnapshotDocId = rankSnapshotDocId;
