@@ -22,6 +22,7 @@ import { STAT_WIDGETS } from "../leaderboard/StatWidget";
 import { StatsPageTuning, DEFAULT_STATS_PAGE_TUNING } from "../stats/statsPageTuning";
 import { StatsHero } from "../stats/StatsHero";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
+import { PageUnavailable } from "@/components/ui/page-unavailable";
 
 // Widened past the site's default 1100px cap for the same reason
 // LeaderboardPage.tsx widens to 1400px — a third (hero) column genuinely
@@ -164,13 +165,7 @@ export function StatsPage() {
   const { responses, loading: responsesLoading } = useSurveyResponses();
 
   if (!isPageAllowed("stats", state)) {
-    return (
-      <div className="flex h-full flex-1 items-center px-5 sm:px-8 lg:px-12">
-        <p className="font-display text-2xl text-color_textsecondary italic">
-          Bu bölüm şu anda kullanılamıyor.
-        </p>
-      </div>
-    );
+    return <PageUnavailable />;
   }
 
   if (leaderboardLoading || resultsLoading || playersLoading || responsesLoading) return null;

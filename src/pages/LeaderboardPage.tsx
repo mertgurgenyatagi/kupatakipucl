@@ -15,6 +15,7 @@ import { evaluatePicks } from "../leaderboard/scoring";
 import { assignRanks } from "../leaderboard/ranking";
 import { Frame } from "@/components/ui/frame";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageUnavailable } from "@/components/ui/page-unavailable";
 
 /**
  * The leaderboard, per Mert's brief, rolls the participant standings and the
@@ -138,13 +139,7 @@ export function LeaderboardPage() {
   }, []);
 
   if (!isPageAllowed("leaderboard", state)) {
-    return (
-      <div className="flex h-full flex-1 items-center px-5 sm:px-8 lg:px-12">
-        <p className="font-display text-2xl text-color_textsecondary italic">
-          Bu bölüm şu anda kullanılamıyor.
-        </p>
-      </div>
-    );
+    return <PageUnavailable />;
   }
 
   if (loading) return <LedgerSkeleton />;
