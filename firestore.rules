@@ -6,7 +6,11 @@ service cloud.firestore {
     // logged-out player list) as well as other participants (SPEC §8/§4), so
     // read is public. Only the owner can write their own.
     match /profiles/{uid} {
-      allow read: if true;
+      // Tightened 2026-08-02: lastName lives only here now (see
+      // publicProfiles below) — Firestore rules can't filter individual
+      // fields out of a document read, so keeping lastName out of a
+      // logged-out visitor's hands means the whole doc goes signed-in-only.
+      allow read: if request.auth != null;
       // Field validation added 2026-07-29 (not-started-audit item 04/15):
       // name length caps mirror NameStep.tsx's 15-char client-side cap.
       allow create, update: if request.auth != null
@@ -18,6 +22,25 @@ service cloud.firestore {
         && request.resource.data.lastName.size() > 0
         && request.resource.data.lastName.size() <= 15
         && request.resource.data.photoURL is string;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Public subset of `profiles` — firstName/photo only, no lastName ever.
+    // Written alongside `profiles` at every profile write site
+    // (src/profile/useProfile.ts). Exists so logged-out visitors (whose
+    // browsing may be search-engine indexed) can never receive a
+    // participant's surname, while `profiles` keeps serving full data to
+    // any signed-in viewer exactly as before.
+    match /publicProfiles/{uid} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.firstName is string
+        && request.resource.data.firstName.size() > 0
+        && request.resource.data.firstName.size() <= 15
+        && request.resource.data.photoURL is string
+        && request.resource.data.createdAt is number
+        && !("lastName" in request.resource.data);
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
