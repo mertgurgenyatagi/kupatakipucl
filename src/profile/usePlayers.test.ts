@@ -17,7 +17,10 @@ vi.mock("../auth/AuthProvider", () => ({ useAuth: () => mockUseAuth() }));
 
 import { usePlayers } from "./usePlayers";
 
-type SnapshotCallback = (snapshot: { docs: { id: string; data: () => unknown }[] }) => void;
+type SnapshotCallback = (snapshot: {
+  docs: { id: string; data: () => unknown }[];
+  metadata?: { fromCache: boolean };
+}) => void;
 type ErrorCallback = (err: Error) => void;
 
 describe("usePlayers", () => {
@@ -106,6 +109,35 @@ describe("usePlayers", () => {
       })
     );
     await waitFor(() => expect(result.current.players).toHaveLength(1));
+  });
+
+  it("ignores a from-cache snapshot as the very first result, waiting for the server-confirmed one before reporting loaded", async () => {
+    const { result } = renderHook(() => usePlayers());
+
+    // A partial snapshot synthesized from another listener's already-cached
+    // doc (e.g. ProfileGate's own profiles/{uid} listener) can arrive
+    // first — must not be trusted as "the full list is loaded".
+    act(() =>
+      capturedOnNext({
+        docs: [{ id: "me", data: () => ({ firstName: "Ahmet", lastName: "Yılmaz", photoURL: "a.png", createdAt: 1 }) }],
+        metadata: { fromCache: true },
+      })
+    );
+    expect(result.current.loading).toBe(true);
+    expect(result.current.players).toEqual([]);
+
+    // The real, server-confirmed snapshot follows.
+    act(() =>
+      capturedOnNext({
+        docs: [
+          { id: "me", data: () => ({ firstName: "Ahmet", lastName: "Yılmaz", photoURL: "a.png", createdAt: 1 }) },
+          { id: "uid2", data: () => ({ firstName: "Ada", lastName: "Lovelace", photoURL: "b.png", createdAt: 2 }) },
+        ],
+        metadata: { fromCache: false },
+      })
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.players).toHaveLength(2);
   });
 
   it("re-subscribes to the other collection when auth state changes", () => {

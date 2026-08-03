@@ -48,9 +48,22 @@ export function usePlayers() {
       setLoading(true);
     }
 
+    let confirmed = false;
     const unsubscribe = onSnapshot(
       collection(db, source),
       (snapshot) => {
+        // A snapshot can arrive `fromCache` before the server has confirmed
+        // it, synthesized from whatever individual documents in this
+        // collection already happen to be cached from an unrelated listener
+        // (ProfileGate and AppShell both separately watch
+        // profiles/{currentUid}) — so it can hold far fewer docs than
+        // actually exist. Ignoring it until the first server-confirmed
+        // snapshot avoids ever treating that partial result as "the full
+        // list has loaded" (2026-08-03: traced from Home showing only the
+        // signed-in viewer as a participant, with everyone else popping in
+        // moments later).
+        if (!confirmed && snapshot.metadata?.fromCache) return;
+        confirmed = true;
         const next = snapshot.docs.map((docSnap: { id: string; data: () => unknown }) => ({
           uid: docSnap.id,
           ...(docSnap.data() as Profile),
