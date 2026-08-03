@@ -45,6 +45,39 @@ function shuffled(images: string[]): string[] {
   return copy;
 }
 
+// Nothing renders until every portrait in the rotation has actually decoded
+// — previously the <img> tags mounted immediately and the browser painted
+// an empty frame (the Frame's own background) for however long the active
+// photo's network fetch took. Preloading the whole set up front trades a
+// longer initial blank pause for zero mid-rotation flashes later, since a
+// photo can now never come due before it's already cached (Mert: fine with
+// slower load as long as pictures arrive with the page).
+function usePreloadedImages(srcs: string[]): boolean {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all(
+      srcs.map(
+        (src) =>
+          new Promise<void>((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+            img.src = src;
+          })
+      )
+    ).then(() => {
+      if (!cancelled) setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [srcs]);
+
+  return ready;
+}
+
 /**
  * The crossfading portrait carousel itself, extracted so it can be reused
  * without the upcoming-fixtures drawer LeaderboardHero docks to it — the
@@ -57,6 +90,7 @@ function shuffled(images: string[]): string[] {
 export function HeroCarousel() {
   const [order] = useState(() => shuffled(HERO_IMAGES));
   const [active, setActive] = useState(0);
+  const ready = usePreloadedImages(order);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -64,6 +98,8 @@ export function HeroCarousel() {
     }, CYCLE_MS);
     return () => clearInterval(id);
   }, [order.length]);
+
+  if (!ready) return null;
 
   return (
     <>

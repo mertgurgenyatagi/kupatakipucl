@@ -48,3 +48,18 @@ if (typeof URL !== "undefined" && !URL.createObjectURL) {
   URL.createObjectURL = () => "blob:mock-url";
   URL.revokeObjectURL = () => {};
 }
+
+// jsdom never actually fetches image bytes, so a real `new Image()` sits
+// forever without firing onload/onerror — needed by HeroCarousel.tsx's
+// preload-before-render gate, which would otherwise leave the component
+// stuck rendering null in every test.
+if (typeof window !== "undefined") {
+  class ImageMock {
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    set src(_value: string) {
+      queueMicrotask(() => this.onload?.());
+    }
+  }
+  window.Image = ImageMock as unknown as typeof window.Image;
+}

@@ -70,7 +70,7 @@ describe("LeaderboardPage", () => {
     expect(screen.getByText("42")).toBeInTheDocument();
   });
 
-  it("composes the team table and the hero carousel alongside the standings, once loaded", () => {
+  it("composes the team table and the hero carousel alongside the standings, once loaded", async () => {
     mockUseLeaderboard.mockReturnValue({
       entries: [{ uid: "uid1", firstName: "Ada", photoURL: "a.png", points: 9, ranking: [] }],
       loading: false,
@@ -79,7 +79,7 @@ describe("LeaderboardPage", () => {
     // The team table (no frame header of its own anymore, just its rows) and
     // the hero carousel that replaced the stat widgets in this column.
     expect(screen.getAllByText(TEAMS[0].shortName).length).toBeGreaterThan(0);
-    expect(screen.getAllByTestId("hero-image").length).toBeGreaterThan(0);
+    expect((await screen.findAllByTestId("hero-image")).length).toBeGreaterThan(0);
   });
 
   it("opens the Matchup Popup when a fixture row in the hero drawer is clicked", () => {
