@@ -113,8 +113,11 @@ describe("RecentPostsPreview", () => {
     });
     const withImageRow = screen.getByText("Resimli").closest("li")!;
     const withoutImageRow = screen.getByText("Resimsiz").closest("li")!;
-    expect(withImageRow.querySelector("img[alt='']")).toBeInTheDocument();
-    expect(withoutImageRow.querySelector("img[alt='']")).not.toBeInTheDocument();
+    // ForumImageThumb doesn't mount its <img> until the photo has actually
+    // decoded (2026-08-03) — the skeleton placeholder is what's there
+    // immediately, exactly what this assertion cares about either way.
+    expect(withImageRow.querySelector('[data-testid="forum-image-skeleton"]')).toBeInTheDocument();
+    expect(withoutImageRow.querySelector('[data-testid="forum-image-skeleton"]')).not.toBeInTheDocument();
   });
 
   it("marks the like button pressed and shows the count when the current user has liked it", () => {
