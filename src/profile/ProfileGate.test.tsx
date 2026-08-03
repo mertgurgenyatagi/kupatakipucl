@@ -5,6 +5,7 @@ import { ProfileGate } from "./ProfileGate";
 const mockUseAuth = vi.fn();
 const mockUseProfile = vi.fn();
 const mockUseSurveyResponse = vi.fn();
+const mockUseFontsReady = vi.fn();
 
 vi.mock("../auth/AuthProvider", () => ({
   useAuth: () => mockUseAuth(),
@@ -16,6 +17,10 @@ vi.mock("./useProfile", () => ({
 
 vi.mock("../predictions/useSurveyResponse", () => ({
   useSurveyResponse: (uid: string | null) => mockUseSurveyResponse(uid),
+}));
+
+vi.mock("../lib/useFontsReady", () => ({
+  useFontsReady: () => mockUseFontsReady(),
 }));
 
 vi.mock("../signup/SignupFlow", () => ({
@@ -33,6 +38,7 @@ const hasProfile = { profile: { firstName: "Mert", lastName: "G", photoURL: "url
 
 describe("ProfileGate", () => {
   it("renders nothing while auth is loading", () => {
+    mockUseFontsReady.mockReturnValue(true);
     mockUseAuth.mockReturnValue({ user: null, loading: true });
     mockUseProfile.mockReturnValue(noProfile);
     mockUseSurveyResponse.mockReturnValue(noSurvey);
@@ -45,6 +51,7 @@ describe("ProfileGate", () => {
   });
 
   it("renders children directly when logged out", () => {
+    mockUseFontsReady.mockReturnValue(true);
     mockUseAuth.mockReturnValue({ user: null, loading: false });
     mockUseProfile.mockReturnValue(noProfile);
     mockUseSurveyResponse.mockReturnValue(noSurvey);
@@ -57,6 +64,7 @@ describe("ProfileGate", () => {
   });
 
   it("renders SignupFlow when logged in with no profile yet", () => {
+    mockUseFontsReady.mockReturnValue(true);
     mockUseAuth.mockReturnValue({ user: { uid: "uid1" }, loading: false });
     mockUseProfile.mockReturnValue(noProfile);
     mockUseSurveyResponse.mockReturnValue(noSurvey);
@@ -72,6 +80,7 @@ describe("ProfileGate", () => {
   // resumable one — still gated, not treated specially (see ProfileGate.tsx
   // and SignupFlow.tsx's header comments for why).
   it("still renders SignupFlow when a profile exists but the survey doesn't", () => {
+    mockUseFontsReady.mockReturnValue(true);
     mockUseAuth.mockReturnValue({ user: { uid: "uid1" }, loading: false });
     mockUseProfile.mockReturnValue(hasProfile);
     mockUseSurveyResponse.mockReturnValue(noSurvey);
@@ -84,6 +93,7 @@ describe("ProfileGate", () => {
   });
 
   it("renders children when logged in with both a profile and a survey response", () => {
+    mockUseFontsReady.mockReturnValue(true);
     mockUseAuth.mockReturnValue({ user: { uid: "uid1" }, loading: false });
     mockUseProfile.mockReturnValue(hasProfile);
     mockUseSurveyResponse.mockReturnValue({
@@ -107,6 +117,7 @@ describe("ProfileGate", () => {
   });
 
   it("does not leak a completed flow across a different user after a uid change", () => {
+    mockUseFontsReady.mockReturnValue(true);
     mockUseAuth.mockReturnValue({ user: { uid: "uid1" }, loading: false });
     mockUseProfile.mockReturnValue(noProfile);
     mockUseSurveyResponse.mockReturnValue(noSurvey);
@@ -127,5 +138,18 @@ describe("ProfileGate", () => {
     );
 
     expect(screen.getByText("signup-flow:uid2")).toBeInTheDocument();
+  });
+
+  it("renders nothing while fonts are not ready yet, even once auth/profile have resolved", () => {
+    mockUseFontsReady.mockReturnValue(false);
+    mockUseAuth.mockReturnValue({ user: null, loading: false });
+    mockUseProfile.mockReturnValue(noProfile);
+    mockUseSurveyResponse.mockReturnValue(noSurvey);
+    const { container } = render(
+      <ProfileGate>
+        <div>app-content</div>
+      </ProfileGate>
+    );
+    expect(container).toBeEmptyDOMElement();
   });
 });
