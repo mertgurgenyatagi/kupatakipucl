@@ -1,19 +1,16 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Settings } from "lucide-react";
+import { Settings } from "lucide-react";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ChatRoom } from "../chat/ChatRoom";
 import { RecentPostsPreview, ForumPreviewFooter } from "../forum/RecentPostsPreview";
 import { ParticipantStatusList } from "./ParticipantStatusList";
 import { HomeHero } from "./HomeHero";
-import { useCountdown } from "./useCountdown";
-import { TOURNAMENT_START_ISO } from "./deadlines";
+import { HomeWelcomeBanner } from "./HomeWelcomeBanner";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { buildPlayersByUid } from "../profile/playersByUid";
-import { initials } from "../profile/deletedAccount";
 import { LobbySwitcher, getLobbySwitcherLabel } from "../lobbies/LobbySwitcher";
 import { LobbyManagementPanel } from "../lobbies/LobbyManagementPanel";
 import type { MyLobby } from "../lobbies/useMyLobbies";
@@ -61,17 +58,6 @@ interface HomeLandingLoggedInProps {
   onCloseCreateDialog: () => void;
   onCreateLobby: (name: string) => void;
   createError: string | null;
-}
-
-function MiniCountdownDigit({ value, label }: { value: number; label: string }) {
-  return (
-    <span className="flex items-baseline gap-1.5 whitespace-nowrap">
-      <span className="font-display text-2xl leading-none font-semibold text-color_text tnum sm:text-3xl">
-        {String(value).padStart(2, "0")}
-      </span>
-      <span className="font-mono text-xs tracking-[0.1em] text-color_textsecondary uppercase">{label}</span>
-    </span>
-  );
 }
 
 const PAGE_SHELL =
@@ -135,8 +121,6 @@ export function HomeLandingLoggedIn({
   onCreateLobby,
   createError,
 }: HomeLandingLoggedInProps) {
-  const countdown = useCountdown(TOURNAMENT_START_ISO);
-
   // Participant popup, notstarted-logged-in edition (round-04): Home's
   // Katılımcılar list is the only place this state can ever open it from, so
   // there's no real leaderboard yet to look a rank/points up in — everyone's
@@ -172,53 +156,7 @@ export function HomeLandingLoggedIn({
 
   return (
     <div className={PAGE_SHELL}>
-      {/* Personal welcome + primary action + countdown — one frame, no
-          title band (ParticipantPopup's "no widget carries a label" rule
-          applies here too: a greeting doesn't need to identify itself). */}
-      <Frame className="shrink-0 animate-cotton-rise">
-        <FrameBody className="flex flex-col gap-5 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div className="flex min-w-0 items-center gap-3.5">
-            <Avatar className="size-14 shrink-0">
-              <AvatarImage src={me.photoURL} alt="" />
-              <AvatarFallback className="font-mono text-sm text-color_textsecondary">
-                {initials(me)}
-              </AvatarFallback>
-            </Avatar>
-            <p className="min-w-0 truncate font-display text-xl text-color_text sm:text-2xl">
-              Hoş geldin, <span className="font-bold">{me.firstName}</span>.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-6 sm:gap-8">
-            {/* /predictions is a one-time door (predictions-page-round-02
-                §E) — once submitted, there's nothing left to do there, so
-                the button that leads to it just stops existing. */}
-            {!submitterUids.has(me.uid) && (
-              <Link
-                to="/predictions"
-                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-color_text px-6 py-3 text-sm font-semibold text-background outline-none transition-all duration-150 ease-[var(--ease-cotton)] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_accent"
-              >
-                Tahminini Yap
-                <ArrowRight className="size-4" aria-hidden />
-              </Link>
-            )}
-
-            {!countdown.done && (
-              <div className="flex items-baseline gap-4 whitespace-nowrap">
-                <span className="font-mono text-xs tracking-[0.12em] text-color_textsecondary uppercase">
-                  Tahminlerin Kapanmasına
-                </span>
-                <div className="flex items-baseline gap-3.5">
-                  <MiniCountdownDigit value={countdown.days} label="Gün" />
-                  <MiniCountdownDigit value={countdown.hours} label="Saat" />
-                  <MiniCountdownDigit value={countdown.minutes} label="Dk" />
-                  <MiniCountdownDigit value={countdown.seconds} label="Sn" />
-                </div>
-              </div>
-            )}
-          </div>
-        </FrameBody>
-      </Frame>
+      <HomeWelcomeBanner me={me} showCta={!submitterUids.has(me.uid)} />
 
       <div className={CELL_ROW}>
         <Frame className={CELL} style={{ animationDelay: "60ms" }}>

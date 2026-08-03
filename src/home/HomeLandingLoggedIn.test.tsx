@@ -1,12 +1,13 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { vi, describe, it, expect, beforeEach } from "vitest";
+import { vi, describe, it, expect } from "vitest";
 import { HomeLandingLoggedIn } from "./HomeLandingLoggedIn";
 import { Player } from "../profile/usePlayers";
 
-const mockUseCountdown = vi.fn();
-vi.mock("./useCountdown", () => ({
-  useCountdown: () => mockUseCountdown(),
+vi.mock("./HomeWelcomeBanner", () => ({
+  HomeWelcomeBanner: ({ me, showCta }: { me: { firstName: string }; showCta: boolean }) => (
+    <div>welcome-banner:{me.firstName}:{String(showCta)}</div>
+  ),
 }));
 
 vi.mock("../chat/ChatRoom", () => ({
@@ -142,37 +143,14 @@ function renderPage(overrides: Partial<Parameters<typeof HomeLandingLoggedIn>[0]
 }
 
 describe("HomeLandingLoggedIn", () => {
-  beforeEach(() => {
-    mockUseCountdown.mockReturnValue({ days: 4, hours: 3, minutes: 2, seconds: 1, done: false });
-  });
-
-  it("greets the signed-in user by first name, bolded", () => {
+  it("passes the correct me and showCta through to the welcome banner", () => {
     renderPage();
-    const greeting = screen.getByText((_, el) => el?.textContent === "Hoş geldin, Mert.");
-    expect(greeting).toBeInTheDocument();
-    expect(screen.getByText("Mert")).toHaveClass("font-bold");
+    expect(screen.getByText("welcome-banner:Mert:true")).toBeInTheDocument();
   });
 
-  it("links the primary CTA to the predictions page", () => {
-    renderPage();
-    expect(screen.getByRole("link", { name: /Tahminini Yap/ })).toHaveAttribute("href", "/predictions");
-  });
-
-  it("hides the CTA once the user has already submitted a prediction", () => {
+  it("tells the banner to hide the CTA once the user has already submitted a prediction", () => {
     renderPage({ submitterUids: new Set(["me", "p2"]) });
-    expect(screen.queryByRole("link", { name: /Tahminini Yap/ })).not.toBeInTheDocument();
-  });
-
-  it("shows the countdown digits when not yet done", () => {
-    renderPage();
-    expect(screen.getByText("04")).toBeInTheDocument();
-    expect(screen.getByText("03")).toBeInTheDocument();
-  });
-
-  it("hides the countdown once it's done", () => {
-    mockUseCountdown.mockReturnValue({ days: 0, hours: 0, minutes: 0, seconds: 0, done: true });
-    renderPage();
-    expect(screen.queryByText("Kayıtların Kapanmasına")).not.toBeInTheDocument();
+    expect(screen.getByText("welcome-banner:Mert:false")).toBeInTheDocument();
   });
 
   it("passes players and submitter uids through to the participant list", () => {
