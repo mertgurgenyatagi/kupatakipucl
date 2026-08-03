@@ -3,25 +3,27 @@ import { vi, describe, it, expect } from "vitest";
 import { HomeLandingLoggedInStarted } from "./HomeLandingLoggedInStarted";
 import { Player } from "../profile/usePlayers";
 
-vi.mock("./HomeWelcomeBanner", () => ({
-  HomeWelcomeBanner: ({ me, showCta }: { me: { firstName: string }; showCta: boolean }) => (
-    <div>welcome-banner:{me.firstName}:{String(showCta)}</div>
+vi.mock("./HomeWelcomeVertical", () => ({
+  HomeWelcomeVertical: ({ me }: { me: { firstName: string } }) => (
+    <div>welcome-vertical:{me.firstName}</div>
   ),
 }));
 
-vi.mock("../leaderboard/UpcomingMatchesPreview", () => ({
-  UpcomingMatchesPreview: ({
-    onSelectTeam,
+vi.mock("./HomeStartedHero", () => ({
+  HomeStartedHero: ({
     onSelectFixture,
   }: {
-    onSelectTeam: (id: string) => void;
     onSelectFixture?: (id: string) => void;
   }) => (
     <div>
-      <button onClick={() => onSelectTeam("arsenal")}>upcoming-preview</button>
-      <button onClick={() => onSelectFixture?.("fixture-1")}>upcoming-preview-fixture</button>
+      <span>home-started-hero</span>
+      <button onClick={() => onSelectFixture?.("fixture-1")}>hero-select-fixture</button>
     </div>
   ),
+}));
+
+vi.mock("./KnockoutPredictionWidget", () => ({
+  KnockoutPredictionWidget: () => <div>knockout-prediction-widget</div>,
 }));
 
 vi.mock("../forum/RecentPostsPreview", () => ({
@@ -40,9 +42,7 @@ vi.mock("../forum/RecentPostsPreview", () => ({
   ForumPreviewFooter: () => <div>forum-footer</div>,
 }));
 
-vi.mock("./HomeHero", () => ({
-  HomeHero: () => <div>home-hero</div>,
-}));
+// Removed HomeHero mock
 
 vi.mock("../leaderboard/NearbyStandingsList", () => ({
   NearbyStandingsList: ({ onSelectParticipant }: { onSelectParticipant: (uid: string) => void }) => (
@@ -114,21 +114,19 @@ function renderPage(overrides: Partial<Parameters<typeof HomeLandingLoggedInStar
 }
 
 describe("HomeLandingLoggedInStarted", () => {
-  it("renders all five widgets, with the welcome banner's CTA always hidden", () => {
+  it("renders all widgets for leaguephase, without knockout widget", () => {
     renderPage();
-    expect(screen.getByText("welcome-banner:Mert:false")).toBeInTheDocument();
-    expect(screen.getByText("upcoming-preview")).toBeInTheDocument();
-    expect(screen.getByText("forum-widget:me")).toBeInTheDocument();
-    expect(screen.getByText("home-hero")).toBeInTheDocument();
+    expect(screen.getByText("welcome-vertical:Mert")).toBeInTheDocument();
     expect(screen.getByText("nearby-standings")).toBeInTheDocument();
+    expect(screen.getByText("forum-widget:me")).toBeInTheDocument();
+    expect(screen.getByText("home-started-hero")).toBeInTheDocument();
     expect(screen.getByText("chat-room:me:null")).toBeInTheDocument();
+    expect(screen.queryByText("knockout-prediction-widget")).not.toBeInTheDocument();
   });
 
-  it("selecting a team from the upcoming-matches widget opens TeamPopup and closes ParticipantPopup", () => {
-    renderPage();
-    fireEvent.click(screen.getByText("upcoming-preview"));
-    expect(screen.getByText("team-popup:arsenal")).toBeInTheDocument();
-    expect(screen.getByText("participant-popup:closed")).toBeInTheDocument();
+  it("renders the knockout widget in preknockout phase", () => {
+    renderPage({ phase: "preknockout" });
+    expect(screen.getByText("knockout-prediction-widget")).toBeInTheDocument();
   });
 
   it("selecting a participant from the forum widget opens ParticipantPopup and closes TeamPopup", () => {
@@ -144,11 +142,11 @@ describe("HomeLandingLoggedInStarted", () => {
     expect(screen.getByText("participant-popup:player-1")).toBeInTheDocument();
   });
 
-  it("opens the Matchup Popup when a fixture is selected from the upcoming-matches preview or TeamPopup's match history", () => {
+  it("opens the Matchup Popup when a fixture is selected from the hero or TeamPopup's match history", () => {
     renderPage();
     expect(screen.getByText("matchup-popup:closed:leaguephase")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("upcoming-preview-fixture"));
+    fireEvent.click(screen.getByText("hero-select-fixture"));
     expect(screen.getByText("matchup-popup:fixture-1:leaguephase")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("team-popup-select-fixture"));

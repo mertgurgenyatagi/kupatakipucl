@@ -49,13 +49,7 @@ const LAST_NAMES = [
   "Yıldız", "Dubois", "Andersson", "Kovač", "N'Diaye", "Fischer", "Santos", "Vidal",
 ];
 
-const FORMATIONS: { label: string; lines: number[] }[] = [
-  { label: "4-3-3", lines: [4, 3, 3] },
-  { label: "4-2-3-1", lines: [4, 2, 3, 1] },
-  { label: "4-4-2", lines: [4, 4, 2] },
-  { label: "3-5-2", lines: [3, 5, 2] },
-  { label: "3-4-3", lines: [3, 4, 3] },
-];
+
 
 // Matches StatWidget.tsx's own fixed 3-row fill pattern exactly.
 const ROW_FILLS = ["bg-color_secondary", "bg-color_textsecondary", "bg-color_accent"];
@@ -103,10 +97,11 @@ export function getTeamDossier(teamId: string): TeamDossier {
   const rand = mulberry32(hashString(teamId));
 
   const manager = randomName(rand);
-  const formation = FORMATIONS[Math.floor(rand() * FORMATIONS.length)];
+  const formationLabel = "4-2-3-1";
+  const formationLines = [4, 2, 3, 1];
 
   const startingXI: DossierPlayer[] = [{ name: randomName(rand), line: 0 }];
-  formation.lines.forEach((count, lineIndex) => {
+  formationLines.forEach((count, lineIndex) => {
     for (let i = 0; i < count; i++) {
       startingXI.push({ name: randomName(rand), line: lineIndex + 1 });
     }
@@ -117,5 +112,5 @@ export function getTeamDossier(teamId: string): TeamDossier {
   // Ratings as descending tenths (e.g. 78 -> "7.8"), 1-10 scale.
   const topRated = statRows(rand, descendingInts(rand, 68, 92), (n) => (n / 10).toFixed(1));
 
-  return { manager, formation: formation.label, startingXI, topScorers, topAssisters, topRated };
+  return { manager, formation: formationLabel, startingXI, topScorers, topAssisters, topRated };
 }

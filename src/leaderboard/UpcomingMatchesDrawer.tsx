@@ -42,9 +42,11 @@ const PANEL_ID = "upcoming-matches-panel";
 export function UpcomingMatchesDrawer({
   results,
   onSelectFixture,
+  maxHeightClass = "h-[90%]",
 }: {
   results: Record<string, TeamResult>;
   onSelectFixture?: (fixtureId: string) => void;
+  maxHeightClass?: string;
 }) {
   const allUpcoming = useMemo(() => getUpcomingFixtures(resolveNow()), []);
   const [open, setOpen] = useState(false);
@@ -78,7 +80,7 @@ export function UpcomingMatchesDrawer({
 
   return (
     <div
-      className={`absolute inset-x-0 bottom-0 z-10 flex flex-col overflow-hidden transition-[height] duration-300 ease-[var(--ease-cotton)] ${open ? "h-[90%]" : "h-12"}`}
+      className={`absolute inset-x-0 bottom-0 z-10 flex flex-col overflow-hidden transition-[height] duration-300 ease-[var(--ease-cotton)] ${open ? maxHeightClass : "h-12"}`}
     >
       <button
         type="button"

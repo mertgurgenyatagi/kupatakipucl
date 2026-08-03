@@ -36,7 +36,7 @@ export function UpcomingMatchesPreview({
   }
 
   return (
-    <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+    <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-2 py-1 sm:px-3">
       {upcoming.map((fixture) => (
         <FixtureRow
           key={fixture.id}

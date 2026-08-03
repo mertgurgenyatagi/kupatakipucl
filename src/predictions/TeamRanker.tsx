@@ -1,140 +1,254 @@
-import { GripVerticalIcon } from "lucide-react";
 import {
   DndContext,
-  closestCenter,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
   KeyboardSensor,
+  Modifier,
   PointerSensor,
+  pointerWithin,
   useSensor,
   useSensors,
-  DragEndEvent,
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { useState } from "react";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { useMemo, useState } from "react";
 import { Team } from "./teams";
 import { TeamCrest } from "../leaderboard/TeamCrest";
-import { useBoundaryHover } from "./useBoundaryHover";
-import { boundaryBandRole } from "./predictionBoundary";
+import { TeamGrid } from "./TeamGrid";
+import { TeamDropList } from "./TeamDropList";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { GripVerticalIcon } from "lucide-react";
 
 interface TeamRankerProps {
   teams: Team[];
-  initialOrder: string[];
+  /**
+   * Optional: pre-populate the ranking list on mount.
+   * Must be a full-length array (same length as `teams`) to take effect —
+   * a partial array is ignored and the list starts empty.
+   * Used by the profile-page edit widget; the first-time prediction flow
+   * leaves this unset so all slots start empty.
+   */
+  initialOrder?: string[];
   onSubmit: (order: string[]) => void;
 }
 
-function SortableTeamRow({
-  team,
-  index,
-  inBand,
-  isOrigin,
-  onMouseEnter,
-  onMouseLeave,
-}: {
-  team: Team;
-  index: number;
-  inBand: boolean;
-  isOrigin: boolean;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: team.id,
-  });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-  const highlighted = inBand && !isDragging;
-  return (
-    <li
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      className={cn(
-        "flex cursor-pointer touch-none items-center gap-2.5 rounded-lg border border-color_border1/50 bg-background px-3 py-2 outline-none select-none",
-        "transition-[transform,box-shadow,border-color,background-color] duration-200 ease-[var(--ease-cotton)]",
-        "focus-visible:ring-2 focus-visible:ring-color_border2/50",
-        isDragging ? "z-10 scale-[1.02] border-color_accent/50 bg-card shadow-frame" : "hover:border-color_border1",
-        highlighted && cn("bg-foreground/[0.06]", !isOrigin && "animate-pulse")
-      )}
-    >
-      <span className="w-5 shrink-0 text-right font-mono text-sm font-bold text-color_gold tnum">
-        {index + 1}
-      </span>
-      <GripVerticalIcon aria-hidden className="size-3.5 shrink-0 text-color_textsecondary/50" />
-      <TeamCrest teamId={team.id} className="size-7 shrink-0" />
-      <span className="min-w-0 flex-1 truncate font-display text-sm text-color_text">{team.name}</span>
-    </li>
-  );
-}
+/**
+ * Modifier to center the drag overlay under the cursor regardless of where
+ * the user grabbed the element.
+ */
+const snapCenterToCursor: Modifier = ({ transform, activatorEvent, draggingNodeRect }) => {
+  if (activatorEvent && draggingNodeRect) {
+    const event = activatorEvent as MouseEvent | TouchEvent;
+    const clientX =
+      "touches" in event && event.touches && event.touches[0]
+        ? event.touches[0].clientX
+        : (event as MouseEvent).clientX;
+    const clientY =
+      "touches" in event && event.touches && event.touches[0]
+        ? event.touches[0].clientY
+        : (event as MouseEvent).clientY;
+
+    if (clientX != null && clientY != null) {
+      const grabX = clientX - draggingNodeRect.left;
+      const grabY = clientY - draggingNodeRect.top;
+      return {
+        ...transform,
+        x: transform.x + (grabX - draggingNodeRect.width / 2),
+        y: transform.y + (grabY - draggingNodeRect.height / 2),
+      };
+    }
+  }
+  return transform;
+};
 
 /**
- * Rank number lives in its own left-most column now (predictions-page-round-02
- * Q7), not folded into the name text — rows were briefly made roomier for the
- * full-viewport flow (Q8), then sized back down ~30% since 36 of them at that
- * size took over the whole screen. Hovering a settled
- * row for a couple of seconds tints the ±2-row band it'd need to land in to
- * score — same treatment as the intro's ScoringExampleDiagram (a bracket
- * attempt here didn't read well visually and was dropped), pulsing except on
- * the row you're actually hovering, clamped at the list's own edges.
+ * Two-panel drag-and-drop ranking UI for the league phase prediction.
  */
 export function TeamRanker({ teams, initialOrder, onSubmit }: TeamRankerProps) {
-  const [order, setOrder] = useState<string[]>(initialOrder);
-  const { activeIndex, handleMouseEnter, handleMouseLeave } = useBoundaryHover();
+  const [ranking, setRanking] = useState<(string | null)[]>(() => {
+    if (initialOrder && initialOrder.length === teams.length) {
+      return [...initialOrder];
+    }
+    return Array(teams.length).fill(null);
+  });
+
+  const [activeId, setActiveId] = useState<string | null>(null);
+
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    setOrder((current) => {
-      const oldIndex = current.indexOf(String(active.id));
-      const newIndex = current.indexOf(String(over.id));
-      return arrayMove(current, oldIndex, newIndex);
-    });
+  const sortedTeams = useMemo(
+    () => [...teams].sort((a, b) => a.name.localeCompare(b.name)),
+    [teams]
+  );
+
+  const teamsById = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
+
+  const placedTeamIds = useMemo(
+    () => new Set(ranking.filter(Boolean) as string[]),
+    [ranking]
+  );
+
+  // Resolve which team is riding under the pointer during a drag.
+  const activeDragTeamId: string | null = useMemo(() => {
+    if (!activeId) return null;
+    if (activeId.startsWith("grid:")) return activeId.slice(5);
+    if (activeId.startsWith("list:")) {
+      const slot = parseInt(activeId.slice(5), 10);
+      return ranking[slot] ?? null;
+    }
+    return null;
+  }, [activeId, ranking]);
+
+  const activeDragTeam = activeDragTeamId ? teamsById.get(activeDragTeamId) : null;
+
+  // ── Drag handlers ──────────────────────────────────────────────────────────
+
+  function handleDragStart({ active }: DragStartEvent) {
+    setActiveId(String(active.id));
   }
 
-  const teamsById = new Map(teams.map((team) => [team.id, team]));
+  function handleDragEnd({ active, over }: DragEndEvent) {
+    setActiveId(null);
+
+    const activeStr = String(active.id);
+
+    if (!over) {
+      // Dropped over nothing: if it was a list item, return it to the grid.
+      if (activeStr.startsWith("list:")) {
+        const src = parseInt(activeStr.slice(5), 10);
+        setRanking((r) => r.map((id, i) => (i === src ? null : id)));
+      }
+      return;
+    }
+
+    const overStr = String(over.id);
+
+    if (overStr.startsWith("slot:")) {
+      const targetSlot = parseInt(overStr.slice(5), 10);
+
+      if (activeStr.startsWith("grid:")) {
+        // ─ Grid → List ─
+        const teamId = activeStr.slice(5);
+        setRanking((r) => {
+          const next = [...r];
+          // If target slot was occupied, that team returns to the right grid automatically
+          next[targetSlot] = teamId;
+          return next;
+        });
+      } else if (activeStr.startsWith("list:")) {
+        // ─ List → List (reorder / swap) ─
+        const srcSlot = parseInt(activeStr.slice(5), 10);
+        if (srcSlot === targetSlot) return;
+        setRanking((r) => {
+          const next = [...r];
+          [next[srcSlot], next[targetSlot]] = [next[targetSlot], next[srcSlot]];
+          return next;
+        });
+      }
+    } else if (overStr.startsWith("grid:") || overStr === "grid-return") {
+      // ─ List → Grid (return or swap with a team on the right) ─
+      if (activeStr.startsWith("list:")) {
+        const srcSlot = parseInt(activeStr.slice(5), 10);
+
+        if (overStr.startsWith("grid:")) {
+          const targetTeamId = overStr.slice(5);
+          // Is targetTeamId currently on the right grid (i.e. not placed on left)?
+          if (!placedTeamIds.has(targetTeamId)) {
+            // SWAP: right grid team moves to srcSlot on left, left team returns to grid!
+            setRanking((r) => {
+              const next = [...r];
+              next[srcSlot] = targetTeamId;
+              return next;
+            });
+            return;
+          }
+        }
+
+        // Otherwise (empty grid cell or grid-return): return left team to grid (clear slot)
+        setRanking((r) => r.map((id, i) => (i === srcSlot ? null : id)));
+      }
+    }
+  }
+
+  // ── Derived state ──────────────────────────────────────────────────────────
+
+  const allPlaced = ranking.every((id) => id !== null);
+
+  function handleReset() {
+    setRanking(Array(teams.length).fill(null));
+  }
+
+  function handleSubmit() {
+    onSubmit(ranking.filter(Boolean) as string[]);
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={order} strategy={verticalListSortingStrategy}>
-          <ol className="no-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto">
-            {order.map((id, index) => {
-              const team = teamsById.get(id);
-              if (!team) return null;
-              return (
-                <SortableTeamRow
-                  key={id}
-                  team={team}
-                  index={index}
-                  inBand={activeIndex !== null && boundaryBandRole(index, activeIndex, order.length) !== "none"}
-                  isOrigin={index === activeIndex}
-                  onMouseEnter={() => handleMouseEnter(index)}
-                  onMouseLeave={handleMouseLeave}
-                />
-              );
-            })}
-          </ol>
-        </SortableContext>
-      </DndContext>
-      <Button className="cursor-pointer self-end" onClick={() => onSubmit(order)}>
-        Tamam
-      </Button>
-    </div>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={pointerWithin}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        {/* Instruction */}
+        <p className="text-center font-display text-sm text-color_textsecondary">
+          Sağdaki takımları sürükleyerek solda sıralamana yerleştir.{" "}
+          <span className="text-color_textsecondary/60">
+            Yerleştirdiğin takımları geri çekebilir veya yeniden sıralayabilirsin.
+          </span>
+        </p>
+
+        {/* Two panels */}
+        <div className="flex min-h-0 flex-1 gap-3">
+          {/* Left — ranking drop list */}
+          <div className="flex w-64 shrink-0 flex-col min-h-0">
+            <TeamDropList ranking={ranking} teamsById={teamsById} />
+          </div>
+
+          {/* Right — team crest grid, vertically centered */}
+          <div className="no-scrollbar flex min-h-0 flex-1 flex-col justify-center overflow-y-auto">
+            <TeamGrid teams={sortedTeams} placedTeamIds={placedTeamIds} />
+          </div>
+        </div>
+
+        {/* Footer actions */}
+        <div className="flex items-center justify-end gap-2 pt-1">
+          <Button
+            variant="outline"
+            className="cursor-pointer"
+            onClick={handleReset}
+          >
+            Sıfırla
+          </Button>
+          <Button
+            className="cursor-pointer"
+            disabled={!allPlaced}
+            onClick={handleSubmit}
+          >
+            Tamam
+          </Button>
+        </div>
+      </div>
+
+      {/* Drag overlay — centered under cursor, no drop animation (disappears instantly on drop) */}
+      <DragOverlay modifiers={[snapCenterToCursor]} dropAnimation={null}>
+        {activeDragTeam && (
+          <div className="flex cursor-grabbing items-center gap-2.5 rounded-lg border border-color_border1/80 bg-background px-3 py-2 shadow-frame select-none w-64 h-[42px]">
+            <GripVerticalIcon aria-hidden className="size-3.5 shrink-0 text-color_textsecondary/40" />
+            <TeamCrest teamId={activeDragTeam.id} className="size-7 shrink-0" />
+            <span className="min-w-0 flex-1 truncate font-display text-sm text-color_text">
+              {activeDragTeam.name}
+            </span>
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
   );
 }

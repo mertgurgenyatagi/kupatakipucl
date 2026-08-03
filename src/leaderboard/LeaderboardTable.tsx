@@ -21,6 +21,8 @@ interface LeaderboardTableProps {
   /** Needed to resolve lastName for signed-in viewers — LeaderboardEntry no
    *  longer carries it (2026-08-02 name-privacy change). */
   players: Player[];
+  /** The UID of the current viewer, used to highlight their own row. */
+  myUid?: string;
   /** Gate for the hover highlight — true once the tournament has started
    *  (DESIGN-SPEC: the brief's "only active after starting"). */
   revealCorrectness?: boolean;
@@ -55,6 +57,7 @@ interface LeaderboardTableProps {
 export const LeaderboardTable = memo(function LeaderboardTable({
   entries,
   players,
+  myUid,
   revealCorrectness = false,
   onHoverEntry,
   onSelectEntry,
@@ -91,6 +94,7 @@ export const LeaderboardTable = memo(function LeaderboardTable({
               <TableBody>
                 {ranked.map(({ entry, rank }, index) => {
                   const canReveal = revealCorrectness && entry.ranking.length > 0;
+                  const isMe = entry.uid === myUid;
                   return (
                     <TableRow
                       key={entry.uid}
@@ -112,7 +116,8 @@ export const LeaderboardTable = memo(function LeaderboardTable({
                       aria-haspopup={canReveal ? "dialog" : undefined}
                       className={cn(
                         "group animate-cotton-rise border-b border-color_border1/60 transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill",
-                        canReveal && "cursor-pointer outline-none focus-visible:bg-color_hoverfill focus-visible:ring-1 focus-visible:ring-color_border2/50 focus-visible:ring-inset"
+                        canReveal && "cursor-pointer outline-none focus-visible:bg-color_hoverfill focus-visible:ring-1 focus-visible:ring-color_border2/50 focus-visible:ring-inset",
+                        isMe && "bg-color_gold/10"
                       )}
                     >
                       <TableCell className="py-2.5 pl-3 align-middle">

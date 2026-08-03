@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, act } from "@testing-library/react";
-import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { vi, describe, it, expect } from "vitest";
 import { TeamRanker } from "./TeamRanker";
 import { Team } from "./teams";
 
@@ -10,51 +10,46 @@ const teams: Team[] = [
 ];
 
 describe("TeamRanker", () => {
-  it("renders all teams in the given initial order, rank number first", () => {
-    render(<TeamRanker teams={teams} initialOrder={["b", "a", "c"]} onSubmit={vi.fn()} />);
-    const items = screen.getAllByRole("button", { name: /^\d/ }).map((el) => el.textContent?.trim());
-    expect(items).toEqual(["1Beta", "2Alpha", "3Gamma"]);
+  it("renders the instruction text", () => {
+    render(<TeamRanker teams={teams} onSubmit={vi.fn()} />);
+    expect(screen.getByText(/sürükleyerek/i)).toBeInTheDocument();
   });
 
-  it("calls onSubmit with the current order when Tamam is clicked", () => {
+  it("renders the Reset and Submit buttons", () => {
+    render(<TeamRanker teams={teams} onSubmit={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Sıfırla" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tamam" })).toBeInTheDocument();
+  });
+
+  it("submit button is disabled when the list is empty", () => {
+    render(<TeamRanker teams={teams} onSubmit={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Tamam" })).toBeDisabled();
+  });
+
+  it("submit is enabled when all slots are filled via initialOrder", () => {
+    render(<TeamRanker teams={teams} initialOrder={["a", "b", "c"]} onSubmit={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Tamam" })).not.toBeDisabled();
+  });
+
+  it("calls onSubmit with the current ranking when Tamam is clicked", () => {
     const onSubmit = vi.fn();
-    render(<TeamRanker teams={teams} initialOrder={["a", "b", "c"]} onSubmit={onSubmit} />);
-    fireEvent.click(screen.getByText("Tamam"));
-    expect(onSubmit).toHaveBeenCalledWith(["a", "b", "c"]);
+    render(<TeamRanker teams={teams} initialOrder={["b", "a", "c"]} onSubmit={onSubmit} />);
+    fireEvent.click(screen.getByRole("button", { name: "Tamam" }));
+    expect(onSubmit).toHaveBeenCalledWith(["b", "a", "c"]);
   });
 
-  describe("boundary hover", () => {
-    beforeEach(() => vi.useFakeTimers());
-    afterEach(() => vi.useRealTimers());
+  it("reset clears the ranking and disables submit", () => {
+    render(<TeamRanker teams={teams} initialOrder={["a", "b", "c"]} onSubmit={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Tamam" })).not.toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Sıfırla" }));
+    expect(screen.getByRole("button", { name: "Tamam" })).toBeDisabled();
+  });
 
-    it("does not tint anything before the row's been hovered a couple of seconds", () => {
-      render(<TeamRanker teams={teams} initialOrder={["a", "b", "c"]} onSubmit={vi.fn()} />);
-      const row = screen.getByRole("button", { name: /Beta/ });
-      fireEvent.mouseEnter(row);
-      expect(row).not.toHaveClass("bg-foreground/[0.06]");
-    });
-
-    it("tints the ±2 band around a row hovered long enough, pulsing everywhere but the origin", () => {
-      render(<TeamRanker teams={teams} initialOrder={["a", "b", "c"]} onSubmit={vi.fn()} />);
-      const middleRow = screen.getByRole("button", { name: /Beta/ });
-      fireEvent.mouseEnter(middleRow);
-      act(() => vi.advanceTimersByTime(2000));
-
-      const topRow = screen.getByRole("button", { name: /Alpha/ });
-      const bottomRow = screen.getByRole("button", { name: /Gamma/ });
-      expect(topRow).toHaveClass("bg-foreground/[0.06]", "animate-pulse");
-      expect(bottomRow).toHaveClass("bg-foreground/[0.06]", "animate-pulse");
-      expect(middleRow).toHaveClass("bg-foreground/[0.06]");
-      expect(middleRow).not.toHaveClass("animate-pulse");
-    });
-
-    it("clears the tint on mouse leave", () => {
-      render(<TeamRanker teams={teams} initialOrder={["a", "b", "c"]} onSubmit={vi.fn()} />);
-      const row = screen.getByRole("button", { name: /Beta/ });
-      fireEvent.mouseEnter(row);
-      act(() => vi.advanceTimersByTime(2000));
-      fireEvent.mouseLeave(row);
-      expect(row).not.toHaveClass("bg-foreground/[0.06]");
-    });
+  it("placed teams show their full name in the list", () => {
+    render(<TeamRanker teams={teams} initialOrder={["a", "b", "c"]} onSubmit={vi.fn()} />);
+    // Names appear in both the list row and the grid tooltip span (aria-hidden).
+    expect(screen.getAllByText("Alpha").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Beta").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Gamma").length).toBeGreaterThanOrEqual(1);
   });
 });

@@ -9,6 +9,10 @@ import { useProfile, updateProfilePhoto, deleteProfile } from "../profile/usePro
 import { Profile } from "../profile/profileTypes";
 import { usePrediction, savePrediction, deletePrediction } from "../predictions/usePrediction";
 import { Prediction } from "../predictions/predictionTypes";
+import { useKnockoutPrediction, saveKnockoutPrediction } from "../knockout/useKnockoutPrediction";
+import { KnockoutPredictionSummary } from "../knockout/KnockoutPredictionSummary";
+import { KnockoutStagePicker } from "../knockout/KnockoutStagePicker";
+import { KnockoutPrediction } from "../knockout/knockoutTypes";
 import { useSurveyResponse } from "../predictions/useSurveyResponse";
 import { MESSI_RONALDO_LABEL, DEVICE_LABEL, ensurePeriod } from "../predictions/surveyLabels";
 import { TeamRanker } from "../predictions/TeamRanker";
@@ -100,6 +104,7 @@ export function ProfilePage() {
 
   const { profile, loading: profileLoading } = useProfile(uid);
   const { prediction, loading: predictionLoading } = usePrediction(uid);
+  const { prediction: knockoutPrediction, loading: knockoutLoading } = useKnockoutPrediction(uid);
   const { response: survey, loading: surveyLoading, error: surveyError } = useSurveyResponse(uid);
   const { entries, loading: entriesLoading } = useLeaderboard();
   const { results } = useResults();
@@ -121,6 +126,16 @@ export function ProfilePage() {
   const [savedPrediction, setSavedPrediction] = useState<Prediction | null>(null);
   const [predictionError, setPredictionError] = useState<string | null>(null);
 
+  const [savedKnockoutPrediction, setSavedKnockoutPrediction] = useState<KnockoutPrediction | null>(null);
+  const [knockoutEditOpen, setKnockoutEditOpen] = useState(false);
+  const [knockoutSubmitting, setKnockoutSubmitting] = useState(false);
+  const [activePredictionTab, setActivePredictionTab] = useState<"league" | "knockout">(() => {
+    if (state === "loggedin_preknockout" || state === "loggedin_knockout") {
+      return "knockout";
+    }
+    return "league";
+  });
+
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -129,9 +144,7 @@ export function ProfilePage() {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [selectedFixtureId, setSelectedFixtureId] = useState<string | null>(null);
 
-  // Same cross-linked-popup pattern as LeaderboardPage.tsx: selecting one
-  // clears the other, and both are stable callbacks since ParticipantPopup/
-  // TeamPopup are memoized.
+  // Same cross-linked-popup pattern as LeaderboardPage.tsx
   const handlePopupOpenChange = useCallback((open: boolean) => {
     if (!open) setSelectedUid(null);
   }, []);
@@ -161,11 +174,13 @@ export function ProfilePage() {
     return <PageUnavailable />;
   }
 
-  if (profileLoading || predictionLoading || entriesLoading || !imagesReady) return <ProfileSkeleton />;
+  if (profileLoading || predictionLoading || knockoutLoading || entriesLoading || !imagesReady) return <ProfileSkeleton />;
 
   const displayedProfile = localProfile ?? profile;
   const currentPrediction = savedPrediction ?? prediction;
+  const currentKnockoutPrediction = savedKnockoutPrediction ?? knockoutPrediction;
   const predictionLocked = state !== "loggedin_notstarted";
+  const isKnockoutPhaseOrPre = state === "loggedin_preknockout" || state === "loggedin_knockout";
   const averagePositions = computeAveragePositions(entries);
   const rankedEntries = assignRanks(entries);
   const myEntry = uid ? rankedEntries.find((r) => r.entry.uid === uid) : undefined;
@@ -373,8 +388,38 @@ export function ProfilePage() {
       <div className="flex min-h-0 min-w-0 flex-1 gap-3">
       <Frame className="min-h-0 min-w-0 flex-1 animate-cotton-rise" style={{ animationDelay: "120ms" }}>
         <FrameHeader tone="navy">
-          <FrameTitle className="text-color_text">Lig Tahmininiz</FrameTitle>
-          {currentPrediction && !predictionLocked && predictionUiStep === "idle" && (
+          {isKnockoutPhaseOrPre ? (
+            <div className="flex items-center gap-1 rounded-lg border border-color_border1/40 bg-background/50 p-1">
+              <button
+                type="button"
+                onClick={() => setActivePredictionTab("league")}
+                className={cn(
+                  "rounded-md px-2.5 py-1 font-mono text-xs font-semibold transition-all cursor-pointer",
+                  activePredictionTab === "league"
+                    ? "bg-color_accent text-background shadow-xs"
+                    : "text-color_textsecondary hover:text-color_text"
+                )}
+              >
+                Lig Tahmini
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePredictionTab("knockout")}
+                className={cn(
+                  "rounded-md px-2.5 py-1 font-mono text-xs font-semibold transition-all cursor-pointer",
+                  activePredictionTab === "knockout"
+                    ? "bg-color_accent text-background shadow-xs"
+                    : "text-color_textsecondary hover:text-color_text"
+                )}
+              >
+                Eleme Tahmini
+              </button>
+            </div>
+          ) : (
+            <FrameTitle className="text-color_text">Lig Tahmininiz</FrameTitle>
+          )}
+
+          {activePredictionTab === "league" && currentPrediction && !predictionLocked && predictionUiStep === "idle" && (
             <Button
               variant="outline"
               size="sm"
@@ -387,43 +432,63 @@ export function ProfilePage() {
               Düzenle
             </Button>
           )}
+
+          {activePredictionTab === "knockout" && currentKnockoutPrediction && state === "loggedin_preknockout" && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-color_border1 text-color_text hover:bg-color_border1/20"
+              onClick={() => {
+                setKnockoutEditOpen(true);
+              }}
+            >
+              Düzenle
+            </Button>
+          )}
         </FrameHeader>
         <FrameBody className="min-h-0 flex-1 px-4 py-3 sm:px-5">
-          {predictionUiStep === "rank" ? (
-            <>
-              <TeamRanker
-                teams={TEAMS}
-                initialOrder={currentPrediction ? currentPrediction.ranking : TEAMS.map((t) => t.id)}
-                onSubmit={(order) => {
-                  setPendingOrder(order);
-                  setPredictionError(null);
-                  setPredictionUiStep("confirm-overwrite");
-                }}
-              />
-              {predictionError && (
-                <p role="alert" className="mt-2 text-sm text-color_remove">
-                  {predictionError}
+          {activePredictionTab === "league" ? (
+            currentPrediction ? (
+              <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+                <RankingList
+                  ranking={currentPrediction.ranking}
+                  averagePositions={state === "loggedin_notstarted" ? undefined : averagePositions}
+                  onSelectTeam={handleSelectTeam}
+                />
+              </div>
+            ) : (
+              <div className="flex flex-1 flex-col items-start justify-center gap-3">
+                <p className="font-display text-sm text-color_textsecondary italic">
+                  Henüz bir tahmin göndermediniz.
                 </p>
-              )}
-            </>
-          ) : currentPrediction ? (
+                <Link to="/predictions" className={cn(buttonVariants({ variant: "default" }))}>
+                  Tahmininizi gönderin
+                </Link>
+              </div>
+            )
+          ) : currentKnockoutPrediction ? (
             <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-              {/* No `correctness` prop here — Mert's call: skip the
-                  per-team color_accent glow on this view entirely. */}
-              <RankingList
-                ranking={currentPrediction.ranking}
-                averagePositions={state === "loggedin_notstarted" ? undefined : averagePositions}
+              <KnockoutPredictionSummary
+                prediction={currentKnockoutPrediction}
                 onSelectTeam={handleSelectTeam}
               />
             </div>
           ) : (
             <div className="flex flex-1 flex-col items-start justify-center gap-3">
               <p className="font-display text-sm text-color_textsecondary italic">
-                Henüz bir tahmin göndermediniz.
+                {state === "loggedin_preknockout"
+                  ? "Henüz bir eleme tahmini göndermediniz."
+                  : "Eleme tahmini gönderilmedi."}
               </p>
-              <Link to="/predictions" className={cn(buttonVariants({ variant: "default" }))}>
-                Tahmininizi gönderin
-              </Link>
+              {state === "loggedin_preknockout" && (
+                <Button
+                  type="button"
+                  onClick={() => setKnockoutEditOpen(true)}
+                  className={cn(buttonVariants({ variant: "default" }))}
+                >
+                  Eleme Tahmininizi Yapın
+                </Button>
+              )}
             </div>
           )}
         </FrameBody>
@@ -477,6 +542,41 @@ export function ProfilePage() {
         onSelectParticipant={handleSelectParticipant}
       />
 
+      {/* Big popup for editing predictions */}
+      <Dialog
+        open={predictionUiStep === "rank"}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPredictionError(null);
+            setPredictionUiStep("idle");
+          }
+        }}
+      >
+        <DialogContent className="w-full max-w-5xl h-[88vh] max-h-[88vh] bg-background border border-color_border1/60 p-4 sm:p-6 flex flex-col min-h-0 gap-3 rounded-2xl shadow-2xl">
+          <DialogHeader className="shrink-0 pb-1">
+            <DialogTitle className="font-display text-lg font-bold text-color_text">
+              Lig Tahmininizi Düzenleyin
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <TeamRanker
+              teams={TEAMS}
+              initialOrder={currentPrediction ? currentPrediction.ranking : TEAMS.map((t) => t.id)}
+              onSubmit={(order) => {
+                setPendingOrder(order);
+                setPredictionError(null);
+                setPredictionUiStep("confirm-overwrite");
+              }}
+            />
+            {predictionError && (
+              <p role="alert" className="mt-2 text-sm text-color_remove">
+                {predictionError}
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog
         open={predictionUiStep === "confirm-overwrite"}
         onOpenChange={(open) => {
@@ -528,6 +628,43 @@ export function ProfilePage() {
               Tamam
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog for editing knockout predictions */}
+      <Dialog
+        open={knockoutEditOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setKnockoutEditOpen(false);
+          }
+        }}
+      >
+        <DialogContent className="w-full max-w-6xl h-[92vh] max-h-[92vh] bg-background border border-color_border1/60 p-4 sm:p-6 flex flex-col min-h-0 gap-3 rounded-2xl shadow-2xl overflow-hidden">
+          <DialogHeader className="shrink-0 pb-1">
+            <DialogTitle className="font-display text-lg font-bold text-color_text">
+              Eleme Tahmininizi Düzenleyin
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <KnockoutStagePicker
+              initialPrediction={currentKnockoutPrediction}
+              submitting={knockoutSubmitting}
+              onSubmit={async (data) => {
+                if (!uid) return;
+                setKnockoutSubmitting(true);
+                try {
+                  const saved = await saveKnockoutPrediction(uid, data);
+                  setSavedKnockoutPrediction(saved);
+                  setKnockoutEditOpen(false);
+                } catch (err) {
+                  console.error("Failed to save knockout prediction", err);
+                } finally {
+                  setKnockoutSubmitting(false);
+                }
+              }}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 

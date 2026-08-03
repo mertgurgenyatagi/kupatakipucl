@@ -10,6 +10,9 @@ import { buildLikesByPost, setPostLiked } from "../forum/postLikes";
 import { deletePost } from "../forum/deletePost";
 import { editPost } from "../forum/editPost";
 import { resolveMentionedUids } from "../chat/chatMentions";
+import { useMyLobbies } from "../lobbies/useMyLobbies";
+import { createLobby } from "../lobbies/createLobby";
+import { LOBBY_MAX_OWNED, LOBBY_MAX_JOINED } from "../lobbies/lobbyTypes";
 import { HomeLandingLoggedInStarted } from "./HomeLandingLoggedInStarted";
 import type { Player } from "../profile/usePlayers";
 import type { TeamResult } from "../leaderboard/teamResultTypes";
@@ -23,16 +26,6 @@ interface LoggedInHomeStartedProps {
   phase: TournamentPhase;
 }
 
-/**
- * Data-fetching wrapper around HomeLandingLoggedInStarted, mirroring
- * LoggedInHome.tsx's role for the not-started page: useMessages() is
- * gated on `request.auth != null` by firestore.rules, so it must only ever
- * mount for a signed-in visitor, which HomePage.tsx guarantees by only
- * rendering this component on the loggedin_leaguephase branch. Unlike
- * LoggedInHome, this page has no Katılımcılar/lobby-switching UI at all, so
- * none of the lobby or prediction-submitter hooks are fetched here (design
- * spec 2026-08-03).
- */
 export function LoggedInHomeStarted({ players, results, entries, phase }: LoggedInHomeStartedProps) {
   const { user } = useAuth();
   const { profile, loading: profileLoading } = useProfile(user?.uid ?? null);
@@ -44,6 +37,25 @@ export function LoggedInHomeStarted({ players, results, entries, phase }: Logged
   usePresenceHeartbeat(user?.uid ?? null);
   const onlineCount = useOnlineCount();
   const typingUids = useTypingUsers(user?.uid ?? "");
+
+  const { lobbies: myLobbies } = useMyLobbies(user?.uid ?? null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  const ownedCount = myLobbies.filter((l) => l.createdByUid === user?.uid).length;
+  const canCreateLobby = ownedCount < LOBBY_MAX_OWNED && myLobbies.length < LOBBY_MAX_JOINED;
+
+  async function handleCreateLobby(name: string) {
+    if (!user || !profile) return;
+    setCreateError(null);
+    try {
+      await createLobby(user.uid, name, profile.firstName);
+      setCreateDialogOpen(false);
+    } catch (err) {
+      console.error("Failed to create lobby", err);
+      setCreateError("Lobi oluşturulamadı, tekrar deneyin.");
+    }
+  }
 
   const likesByPost = useMemo(() => buildLikesByPost(posts), [posts]);
 
@@ -113,6 +125,12 @@ export function LoggedInHomeStarted({ players, results, entries, phase }: Logged
       onSaveEdit={handleSaveEdit}
       onRefetchPosts={refetchPosts}
       forumActionError={forumActionError}
+      canCreateLobby={canCreateLobby}
+      createDialogOpen={createDialogOpen}
+      onOpenCreateDialog={() => setCreateDialogOpen(true)}
+      onCloseCreateDialog={() => setCreateDialogOpen(false)}
+      onCreateLobby={handleCreateLobby}
+      createError={createError}
     />
   );
 }

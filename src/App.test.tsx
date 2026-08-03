@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, afterEach } from "vitest";
 import { App } from "./App";
 
@@ -75,16 +75,11 @@ describe("App routing integration", () => {
   });
 
   it("navigates to an allowed page via the nav link", async () => {
-    // Logged in (not logged-out) so Forum is actually in the loggedin_
-    // notstarted nav — loggedout_notstarted hides Forum too (pageAccess.ts),
-    // so that combination has no Forum link to click. Forum now renders real
-    // content (unit 5), so this asserts on the new-thread PostForm's submit
-    // button rather than the old placeholder text — findByText lets
-    // ForumPage's async data hooks settle first.
     mockUseAuth.mockReturnValue({ user: { uid: "1" }, loading: false });
     render(<App />);
-    fireEvent.click(screen.getByText("Forum"));
-    expect(await screen.findByText("Paylaş")).toBeInTheDocument();
+    const nav = screen.getByRole("navigation", { name: "Ana gezinme" });
+    fireEvent.click(within(nav).getByText("Forum"));
+    await waitFor(() => expect(screen.getAllByText("Paylaş").length).toBeGreaterThan(1));
   });
 
   it("shows the blocked message when a disallowed page is reached directly", async () => {

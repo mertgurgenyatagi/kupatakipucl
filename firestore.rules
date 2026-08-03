@@ -85,6 +85,13 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
+    // Knockout predictions: public read, owner write.
+    match /knockoutPredictions/{uid} {
+      allow read: if true;
+      allow create, update: if request.auth != null && request.auth.uid == uid;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
     // Team results feed the team table and score computation (SPEC.md §3, §8b),
     // shown to signed-out visitors too (SPEC §8's logged-out live rankings).
     // No admin UI (SPEC.md §7b) — normally maintained via direct Firestore

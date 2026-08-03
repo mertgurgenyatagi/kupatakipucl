@@ -43,6 +43,14 @@ vi.mock("../tournament/useTournamentPhase", () => ({
   useTournamentPhase: () => mockUseTournamentPhase(),
 }));
 
+const mockUseKnockoutPrediction = vi.fn();
+const mockSaveKnockoutPrediction = vi.fn();
+
+vi.mock("../knockout/useKnockoutPrediction", () => ({
+  useKnockoutPrediction: (uid: string | null) => mockUseKnockoutPrediction(uid),
+  saveKnockoutPrediction: (...args: unknown[]) => mockSaveKnockoutPrediction(...args),
+}));
+
 vi.mock("../profile/useProfile", () => ({
   useProfile: (uid: string | null) => mockUseProfile(uid),
   updateProfilePhoto: (...args: unknown[]) => mockUpdateProfilePhoto(...args),
@@ -131,6 +139,7 @@ describe("ProfilePage", () => {
     mockUseAuth.mockReturnValue({ user: { uid: "uid1" } });
     mockUseProfile.mockReturnValue({ profile: PROFILE, loading: false });
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
+    mockUseKnockoutPrediction.mockReturnValue({ prediction: null, loading: false });
     mockUseSurveyResponse.mockReturnValue({ response: null, loading: false, error: false });
     mockUseLeaderboard.mockReturnValue({ entries: [], loading: false });
     mockUseResults.mockReturnValue({ results: {}, loading: false });
@@ -138,6 +147,7 @@ describe("ProfilePage", () => {
     mockUseDevMatches.mockReturnValue({ outcomes: {}, loading: false, refetch: () => {} });
     mockUpdateProfilePhoto.mockReset();
     mockSavePrediction.mockReset();
+    mockSaveKnockoutPrediction.mockReset();
     mockDeleteProfile.mockReset();
     mockDeletePrediction.mockReset();
     mockSignOut.mockReset();
@@ -380,5 +390,52 @@ describe("ProfilePage", () => {
     expect(
       screen.getByText("Profilini silmek istediğine emin misin?")
     ).toBeInTheDocument();
+  });
+
+  it("renders prediction tabs and knockout prediction summary in preknockout phase", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_preknockout");
+    mockUseKnockoutPrediction.mockReturnValue({
+      prediction: {
+        quarterFinalists: ["real-madrid", "bayern-munchen"],
+        semiFinalists: ["real-madrid"],
+        finalists: ["real-madrid"],
+        champion: "real-madrid",
+        submittedAt: 100,
+        updatedAt: 100,
+      },
+      loading: false,
+    });
+
+    await renderPage();
+
+    // Tab buttons rendered
+    expect(screen.getByRole("button", { name: "Lig Tahmini" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Eleme Tahmini" })).toBeInTheDocument();
+
+    // Edit button is present in preknockout
+    expect(screen.getByRole("button", { name: "Düzenle" })).toBeInTheDocument();
+
+    // Champion banner rendered
+    expect(screen.getByText("Şampiyon Tahmini")).toBeInTheDocument();
+  });
+
+  it("hides edit button during knockout phase (view-only locked mode)", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_knockout");
+    mockUseKnockoutPrediction.mockReturnValue({
+      prediction: {
+        quarterFinalists: ["real-madrid"],
+        semiFinalists: ["real-madrid"],
+        finalists: ["real-madrid"],
+        champion: "real-madrid",
+        submittedAt: 100,
+        updatedAt: 100,
+      },
+      loading: false,
+    });
+
+    await renderPage();
+
+    // Edit button is NOT present in knockout phase
+    expect(screen.queryByRole("button", { name: "Düzenle" })).not.toBeInTheDocument();
   });
 });

@@ -135,9 +135,9 @@ export function PredictionsPage() {
             initial="initial"
             animate="animate"
             exit="exit"
-            className="no-scrollbar flex h-full max-h-[calc(100dvh-5rem)] w-full max-w-xl flex-col"
+            className="no-scrollbar flex h-full max-h-[calc(100dvh-5rem)] w-full max-w-5xl flex-col"
           >
-            <TeamRanker teams={TEAMS} initialOrder={TEAMS.map((t) => t.id)} onSubmit={handleSubmit} />
+            <TeamRanker teams={TEAMS} onSubmit={handleSubmit} />
             {error && (
               <p role="alert" className="mt-2 text-sm text-color_remove">
                 {error}

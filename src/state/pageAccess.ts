@@ -1,7 +1,7 @@
 import { VisibilityState, getVisibilityState } from "./visibilityState";
 import { TournamentPhase, STARTED_PHASES } from "../tournament/tournamentPhase";
 
-export type PageKey = "predictions" | "leaderboard" | "forum" | "stats" | "profile";
+export type PageKey = "predictions" | "knockoutPredictions" | "leaderboard" | "forum" | "stats" | "profile";
 
 const ALL_PHASES: readonly TournamentPhase[] = ["notstarted", ...STARTED_PHASES];
 
@@ -16,6 +16,7 @@ function statesFor(phases: readonly TournamentPhase[], logins: readonly boolean[
 // firestore.rules' forumPosts create/update rules).
 const PAGE_ACCESS: Record<PageKey, VisibilityState[]> = {
   predictions: statesFor(ALL_PHASES, [true]),
+  knockoutPredictions: statesFor(ALL_PHASES, [true]),
   leaderboard: statesFor(STARTED_PHASES, [true]),
   forum: [...statesFor(ALL_PHASES, [true]), ...statesFor(STARTED_PHASES, [false])],
   stats: statesFor(STARTED_PHASES, [true]),

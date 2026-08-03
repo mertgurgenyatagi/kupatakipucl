@@ -53,11 +53,11 @@ vi.mock("../predictions/TeamRanker", () => ({
     initialOrder,
     onSubmit,
   }: {
-    initialOrder: string[];
+    initialOrder?: string[];
     onSubmit: (order: string[]) => void;
   }) => (
     <div>
-      <span>ranker-initial-count:{initialOrder.length}</span>
+      <span>ranker-initial-count:{initialOrder?.length ?? 0}</span>
       <button onClick={() => onSubmit(["z", "y", "x"])}>submit-ranking</button>
     </div>
   ),

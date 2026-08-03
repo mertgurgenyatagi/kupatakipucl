@@ -27,27 +27,17 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-// Same rationale as ParticipantPopup/TeamPopup's own gate.
 const TEAM_CREST_URLS = TEAMS.map((team) => teamCrestSrc(team.id));
 
 interface MatchupPopupProps {
-  /** The clicked fixture's id, or null when closed — resolved back to a
-   *  real Fixture via FIXTURES, same "id in, object looked up inside" shape
-   *  as TeamPopup's teamId. */
   fixtureId: string | null;
   onOpenChange: (open: boolean) => void;
-  /** Gates whether the two-column rank/points/predictor detail grid renders
-   *  at all (hidden pre-tournament). Does NOT drive the header label or
-   *  which per-team widget renders — those depend on whether `fixture`
-   *  itself is a real FIXTURES entry, not on the ambient global phase. */
   phase: TournamentPhase;
   tournamentStarted: boolean;
   entries: LeaderboardEntry[];
   players: Player[];
   results: Record<string, TeamResult>;
-  /** Selecting either team closes this popup and opens TeamPopup for it. */
   onSelectTeam: (teamId: string) => void;
-  /** Selecting a predictor closes this popup and opens ParticipantPopup for them. */
   onSelectParticipant: (uid: string) => void;
 }
 
@@ -63,16 +53,12 @@ const TIME_FMT = new Intl.DateTimeFormat("tr-TR", {
   timeZone: "Europe/Istanbul",
 });
 
-const WIDGET_BLOCK = "flex min-h-0 flex-col rounded-xl bg-background border border-color_border1/60";
 const NOT_STARTED_MESSAGE = "Turnuva başlamadan bu bilgi görüntülenemez.";
-// The knockout-round "who picked this team to advance" feature has no data
-// model anywhere yet (PROJECT_STATE §13-B) — this branch renders real,
-// styled UI with an honest placeholder instead of a fabricated count/list.
 const KNOCKOUT_NOT_BUILT_MESSAGE = "Bu özellik henüz mevcut değil.";
 
 function Placeholder({ message }: { message: string }) {
   return (
-    <p className="flex h-full items-center justify-center px-2 text-center font-display text-xs text-color_textsecondary italic">
+    <p className="flex h-full items-center justify-center px-3 text-center font-display text-xs text-color_textsecondary italic">
       {message}
     </p>
   );
@@ -85,53 +71,47 @@ function goalsForOutcome(outcome: MatchOutcome): { homeGoals: number | null; awa
   return { homeGoals: 0, awayGoals: 0 };
 }
 
-/** Center column: kickoff date/time before the fixture is decided, the
- *  final score once it is — a neutral, non-team-relative display (unlike
- *  TeamPopup's MatchRow, there's no "our team" here to color a result dot
- *  for). */
+function computeTeamAverage(teamId: string, entries: LeaderboardEntry[]): number | null {
+  let sum = 0;
+  let count = 0;
+  entries.forEach((e) => {
+    const pos = e.ranking.indexOf(teamId);
+    if (pos !== -1) {
+      sum += pos + 1;
+      count += 1;
+    }
+  });
+  return count > 0 ? Math.round((sum / count) * 10) / 10 : null;
+}
+
 function MatchupCenter({ fixture, outcome }: { fixture: Fixture; outcome: MatchOutcome }) {
   const kickoff = new Date(fixture.kickoffUtc);
   if (outcome === "notplayed") {
     return (
-      <span className="flex flex-col items-center justify-center gap-0.5 leading-tight">
-        <span className="font-mono text-sm text-color_text tnum">{DATE_FMT.format(kickoff)}</span>
-        <span className="font-mono text-sm text-color_textsecondary tnum">{TIME_FMT.format(kickoff)}</span>
-      </span>
+      <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-color_border1/50 bg-foreground/[0.04] px-5 py-2.5 shadow-sm">
+        <span className="font-mono text-base sm:text-lg font-bold text-color_text uppercase tracking-wider tnum">
+          {DATE_FMT.format(kickoff)}
+        </span>
+        <span className="font-mono text-xs sm:text-sm font-semibold text-color_textsecondary tnum">
+          {TIME_FMT.format(kickoff)}
+        </span>
+      </div>
     );
   }
   const { homeGoals, awayGoals } = goalsForOutcome(outcome);
   return (
-    <span className="flex flex-col items-center justify-center gap-0.5 leading-tight">
-      <span className="font-mono text-lg font-bold text-color_text tnum">
+    <div className="flex flex-col items-center justify-center gap-1 rounded-2xl border border-color_border1/50 bg-foreground/[0.04] px-6 py-2.5 shadow-sm">
+      <span className="font-mono text-3xl sm:text-4xl font-black tracking-tight text-color_text tnum">
         {homeGoals} - {awayGoals}
       </span>
-      <span className="font-mono text-[0.6rem] text-color_textsecondary tnum">{DATE_FMT.format(kickoff)}</span>
-    </span>
-  );
-}
-
-function TeamStatPair({ result, tournamentStarted }: { result: TeamResult | undefined; tournamentStarted: boolean }) {
-  return (
-    <div className="flex items-baseline justify-center gap-4">
-      <span className="flex items-baseline gap-1.5">
-        <span className="font-mono text-[0.55rem] tracking-[0.18em] text-color_textsecondary uppercase">Sıra</span>
-        <span className="font-display text-sm leading-none font-bold text-color_text tnum">
-          {tournamentStarted && result ? `#${result.position}` : "-"}
-        </span>
-      </span>
-      <span className="flex items-baseline gap-1.5">
-        <span className="font-mono text-[0.55rem] tracking-[0.18em] text-color_textsecondary uppercase">Puan</span>
-        <span className="font-display text-sm leading-none font-bold text-color_text tnum">
-          {tournamentStarted && result ? result.points : "-"}
-        </span>
+      <span className="font-mono text-xs font-semibold text-color_textsecondary tnum">
+        {DATE_FMT.format(kickoff)}
       </span>
     </div>
   );
 }
 
-/** One team's predictor list — a smaller sibling of TeamPopup's own "who
- *  predicted this team" list (two of these sit side by side here, so rows
- *  are more compact than TeamPopup's single full-height version). */
+/** Predictor row — compact height (30% smaller than previous), crisp avatar & predicted rank pill. */
 function PredictorList({
   predictors,
   playersByUid,
@@ -143,99 +123,98 @@ function PredictorList({
 }) {
   if (predictors.length === 0) {
     return (
-      <p className="px-2 py-2 font-display text-xs text-color_textsecondary italic">
+      <p className="px-3 py-4 font-display text-xs text-color_textsecondary italic text-center">
         Bu takımı tahmin eden katılımcı yok.
       </p>
     );
   }
   return (
-    <>
-      {predictors.map((p) => (
-        <button
-          key={p.entry.uid}
-          type="button"
-          onClick={() => onSelectParticipant(p.entry.uid)}
-          className={cn(
-            "group flex w-full cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1 text-left transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill",
-            p.correct && "bg-color_green/[0.12]"
-          )}
-        >
-          <Avatar className="size-5 shrink-0">
-            <AvatarImage src={p.entry.photoURL} alt="" />
-            <AvatarFallback className="bg-secondary font-mono text-[0.5rem] text-color_secondary">
-              {sharedInitials({ firstName: p.entry.firstName, lastName: playersByUid.get(p.entry.uid)?.lastName })}
-            </AvatarFallback>
-          </Avatar>
-          <span className="min-w-0 flex-1 truncate font-display text-xs font-medium text-color_text group-hover:underline">
-            {fullName({ firstName: p.entry.firstName, lastName: playersByUid.get(p.entry.uid)?.lastName })}
-          </span>
-          <span className="shrink-0 text-right font-mono text-xs text-color_textsecondary tnum">
-            {p.predictedPosition}
-          </span>
-        </button>
-      ))}
-    </>
+    <div className="flex flex-col gap-1.5">
+      {predictors.map((p) => {
+        const pName = fullName({
+          firstName: p.entry.firstName,
+          lastName: playersByUid.get(p.entry.uid)?.lastName,
+        });
+        const pInitials = sharedInitials({
+          firstName: p.entry.firstName,
+          lastName: playersByUid.get(p.entry.uid)?.lastName,
+        });
+
+        return (
+          <button
+            key={p.entry.uid}
+            type="button"
+            onClick={() => onSelectParticipant(p.entry.uid)}
+            className={cn(
+              "group flex w-full cursor-pointer items-center gap-2 rounded-lg border border-color_border1/30 bg-background/80 px-2.5 py-1.5 text-left transition-all duration-150 ease-[var(--ease-cotton)] hover:border-color_border1 hover:bg-color_hoverfill hover:shadow-sm",
+              p.correct && "border-color_green/60 bg-color_green/[0.12]"
+            )}
+          >
+            <Avatar className="size-7 shrink-0 ring-1 ring-color_border1/40">
+              <AvatarImage src={p.entry.photoURL} alt="" />
+              <AvatarFallback className="bg-color_accent/20 font-mono text-[0.65rem] font-semibold text-color_text">
+                {pInitials}
+              </AvatarFallback>
+            </Avatar>
+            <span className="min-w-0 flex-1 truncate font-display text-xs font-semibold text-color_text group-hover:underline">
+              {pName}
+            </span>
+            <span className="shrink-0 font-mono text-xs sm:text-sm font-normal text-color_textsecondary tnum">
+              {p.predictedPosition}
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
-/** One team's detail column — rank/points, then the predictor list (any
- *  real, FIXTURES-sourced fixture) or the knockout placeholder below it.
- *  Not rendered at all pre-tournament — see MatchupPopup's own notstarted
- *  branch. */
 function TeamColumn({
-  result,
+  teamId,
+  entries,
   isKnockoutFixture,
   tournamentStarted,
   predictors,
   playersByUid,
   onSelectParticipant,
 }: {
-  result: TeamResult | undefined;
+  teamId: string;
+  entries: LeaderboardEntry[];
   isKnockoutFixture: boolean;
   tournamentStarted: boolean;
   predictors: TeamPredictor[];
   playersByUid: Map<string, Player>;
   onSelectParticipant: (uid: string) => void;
 }) {
+  const avg = useMemo(() => computeTeamAverage(teamId, entries), [teamId, entries]);
+
   return (
-    <div className="flex min-h-0 flex-col gap-2">
-      <TeamStatPair result={result} tournamentStarted={tournamentStarted} />
-      <div className={cn(WIDGET_BLOCK, "min-h-0 flex-1")}>
-        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-1.5 py-1.5">
-          {!tournamentStarted ? (
-            <Placeholder message={NOT_STARTED_MESSAGE} />
-          ) : isKnockoutFixture ? (
-            <Placeholder message={KNOCKOUT_NOT_BUILT_MESSAGE} />
-          ) : (
-            <PredictorList predictors={predictors} playersByUid={playersByUid} onSelectParticipant={onSelectParticipant} />
-          )}
-        </div>
+    <div className="flex h-full min-h-0 flex-col rounded-2xl border border-color_border1/50 bg-background/60 p-3 shadow-sm">
+      <div className="flex items-center justify-between border-b border-color_border1/30 pb-2 mb-2 px-2.5">
+        <span className="font-display text-xs font-bold text-color_text uppercase tracking-wider">
+          Ortalama Sıra
+        </span>
+        <span className="font-mono text-sm sm:text-base font-extrabold text-color_gold tnum">
+          {avg !== null ? avg : "-"}
+        </span>
+      </div>
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto pr-0.5">
+        {!tournamentStarted ? (
+          <Placeholder message={NOT_STARTED_MESSAGE} />
+        ) : isKnockoutFixture ? (
+          <Placeholder message={KNOCKOUT_NOT_BUILT_MESSAGE} />
+        ) : (
+          <PredictorList
+            predictors={predictors}
+            playersByUid={playersByUid}
+            onSelectParticipant={onSelectParticipant}
+          />
+        )}
       </div>
     </div>
   );
 }
 
-/**
- * The match-detail popup — fills in the two "reserved for a future match-
- * detail view" no-ops in FixtureRow.tsx and TeamPopup.tsx's MatchRow. Same
- * Dialog+Frame recipe as TeamPopup/ParticipantPopup, no internal Firestore
- * fetching beyond useDevMatches (the same source TeamPopup's own match
- * history already reads — real production per-fixture outcomes don't exist
- * yet, a pre-existing gap this inherits rather than solves).
- *
- * Three content modes: bare fixture card pre-tournament (nothing else
- * exists yet to show), fixture card + real rank/points + predictor list for
- * any real fixture (everything `fixture` can ever resolve to, since it's
- * always looked up via `FIXTURES.find(...)` and FIXTURES holds only league-
- * phase matches), and a real-but-currently-unreachable knockout branch — no
- * knockout fixture data exists anywhere in the app yet, so nothing can
- * trigger this today. The knockout mode is driven by `isKnockoutFixture`
- * (whether `fixture` is a member of FIXTURES), deliberately NOT by the
- * ambient `phase` prop — a historical league fixture opened while the
- * global tournament phase is "knockout" must still show its real league
- * content, not this placeholder. `phase` only gates whether the two-column
- * detail grid renders at all (pre- vs. post-tournament-start).
- */
 export const MatchupPopup = memo(function MatchupPopup({
   fixtureId,
   onOpenChange,
@@ -249,8 +228,6 @@ export const MatchupPopup = memo(function MatchupPopup({
 }: MatchupPopupProps) {
   const playersByUid = useMemo(() => buildPlayersByUid(players), [players]);
 
-  // Same "keep showing the last real content while the exit animation
-  // plays" trick as TeamPopup/ParticipantPopup.
   const [lastFixtureId, setLastFixtureId] = useState<string | null>(null);
   useEffect(() => {
     if (fixtureId) setLastFixtureId(fixtureId);
@@ -258,9 +235,6 @@ export const MatchupPopup = memo(function MatchupPopup({
 
   const displayedId = fixtureId ?? lastFixtureId;
   const fixture = displayedId ? (FIXTURES.find((f) => f.id === displayedId) ?? null) : null;
-  // fixture is always resolved via FIXTURES.find above, so this can only be
-  // true for a fixture that ISN'T actually in FIXTURES — i.e. never, today.
-  // Reference equality holds because .find returns the actual array element.
   const isKnockoutFixture = fixture !== null && !FIXTURES.includes(fixture);
 
   const { outcomes } = useDevMatches();
@@ -286,6 +260,9 @@ export const MatchupPopup = memo(function MatchupPopup({
   );
   const popupImagesReady = useImagePreload(popupImageUrls);
 
+  const homeResult = home ? results[home.id] : undefined;
+  const awayResult = away ? results[away.id] : undefined;
+
   return (
     <Dialog open={fixtureId !== null} onOpenChange={onOpenChange}>
       <DialogContent
@@ -294,7 +271,7 @@ export const MatchupPopup = memo(function MatchupPopup({
       >
         {fixture && home && away && !popupImagesReady && (
           <Frame
-            className="h-[min(85vh,44rem)] w-full animate-cotton-rise border-color_border1/35"
+            className="h-[min(88vh,48rem)] w-full animate-cotton-rise border-color_border1/40 rounded-2xl shadow-2xl"
             aria-hidden
             data-testid="matchup-popup-skeleton"
           >
@@ -305,7 +282,7 @@ export const MatchupPopup = memo(function MatchupPopup({
           </Frame>
         )}
         {fixture && home && away && popupImagesReady && (
-          <Frame className="max-h-[min(85vh,44rem)] w-full animate-cotton-rise border-color_border1/35">
+          <Frame className="h-[min(88vh,48rem)] max-h-[min(88vh,48rem)] w-full animate-cotton-rise border-color_border1/40 rounded-2xl shadow-2xl flex flex-col min-h-0">
             <FrameHeader tone="navy">
               <FrameTitle className="text-navy-ink">{headerLabel}</FrameTitle>
               <DialogTitle className="sr-only">
@@ -328,40 +305,55 @@ export const MatchupPopup = memo(function MatchupPopup({
               </DialogClose>
             </FrameHeader>
 
-            <FrameBody className="min-h-0 gap-3 p-3 sm:p-4">
-              <div
-                className="grid shrink-0 items-center gap-2 px-2 pt-1"
-                style={{ gridTemplateColumns: "minmax(0,1fr) 6rem minmax(0,1fr)" }}
-              >
+            <FrameBody className="min-h-0 flex-1 flex flex-col gap-4 p-4 sm:p-5 overflow-hidden">
+              {/* TOP 33% SECTION: Team Info & Matchup Display */}
+              <div className="h-[33%] shrink-0 flex items-center justify-between rounded-2xl border border-color_border1/50 bg-foreground/[0.02] p-4 sm:p-5 shadow-sm">
+                {/* Home Team */}
                 <button
                   type="button"
                   onClick={() => onSelectTeam(home.id)}
-                  className="group flex min-w-0 cursor-pointer flex-col items-center gap-1.5"
+                  className="group flex flex-1 flex-col items-center justify-center gap-1.5 cursor-pointer text-center min-w-0"
                 >
-                  <TeamCrest teamId={home.id} className="size-10" />
-                  <span className="truncate font-display text-sm font-medium text-color_text group-hover:underline">
+                  <TeamCrest teamId={home.id} className="size-14 sm:size-16 shrink-0 transition-transform duration-200 group-hover:scale-105" />
+                  <span className="truncate font-display text-base sm:text-lg font-bold text-color_text group-hover:underline">
                     {home.name}
                   </span>
+                  <div className="flex items-center gap-2 font-mono text-xs sm:text-sm text-color_textsecondary">
+                    <span>Sıra: <strong className="text-color_gold text-sm sm:text-base font-extrabold">{tournamentStarted && homeResult ? `#${homeResult.position}` : "-"}</strong></span>
+                    <span>•</span>
+                    <span>Puan: <strong className="text-color_text text-sm sm:text-base font-extrabold">{tournamentStarted && homeResult ? homeResult.points : "-"}</strong></span>
+                  </div>
                 </button>
 
-                <MatchupCenter fixture={fixture} outcome={outcome} />
+                {/* Match Center */}
+                <div className="shrink-0 px-3">
+                  <MatchupCenter fixture={fixture} outcome={outcome} />
+                </div>
 
+                {/* Away Team */}
                 <button
                   type="button"
                   onClick={() => onSelectTeam(away.id)}
-                  className="group flex min-w-0 cursor-pointer flex-col items-center gap-1.5"
+                  className="group flex flex-1 flex-col items-center justify-center gap-1.5 cursor-pointer text-center min-w-0"
                 >
-                  <TeamCrest teamId={away.id} className="size-10" />
-                  <span className="truncate font-display text-sm font-medium text-color_text group-hover:underline">
+                  <TeamCrest teamId={away.id} className="size-14 sm:size-16 shrink-0 transition-transform duration-200 group-hover:scale-105" />
+                  <span className="truncate font-display text-base sm:text-lg font-bold text-color_text group-hover:underline">
                     {away.name}
                   </span>
+                  <div className="flex items-center gap-2 font-mono text-xs sm:text-sm text-color_textsecondary">
+                    <span>Sıra: <strong className="text-color_gold text-sm sm:text-base font-extrabold">{tournamentStarted && awayResult ? `#${awayResult.position}` : "-"}</strong></span>
+                    <span>•</span>
+                    <span>Puan: <strong className="text-color_text text-sm sm:text-base font-extrabold">{tournamentStarted && awayResult ? awayResult.points : "-"}</strong></span>
+                  </div>
                 </button>
               </div>
 
+              {/* BOTTOM 67% SECTION: Predictions Columns */}
               {phase !== "notstarted" && (
-                <div className="grid min-h-0 flex-1 grid-cols-2 gap-3">
+                <div className="h-[67%] min-h-0 flex-1 grid grid-cols-2 gap-4">
                   <TeamColumn
-                    result={results[home.id]}
+                    teamId={home.id}
+                    entries={entries}
                     isKnockoutFixture={isKnockoutFixture}
                     tournamentStarted={tournamentStarted}
                     predictors={homePredictors}
@@ -369,7 +361,8 @@ export const MatchupPopup = memo(function MatchupPopup({
                     onSelectParticipant={onSelectParticipant}
                   />
                   <TeamColumn
-                    result={results[away.id]}
+                    teamId={away.id}
+                    entries={entries}
                     isKnockoutFixture={isKnockoutFixture}
                     tournamentStarted={tournamentStarted}
                     predictors={awayPredictors}

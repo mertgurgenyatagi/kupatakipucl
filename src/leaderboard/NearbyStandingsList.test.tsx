@@ -82,7 +82,7 @@ describe("NearbyStandingsList", () => {
   it("highlights the viewer's own row and no one else's", () => {
     const entries = makeEntries(6);
     render(<NearbyStandingsList entries={entries} players={players} myUid="p2" onSelectParticipant={vi.fn()} />);
-    expect(screen.getByText("Player2 L2").closest("li")).toHaveClass("bg-color_accent/10");
-    expect(screen.getByText("Player1 L1").closest("li")).not.toHaveClass("bg-color_accent/10");
+    expect(screen.getByText("Player2 L2").closest("li")).toHaveClass("bg-color_gold/10");
+    expect(screen.getByText("Player1 L1").closest("li")).not.toHaveClass("bg-color_gold/10");
   });
 });

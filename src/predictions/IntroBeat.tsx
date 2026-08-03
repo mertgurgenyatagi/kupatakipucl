@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 interface IntroBeatProps {
   text: string;
@@ -17,11 +18,27 @@ function escapeRegExp(s: string): string {
 
 function renderWithBold(text: string, boldTerms: string[]): ReactNode {
   if (boldTerms.length === 0) return text;
-  const pattern = new RegExp(`(${boldTerms.map(escapeRegExp).join("|")})`, "g");
+  const pattern = new RegExp(`\\b(${boldTerms.map(escapeRegExp).join("|")})\\b`, "g");
   return text
     .split(pattern)
     .filter((part) => part.length > 0)
-    .map((part, i) => (boldTerms.includes(part) ? <strong key={i}>{part}</strong> : <span key={i}>{part}</span>));
+    .map((part, i) => {
+      if (boldTerms.includes(part)) {
+        const isPoint = /\d/.test(part);
+        return (
+          <strong
+            key={i}
+            className={cn(
+              "font-extrabold text-color_text",
+              isPoint && "text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.35)]"
+            )}
+          >
+            {part}
+          </strong>
+        );
+      }
+      return <span key={i}>{part}</span>;
+    });
 }
 
 /** One beat of the pre-ranking explanation — user-advanced, not timed

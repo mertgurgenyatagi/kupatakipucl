@@ -110,7 +110,7 @@ const TIME_FMT = new Intl.DateTimeFormat("tr-TR", {
 // swaps in for the time once a fixture is decided.
 const MATCH_ROW_GRID = "1.5rem minmax(0,1fr) 4rem minmax(0,1fr) 1.5rem";
 
-const WIDGET_BLOCK = "flex min-h-0 flex-col rounded-xl bg-background border border-color_border1/60";
+const WIDGET_BLOCK = "flex min-h-0 flex-col rounded-2xl bg-background/80 border border-color_border1/50 shadow-sm overflow-hidden";
 
 // One shared row-sizing "constant" for every list row in this popup — the
 // stat lists, "who predicted this team", and match history all used to
@@ -274,7 +274,7 @@ interface PitchMarker {
  *  Each marker is a plain solid-color dot plus the player's name underneath
  *  — no jersey numbers, no photos, no rating badges (Mert, explicit: "only
  *  have icon and name, nothing else"). */
-function PitchDiagram({ dossier, t }: { dossier: TeamDossier; t: TeamPopupTuning }) {
+function PitchDiagram({ dossier, teamId, t }: { dossier: TeamDossier; teamId: string; t: TeamPopupTuning }) {
   const outfieldLines = useMemo(() => dossier.formation.split("-").map(Number), [dossier.formation]);
   const totalLines = outfieldLines.length + 1;
 
@@ -291,7 +291,7 @@ function PitchDiagram({ dossier, t }: { dossier: TeamDossier; t: TeamPopupTuning
       return PITCH_H - PITCH_PAD_Y - (line / (totalLines - 1)) * usable;
     }
     function xPositions(count: number): number[] {
-      const pad = 50;
+      const pad = count === 2 ? 110 : 50;
       const usable = PITCH_W - pad * 2;
       if (count === 1) return [PITCH_W / 2];
       return Array.from({ length: count }, (_, i) => pad + (i / (count - 1)) * usable);
@@ -305,13 +305,7 @@ function PitchDiagram({ dossier, t }: { dossier: TeamDossier; t: TeamPopupTuning
   }, [dossier.startingXI, totalLines]);
 
   return (
-    <div className="flex min-h-0 flex-1">
-      {/* `preserveAspectRatio="none"` stretches the drawing to exactly fill
-          whatever box the layout hands it — no letterboxing bars down the
-          sides (the previous pass locked the SVG to its own 19:28 ratio,
-          which read as "not filling the widget" once the column's real
-          shape didn't match). Losing the exact real-pitch proportions is
-          the deliberate trade for a widget that genuinely fills its area. */}
+    <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-xl border border-emerald-900/40 bg-gradient-to-b from-[#123620] to-[#0A2213] shadow-inner">
       <svg
         viewBox={`0 0 ${PITCH_W} ${PITCH_H}`}
         className="size-full"
@@ -319,89 +313,171 @@ function PitchDiagram({ dossier, t }: { dossier: TeamDossier; t: TeamPopupTuning
         role="img"
         aria-label={`Muhtemel 11, ${dossier.formation} dizilişi: ${dossier.startingXI.map((p) => p.name).join(", ")}`}
       >
-        <rect x="0" y="0" width={PITCH_W} height={PITCH_H} fill={t.pitchFill} />
+        <defs>
+          <linearGradient id="pitchGrassGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#143D24" />
+            <stop offset="50%" stopColor="#11331E" />
+            <stop offset="100%" stopColor="#0B2314" />
+          </linearGradient>
+          <pattern id="grassStripes" width={PITCH_W} height="56" patternUnits="userSpaceOnUse">
+            <rect width={PITCH_W} height="28" fill="rgba(255, 255, 255, 0.025)" />
+            <rect y="28" width={PITCH_W} height="28" fill="transparent" />
+          </pattern>
+          <filter id="markerShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="1.5" stdDeviation="2" floodColor="#000000" floodOpacity="0.6" />
+          </filter>
+        </defs>
+
+        {/* Grass Background with Stripes */}
+        <rect x="0" y="0" width={PITCH_W} height={PITCH_H} fill="url(#pitchGrassGrad)" />
+        <rect x="0" y="0" width={PITCH_W} height={PITCH_H} fill="url(#grassStripes)" />
+
+        {/* Pitch Boundary Line */}
+        <rect
+          x="12"
+          y="12"
+          width={PITCH_W - 24}
+          height={PITCH_H - 24}
+          fill="none"
+          stroke="rgba(255, 255, 255, 0.35)"
+          strokeWidth="1.5"
+        />
+
+        {/* Halfway Line & Center Circle */}
         <line
-          x1="0"
+          x1="12"
           y1={PITCH_H / 2}
-          x2={PITCH_W}
+          x2={PITCH_W - 12}
           y2={PITCH_H / 2}
-          stroke="var(--color_pitchlines)"
+          stroke="rgba(255, 255, 255, 0.35)"
           strokeWidth="1.5"
         />
         <circle
           cx={PITCH_W / 2}
           cy={PITCH_H / 2}
-          r="42"
+          r="45"
           fill="none"
-          stroke="var(--color_pitchlines)"
+          stroke="rgba(255, 255, 255, 0.35)"
           strokeWidth="1.5"
         />
-        {/* Top penalty + 6-yard box */}
+        <circle cx={PITCH_W / 2} cy={PITCH_H / 2} r="3" fill="rgba(255, 255, 255, 0.6)" />
+
+        {/* Top Penalty Box & 6-Yard Box */}
         <rect
           x={PITCH_W / 2 - 105}
-          y="0"
+          y="12"
           width="210"
-          height="85"
+          height="80"
           fill="none"
-          stroke="var(--color_pitchlines)"
+          stroke="rgba(255, 255, 255, 0.35)"
           strokeWidth="1.5"
         />
         <rect
           x={PITCH_W / 2 - 48}
-          y="0"
+          y="12"
           width="96"
-          height="32"
+          height="30"
           fill="none"
-          stroke="var(--color_pitchlines)"
+          stroke="rgba(255, 255, 255, 0.35)"
           strokeWidth="1.5"
         />
-        {/* Bottom penalty + 6-yard box */}
+        <path
+          d="M 148 92 A 45 45 0 0 0 232 92"
+          fill="none"
+          stroke="rgba(255, 255, 255, 0.35)"
+          strokeWidth="1.5"
+        />
+        <circle cx={PITCH_W / 2} cy="62" r="2.5" fill="rgba(255, 255, 255, 0.6)" />
+
+        {/* Bottom Penalty Box & 6-Yard Box */}
         <rect
           x={PITCH_W / 2 - 105}
-          y={PITCH_H - 85}
+          y={PITCH_H - 92}
           width="210"
-          height="85"
+          height="80"
           fill="none"
-          stroke="var(--color_pitchlines)"
+          stroke="rgba(255, 255, 255, 0.35)"
           strokeWidth="1.5"
         />
         <rect
           x={PITCH_W / 2 - 48}
-          y={PITCH_H - 32}
+          y={PITCH_H - 42}
           width="96"
-          height="32"
+          height="30"
           fill="none"
-          stroke="var(--color_pitchlines)"
+          stroke="rgba(255, 255, 255, 0.35)"
           strokeWidth="1.5"
         />
+        <path
+          d="M 148 468 A 45 45 0 0 1 232 468"
+          fill="none"
+          stroke="rgba(255, 255, 255, 0.35)"
+          strokeWidth="1.5"
+        />
+        <circle cx={PITCH_W / 2} cy={PITCH_H - 62} r="2.5" fill="rgba(255, 255, 255, 0.6)" />
 
-        {markers.map(({ player, x, y }, i) => (
-          <g key={i}>
-            <circle cx={x} cy={y} r={t.markerRadius} fill="var(--color_accent)" />
-            <text
-              x={x}
-              y={y + t.markerRadius + 16}
-              textAnchor="middle"
-              fontSize={t.markerFontSize}
-              fontFamily="var(--font-mono)"
-              fill="var(--color_text)"
-            >
-              {shortPlayerName(player.name)}
-            </text>
-          </g>
-        ))}
+        {/* Corner Arcs */}
+        <path d="M 12 24 A 12 12 0 0 0 24 12" fill="none" stroke="rgba(255, 255, 255, 0.35)" strokeWidth="1.5" />
+        <path d={`M ${PITCH_W - 24} 12 A 12 12 0 0 0 ${PITCH_W - 12} 24`} fill="none" stroke="rgba(255, 255, 255, 0.35)" strokeWidth="1.5" />
+        <path d={`M 12 ${PITCH_H - 24} A 12 12 0 0 1 24 ${PITCH_H - 12}`} fill="none" stroke="rgba(255, 255, 255, 0.35)" strokeWidth="1.5" />
+        <path d={`M ${PITCH_W - 24} ${PITCH_H - 12} A 12 12 0 0 1 ${PITCH_W - 12} ${PITCH_H - 24}`} fill="none" stroke="rgba(255, 255, 255, 0.35)" strokeWidth="1.5" />
 
-        <text
-          x={PITCH_W - 8}
-          y={PITCH_H - 10}
-          textAnchor="end"
-          fontSize="10"
-          letterSpacing="1"
-          fontFamily="var(--font-mono)"
-          fill="var(--color_pitchformation)"
-        >
-          {dossier.formation}
-        </text>
+        {/* Player Markers & Stroked Text */}
+        {markers.map(({ player, x, y }, i) => {
+          const sName = shortPlayerName(player.name);
+          const clipId = `ballClip-${teamId}-${i}`;
+          return (
+            <g key={i} filter="url(#markerShadow)">
+              <clipPath id={clipId}>
+                <circle cx={x} cy={y} r={t.markerRadius} />
+              </clipPath>
+
+              {/* Player ball dot with heavily blurred team crest */}
+              <g clipPath={`url(#${clipId})`}>
+                <rect x={x - t.markerRadius} y={y - t.markerRadius} width={t.markerRadius * 2} height={t.markerRadius * 2} fill="#143D24" />
+                <image
+                  href={teamCrestSrc(teamId)}
+                  x={x - t.markerRadius * 1.5}
+                  y={y - t.markerRadius * 1.5}
+                  width={t.markerRadius * 3}
+                  height={t.markerRadius * 3}
+                  preserveAspectRatio="xMidYMid slice"
+                  style={{ filter: "blur(2.5px) brightness(0.9)" }}
+                />
+              </g>
+
+              {/* Outer accent ring */}
+              <circle
+                cx={x}
+                cy={y}
+                r={t.markerRadius}
+                fill="none"
+                stroke="rgba(255, 255, 255, 0.45)"
+                strokeWidth="1.5"
+              />
+
+              {/* Specular sheen */}
+              <circle cx={x - t.markerRadius * 0.3} cy={y - t.markerRadius * 0.3} r={t.markerRadius * 0.35} fill="rgba(255, 255, 255, 0.35)" />
+
+              {/* Stroked Player Name Text (No background rect) */}
+              <text
+                x={x}
+                y={y + t.markerRadius + 14}
+                textAnchor="middle"
+                fontSize={Math.max(9, t.markerFontSize - 1)}
+                fontWeight="700"
+                fontFamily="var(--font-sans)"
+                fill="#EDECEC"
+                stroke="#000000"
+                strokeWidth="2.5"
+                strokeLinejoin="round"
+                style={{ paintOrder: "stroke fill" }}
+              >
+                {sName}
+              </text>
+            </g>
+          );
+        })}
       </svg>
     </div>
   );
@@ -530,6 +606,20 @@ export const TeamPopup = memo(function TeamPopup({
 
   const result = displayedId ? results[displayedId] : undefined;
 
+  const avgPredicted = useMemo(() => {
+    if (!displayedId) return null;
+    let sum = 0;
+    let count = 0;
+    entries.forEach((e) => {
+      const pos = e.ranking.indexOf(displayedId);
+      if (pos !== -1) {
+        sum += pos + 1;
+        count += 1;
+      }
+    });
+    return count > 0 ? Math.round((sum / count) * 10) / 10 : null;
+  }, [displayedId, entries]);
+
   const popupImageUrls = useMemo(
     () => (displayedId ? [...entries.map((e) => e.photoURL).filter(Boolean), ...TEAM_CREST_URLS] : []),
     [displayedId, entries]
@@ -600,21 +690,35 @@ export const TeamPopup = memo(function TeamPopup({
                   </div>
                 </div>
 
-                <div className="flex shrink-0 items-baseline gap-8 sm:gap-10">
-                  <span
-                    aria-label={`Sıra ${tournamentStarted && result ? result.position : "belirsiz"}`}
-                    className="font-display leading-none font-bold text-color_text tnum"
-                    style={{ fontSize: `${t.rankPtsSize}rem` }}
-                  >
-                    {tournamentStarted && result ? `#${result.position}` : "#-"}
-                  </span>
-                  <span
-                    aria-label={`Puan ${tournamentStarted ? (result?.points ?? "belirsiz") : "belirsiz"}`}
-                    className="font-display leading-none font-bold text-color_text tnum"
-                    style={{ fontSize: `${t.rankPtsSize}rem` }}
-                  >
-                    {tournamentStarted ? (result?.points ?? "-") : "-"}
-                  </span>
+                <div className="flex shrink-0 items-center gap-5 sm:gap-6">
+                  {tournamentStarted && avgPredicted !== null && (
+                    <div className="flex flex-col items-end leading-none">
+                      <span className="font-mono text-[0.65rem] text-color_textsecondary uppercase tracking-wider">Ort. Sıra</span>
+                      <span className="font-display font-bold text-color_gold mt-1" style={{ fontSize: `${t.rankPtsSize * 0.85}rem` }}>
+                        {avgPredicted}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex flex-col items-end leading-none">
+                    <span className="font-mono text-[0.65rem] text-color_textsecondary uppercase tracking-wider">Gerçek Sıra</span>
+                    <span
+                      aria-label={`Sıra ${tournamentStarted && result ? result.position : "belirsiz"}`}
+                      className="font-display font-bold text-color_text mt-1 tnum"
+                      style={{ fontSize: `${t.rankPtsSize}rem` }}
+                    >
+                      {tournamentStarted && result ? `#${result.position}` : "#-"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end leading-none">
+                    <span className="font-mono text-[0.65rem] text-color_textsecondary uppercase tracking-wider">Puan</span>
+                    <span
+                      aria-label={`Puan ${tournamentStarted ? (result?.points ?? "belirsiz") : "belirsiz"}`}
+                      className="font-display font-bold text-color_text mt-1 tnum"
+                      style={{ fontSize: `${t.rankPtsSize}rem` }}
+                    >
+                      {tournamentStarted ? (result?.points ?? "-") : "-"}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -640,7 +744,7 @@ export const TeamPopup = memo(function TeamPopup({
                 style={{ gridTemplateColumns: `${t.col1}fr ${t.col2}fr ${t.col3}fr`, gap: `${t.gridGap}rem` }}
               >
                 <div className={cn(WIDGET_BLOCK, "min-h-0")}>
-                  {tournamentStarted ? <PitchDiagram dossier={dossier} t={t} /> : <NotViewablePlaceholder />}
+                  {tournamentStarted ? <PitchDiagram dossier={dossier} teamId={team.id} t={t} /> : <NotViewablePlaceholder />}
                 </div>
 
                 <div className="flex min-h-0 flex-col gap-3">

@@ -1,3 +1,4 @@
+import { Share2 } from "lucide-react";
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
@@ -78,21 +79,31 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-3">
           {/* Nameplate — real weight (§19), no static count in the copy so
               nothing here can drift from the live figures shown in-page. */}
-          <Link
-            to="/"
-            className="group order-1 mr-auto flex items-center gap-2.5 rounded-sm leading-none no-underline outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-color_text lg:mr-0"
-          >
-            <img
-              src="/brand/kupatakip-logo-white.svg"
-              alt=""
-              aria-hidden
-              className="size-6 shrink-0 sm:size-7"
-            />
-            <span className="font-display text-xl tracking-[-0.01em] text-color_text sm:text-[1.55rem]">
-              <span className="font-[450]">#kupatakip</span>
-              <span className="font-thin">ucl</span>
-            </span>
-          </Link>
+          <div className="order-1 flex items-center gap-3 mr-auto lg:mr-0">
+            <Link
+              to="/"
+              className="group flex items-center gap-2.5 rounded-sm leading-none no-underline outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-color_text"
+            >
+              <img
+                src="/brand/kupatakip-logo-white.svg"
+                alt=""
+                aria-hidden
+                className="size-6 shrink-0 sm:size-7"
+              />
+              <span className="font-display text-xl tracking-[-0.01em] text-color_text sm:text-[1.55rem]">
+                <span className="font-[450]">#kupatakip</span>
+                <span className="font-thin">ucl</span>
+              </span>
+            </Link>
+
+            <button
+              type="button"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-blue-800 px-2.5 py-1 font-mono text-[0.72rem] font-medium tracking-[0.02em] text-white transition-colors duration-150 hover:bg-blue-700 active:bg-blue-900 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            >
+              <Share2 className="size-3 shrink-0" />
+              Paylaş
+            </button>
+          </div>
 
           {/* Navigation — pinned, always visible (DESIGN-SPEC §39). One row
               on desktop; wraps to its own scrollable line on mobile so no

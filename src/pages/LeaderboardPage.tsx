@@ -1,5 +1,6 @@
 // src/pages/LeaderboardPage.tsx
 import { useCallback, useMemo, useState } from "react";
+import { useAuth } from "../auth/AuthProvider";
 import { useVisibilityState } from "../state/useVisibilityState";
 import { isPageAllowed } from "../state/pageAccess";
 import { useLeaderboard } from "../leaderboard/useLeaderboard";
@@ -96,6 +97,7 @@ export function LeaderboardPage() {
   const state = useVisibilityState();
   const { entries, loading } = useLeaderboard();
   const { players } = usePlayers();
+  const { user } = useAuth();
   const { results } = useResults();
   const phase = useTournamentPhase();
   const imageUrls = useMemo(
@@ -176,6 +178,7 @@ export function LeaderboardPage() {
         <LeaderboardTable
           entries={entries}
           players={players}
+          myUid={user?.uid}
           revealCorrectness={phase !== "notstarted"}
           onHoverEntry={setHoveredUid}
           onSelectEntry={handleSelectParticipant}

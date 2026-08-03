@@ -14,6 +14,10 @@ vi.mock("../state/useVisibilityState", () => ({
   useVisibilityState: () => mockUseVisibilityState(),
 }));
 
+vi.mock("../auth/AuthProvider", () => ({
+  useAuth: () => ({ user: { uid: "test-user-id" }, loading: false }),
+}));
+
 vi.mock("../leaderboard/useLeaderboard", () => ({
   useLeaderboard: () => mockUseLeaderboard(),
 }));

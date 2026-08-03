@@ -1,15 +1,18 @@
 import { useCallback, useMemo, useState } from "react";
-import { HomeWelcomeBanner } from "./HomeWelcomeBanner";
-import { UpcomingMatchesPreview } from "../leaderboard/UpcomingMatchesPreview";
+import { HomeWelcomeVertical } from "./HomeWelcomeVertical";
+import { HomeStartedHero } from "./HomeStartedHero";
+import { KnockoutPredictionWidget } from "./KnockoutPredictionWidget";
 import { RecentPostsPreview, ForumPreviewFooter } from "../forum/RecentPostsPreview";
 import { NearbyStandingsList } from "../leaderboard/NearbyStandingsList";
-import { HomeHero } from "./HomeHero";
 import { ChatRoom } from "../chat/ChatRoom";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { TeamPopup } from "../leaderboard/TeamPopup";
 import { MatchupPopup } from "../leaderboard/MatchupPopup";
 import { assignRanks } from "../leaderboard/ranking";
-import { Frame, FrameBody } from "@/components/ui/frame";
+import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { LOBBY_NAME_MAX_LENGTH } from "../lobbies/lobbyTypes";
 import type { Player } from "../profile/usePlayers";
 import type { TeamResult } from "../leaderboard/teamResultTypes";
 import type { LeaderboardEntry } from "../leaderboard/leaderboardTypes";
@@ -22,9 +25,6 @@ interface HomeLandingLoggedInStartedProps {
   players: Player[];
   results: Record<string, TeamResult>;
   entries: LeaderboardEntry[];
-  /** The real, current started phase — reused as-is for preknockout/knockout
-   *  (2026-08-03, "populate the pages" pass), so MatchupPopup's knockout
-   *  branch gates on the actual phase rather than a hardcoded leaguephase. */
   phase: TournamentPhase;
   messages: MessageWithId[];
   onLoadOlderMessages: () => void;
@@ -40,26 +40,20 @@ interface HomeLandingLoggedInStartedProps {
   onSaveEdit: (postId: string, text: string) => void;
   onRefetchPosts: () => void;
   forumActionError: string | null;
+  canCreateLobby?: boolean;
+  createDialogOpen?: boolean;
+  onOpenCreateDialog?: () => void;
+  onCloseCreateDialog?: () => void;
+  onCreateLobby?: (name: string) => void;
+  createError?: string | null;
 }
 
 const PAGE_SHELL =
   "relative mx-auto flex w-full max-w-[1400px] min-w-0 flex-col gap-4 p-4 sm:p-6 lg:h-full lg:min-h-0 lg:flex-1 lg:gap-5 lg:p-6";
-// Starting values, not pixel-locked (design spec: "the sketch's own... not
-// to take too seriously" framing) — col 2 fixed at 300px to match HomeHero's
-// established width everywhere else it appears.
-const CELL_ROW =
-  "grid min-w-0 flex-1 gap-4 lg:h-full lg:min-h-0 lg:grid-cols-[1fr_300px_1fr] lg:gap-5 [&>*]:min-h-0 [&>*]:min-w-0";
 
-/**
- * Home, logged-in + league phase — the wireframe's welcome banner (identical
- * to logged-in-not-started's) above a 3-column bento: [upcoming 3 matches /
- * forum] | hero carousel | [nearby standings / chat]. No FrameHeader/title
- * band on any of the five widgets, a deliberate departure from
- * HomeLandingLoggedIn's navy-banded cells (Mert's direct instruction).
- * Katılımcılar and the Special Lobby switcher are absent entirely — dropped
- * in favor of the upcoming-matches widget and the nearby-standings widget
- * (design spec 2026-08-03).
- */
+const CELL_ROW =
+  "grid min-w-0 flex-1 gap-4 lg:h-full lg:min-h-0 lg:grid-cols-[200px_1fr_300px_1fr] lg:gap-5 [&>*]:min-h-0 [&>*]:min-w-0";
+
 export function HomeLandingLoggedInStarted({
   me,
   players,
@@ -80,6 +74,11 @@ export function HomeLandingLoggedInStarted({
   onSaveEdit,
   onRefetchPosts,
   forumActionError,
+  createDialogOpen = false,
+  onOpenCreateDialog,
+  onCloseCreateDialog,
+  onCreateLobby,
+  createError,
 }: HomeLandingLoggedInStartedProps) {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
@@ -87,6 +86,10 @@ export function HomeLandingLoggedInStarted({
 
   const rankedEntries = useMemo(() => assignRanks(entries), [entries]);
   const selectedRanked = rankedEntries.find((r) => r.entry.uid === selectedUid) ?? null;
+
+  const myRanked = useMemo(() => rankedEntries.find((r) => r.entry.uid === me.uid), [rankedEntries, me.uid]);
+  const myRank = myRanked ? myRanked.rank : "-";
+  const myPoints = myRanked ? myRanked.entry.points : 0;
 
   const handleSelectTeam = useCallback((teamId: string) => {
     setSelectedTeamId(teamId);
@@ -106,21 +109,29 @@ export function HomeLandingLoggedInStarted({
 
   return (
     <div className={PAGE_SHELL}>
-      <HomeWelcomeBanner me={me} showCta={false} />
-
       <div className={CELL_ROW}>
+        {/* Col 1: Vertical Welcome Card with Create Lobby Button */}
+        <HomeWelcomeVertical
+          me={me}
+          rank={myRank}
+          points={myPoints}
+          onOpenCreateDialog={onOpenCreateDialog}
+        />
+
+        {/* Col 2: Stacked Mini Standings (Top) & Forum (Bottom) */}
         <div className="flex min-h-0 flex-col gap-4 lg:gap-5">
-          <Frame className="h-60 shrink-0 animate-cotton-rise" style={{ animationDelay: "60ms" }}>
+          <Frame className="h-[260px] shrink-0 animate-cotton-rise border-color_border1/35" style={{ animationDelay: "60ms" }}>
             <FrameBody>
-              <UpcomingMatchesPreview
-                results={results}
-                onSelectTeam={handleSelectTeam}
-                onSelectFixture={handleSelectFixture}
+              <NearbyStandingsList
+                entries={entries}
+                players={players}
+                myUid={me.uid}
+                onSelectParticipant={handleSelectParticipant}
               />
             </FrameBody>
           </Frame>
 
-          <Frame className="min-h-0 flex-1 animate-cotton-rise" style={{ animationDelay: "120ms" }}>
+          <Frame className="min-h-0 flex-1 animate-cotton-rise border-color_border1/35" style={{ animationDelay: "120ms" }}>
             <FrameBody>
               <RecentPostsPreview
                 posts={posts}
@@ -143,32 +154,36 @@ export function HomeLandingLoggedInStarted({
           </Frame>
         </div>
 
-        <HomeHero className="h-[26rem] lg:h-full animate-cotton-rise" style={{ animationDelay: "180ms" }} />
+        {/* Col 3: Hero Carousel with Bottom (Matches) Drawer */}
+        <HomeStartedHero
+          results={results}
+          onSelectFixture={handleSelectFixture}
+        />
 
+        {/* Col 4: knockout-prediction widget (preknockout only) + Sohbet */}
         <div className="flex min-h-0 flex-col gap-4 lg:gap-5">
-          <Frame className="h-60 shrink-0 animate-cotton-rise" style={{ animationDelay: "240ms" }}>
-            <FrameBody>
-              <NearbyStandingsList
-                entries={entries}
-                players={players}
-                myUid={me.uid}
-                onSelectParticipant={handleSelectParticipant}
-              />
-            </FrameBody>
-          </Frame>
+          {phase === "preknockout" && (
+            // ~30% of the column height; flex-shrink-0 so the chat card
+            // below always gets the majority of the remaining space.
+            <div className="shrink-0" style={{ flexBasis: "30%" }}>
+              <KnockoutPredictionWidget />
+            </div>
+          )}
 
-          <Frame className="min-h-0 flex-1 animate-cotton-rise" style={{ animationDelay: "300ms" }}>
+          <Frame
+            className="min-h-0 flex-1 animate-cotton-rise border-color_border1/35"
+            style={{ animationDelay: "300ms" }}
+          >
+            <FrameHeader tone="navy">
+              <FrameTitle className="text-base text-color_text sm:text-lg">
+                Sohbet
+              </FrameTitle>
+              <span className="flex items-center gap-1.5 font-mono text-[0.62rem] tracking-[0.1em] text-color_text/70 uppercase tnum">
+                <span className="size-1.5 rounded-full bg-color_accent" aria-hidden />
+                {onlineCount} çevrimiçi
+              </span>
+            </FrameHeader>
             <FrameBody>
-              {/* No FrameHeader on this page — the online-count badge that
-                  used to live in Sohbet's navy header band moves here as a
-                  quiet inline line instead (design spec 2026-08-03,
-                  "Chat cell" section). */}
-              <div className="flex shrink-0 items-center justify-end px-5 py-2 sm:px-6">
-                <span className="flex items-center gap-1.5 font-mono text-[0.62rem] tracking-[0.1em] text-color_textsecondary uppercase tnum">
-                  <span className="size-1.5 rounded-full bg-color_accent" aria-hidden />
-                  {onlineCount} çevrimiçi
-                </span>
-              </div>
               <ChatRoom
                 uid={me.uid}
                 players={players}
@@ -223,6 +238,36 @@ export function HomeLandingLoggedInStarted({
         onSelectTeam={handleSelectTeam}
         onSelectParticipant={handleSelectParticipant}
       />
+
+      <Dialog open={createDialogOpen} onOpenChange={(open) => !open && onCloseCreateDialog?.()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Yeni Özel Lobi</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const input = (e.target as HTMLFormElement).elements.namedItem("lobbyName") as HTMLInputElement;
+              onCreateLobby?.(input.value);
+            }}
+          >
+            <input
+              name="lobbyName"
+              maxLength={LOBBY_NAME_MAX_LENGTH}
+              placeholder="Özel lobi adı"
+              className="w-full rounded-md border border-color_border1/70 bg-background px-3 py-1.5 text-sm text-color_text outline-none focus:border-color_accent"
+            />
+            {createError && (
+              <p role="alert" className="mt-2 text-sm text-color_remove">
+                {createError}
+              </p>
+            )}
+            <DialogFooter>
+              <Button type="submit">Oluştur</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
