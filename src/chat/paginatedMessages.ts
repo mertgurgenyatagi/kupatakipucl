@@ -28,12 +28,16 @@ function toDocWithId<T>(docSnap: { id: string; data: () => unknown }): T & { id:
 
 export function subscribeToRecentMessages<T extends WithCreatedAt>(
   messagesCollection: CollectionReference,
-  onNext: (docs: (T & { id: string })[]) => void,
+  onNext: (docs: (T & { id: string })[], fromCache: boolean) => void,
   onError: (err: Error) => void
 ): Unsubscribe {
   return onSnapshot(
     query(messagesCollection, orderBy("createdAt", "desc"), limit(PAGE_SIZE)),
-    (snapshot) => onNext(snapshot.docs.map((d) => toDocWithId<T>(d)).reverse()),
+    (snapshot) =>
+      onNext(
+        snapshot.docs.map((d) => toDocWithId<T>(d)).reverse(),
+        Boolean(snapshot.metadata?.fromCache)
+      ),
     onError
   );
 }

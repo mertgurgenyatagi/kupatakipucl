@@ -30,7 +30,10 @@ vi.mock("../firebase", () => ({ db: {} }));
 
 import { usePosts } from "./usePosts";
 
-type SnapshotCallback = (snapshot: { docs: { id: string; data: () => unknown }[] }) => void;
+type SnapshotCallback = (snapshot: {
+  docs: { id: string; data: () => unknown }[];
+  metadata?: { fromCache: boolean };
+}) => void;
 type ErrorCallback = (err: Error) => void;
 
 function postDoc(
@@ -117,6 +120,18 @@ describe("usePosts", () => {
     const { unmount } = renderHook(() => usePosts());
     unmount();
     expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a from-cache snapshot as the very first result, waiting for the server-confirmed one before reporting loaded", async () => {
+    const { result } = renderHook(() => usePosts());
+
+    act(() => capturedOnNext({ docs: [postDoc("post1")], metadata: { fromCache: true } }));
+    expect(result.current.loading).toBe(true);
+    expect(result.current.posts).toEqual([]);
+
+    act(() => capturedOnNext({ docs: [postDoc("post1")], metadata: { fromCache: false } }));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.posts).toHaveLength(1);
   });
 
   it("assumes there's more history when a full page comes back", async () => {

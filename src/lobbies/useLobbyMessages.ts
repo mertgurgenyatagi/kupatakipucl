@@ -26,9 +26,15 @@ export function useLobbyMessages(lobbyId: string | null) {
     }
     setLiveMessages([]);
     setLoading(true);
+    // Same fromCache guard as usePlayers.ts — don't report loaded off a
+    // snapshot the SDK synthesized from local cache before the server has
+    // confirmed it (2026-08-03).
+    let confirmed = false;
     return subscribeToRecentMessages<LobbyMessage>(
       collection(db, "lobbies", lobbyId, "messages"),
-      (docs) => {
+      (docs, fromCache) => {
+        if (!confirmed && fromCache) return;
+        confirmed = true;
         setLiveMessages(docs);
         setLoading(false);
         if (docs.length < PAGE_SIZE) setHasMoreOlder(false);

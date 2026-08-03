@@ -66,9 +66,17 @@ export function usePosts() {
   }, [commit]);
 
   useEffect(() => {
+    // Same fromCache guard as usePlayers.ts — a snapshot synthesized from
+    // whatever this collection's docs already happen to be cached from an
+    // unrelated read (fetchMissingRoots' own one-off getDoc calls, or a
+    // prior listener elsewhere) shouldn't be trusted as "the page has
+    // loaded" until the server confirms it (2026-08-03).
+    let confirmed = false;
     return subscribeToRecentMessages<ForumPost>(
       collection(db, "forumPosts"),
-      (docs) => {
+      (docs, fromCache) => {
+        if (!confirmed && fromCache) return;
+        confirmed = true;
         docs.forEach((post) => byId.current.set(post.id, post));
         commit();
         setLoading(false);

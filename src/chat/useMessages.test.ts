@@ -25,7 +25,10 @@ vi.mock("../firebase", () => ({ db: {} }));
 
 import { useMessages } from "./useMessages";
 
-type SnapshotCallback = (snapshot: { docs: { id: string; data: () => unknown }[] }) => void;
+type SnapshotCallback = (snapshot: {
+  docs: { id: string; data: () => unknown }[];
+  metadata?: { fromCache: boolean };
+}) => void;
 type ErrorCallback = (err: Error) => void;
 
 function doc(id: string, uid: string, text: string, createdAt: number) {
@@ -101,6 +104,18 @@ describe("useMessages", () => {
     const { unmount } = renderHook(() => useMessages());
     unmount();
     expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a from-cache snapshot as the very first result, waiting for the server-confirmed one before reporting loaded", async () => {
+    const { result } = renderHook(() => useMessages());
+
+    act(() => capturedOnNext({ docs: [doc("m1", "uid1", "a", 100)], metadata: { fromCache: true } }));
+    expect(result.current.loading).toBe(true);
+    expect(result.current.messages).toEqual([]);
+
+    act(() => capturedOnNext({ docs: [doc("m1", "uid1", "a", 100)], metadata: { fromCache: false } }));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.messages).toHaveLength(1);
   });
 
   describe("loadOlder", () => {

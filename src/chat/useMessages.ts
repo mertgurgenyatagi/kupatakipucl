@@ -21,9 +21,15 @@ export function useMessages() {
   const [hasMoreOlder, setHasMoreOlder] = useState(true);
 
   useEffect(() => {
+    // Same fromCache guard as usePlayers.ts — don't report loaded off a
+    // snapshot the SDK synthesized from local cache before the server has
+    // confirmed it (2026-08-03).
+    let confirmed = false;
     return subscribeToRecentMessages<Message>(
       collection(db, "messages"),
-      (docs) => {
+      (docs, fromCache) => {
+        if (!confirmed && fromCache) return;
+        confirmed = true;
         setCached(CACHE_KEY, docs);
         setLiveMessages(docs);
         setLoading(false);
