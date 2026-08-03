@@ -10,6 +10,7 @@ import { LeaderboardTable } from "../leaderboard/LeaderboardTable";
 import { HomeLandingLoggedOut } from "../home/HomeLandingLoggedOut";
 import { LoggedInHome } from "../home/LoggedInHome";
 import { HomeLandingLoggedOutStarted } from "../home/HomeLandingLoggedOutStarted";
+import { LoggedInHomeStarted } from "../home/LoggedInHomeStarted";
 
 // No wording distinction yet between league phase / pre-knockout / knockout
 // (see onboarding/pagemap-questionnaires/pagemap-round-01.md, Q9 — still
@@ -21,7 +22,6 @@ const STARTED_LOGGEDOUT_BLURB =
 const STARTED_LOGGEDIN_BLURB = "[Placeholder] Started, logged in: same as above, plus chat access.";
 
 const BLURB: Partial<Record<VisibilityState, string>> = {
-  loggedin_leaguephase: STARTED_LOGGEDIN_BLURB,
   loggedout_preknockout: STARTED_LOGGEDOUT_BLURB,
   loggedin_preknockout: STARTED_LOGGEDIN_BLURB,
   loggedout_knockout: STARTED_LOGGEDOUT_BLURB,
@@ -51,6 +51,9 @@ export function HomePage() {
   }
   if (state === "loggedout_leaguephase") {
     return <HomeLandingLoggedOutStarted results={results} players={players} entries={entries} />;
+  }
+  if (state === "loggedin_leaguephase") {
+    return <LoggedInHomeStarted results={results} players={players} entries={entries} />;
   }
 
   return (

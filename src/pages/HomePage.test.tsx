@@ -56,6 +56,12 @@ vi.mock("../home/HomeLandingLoggedOutStarted", () => ({
   ),
 }));
 
+vi.mock("../home/LoggedInHomeStarted", () => ({
+  LoggedInHomeStarted: ({ players }: { players: unknown[] }) => (
+    <div>logged-in-home-started:{players.length}</div>
+  ),
+}));
+
 const emptyResults = { results: {}, loading: false };
 const emptyPlayers = { players: [], loading: false };
 const emptyLeaderboard = { entries: [], loading: false };
@@ -97,6 +103,15 @@ describe("HomePage", () => {
     mockUsePlayers.mockReturnValue({ players: [{ uid: "a" }], loading: false });
     render(<HomePage />);
     expect(screen.getByText("home-landing-loggedout-started:1")).toBeInTheDocument();
+    expect(screen.queryByText("team-table")).not.toBeInTheDocument();
+    expect(screen.queryByText("leaderboard-table")).not.toBeInTheDocument();
+  });
+
+  it("loggedin_leaguephase: renders the dedicated started/logged-in landing page instead of the shared skeleton", () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
+    mockUsePlayers.mockReturnValue({ players: [{ uid: "a" }, { uid: "b" }, { uid: "c" }, { uid: "d" }], loading: false });
+    render(<HomePage />);
+    expect(screen.getByText("logged-in-home-started:4")).toBeInTheDocument();
     expect(screen.queryByText("team-table")).not.toBeInTheDocument();
     expect(screen.queryByText("leaderboard-table")).not.toBeInTheDocument();
   });
