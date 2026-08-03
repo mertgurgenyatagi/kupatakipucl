@@ -12,7 +12,7 @@ import type { Player } from "../profile/usePlayers";
 // deliberately brief and non-technical (no |predicted-actual|<3 formula
 // here; that belongs on a dedicated rules page, per SPEC.md §9).
 const MISSION_COPY =
-  "Lig aşaması başlamadan önce 36 takımı, tahmin sırana göre diz. Tahminin gerçek tabloya ne kadar yakınsa, o kadar çok puan kazanırsın. Kayıtlar kapanınca tahminler kilitlenir — gerisi, sonuçları izlemek.";
+  "Şampiyonlar Ligi başlamadan önce tahminlerini gönder. Turnuva boyunca gerçek sonuçlara göre puan kazan ve arkadaşlarınla yarış.";
 
 // Matches --ease-cotton (src/styles/index.css) so this reveal and a CSS-
 // keyframe one elsewhere (e.g. TeamTable's own animate-cotton-rise rows)
