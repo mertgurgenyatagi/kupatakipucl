@@ -83,10 +83,18 @@ vi.mock("../leaderboard/TeamPopup", () => ({
 }));
 
 vi.mock("../leaderboard/MatchupPopup", () => ({
-  MatchupPopup: ({ fixtureId }: { fixtureId: string | null }) => <div>matchup-popup:{fixtureId ?? "closed"}</div>,
+  MatchupPopup: ({ fixtureId, phase }: { fixtureId: string | null; phase: string }) => (
+    <div>matchup-popup:{fixtureId ?? "closed"}:{phase}</div>
+  ),
 }));
 
 const player = { uid: "player-1", firstName: "Ada", photoURL: "", createdAt: 1 };
+
+function renderPage(overrides: Partial<Parameters<typeof HomeLandingLoggedOutStarted>[0]> = {}) {
+  return render(
+    <HomeLandingLoggedOutStarted results={{}} players={[player]} entries={[]} phase="leaguephase" {...overrides} />
+  );
+}
 
 describe("HomeLandingLoggedOutStarted", () => {
   beforeEach(() => {
@@ -95,14 +103,12 @@ describe("HomeLandingLoggedOutStarted", () => {
 
   it("renders nothing while posts are still loading", () => {
     mockUsePosts.mockReturnValue({ posts: [], loading: true, refetch: vi.fn(), loadOlder: vi.fn(), hasMore: false });
-    const { container } = render(
-      <HomeLandingLoggedOutStarted results={{}} players={[player]} entries={[]} />
-    );
+    const { container } = renderPage();
     expect(container).toBeEmptyDOMElement();
   });
 
   it("renders all four widgets once posts have loaded", () => {
-    render(<HomeLandingLoggedOutStarted results={{}} players={[player]} entries={[]} />);
+    renderPage();
     expect(screen.getByText("league-table-list")).toBeInTheDocument();
     expect(screen.getByText("upcoming-preview")).toBeInTheDocument();
     expect(screen.getByText("forum-widget:null")).toBeInTheDocument();
@@ -111,39 +117,38 @@ describe("HomeLandingLoggedOutStarted", () => {
   });
 
   it("selecting a team opens TeamPopup and closes ParticipantPopup", () => {
-    render(<HomeLandingLoggedOutStarted results={{}} players={[player]} entries={[]} />);
+    renderPage();
     fireEvent.click(screen.getByText("league-table-list"));
     expect(screen.getByText("team-popup:ajax")).toBeInTheDocument();
     expect(screen.getByText("participant-popup:closed:false")).toBeInTheDocument();
   });
 
   it("selecting a team from the upcoming-matches widget also opens TeamPopup", () => {
-    render(<HomeLandingLoggedOutStarted results={{}} players={[player]} entries={[]} />);
+    renderPage();
     fireEvent.click(screen.getByText("upcoming-preview"));
     expect(screen.getByText("team-popup:arsenal")).toBeInTheDocument();
   });
 
   it("selecting a participant (from the forum widget or the standings) opens ParticipantPopup and closes TeamPopup, with viewerLoggedIn always false", () => {
-    render(
-      <HomeLandingLoggedOutStarted
-        results={{}}
-        players={[player]}
-        entries={[{ uid: "player-1", firstName: "Ada", photoURL: "", points: 10, ranking: [] }]}
-      />
-    );
+    renderPage({ entries: [{ uid: "player-1", firstName: "Ada", photoURL: "", points: 10, ranking: [] }] });
     fireEvent.click(screen.getByText("select-participant"));
     expect(screen.getByText("participant-popup:player-1:false")).toBeInTheDocument();
     expect(screen.getByText("team-popup:closed")).toBeInTheDocument();
   });
 
   it("opens the Matchup Popup when a fixture is selected from the upcoming-matches preview or from TeamPopup's match history", () => {
-    render(<HomeLandingLoggedOutStarted results={{}} players={[]} entries={[]} />);
-    expect(screen.getByText("matchup-popup:closed")).toBeInTheDocument();
+    renderPage({ players: [] });
+    expect(screen.getByText("matchup-popup:closed:leaguephase")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("upcoming-preview-fixture"));
-    expect(screen.getByText("matchup-popup:fixture-1")).toBeInTheDocument();
+    expect(screen.getByText("matchup-popup:fixture-1:leaguephase")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("team-popup-select-fixture"));
-    expect(screen.getByText("matchup-popup:fixture-2")).toBeInTheDocument();
+    expect(screen.getByText("matchup-popup:fixture-2:leaguephase")).toBeInTheDocument();
+  });
+
+  it("passes the real current phase through to MatchupPopup, e.g. for the knockout reuse", () => {
+    renderPage({ phase: "knockout" });
+    expect(screen.getByText("matchup-popup:closed:knockout")).toBeInTheDocument();
   });
 });

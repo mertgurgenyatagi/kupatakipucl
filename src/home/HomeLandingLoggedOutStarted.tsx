@@ -14,11 +14,16 @@ import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame
 import type { TeamResult } from "../leaderboard/teamResultTypes";
 import type { Player } from "../profile/usePlayers";
 import type { LeaderboardEntry } from "../leaderboard/leaderboardTypes";
+import type { TournamentPhase } from "../tournament/tournamentPhase";
 
 interface HomeLandingLoggedOutStartedProps {
   results: Record<string, TeamResult>;
   players: Player[];
   entries: LeaderboardEntry[];
+  /** The real, current started phase — reused as-is for preknockout/knockout
+   *  (2026-08-03, "populate the pages" pass), so MatchupPopup's knockout
+   *  branch gates on the actual phase rather than a hardcoded leaguephase. */
+  phase: TournamentPhase;
 }
 
 const PAGE_SHELL =
@@ -31,8 +36,8 @@ const CELL_ROW =
   "grid min-w-0 flex-1 gap-4 lg:h-full lg:min-h-0 lg:grid-cols-[1.144fr_1.16fr_300px_1fr] lg:gap-5 [&>*]:min-h-0 [&>*]:min-w-0";
 const CELL = "h-[26rem] lg:h-full animate-cotton-rise";
 
-// This page never has a signed-in viewer (it's the loggedout_leaguephase
-// composition specifically), so RecentPostsPreview's like/delete/edit
+// This page never has a signed-in viewer (it's the loggedout_leaguephase/
+// preknockout/knockout composition), so RecentPostsPreview's like/delete/edit
 // callbacks are structurally unreachable here — the like button is
 // disabled, and delete/edit only ever fire for a post's own author, which
 // a null uid can never be.
@@ -44,7 +49,7 @@ function noop() {}
  * standings. No banner/blurb/greeting above it (design spec: the wireframe
  * is literal). Desktop-only, no responsive breakpoints.
  */
-export function HomeLandingLoggedOutStarted({ results, players, entries }: HomeLandingLoggedOutStartedProps) {
+export function HomeLandingLoggedOutStarted({ results, players, entries, phase }: HomeLandingLoggedOutStartedProps) {
   const { posts, loading: postsLoading } = usePosts();
   const likesByPost = useMemo(() => buildLikesByPost(posts), [posts]);
   const rankedEntries = useMemo(() => assignRanks(entries), [entries]);
@@ -153,7 +158,7 @@ export function HomeLandingLoggedOutStarted({ results, players, entries }: HomeL
         onOpenChange={(open) => {
           if (!open) setSelectedFixtureId(null);
         }}
-        phase="leaguephase"
+        phase={phase}
         tournamentStarted
         entries={entries}
         players={players}
