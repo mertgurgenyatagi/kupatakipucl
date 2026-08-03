@@ -63,11 +63,18 @@ describe("HomePage", () => {
     mockUseTournamentPhase.mockReturnValue("leaguephase");
   });
 
-  it("renders nothing while any data source is still loading", () => {
+  it("loggedout_notstarted: shows the hero-band skeleton while any data source is still loading", () => {
     mockUseVisibilityState.mockReturnValue("loggedout_notstarted");
     mockUseResults.mockReturnValue({ results: {}, loading: true });
-    const { container } = render(<HomePage />);
-    expect(container).toBeEmptyDOMElement();
+    render(<HomePage />);
+    expect(screen.getByTestId("home-hero-skeleton")).toBeInTheDocument();
+  });
+
+  it("loggedin_notstarted: shows the bento skeleton while any data source is still loading", () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
+    mockUseResults.mockReturnValue({ results: {}, loading: true });
+    render(<HomePage />);
+    expect(screen.getByTestId("home-bento-skeleton")).toBeInTheDocument();
   });
 
   it("loggedout_notstarted: renders the dedicated landing page instead of the shared skeleton", () => {

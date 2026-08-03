@@ -101,10 +101,15 @@ describe("HomeLandingLoggedOutStarted", () => {
     mockUsePosts.mockReturnValue({ posts: [], loading: false, refetch: vi.fn(), loadOlder: vi.fn(), hasMore: false });
   });
 
-  it("renders nothing while posts are still loading", () => {
+  it("shows the rest of the grid with a forum skeleton while posts are still loading", () => {
     mockUsePosts.mockReturnValue({ posts: [], loading: true, refetch: vi.fn(), loadOlder: vi.fn(), hasMore: false });
-    const { container } = renderPage();
-    expect(container).toBeEmptyDOMElement();
+    renderPage();
+    expect(screen.getByText("league-table-list")).toBeInTheDocument();
+    expect(screen.getByText("upcoming-preview")).toBeInTheDocument();
+    expect(screen.getByText("home-hero")).toBeInTheDocument();
+    expect(screen.getByText("leaderboard-table")).toBeInTheDocument();
+    expect(screen.getByTestId("home-forum-skeleton")).toBeInTheDocument();
+    expect(screen.queryByText("forum-widget:null")).not.toBeInTheDocument();
   });
 
   it("renders all four widgets once posts have loaded", () => {

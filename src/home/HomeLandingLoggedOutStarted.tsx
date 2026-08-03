@@ -11,6 +11,7 @@ import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { TeamPopup } from "../leaderboard/TeamPopup";
 import { MatchupPopup } from "../leaderboard/MatchupPopup";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { TeamResult } from "../leaderboard/teamResultTypes";
 import type { Player } from "../profile/usePlayers";
 import type { LeaderboardEntry } from "../leaderboard/leaderboardTypes";
@@ -75,8 +76,6 @@ export function HomeLandingLoggedOutStarted({ results, players, entries, phase }
     setSelectedUid(null);
   }, []);
 
-  if (postsLoading) return null;
-
   return (
     <div className={PAGE_SHELL}>
       <div className={CELL_ROW}>
@@ -99,18 +98,31 @@ export function HomeLandingLoggedOutStarted({ results, players, entries, phase }
               <FrameTitle className="text-base text-color_text sm:text-lg">Forum</FrameTitle>
             </FrameHeader>
             <FrameBody>
-              <RecentPostsPreview
-                posts={posts}
-                players={players}
-                uid={null}
-                likesByPost={likesByPost}
-                onToggleLike={noop}
-                onSelectParticipant={handleSelectParticipant}
-                onDeletePost={noop}
-                onSaveEdit={noop}
-                onRefetch={noop}
-              />
-              <ForumPreviewFooter />
+              {postsLoading ? (
+                <div className="flex flex-col gap-3 p-4" aria-hidden data-testid="home-forum-skeleton">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-2.5">
+                      <Skeleton className="size-8 shrink-0 rounded-full" />
+                      <Skeleton className="h-4 flex-1 rounded-sm" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <RecentPostsPreview
+                    posts={posts}
+                    players={players}
+                    uid={null}
+                    likesByPost={likesByPost}
+                    onToggleLike={noop}
+                    onSelectParticipant={handleSelectParticipant}
+                    onDeletePost={noop}
+                    onSaveEdit={noop}
+                    onRefetch={noop}
+                  />
+                  <ForumPreviewFooter />
+                </>
+              )}
             </FrameBody>
           </Frame>
         </div>
