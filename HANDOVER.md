@@ -4,6 +4,8 @@
 
 This file is meant to be pruned/rewritten as things get resolved or folded into `PROJECT_STATE.md` proper — it's not an archive.
 
+**Term: "Xerox pass."** Reusing an existing, already-built page/composition wholesale for a different, not-yet-designed state — purely to replace placeholder text with *something real*, under explicit instruction not to worry about whether it's actually appropriate for that state ("don't overthink it," "we'll go through all of them much later"). Not a design decision, not even a rough one — a stopgap. A page/state marked as Xeroxed (from wherever) should be treated as **unreviewed** for its own specific context until a real pass happens; don't cite its current layout, copy, or behavior as an intentional choice for that state.
+
 ---
 
 ## 2026-08-03 — Home's logged-in league-phase composition (+ preknockout/knockout reuse), merged to `main`
@@ -16,12 +18,12 @@ Built and merged (branch `home-loggedin-leaguephase`, 8 commits): the `loggedin_
 
 **The welcome banner's CTA is unconditionally hidden** on this page (`showCta={false}`) regardless of prediction-submission status — `/predictions` redirects home for anyone visiting once the tournament has started, so reusing the old `!submitterUids.has(me.uid)` check would have linked to a dead end for anyone who missed the deadline.
 
-**Scope expanded mid-session, explicitly not a considered design**: right after this shipped, Mert asked to reuse the exact same composition for `loggedin_preknockout` and `loggedin_knockout` too — "populate the pages," his words, not a real pass at whether the layout is actually appropriate for those two phases ("we will go through all of them much much much later"). `HomePage.tsx` now routes all three states to the same `LoggedInHomeStarted`/`HomeLandingLoggedInStarted` pair; the only real change was threading the actual current `TournamentPhase` through to `MatchupPopup` (previously hardcoded to `"leaguephase"`) so its knockout branch still gates correctly if the admin sets the phase to `knockout` in production.
+**Scope expanded mid-session with a Xerox pass** (see term definition at the top of this file): right after the league-phase composition shipped, Mert asked to reuse it wholesale for `loggedin_preknockout` and `loggedin_knockout` too — "populate the pages," his words, not a real pass at whether the layout is actually appropriate for those two phases ("we will go through all of them much much much later"). `HomePage.tsx` now routes all three states to the same `LoggedInHomeStarted`/`HomeLandingLoggedInStarted` pair; the only real change was threading the actual current `TournamentPhase` through to `MatchupPopup` (previously hardcoded to `"leaguephase"`) so its knockout branch still gates correctly if the admin sets the phase to `knockout` in production.
 
 **Verified**: `tsc -b` clean, full suite green (822 tests / 114 files, up from 792/110 pre-branch). **Not verified live**: reaching `loggedin_leaguephase`/`preknockout`/`knockout` requires a genuine Google sign-in plus the DevPanel phase override (§6.9's documented auth gap), and no credentials were available in this session — same limitation the Matchup Popup branch hit below. Correctness rests on the automated suite (94 new/changed tests across the six touched-or-added files), not a click-through.
 
 **Open follow-up, same backlog as every other entry below**:
-- `loggedin_preknockout`/`loggedin_knockout` reusing the league-phase layout verbatim is a placeholder-filling move, not a design decision — flagged directly by Mert as something to revisit in a real pass later.
+- `loggedin_preknockout`/`loggedin_knockout` are Xeroxed from the league-phase layout, not a design decision — flagged directly by Mert as something to revisit in a real pass later.
 - `PROJECT_STATE.md` §4/§6.1's Home description and page-access matrix don't mention any of this yet — mechanical update, not urgent.
 
 ---
