@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useImagePreload } from "@/lib/useImagePreload";
 import { useAuth } from "../auth/AuthProvider";
 import { useProfile } from "../profile/useProfile";
 import { useMessages } from "../chat/useMessages";
@@ -37,6 +38,8 @@ export function LoggedInHomeStarted({ players, results, entries, phase }: Logged
   const { profile, loading: profileLoading } = useProfile(user?.uid ?? null);
   const { messages, loading: messagesLoading, loadOlder, loadingOlder, hasMoreOlder } = useMessages();
   const { posts, loading: postsLoading, refetch: refetchPosts } = usePosts();
+  const postImageUrls = useMemo(() => posts.map((p) => p.imageURL).filter((u): u is string => Boolean(u)), [posts]);
+  const postImagesReady = useImagePreload(postImageUrls);
 
   usePresenceHeartbeat(user?.uid ?? null);
   const onlineCount = useOnlineCount();
@@ -85,7 +88,7 @@ export function LoggedInHomeStarted({ players, results, entries, phase }: Logged
     }
   }
 
-  if (!user || profileLoading || messagesLoading || postsLoading || !profile) {
+  if (!user || profileLoading || messagesLoading || postsLoading || !profile || !postImagesReady) {
     return null;
   }
 

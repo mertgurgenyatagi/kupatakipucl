@@ -21,6 +21,9 @@ import { NumberBox } from "../stats/NumberBox";
 import { STAT_WIDGETS } from "../leaderboard/StatWidget";
 import { StatsPageTuning, DEFAULT_STATS_PAGE_TUNING } from "../stats/statsPageTuning";
 import { StatsHero } from "../stats/StatsHero";
+import { HERO_IMAGES } from "../leaderboard/HeroCarousel";
+import { TEAMS, teamCrestSrc } from "../predictions/teams";
+import { useImagePreload } from "@/lib/useImagePreload";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageUnavailable } from "@/components/ui/page-unavailable";
@@ -75,6 +78,10 @@ const UCL_TEAM_PLACEHOLDER = [
   { label: "GS", count: 4 },
   { label: "LIV", count: 2 },
 ];
+
+// Static — every team crest plus the hero rotation, computed once rather
+// than on every render (nothing here depends on props).
+const STATS_IMAGE_URLS = [...TEAMS.map((t) => teamCrestSrc(t.id)), ...HERO_IMAGES];
 
 function formatSigned(value: number): string {
   return (value > 0 ? "+" : "") + value.toFixed(1);
@@ -187,12 +194,13 @@ export function StatsPage() {
   const { results, loading: resultsLoading } = useResults();
   const { players, loading: playersLoading } = usePlayers();
   const { responses, loading: responsesLoading } = useSurveyResponses();
+  const imagesReady = useImagePreload(STATS_IMAGE_URLS);
 
   if (!isPageAllowed("stats", state)) {
     return <PageUnavailable />;
   }
 
-  if (leaderboardLoading || resultsLoading || playersLoading || responsesLoading) return <StatsSkeleton />;
+  if (leaderboardLoading || resultsLoading || playersLoading || responsesLoading || !imagesReady) return <StatsSkeleton />;
 
   return <StatsPageView entries={entries} results={results} players={players} responses={responses} />;
 }

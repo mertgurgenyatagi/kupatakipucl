@@ -1,5 +1,5 @@
 // src/pages/LeaderboardPage.test.tsx
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { LeaderboardPage } from "./LeaderboardPage";
 import { TEAMS } from "../predictions/teams";
@@ -60,12 +60,17 @@ describe("LeaderboardPage", () => {
     expect(screen.getByTestId("leaderboard-skeleton")).toBeInTheDocument();
   });
 
-  it("renders the leaderboard table once loaded", () => {
+  it("renders the leaderboard table once loaded", async () => {
     mockUseLeaderboard.mockReturnValue({
       entries: [{ uid: "uid1", firstName: "Ada", photoURL: "a.png", points: 42, ranking: [] }],
       loading: false,
     });
     render(<LeaderboardPage />);
+    // The page's own gate additionally preloads every team crest + player
+    // avatar before revealing — always a microtask past mount, even with
+    // test/setup.ts's instant Image mock (Promise.all(...).then(...) is
+    // inherently async).
+    await act(async () => {});
     expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
     expect(screen.getByText("42")).toBeInTheDocument();
   });
@@ -76,16 +81,18 @@ describe("LeaderboardPage", () => {
       loading: false,
     });
     render(<LeaderboardPage />);
+    await act(async () => {});
     // The team table (no frame header of its own anymore, just its rows) and
     // the hero carousel that replaced the stat widgets in this column.
     expect(screen.getAllByText(TEAMS[0].shortName).length).toBeGreaterThan(0);
     expect((await screen.findAllByTestId("hero-image")).length).toBeGreaterThan(0);
   });
 
-  it("opens the Matchup Popup when a fixture row in the hero drawer is clicked", () => {
+  it("opens the Matchup Popup when a fixture row in the hero drawer is clicked", async () => {
     mockUseTournamentPhase.mockReturnValue("leaguephase");
     mockUseLeaderboard.mockReturnValue({ entries: [], loading: false });
     render(<LeaderboardPage />);
+    await act(async () => {});
     fireEvent.click(screen.getByRole("button", { name: "Yaklaşan maçları göster" }));
     const buttons = screen.getAllByRole("button");
     fireEvent.click(buttons[1]); // the first fixture row's own click target

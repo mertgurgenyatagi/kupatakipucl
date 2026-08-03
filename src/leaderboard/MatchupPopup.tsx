@@ -11,7 +11,9 @@ import { fullName, initials as sharedInitials } from "../profile/deletedAccount"
 import { TeamResult } from "./teamResultTypes";
 import { getTeamPredictors, TeamPredictor } from "./teamPredictors";
 import { TeamCrest } from "./TeamCrest";
+import { TEAMS, teamCrestSrc } from "../predictions/teams";
 import { TournamentPhase } from "../tournament/tournamentPhase";
+import { useImagePreload } from "@/lib/useImagePreload";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +24,11 @@ import {
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+
+// Same rationale as ParticipantPopup/TeamPopup's own gate.
+const TEAM_CREST_URLS = TEAMS.map((team) => teamCrestSrc(team.id));
 
 interface MatchupPopupProps {
   /** The clicked fixture's id, or null when closed — resolved back to a
@@ -274,13 +280,31 @@ export const MatchupPopup = memo(function MatchupPopup({
 
   const headerLabel = fixture ? (isKnockoutFixture ? "ELEME TURU" : `${fixture.matchday}. HAFTA`) : "";
 
+  const popupImageUrls = useMemo(
+    () => (fixture ? [...entries.map((e) => e.photoURL).filter(Boolean), ...TEAM_CREST_URLS] : []),
+    [fixture, entries]
+  );
+  const popupImagesReady = useImagePreload(popupImageUrls);
+
   return (
     <Dialog open={fixtureId !== null} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
         className="w-full max-w-[calc(100%-2rem)] gap-0 rounded-none bg-transparent p-0 ring-0 sm:max-w-3xl"
       >
-        {fixture && home && away && (
+        {fixture && home && away && !popupImagesReady && (
+          <Frame
+            className="h-[min(85vh,44rem)] w-full animate-cotton-rise border-color_border1/35"
+            aria-hidden
+            data-testid="matchup-popup-skeleton"
+          >
+            <div className="flex h-full flex-col gap-3 p-4">
+              <Skeleton className="h-16 w-full shrink-0 rounded-xl" />
+              <Skeleton className="min-h-0 flex-1 rounded-xl" />
+            </div>
+          </Frame>
+        )}
+        {fixture && home && away && popupImagesReady && (
           <Frame className="max-h-[min(85vh,44rem)] w-full animate-cotton-rise border-color_border1/35">
             <FrameHeader tone="navy">
               <FrameTitle className="text-navy-ink">{headerLabel}</FrameTitle>

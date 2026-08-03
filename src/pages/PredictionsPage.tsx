@@ -7,7 +7,8 @@ import { isPageAllowed } from "../state/pageAccess";
 import { usePrediction, savePrediction } from "../predictions/usePrediction";
 import { useSurveyResponse } from "../predictions/useSurveyResponse";
 import { TeamRanker } from "../predictions/TeamRanker";
-import { TEAMS } from "../predictions/teams";
+import { TEAMS, teamCrestSrc } from "../predictions/teams";
+import { useImagePreload } from "@/lib/useImagePreload";
 import { IntroBeat } from "../predictions/IntroBeat";
 import { PREDICTION_INTRO_BEATS } from "../predictions/predictionIntroCopy";
 import { ScoringExampleDiagram } from "../predictions/ScoringExampleDiagram";
@@ -20,6 +21,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // The scoring-example beat (index 1) is the only one with a visual.
 const SCORING_EXAMPLE_BEAT_INDEX = 1;
+
+// Every crest this flow can ever show — the ScoringExampleDiagram's window
+// and, later, the full TeamRanker — preloaded up front so nothing pops in
+// mid-sequence even though the ranker itself isn't reached until a few
+// beats/clicks in.
+const TEAM_CREST_URLS = TEAMS.map((t) => teamCrestSrc(t.id));
 
 type FlowStep = "intro" | "rank" | "done";
 
@@ -62,12 +69,13 @@ export function PredictionsPage() {
   const [step, setStep] = useState<FlowStep>("intro");
   const [beatIndex, setBeatIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const imagesReady = useImagePreload(TEAM_CREST_URLS);
 
   if (!isPageAllowed("predictions", state)) {
     return <p>{PAGE_UNAVAILABLE_MESSAGE}</p>;
   }
 
-  if (loading) return <PredictionsLoadingSkeleton />;
+  if (loading || !imagesReady) return <PredictionsLoadingSkeleton />;
 
   if (state !== "loggedin_notstarted" || prediction) {
     return <Navigate to="/" replace />;

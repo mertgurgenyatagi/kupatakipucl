@@ -1,5 +1,6 @@
 // src/pages/ForumPage.tsx
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useImagePreload } from "@/lib/useImagePreload";
 import { useAuth } from "../auth/AuthProvider";
 import { useVisibilityState } from "../state/useVisibilityState";
 import { isPageAllowed } from "../state/pageAccess";
@@ -54,6 +55,26 @@ export function ForumPage() {
   const rankedEntries = useMemo(() => assignRanks(entries), [entries]);
   const selectedRanked = rankedEntries.find((r) => r.entry.uid === selectedParticipantUid) ?? null;
 
+  // Gate the initial reveal on the first batch's images only — "load older"
+  // is a pull, user-triggered action, not a live push (Forum isn't meant to
+  // behave as a live feed), so it shouldn't re-hide content that's already
+  // on screen. Once revealed once, this stops tracking new images and lets
+  // ThreadCard/ForumImageThumb's own per-item skeleton handle anything
+  // loaded afterward.
+  const [everRevealed, setEverRevealed] = useState(false);
+  const initialImageUrls = useMemo(() => {
+    if (everRevealed) return [];
+    return [
+      ...players.map((p) => p.photoURL).filter(Boolean),
+      ...posts.map((p) => p.imageURL).filter((u): u is string => Boolean(u)),
+    ];
+  }, [players, posts, everRevealed]);
+  const initialImagesReady = useImagePreload(initialImageUrls);
+
+  useEffect(() => {
+    if (!postsLoading && !playersLoading && initialImagesReady) setEverRevealed(true);
+  }, [postsLoading, playersLoading, initialImagesReady]);
+
   const handlePopupOpenChange = useCallback((open: boolean) => {
     if (!open) setSelectedParticipantUid(null);
   }, []);
@@ -102,7 +123,7 @@ export function ForumPage() {
     return <PageUnavailable />;
   }
 
-  if (postsLoading || playersLoading) return <ForumSkeleton />;
+  if (!everRevealed && (postsLoading || playersLoading || !initialImagesReady)) return <ForumSkeleton />;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col p-4 sm:p-6 lg:min-h-0 lg:flex-1">

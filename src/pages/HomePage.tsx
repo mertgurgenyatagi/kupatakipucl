@@ -1,4 +1,5 @@
 // src/pages/HomePage.tsx
+import { useMemo } from "react";
 import { useVisibilityState } from "../state/useVisibilityState";
 import { useTournamentPhase } from "../tournament/useTournamentPhase";
 import { useResults } from "../leaderboard/useResults";
@@ -8,53 +9,31 @@ import { HomeLandingLoggedOut } from "../home/HomeLandingLoggedOut";
 import { LoggedInHome } from "../home/LoggedInHome";
 import { HomeLandingLoggedOutStarted } from "../home/HomeLandingLoggedOutStarted";
 import { LoggedInHomeStarted } from "../home/LoggedInHomeStarted";
-import { Frame } from "@/components/ui/frame";
-import { Skeleton } from "@/components/ui/skeleton";
+import { HERO_IMAGES } from "../leaderboard/HeroCarousel";
+import { TEAMS, teamCrestSrc } from "../predictions/teams";
+import { useImagePreload } from "@/lib/useImagePreload";
+import { HomeHeroBandSkeleton, HomeBentoSkeleton } from "../home/HomeSkeletons";
 
-// Matches HomeLandingLoggedOut's single hero-band shape (heading, subline,
-// CTA pill, then the mission line + 4-digit countdown on the right).
-function HomeHeroBandSkeleton() {
-  return (
-    <div
-      className="relative mx-auto grid w-full max-w-[1400px] grid-cols-1 items-center gap-10 px-6 py-10 sm:px-10 lg:grid-cols-[3fr_2fr] lg:gap-16"
-      aria-hidden
-      data-testid="home-hero-skeleton"
-    >
-      <div className="flex flex-col gap-6">
-        <Skeleton className="h-14 w-full max-w-3xl rounded-lg" />
-        <Skeleton className="h-5 w-full max-w-xl rounded-md" />
-        <Skeleton className="h-12 w-40 rounded-full" />
-      </div>
-      <div className="flex flex-col gap-7 lg:border-l lg:border-color_border1/30 lg:pl-12">
-        <Skeleton className="h-14 w-full rounded-lg" />
-        <div className="flex items-start gap-5 sm:gap-7">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-12 rounded-md" />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const HOME_BENTO_SHELL =
-  "relative mx-auto flex w-full max-w-[1400px] min-w-0 flex-col gap-4 p-4 sm:p-6 lg:h-full lg:min-h-0 lg:flex-1 lg:gap-5 lg:p-6";
-
-// Matches the bento shape shared by LoggedInHome/LoggedInHomeStarted/
-// HomeLandingLoggedOutStarted — a welcome-banner-height bar above a row of
-// Frame-shaped cells. Not pixel-matched per state (they use different exact
-// column counts/widths) — this is a skeleton, not a preview.
-function HomeBentoSkeleton() {
-  return (
-    <div className={HOME_BENTO_SHELL} aria-hidden data-testid="home-bento-skeleton">
-      <Skeleton className="h-20 w-full shrink-0 rounded-[var(--radius-4xl)]" />
-      <div className="grid min-w-0 flex-1 gap-4 lg:grid-cols-4 lg:gap-5">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Frame key={i} className="h-[26rem] lg:h-full" />
-        ))}
-      </div>
-    </div>
-  );
+// Every image already known at this level (i.e. not still behind a
+// deeper data-fetching wrapper's own hook, like LoggedInHome's posts) —
+// folded into this page's own top-level loading gate so the whole bento
+// reveals together instead of the avatar/crest images popping in after.
+// Started-phase pages additionally gate on posts + their images inside
+// their own wrapper (LoggedInHomeStarted, HomeLandingLoggedOutStarted),
+// since `posts` isn't fetched until one level deeper than this component.
+function homeImageUrls(
+  state: string,
+  players: { photoURL: string }[]
+): string[] {
+  if (state === "loggedout_notstarted") {
+    // AvatarStack only ever renders the first 3 — no point preloading the
+    // other 49 photos nobody will see.
+    return players.slice(0, 3).map((p) => p.photoURL).filter(Boolean);
+  }
+  const avatarUrls = players.map((p) => p.photoURL).filter(Boolean);
+  const heroUrls = [...HERO_IMAGES];
+  if (state === "loggedin_notstarted") return [...avatarUrls, ...heroUrls];
+  return [...avatarUrls, ...heroUrls, ...TEAMS.map((t) => teamCrestSrc(t.id))];
 }
 
 export function HomePage() {
@@ -65,7 +44,10 @@ export function HomePage() {
   const { players, loading: playersLoading } = usePlayers();
   const { entries, loading: leaderboardLoading } = useLeaderboard();
 
-  if (resultsLoading || playersLoading || leaderboardLoading) {
+  const imageUrls = useMemo(() => homeImageUrls(state, players), [state, players]);
+  const imagesReady = useImagePreload(imageUrls);
+
+  if (resultsLoading || playersLoading || leaderboardLoading || !imagesReady) {
     return state === "loggedout_notstarted" ? <HomeHeroBandSkeleton /> : <HomeBentoSkeleton />;
   }
 

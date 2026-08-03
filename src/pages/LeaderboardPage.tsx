@@ -14,6 +14,8 @@ import { TeamPopup } from "../leaderboard/TeamPopup";
 import { MatchupPopup } from "../leaderboard/MatchupPopup";
 import { evaluatePicks } from "../leaderboard/scoring";
 import { assignRanks } from "../leaderboard/ranking";
+import { TEAMS, teamCrestSrc } from "../predictions/teams";
+import { useImagePreload } from "@/lib/useImagePreload";
 import { Frame } from "@/components/ui/frame";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageUnavailable } from "@/components/ui/page-unavailable";
@@ -96,6 +98,11 @@ export function LeaderboardPage() {
   const { players } = usePlayers();
   const { results } = useResults();
   const phase = useTournamentPhase();
+  const imageUrls = useMemo(
+    () => [...players.map((p) => p.photoURL).filter(Boolean), ...TEAMS.map((t) => teamCrestSrc(t.id))],
+    [players]
+  );
+  const imagesReady = useImagePreload(imageUrls);
   const [hoveredUid, setHoveredUid] = useState<string | null>(null);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
@@ -155,7 +162,7 @@ export function LeaderboardPage() {
     return <PageUnavailable />;
   }
 
-  if (loading) return <LedgerSkeleton />;
+  if (loading || !imagesReady) return <LedgerSkeleton />;
 
   return (
     <div className={PAGE_SHELL}>

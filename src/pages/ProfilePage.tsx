@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
@@ -13,7 +13,8 @@ import { useSurveyResponse } from "../predictions/useSurveyResponse";
 import { MESSI_RONALDO_LABEL, DEVICE_LABEL, ensurePeriod } from "../predictions/surveyLabels";
 import { TeamRanker } from "../predictions/TeamRanker";
 import { RankingList } from "../predictions/RankingList";
-import { TEAMS } from "../predictions/teams";
+import { TEAMS, teamCrestSrc } from "../predictions/teams";
+import { useImagePreload } from "@/lib/useImagePreload";
 import { useLeaderboard } from "../leaderboard/useLeaderboard";
 import { usePlayers } from "../profile/usePlayers";
 import { useResults } from "../leaderboard/useResults";
@@ -52,6 +53,8 @@ const PAGE_SHELL =
 const MAIN_ROW =
   "relative z-10 grid min-w-0 gap-4 lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-[340px_1fr] lg:gap-5 [&>*]:min-h-0 [&>*]:min-w-0";
 const LEFT_COLUMN = "flex min-h-0 flex-col gap-4 lg:gap-5";
+
+const TEAM_CREST_URLS = TEAMS.map((t) => teamCrestSrc(t.id));
 
 function initials(firstName: string, lastName: string) {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -102,6 +105,11 @@ export function ProfilePage() {
   const { results } = useResults();
   const { players } = usePlayers();
   const phase = useTournamentPhase();
+  const imageUrls = useMemo(
+    () => (profile?.photoURL ? [profile.photoURL, ...TEAM_CREST_URLS] : TEAM_CREST_URLS),
+    [profile?.photoURL]
+  );
+  const imagesReady = useImagePreload(imageUrls);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [localProfile, setLocalProfile] = useState<Profile | null>(null);
@@ -153,7 +161,7 @@ export function ProfilePage() {
     return <PageUnavailable />;
   }
 
-  if (profileLoading || predictionLoading || entriesLoading) return <ProfileSkeleton />;
+  if (profileLoading || predictionLoading || entriesLoading || !imagesReady) return <ProfileSkeleton />;
 
   const displayedProfile = localProfile ?? profile;
   const currentPrediction = savedPrediction ?? prediction;

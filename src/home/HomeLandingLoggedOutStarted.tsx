@@ -10,8 +10,9 @@ import { HomeHero } from "./HomeHero";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { TeamPopup } from "../leaderboard/TeamPopup";
 import { MatchupPopup } from "../leaderboard/MatchupPopup";
+import { HomeBentoSkeleton } from "./HomeSkeletons";
+import { useImagePreload } from "@/lib/useImagePreload";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { TeamResult } from "../leaderboard/teamResultTypes";
 import type { Player } from "../profile/usePlayers";
 import type { LeaderboardEntry } from "../leaderboard/leaderboardTypes";
@@ -54,6 +55,11 @@ export function HomeLandingLoggedOutStarted({ results, players, entries, phase }
   const { posts, loading: postsLoading } = usePosts();
   const likesByPost = useMemo(() => buildLikesByPost(posts), [posts]);
   const rankedEntries = useMemo(() => assignRanks(entries), [entries]);
+  // Posts (and their attached images) aren't known until this component's
+  // own fetch resolves — HomePage.tsx's own gate already covers players'
+  // avatars, team crests, and the hero portraits (see homeImageUrls there).
+  const postImageUrls = useMemo(() => posts.map((p) => p.imageURL).filter((u): u is string => Boolean(u)), [posts]);
+  const postImagesReady = useImagePreload(postImageUrls);
 
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
@@ -75,6 +81,10 @@ export function HomeLandingLoggedOutStarted({ results, players, entries, phase }
     setSelectedTeamId(null);
     setSelectedUid(null);
   }, []);
+
+  if (postsLoading || !postImagesReady) {
+    return <HomeBentoSkeleton />;
+  }
 
   return (
     <div className={PAGE_SHELL}>
@@ -98,31 +108,18 @@ export function HomeLandingLoggedOutStarted({ results, players, entries, phase }
               <FrameTitle className="text-base text-color_text sm:text-lg">Forum</FrameTitle>
             </FrameHeader>
             <FrameBody>
-              {postsLoading ? (
-                <div className="flex flex-col gap-3 p-4" aria-hidden data-testid="home-forum-skeleton">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-2.5">
-                      <Skeleton className="size-8 shrink-0 rounded-full" />
-                      <Skeleton className="h-4 flex-1 rounded-sm" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <>
-                  <RecentPostsPreview
-                    posts={posts}
-                    players={players}
-                    uid={null}
-                    likesByPost={likesByPost}
-                    onToggleLike={noop}
-                    onSelectParticipant={handleSelectParticipant}
-                    onDeletePost={noop}
-                    onSaveEdit={noop}
-                    onRefetch={noop}
-                  />
-                  <ForumPreviewFooter />
-                </>
-              )}
+              <RecentPostsPreview
+                posts={posts}
+                players={players}
+                uid={null}
+                likesByPost={likesByPost}
+                onToggleLike={noop}
+                onSelectParticipant={handleSelectParticipant}
+                onDeletePost={noop}
+                onSaveEdit={noop}
+                onRefetch={noop}
+              />
+              <ForumPreviewFooter />
             </FrameBody>
           </Frame>
         </div>

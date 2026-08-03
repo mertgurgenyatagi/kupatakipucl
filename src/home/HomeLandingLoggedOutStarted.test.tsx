@@ -101,14 +101,15 @@ describe("HomeLandingLoggedOutStarted", () => {
     mockUsePosts.mockReturnValue({ posts: [], loading: false, refetch: vi.fn(), loadOlder: vi.fn(), hasMore: false });
   });
 
-  it("shows the rest of the grid with a forum skeleton while posts are still loading", () => {
+  it("shows the whole-page bento skeleton while posts (and their images) are still loading", () => {
+    // Posts are part of this page's own initial-load image-preload gate
+    // (see the sitewide image-preload-gate spec) — the whole page now stays
+    // on its shared skeleton until posts resolve, instead of revealing
+    // everything but a per-cell forum skeleton.
     mockUsePosts.mockReturnValue({ posts: [], loading: true, refetch: vi.fn(), loadOlder: vi.fn(), hasMore: false });
     renderPage();
-    expect(screen.getByText("league-table-list")).toBeInTheDocument();
-    expect(screen.getByText("upcoming-preview")).toBeInTheDocument();
-    expect(screen.getByText("home-hero")).toBeInTheDocument();
-    expect(screen.getByText("leaderboard-table")).toBeInTheDocument();
-    expect(screen.getByTestId("home-forum-skeleton")).toBeInTheDocument();
+    expect(screen.getByTestId("home-bento-skeleton")).toBeInTheDocument();
+    expect(screen.queryByText("league-table-list")).not.toBeInTheDocument();
     expect(screen.queryByText("forum-widget:null")).not.toBeInTheDocument();
   });
 

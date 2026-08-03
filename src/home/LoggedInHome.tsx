@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useImagePreload } from "@/lib/useImagePreload";
 import { useAuth } from "../auth/AuthProvider";
 import { useProfile } from "../profile/useProfile";
 import { usePredictionSubmitters } from "../predictions/usePredictionSubmitters";
@@ -33,6 +34,11 @@ export function LoggedInHome({ players }: { players: Player[] }) {
   const { submitterUids, loading: submittersLoading } = usePredictionSubmitters();
   const { messages, loading: messagesLoading, loadOlder, loadingOlder, hasMoreOlder } = useMessages();
   const { posts, loading: postsLoading, refetch: refetchPosts } = usePosts();
+  // Home's Forum cell is a bounded preview, not live (see the sitewide
+  // image-preload-gate spec) — its post images are part of this page's
+  // initial-load gate, same as every avatar on it.
+  const postImageUrls = useMemo(() => posts.map((p) => p.imageURL).filter((u): u is string => Boolean(u)), [posts]);
+  const postImagesReady = useImagePreload(postImageUrls);
 
   usePresenceHeartbeat(user?.uid ?? null);
   const onlineCount = useOnlineCount();
@@ -149,7 +155,7 @@ export function LoggedInHome({ players }: { players: Player[] }) {
     }
   }
 
-  if (!user || profileLoading || submittersLoading || messagesLoading || postsLoading || !profile) {
+  if (!user || profileLoading || submittersLoading || messagesLoading || postsLoading || !profile || !postImagesReady) {
     return null;
   }
 

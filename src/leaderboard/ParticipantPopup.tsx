@@ -14,6 +14,8 @@ import { useSurveyResponse } from "../predictions/useSurveyResponse";
 import { TEAM_BY_ID } from "../predictions/teams";
 import { MESSI_RONALDO_LABEL, DEVICE_LABEL, ensurePeriod } from "../predictions/surveyLabels";
 import { TeamCrest } from "./TeamCrest";
+import { TEAMS, teamCrestSrc } from "../predictions/teams";
+import { useImagePreload } from "@/lib/useImagePreload";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +26,15 @@ import {
 import { Frame, FrameBody } from "@/components/ui/frame";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+
+// Every call site's containing page has already preloaded the full crest
+// set and every player's avatar (see the sitewide image-preload-gate spec),
+// so in practice this almost always resolves instantly — this gate exists
+// for correctness (a popup opened before its page's own gate somehow
+// finished) rather than because it's expected to visibly stall.
+const TEAM_CREST_URLS = TEAMS.map((t) => teamCrestSrc(t.id));
 
 interface ParticipantPopupProps {
   /** The clicked participant + their standing rank, or null when closed. */
@@ -258,13 +268,31 @@ export const ParticipantPopup = memo(function ParticipantPopup({
     [tournamentStarted, displayedUid, entries, outcomes]
   );
 
+  const popupImageUrls = useMemo(
+    () => (displayed ? [displayed.entry.photoURL, ...TEAM_CREST_URLS] : []),
+    [displayed]
+  );
+  const popupImagesReady = useImagePreload(popupImageUrls);
+
   return (
     <Dialog open={ranked !== null} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
         className="w-full max-w-[calc(100%-2rem)] gap-0 rounded-none bg-transparent p-0 ring-0 sm:max-w-2xl"
       >
-        {displayed && (
+        {displayed && !popupImagesReady && (
+          <Frame
+            className="h-[min(85vh,44rem)] w-full animate-cotton-rise border-color_border1/35"
+            aria-hidden
+            data-testid="participant-popup-skeleton"
+          >
+            <div className="flex h-full flex-col gap-3 p-4">
+              <Skeleton className="h-16 w-full shrink-0 rounded-xl" />
+              <Skeleton className="min-h-0 flex-1 rounded-xl" />
+            </div>
+          </Frame>
+        )}
+        {displayed && popupImagesReady && (
           <Frame className="max-h-[min(85vh,44rem)] w-full animate-cotton-rise border-color_border1/35">
             {/* 1. Profile tab — the participant's own photo, blurred and
                 scaled up into an abstract, darkened color field. Picture +

@@ -271,7 +271,7 @@ describe("ParticipantPopup", () => {
         tournamentStarted={true}
       />
     );
-    fireEvent.click(screen.getByRole("button", { name: "Kapat" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Kapat" }));
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false, expect.anything()));
   });
 

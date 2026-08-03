@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { ProfilePage } from "./ProfilePage";
@@ -90,8 +90,14 @@ vi.mock("../predictions/TeamRanker", () => ({
   ),
 }));
 
-function renderPage() {
-  return render(
+// The image-preload gate (useImagePreload) always resolves at least one
+// microtask after mount, even though test/setup.ts's Image mock settles
+// immediately — a real `<img>` load event is asynchronous by construction
+// (Promise.all(...).then(...)), so every test that asserts on real page
+// content (as opposed to the loading skeleton itself) needs to flush past
+// that tick first.
+async function renderPage() {
+  const result = render(
     <MemoryRouter initialEntries={["/profile"]}>
       <Routes>
         <Route path="/profile" element={<ProfilePage />} />
@@ -99,6 +105,14 @@ function renderPage() {
       </Routes>
     </MemoryRouter>
   );
+  // A single microtask tick isn't enough — Image mock -> Promise.all ->
+  // .then() chains through more than one microtask hop (same reasoning as
+  // PredictionsPage.test.tsx's own flushMicrotasks helper).
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  return result;
 }
 
 const PROFILE = { firstName: "Mert", lastName: "G", photoURL: "photo-url", createdAt: 1 };
@@ -142,9 +156,9 @@ describe("ProfilePage", () => {
     expect(screen.getByTestId("profile-skeleton")).toBeInTheDocument();
   });
 
-  it("shows the profile's name and photo", () => {
+  it("shows the profile's name and photo", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
-    renderPage();
+    await renderPage();
     expect(screen.getByText("Mert G")).toBeInTheDocument();
   });
 
@@ -155,9 +169,9 @@ describe("ProfilePage", () => {
     expect(screen.queryByText("Puan")).not.toBeInTheDocument();
   });
 
-  it("shows the rank/points header section once the tournament has started", () => {
+  it("shows the rank/points header section once the tournament has started", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
-    renderPage();
+    await renderPage();
     expect(screen.getByText("Sıra")).toBeInTheDocument();
     expect(screen.getByText("Puan")).toBeInTheDocument();
   });
@@ -165,7 +179,7 @@ describe("ProfilePage", () => {
   it("uploads a new photo when a file is selected", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUpdateProfilePhoto.mockResolvedValue({ ...PROFILE, photoURL: "new-photo-url" });
-    renderPage();
+    await renderPage();
 
     const file = new File(["data"], "new.jpg", { type: "image/jpeg" });
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -176,30 +190,30 @@ describe("ProfilePage", () => {
     );
   });
 
-  it("shows survey answers when a response exists", () => {
+  it("shows survey answers when a response exists", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUseSurveyResponse.mockReturnValue({ response: SURVEY, loading: false, error: false });
-    renderPage();
+    await renderPage();
     expect(screen.getByText("Fenerbahçe.")).toBeInTheDocument();
     expect(screen.getByText("Messi.")).toBeInTheDocument();
   });
 
-  it("shows a not-filled-in message when there's no survey response", () => {
+  it("shows a not-filled-in message when there's no survey response", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
-    renderPage();
+    await renderPage();
     expect(screen.getByText("Anketi henüz doldurmadınız.")).toBeInTheDocument();
   });
 
-  it("shows an error message when the survey read fails", () => {
+  it("shows an error message when the survey read fails", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUseSurveyResponse.mockReturnValue({ response: null, loading: false, error: true });
-    renderPage();
+    await renderPage();
     expect(screen.getByText("Anket cevapları görüntülenemiyor.")).toBeInTheDocument();
   });
 
-  it("points to /predictions when there's no prediction yet", () => {
+  it("points to /predictions when there's no prediction yet", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
-    renderPage();
+    await renderPage();
     const link = screen.getByText("Tahmininizi gönderin");
     expect(link.closest("a")).toHaveAttribute("href", "/predictions");
   });
@@ -211,7 +225,7 @@ describe("ProfilePage", () => {
       loading: false,
     });
     mockSavePrediction.mockResolvedValue({ ranking: ["z", "y", "x"], submittedAt: 1, updatedAt: 2 });
-    renderPage();
+    await renderPage();
 
     expect(screen.getByText("Arsenal")).toBeInTheDocument();
     expect(screen.getByText("Düzenle")).toBeInTheDocument();
@@ -226,13 +240,13 @@ describe("ProfilePage", () => {
     await waitFor(() => expect(mockSavePrediction).toHaveBeenCalledWith("uid1", ["z", "y", "x"]));
   });
 
-  it("backing out of the overwrite confirmation with Geri leaves the original prediction unchanged", () => {
+  it("backing out of the overwrite confirmation with Geri leaves the original prediction unchanged", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({
       prediction: { ranking: ["arsenal"], submittedAt: 1, updatedAt: 1 },
       loading: false,
     });
-    renderPage();
+    await renderPage();
 
     fireEvent.click(screen.getByText("Düzenle"));
     fireEvent.click(screen.getByText("submit-ranking"));
@@ -242,26 +256,26 @@ describe("ProfilePage", () => {
     expect(mockSavePrediction).not.toHaveBeenCalled();
   });
 
-  it("shows the ranking without an edit button once locked", () => {
+  it("shows the ranking without an edit button once locked", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     mockUsePrediction.mockReturnValue({
       prediction: { ranking: ["arsenal"], submittedAt: 1, updatedAt: 1 },
       loading: false,
     });
-    renderPage();
+    await renderPage();
     expect(screen.getByText("Arsenal")).toBeInTheDocument();
     expect(screen.queryByText("Düzenle")).not.toBeInTheDocument();
   });
 
-  it("opens that team's popup when a ranked row is clicked", () => {
+  it("opens that team's popup when a ranked row is clicked", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     mockUsePrediction.mockReturnValue({
       prediction: { ranking: ["arsenal"], submittedAt: 1, updatedAt: 1 },
       loading: false,
     });
-    renderPage();
+    await renderPage();
     fireEvent.click(screen.getByText("Arsenal"));
-    expect(screen.getByText(/takım dosyası/)).toBeInTheDocument();
+    expect(await screen.findByText(/takım dosyası/)).toBeInTheDocument();
   });
 
   it("opens the Matchup Popup when a match row is clicked inside TeamPopup", async () => {
@@ -291,7 +305,7 @@ describe("ProfilePage", () => {
     expect(await screen.findByText(`${fixture.matchday}. HAFTA`)).toBeInTheDocument();
   });
 
-  it("shows the average position everyone predicted for each team, once the tournament has started", () => {
+  it("shows the average position everyone predicted for each team, once the tournament has started", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     mockUsePrediction.mockReturnValue({
       prediction: { ranking: ["arsenal", "barcelona"], submittedAt: 1, updatedAt: 1 },
@@ -304,7 +318,7 @@ describe("ProfilePage", () => {
       ],
       loading: false,
     });
-    renderPage();
+    await renderPage();
     // arsenal: predicted 1st then 2nd -> average 1.5; barcelona: 2nd then 1st -> average 1.5
     expect(screen.getAllByText("1.5")).toHaveLength(2);
   });
@@ -326,9 +340,9 @@ describe("ProfilePage", () => {
     expect(screen.queryByText("1.5")).not.toBeInTheDocument();
   });
 
-  it("opens a confirm dialog when the delete-profile button is clicked", () => {
+  it("opens a confirm dialog when the delete-profile button is clicked", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
-    renderPage();
+    await renderPage();
     fireEvent.click(screen.getByRole("button", { name: "Profili sil" }));
     expect(
       screen.getByText("Profilini silmek istediğine emin misin?")
@@ -340,7 +354,7 @@ describe("ProfilePage", () => {
     mockDeleteProfile.mockResolvedValue(undefined);
     mockDeletePrediction.mockResolvedValue(undefined);
     mockSignOut.mockResolvedValue(undefined);
-    renderPage();
+    await renderPage();
 
     fireEvent.click(screen.getByRole("button", { name: "Profili sil" }));
     fireEvent.click(screen.getByText("Evet, sil"));
@@ -354,7 +368,7 @@ describe("ProfilePage", () => {
   it("shows an error and keeps the dialog open when deletion fails", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockDeleteProfile.mockRejectedValue(new Error("permission-denied"));
-    renderPage();
+    await renderPage();
 
     fireEvent.click(screen.getByRole("button", { name: "Profili sil" }));
     fireEvent.click(screen.getByText("Evet, sil"));

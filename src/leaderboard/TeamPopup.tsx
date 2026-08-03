@@ -20,6 +20,8 @@ import { useDevMatches } from "../devpanel/useDevMatches";
 import { TeamCrest } from "./TeamCrest";
 import { StatRow } from "./StatWidget";
 import { TeamPopupTuning, DEFAULT_TEAM_POPUP_TUNING } from "./teamPopupTuning";
+import { TEAMS } from "../predictions/teams";
+import { useImagePreload } from "@/lib/useImagePreload";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +32,13 @@ import {
 import { Frame, FrameBody } from "@/components/ui/frame";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+
+// Same rationale as ParticipantPopup.tsx's own gate — the containing page
+// has almost always already preloaded these; this is the correctness
+// backstop, not the expected common case.
+const TEAM_CREST_URLS = TEAMS.map((team) => teamCrestSrc(team.id));
 
 interface TeamPopupProps {
   /** The clicked team's id, or null when closed. */
@@ -522,13 +530,31 @@ export const TeamPopup = memo(function TeamPopup({
 
   const result = displayedId ? results[displayedId] : undefined;
 
+  const popupImageUrls = useMemo(
+    () => (displayedId ? [...entries.map((e) => e.photoURL).filter(Boolean), ...TEAM_CREST_URLS] : []),
+    [displayedId, entries]
+  );
+  const popupImagesReady = useImagePreload(popupImageUrls);
+
   return (
     <Dialog open={teamId !== null} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
         className="w-full max-w-[calc(100%-2rem)] gap-0 rounded-none bg-transparent p-0 ring-0 sm:max-w-4xl"
       >
-        {team && dossier && (
+        {team && dossier && !popupImagesReady && (
+          <Frame
+            className="h-[min(92vh,60rem)] w-full animate-cotton-rise border-color_border1/35"
+            aria-hidden
+            data-testid="team-popup-skeleton"
+          >
+            <div className="flex h-full flex-col gap-3 p-4">
+              <Skeleton className="h-16 w-full shrink-0 rounded-xl" />
+              <Skeleton className="min-h-0 flex-1 rounded-xl" />
+            </div>
+          </Frame>
+        )}
+        {team && dossier && popupImagesReady && (
           <Frame className="h-[min(92vh,60rem)] w-full animate-cotton-rise border-color_border1/35">
             {/* Profile tab — the team's own crest, blurred and scaled into
                 an abstract, darkened backdrop (was the stadium photo;

@@ -1,5 +1,5 @@
 // src/pages/HomePage.test.tsx
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { HomePage } from "./HomePage";
 
@@ -84,31 +84,37 @@ describe("HomePage", () => {
     expect(screen.getByText("home-landing-loggedout:2")).toBeInTheDocument();
   });
 
-  it("loggedin_notstarted: renders the dedicated logged-in landing page instead of the shared skeleton", () => {
+  it("loggedin_notstarted: renders the dedicated logged-in landing page instead of the shared skeleton", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePlayers.mockReturnValue({ players: [{ uid: "a" }, { uid: "b" }, { uid: "c" }], loading: false });
     render(<HomePage />);
+    // Home's own gate additionally preloads the hero-carousel portraits
+    // (real static assets, non-empty even though these mock players lack a
+    // photoURL) — that always needs at least one microtask flush.
+    await act(async () => {});
     expect(screen.getByText("logged-in-home:3")).toBeInTheDocument();
   });
 
   it.each(["loggedout_leaguephase", "loggedout_preknockout", "loggedout_knockout"] as const)(
     "%s: renders the dedicated started/logged-out landing page (reused as-is) instead of the shared skeleton",
-    (state) => {
+    async (state) => {
       mockUseVisibilityState.mockReturnValue(state);
       mockUseTournamentPhase.mockReturnValue(state.replace("loggedout_", ""));
       mockUsePlayers.mockReturnValue({ players: [{ uid: "a" }], loading: false });
       render(<HomePage />);
+      await act(async () => {});
       expect(screen.getByText(`home-landing-loggedout-started:1:${state.replace("loggedout_", "")}`)).toBeInTheDocument();
     }
   );
 
   it.each(["loggedin_leaguephase", "loggedin_preknockout", "loggedin_knockout"] as const)(
     "%s: renders the dedicated started/logged-in landing page (reused as-is) instead of the shared skeleton",
-    (state) => {
+    async (state) => {
       mockUseVisibilityState.mockReturnValue(state);
       mockUseTournamentPhase.mockReturnValue(state.replace("loggedin_", ""));
       mockUsePlayers.mockReturnValue({ players: [{ uid: "a" }, { uid: "b" }, { uid: "c" }, { uid: "d" }], loading: false });
       render(<HomePage />);
+      await act(async () => {});
       expect(screen.getByText(`logged-in-home-started:4:${state.replace("loggedin_", "")}`)).toBeInTheDocument();
     }
   );

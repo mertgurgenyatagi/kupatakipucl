@@ -74,6 +74,13 @@ function renderPage() {
   );
 }
 
+// The team-crest preload gate resolves a microtask after mount even with
+// test/setup.ts's instant Image mock (Promise.all(...).then(...) is
+// inherently async) — every test that asserts on real page content (not
+// the loading skeleton or the blocked message, which both short-circuit
+// ahead of the gate) needs to flush past it first. Reuses flushMicrotasks
+// (defined below) once it exists in scope.
+
 function reachRanker() {
   for (const beat of PREDICTION_INTRO_BEATS) {
     // Beats with boldTerms split their sentence across multiple inline
@@ -119,45 +126,50 @@ describe("PredictionsPage", () => {
     expect(screen.getByTestId("predictions-skeleton")).toBeInTheDocument();
   });
 
-  it("redirects home once a prediction already exists", () => {
+  it("redirects home once a prediction already exists", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({
       prediction: { ranking: ["arsenal"], submittedAt: 1, updatedAt: 1 },
       loading: false,
     });
     renderPage();
+    await flushMicrotasks();
     expect(screen.getByText("home-page")).toBeInTheDocument();
   });
 
-  it("redirects home once the tournament has started, prediction or not", () => {
+  it("redirects home once the tournament has started, prediction or not", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
     renderPage();
+    await flushMicrotasks();
     expect(screen.getByText("home-page")).toBeInTheDocument();
   });
 
-  it("starts at the first intro beat", () => {
+  it("starts at the first intro beat", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
     renderPage();
+    await flushMicrotasks();
     expect(screen.getByText(PREDICTION_INTRO_BEATS[0].text)).toBeInTheDocument();
   });
 
-  it("shows the scoring-example diagram on the middle beat, using the quiz-picked favorite team", () => {
+  it("shows the scoring-example diagram on the middle beat, using the quiz-picked favorite team", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
     mockUseSurveyResponse.mockReturnValue({ response: { uclTeam: "arsenal" }, loading: false, error: false });
     renderPage();
+    await flushMicrotasks();
     fireEvent.click(screen.getByText("Devam et"));
     const beatText = PREDICTION_INTRO_BEATS[1].text;
     expect(screen.getByText((_, el) => el?.tagName === "P" && el.textContent === beatText)).toBeInTheDocument();
     expect(screen.getByText("Arsenal")).toBeInTheDocument();
   });
 
-  it("advances through every intro beat on Devam et, landing on the ranker", () => {
+  it("advances through every intro beat on Devam et, landing on the ranker", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
     renderPage();
+    await flushMicrotasks();
     reachRanker();
     expect(screen.getByText("submit-ranking")).toBeInTheDocument();
   });
@@ -167,6 +179,7 @@ describe("PredictionsPage", () => {
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
     mockSavePrediction.mockResolvedValue({ ranking: ["z", "y", "x"], submittedAt: 1, updatedAt: 1 });
     renderPage();
+    await flushMicrotasks();
     reachRanker();
 
     fireEvent.click(screen.getByText("submit-ranking"));
@@ -185,6 +198,7 @@ describe("PredictionsPage", () => {
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
     mockSavePrediction.mockRejectedValue(new Error("network"));
     renderPage();
+    await flushMicrotasks();
     reachRanker();
 
     fireEvent.click(screen.getByText("submit-ranking"));

@@ -1,5 +1,5 @@
 // src/pages/StatsPage.test.tsx
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { StatsPage } from "./StatsPage";
 import { TEAMS } from "../predictions/teams";
@@ -98,6 +98,11 @@ describe("StatsPage", () => {
   it("renders all 7 tournament-stat widgets and 6 participant-stat widgets with computed data once loaded", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     render(<StatsPage />);
+    // The team-crest/hero-portrait preload gate resolves a microtask after
+    // mount even with test/setup.ts's instant Image mock (Promise.all(...)
+    // .then(...) is inherently async) — flush past it before asserting on
+    // real content instead of the loading skeleton.
+    await act(async () => {});
 
     // Left: 3 existing dummy widgets, always 3 rows each.
     expect(screen.getByText("En İyiler:3")).toBeInTheDocument();
