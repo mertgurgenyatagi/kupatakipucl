@@ -10,8 +10,7 @@ import { Profile } from "../profile/profileTypes";
 import { usePrediction, savePrediction, deletePrediction } from "../predictions/usePrediction";
 import { Prediction } from "../predictions/predictionTypes";
 import { useKnockoutPrediction, saveKnockoutPrediction } from "../knockout/useKnockoutPrediction";
-import { KnockoutPredictionSummary } from "../knockout/KnockoutPredictionSummary";
-import { KnockoutStagePicker } from "../knockout/KnockoutStagePicker";
+import { KnockoutBracket } from "../knockout/KnockoutBracket";
 import { KnockoutPrediction } from "../knockout/knockoutTypes";
 import { useSurveyResponse } from "../predictions/useSurveyResponse";
 import { MESSI_RONALDO_LABEL, DEVICE_LABEL, ensurePeriod } from "../predictions/surveyLabels";
@@ -127,8 +126,10 @@ export function ProfilePage() {
   const [predictionError, setPredictionError] = useState<string | null>(null);
 
   const [savedKnockoutPrediction, setSavedKnockoutPrediction] = useState<KnockoutPrediction | null>(null);
-  const [knockoutEditOpen, setKnockoutEditOpen] = useState(false);
   const [knockoutSubmitting, setKnockoutSubmitting] = useState(false);
+  const [knockoutEditMode, setKnockoutEditMode] = useState(false);
+  const [pendingKnockoutPicks, setPendingKnockoutPicks] = useState<Omit<KnockoutPrediction, "submittedAt" | "updatedAt"> | null>(null);
+  const [confirmKnockoutOpen, setConfirmKnockoutOpen] = useState(false);
   const [activePredictionTab, setActivePredictionTab] = useState<"league" | "knockout">(() => {
     if (state === "loggedin_preknockout" || state === "loggedin_knockout") {
       return "knockout";
@@ -218,7 +219,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div className={PAGE_SHELL}>
+    <div className={cn(PAGE_SHELL, isKnockoutPhaseOrPre && "max-w-[1400px]")}>
       <div className={MAIN_ROW}>
       <div className={LEFT_COLUMN}>
         {/* Profile card — the participant's own blurred photo as a backdrop
@@ -433,16 +434,31 @@ export function ProfilePage() {
             </Button>
           )}
 
-          {activePredictionTab === "knockout" && currentKnockoutPrediction && state === "loggedin_preknockout" && (
+          {activePredictionTab === "knockout" && state === "loggedin_preknockout" && !knockoutEditMode && (
             <Button
               variant="outline"
               size="sm"
               className="border-color_border1 text-color_text hover:bg-color_border1/20"
               onClick={() => {
-                setKnockoutEditOpen(true);
+                setPredictionError(null);
+                setKnockoutEditMode(true);
               }}
             >
               Düzenle
+            </Button>
+          )}
+
+          {activePredictionTab === "knockout" && state === "loggedin_preknockout" && knockoutEditMode && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-color_border1 text-color_text hover:bg-color_border1/20"
+              onClick={() => {
+                setPredictionError(null);
+                setKnockoutEditMode(false);
+              }}
+            >
+              Vazgeç
             </Button>
           )}
         </FrameHeader>
@@ -466,29 +482,19 @@ export function ProfilePage() {
                 </Link>
               </div>
             )
-          ) : currentKnockoutPrediction ? (
-            <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-              <KnockoutPredictionSummary
-                prediction={currentKnockoutPrediction}
-                onSelectTeam={handleSelectTeam}
-              />
-            </div>
           ) : (
-            <div className="flex flex-1 flex-col items-start justify-center gap-3">
-              <p className="font-display text-sm text-color_textsecondary italic">
-                {state === "loggedin_preknockout"
-                  ? "Henüz bir eleme tahmini göndermediniz."
-                  : "Eleme tahmini gönderilmedi."}
-              </p>
-              {state === "loggedin_preknockout" && (
-                <Button
-                  type="button"
-                  onClick={() => setKnockoutEditOpen(true)}
-                  className={cn(buttonVariants({ variant: "default" }))}
-                >
-                  Eleme Tahmininizi Yapın
-                </Button>
-              )}
+            <div className="no-scrollbar min-h-0 flex-1 overflow-hidden">
+              <KnockoutBracket
+                key={knockoutEditMode ? "edit" : "view"}
+                initialPrediction={currentKnockoutPrediction}
+                readOnly={!knockoutEditMode}
+                submitting={knockoutSubmitting}
+                onSelectTeam={setSelectedTeamId}
+                onSubmit={(data) => {
+                  setPendingKnockoutPicks(data);
+                  setConfirmKnockoutOpen(true);
+                }}
+              />
             </div>
           )}
         </FrameBody>
@@ -630,41 +636,54 @@ export function ProfilePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Dialog for editing knockout predictions */}
       <Dialog
-        open={knockoutEditOpen}
+        open={confirmKnockoutOpen}
         onOpenChange={(open) => {
           if (!open) {
-            setKnockoutEditOpen(false);
+            setPendingKnockoutPicks(null);
+            setConfirmKnockoutOpen(false);
           }
         }}
       >
-        <DialogContent className="w-full max-w-6xl h-[92vh] max-h-[92vh] bg-background border border-color_border1/60 p-4 sm:p-6 flex flex-col min-h-0 gap-3 rounded-2xl shadow-2xl overflow-hidden">
-          <DialogHeader className="shrink-0 pb-1">
-            <DialogTitle className="font-display text-lg font-bold text-color_text">
-              Eleme Tahmininizi Düzenleyin
-            </DialogTitle>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Emin misiniz?</DialogTitle>
+            <DialogDescription>
+              Eleme tahmininizi kaydetmek istediğinize emin misiniz?
+            </DialogDescription>
           </DialogHeader>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <KnockoutStagePicker
-              initialPrediction={currentKnockoutPrediction}
-              submitting={knockoutSubmitting}
-              onSubmit={async (data) => {
-                if (!uid) return;
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPendingKnockoutPicks(null);
+                setConfirmKnockoutOpen(false);
+              }}
+            >
+              Geri
+            </Button>
+            <Button
+              disabled={knockoutSubmitting}
+              onClick={async () => {
+                if (!uid || !pendingKnockoutPicks) return;
                 setKnockoutSubmitting(true);
                 try {
-                  const saved = await saveKnockoutPrediction(uid, data);
+                  const saved = await saveKnockoutPrediction(uid, pendingKnockoutPicks);
                   setSavedKnockoutPrediction(saved);
-                  setKnockoutEditOpen(false);
+                  setPredictionError(null);
+                  setKnockoutEditMode(false);
+                  setConfirmKnockoutOpen(false);
                 } catch (err) {
                   console.error("Failed to save knockout prediction", err);
+                  setPredictionError("Tahmininiz kaydedilemedi, tekrar deneyin.");
                 } finally {
                   setKnockoutSubmitting(false);
                 }
               }}
-            />
-          </div>
+            >
+              {knockoutSubmitting ? "Kaydediliyor..." : "Tamam"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

@@ -8,6 +8,27 @@ This file is meant to be pruned/rewritten as things get resolved or folded into 
 
 ---
 
+## 2026-08-04 — Knockout Predictions & Profile refinements
+
+Completed layout, styling, and flow refinements for knockout predictions across the homepage, main predictions page, and profile page.
+
+**Refinements built:**
+- **Homepage Sohbet Auto-Resize**: Moved the flex basis constraint wrapper inside `KnockoutPredictionWidget` so that when predictions are submitted and the widget returns `null`, the wrapper does not take up space, allowing the Sohbet chat frame to auto-resize to 100% of the column height.
+- **Monochromatic Ambient Depth Backdrop**: Restored the radial background gradient and floating blur blobs on the `/knockout-predictions` page using 100% monochromatic slate, zinc, and neutral dark tones.
+- **Fixed Width Final Column**: Enforced strict, professional fixed-width constraints on the center Final column and its `MatchBox` components on `/knockout-predictions`.
+- **Symmetric Compact Profile Bracket**:
+  - Expanded `ProfilePage` width to `max-w-[1400px]` during `preknockout` and `knockout` phases.
+  - Designed and implemented a compact, non-scrollable 2-halves symmetric bracket (`KnockoutBracket.tsx`) that fits cleanly inside the Profile page container.
+  - Applied the user's styling specifications: reduced the box width by exactly 40% (`w-24` / 96px), removed checkmarks on selected pills, highlighted selections with solid white borders, and scaled up text/pills/badges by 30%.
+- **Inline Edit Mode & Confirmation**:
+  - Bracket on Profile page starts in read-only mode by default with a "Düzenle" button in the header.
+  - Toggling edit mode unlocks the bracket inputs and shows "Vazgeç" (Cancel) to discard edits.
+  - Attempting to save trigger a confirmation overwrite dialog matching the league predictions pattern.
+  - Wrapped action bars and champion badges in constant-height containers to completely stabilize vertical layouts on both the main page and profile view.
+  - Clicking team pills in read-only mode triggers the standard `TeamPopup` details modal.
+
+---
+
 ## 2026-08-03 — Loading-flash audit + fixes, branch `frontend-sweep` (not yet merged)
 
 Not merged — Mert's explicit choice at the end of this session was to keep the branch as-is locally, unpushed, for now. 18 commits, three loosely-related strands of work.

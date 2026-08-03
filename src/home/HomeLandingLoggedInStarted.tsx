@@ -162,13 +162,7 @@ export function HomeLandingLoggedInStarted({
 
         {/* Col 4: knockout-prediction widget (preknockout only) + Sohbet */}
         <div className="flex min-h-0 flex-col gap-4 lg:gap-5">
-          {phase === "preknockout" && (
-            // ~30% of the column height; flex-shrink-0 so the chat card
-            // below always gets the majority of the remaining space.
-            <div className="shrink-0" style={{ flexBasis: "30%" }}>
-              <KnockoutPredictionWidget />
-            </div>
-          )}
+          {phase === "preknockout" && <KnockoutPredictionWidget />}
 
           <Frame
             className="min-h-0 flex-1 animate-cotton-rise border-color_border1/35"

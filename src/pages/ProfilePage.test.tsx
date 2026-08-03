@@ -392,7 +392,7 @@ describe("ProfilePage", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders prediction tabs and knockout prediction summary in preknockout phase", async () => {
+  it("renders prediction tabs and inline knockout bracket in preknockout phase", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_preknockout");
     mockUseKnockoutPrediction.mockReturnValue({
       prediction: {
@@ -412,14 +412,19 @@ describe("ProfilePage", () => {
     expect(screen.getByRole("button", { name: "Lig Tahmini" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Eleme Tahmini" })).toBeInTheDocument();
 
-    // Edit button is present in preknockout
-    expect(screen.getByRole("button", { name: "Düzenle" })).toBeInTheDocument();
+    // Click "Düzenle" button to enter edit mode
+    const editBtn = screen.getByRole("button", { name: "Düzenle" });
+    expect(editBtn).toBeInTheDocument();
+    fireEvent.click(editBtn);
 
-    // Champion banner rendered
-    expect(screen.getByText("Şampiyon Tahmini")).toBeInTheDocument();
+    // In preknockout phase, interactive save button is present inside inline bracket after clicking edit
+    expect(screen.getByRole("button", { name: "Tahmini Kaydet" })).toBeInTheDocument();
+
+    // Bracket team pills rendered
+    expect(screen.getAllByText("RMA").length).toBeGreaterThan(0);
   });
 
-  it("hides edit button during knockout phase (view-only locked mode)", async () => {
+  it("renders read-only inline bracket during knockout phase (view-only locked mode)", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_knockout");
     mockUseKnockoutPrediction.mockReturnValue({
       prediction: {
@@ -435,7 +440,8 @@ describe("ProfilePage", () => {
 
     await renderPage();
 
-    // Edit button is NOT present in knockout phase
-    expect(screen.queryByRole("button", { name: "Düzenle" })).not.toBeInTheDocument();
+    // Bracket is rendered in read-only mode so save button is NOT present
+    expect(screen.queryByRole("button", { name: "Tahmini Kaydet" })).not.toBeInTheDocument();
+    expect(screen.getAllByText("RMA").length).toBeGreaterThan(0);
   });
 });

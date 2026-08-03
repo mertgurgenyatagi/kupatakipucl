@@ -30,7 +30,7 @@ function renderWithBold(text: string, boldTerms: string[]): ReactNode {
             key={i}
             className={cn(
               "font-extrabold text-color_text",
-              isPoint && "text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.35)]"
+              isPoint && "text-amber-400"
             )}
           >
             {part}
