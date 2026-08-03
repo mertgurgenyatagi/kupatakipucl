@@ -19,10 +19,17 @@ function subscribeToLobbyMembers(lobbyId: string, onChange: (members: LobbyMembe
       listeners: new Set(),
       latest: undefined,
     };
+    // Same fromCache guard as usePlayers.ts — a snapshot synthesized from
+    // whichever member docs already happen to be locally cached shouldn't
+    // be trusted as "the full list has loaded" until the server confirms
+    // it (2026-08-03).
+    let confirmed = false;
     thisSub.unsubscribe = onSnapshot(
       collection(db, "lobbies", lobbyId, "members"),
       (snapshot) => {
         if (subscriptions.get(lobbyId) !== thisSub) return;
+        if (!confirmed && snapshot.metadata?.fromCache) return;
+        confirmed = true;
         const next = snapshot.docs.map((d) => d.data() as LobbyMember);
         thisSub.latest = next;
         thisSub.listeners.forEach((listener) => listener(next));

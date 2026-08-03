@@ -32,8 +32,8 @@ interface FakeLobbyDoc {
   id: string;
   data: () => { name: string; createdByUid: string; createdAt: number };
 }
-type MembersCallback = (snapshot: { docs: FakeMemberDoc[] }) => void;
-type LobbyDocsCallback = (snapshot: { docs: FakeLobbyDoc[] }) => void;
+type MembersCallback = (snapshot: { docs: FakeMemberDoc[]; metadata?: { fromCache: boolean } }) => void;
+type LobbyDocsCallback = (snapshot: { docs: FakeLobbyDoc[]; metadata?: { fromCache: boolean } }) => void;
 type ErrorCallback = (err: Error) => void;
 
 function memberDoc(lobbyId: string, uid: string, joinedAt: number): FakeMemberDoc {
@@ -122,6 +122,25 @@ describe("useMyLobbies", () => {
     act(() => capturedLobbyDocsNext!({ docs: [lobbyDoc("lobby1", "A", "c1", 1)] }));
     await waitFor(() => expect(first.result.current.lobbies).toHaveLength(1));
     await waitFor(() => expect(second.result.current.lobbies).toHaveLength(1));
+  });
+
+  it("ignores a from-cache memberships snapshot as the first result, waiting for the confirmed one before resubscribing to lobby docs", async () => {
+    renderHook(() => useMyLobbies("me"));
+    act(() => capturedMembersNext({ docs: [memberDoc("lobby1", "me", 100)], metadata: { fromCache: true } }));
+    expect(capturedLobbyDocsNext).toBeNull();
+
+    act(() => capturedMembersNext({ docs: [memberDoc("lobby1", "me", 100)], metadata: { fromCache: false } }));
+    expect(capturedLobbyDocsNext).not.toBeNull();
+  });
+
+  it("ignores a from-cache lobby-docs snapshot as the first result, waiting for the confirmed one before reporting loaded", async () => {
+    const { result } = renderHook(() => useMyLobbies("me"));
+    act(() => capturedMembersNext({ docs: [memberDoc("lobby1", "me", 100)], metadata: { fromCache: false } }));
+    act(() => capturedLobbyDocsNext!({ docs: [lobbyDoc("lobby1", "A", "c1", 1)], metadata: { fromCache: true } }));
+    expect(result.current.lobbies).toEqual([]);
+
+    act(() => capturedLobbyDocsNext!({ docs: [lobbyDoc("lobby1", "A", "c1", 1)], metadata: { fromCache: false } }));
+    await waitFor(() => expect(result.current.lobbies).toHaveLength(1));
   });
 
   it("only unsubscribes both listeners once every mount has unmounted", async () => {

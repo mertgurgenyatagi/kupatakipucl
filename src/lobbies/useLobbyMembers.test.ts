@@ -14,7 +14,7 @@ vi.mock("../firebase", () => ({ db: {} }));
 
 import { useLobbyMembers } from "./useLobbyMembers";
 
-type SnapshotCallback = (snapshot: { docs: { data: () => unknown }[] }) => void;
+type SnapshotCallback = (snapshot: { docs: { data: () => unknown }[]; metadata?: { fromCache: boolean } }) => void;
 type ErrorCallback = (err: Error) => void;
 interface Captured {
   path: string[];
@@ -83,6 +83,27 @@ describe("useLobbyMembers", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.members).toEqual([]);
     consoleErrorSpy.mockRestore();
+  });
+
+  it("ignores a from-cache snapshot as the very first result, waiting for the server-confirmed one before reporting loaded", async () => {
+    const { result } = renderHook(() => useLobbyMembers("lobby1"));
+    act(() =>
+      lastFor("lobby1").onNext({
+        docs: [{ data: () => ({ uid: "uid1", joinedAt: 100, viaInviteId: null }) }],
+        metadata: { fromCache: true },
+      })
+    );
+    expect(result.current.loading).toBe(true);
+    expect(result.current.members).toEqual([]);
+
+    act(() =>
+      lastFor("lobby1").onNext({
+        docs: [{ data: () => ({ uid: "uid1", joinedAt: 100, viaInviteId: null }) }],
+        metadata: { fromCache: false },
+      })
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.members).toHaveLength(1);
   });
 
   it("shares one live subscription across two simultaneous mounts for the same lobbyId", async () => {

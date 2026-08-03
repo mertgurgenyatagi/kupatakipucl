@@ -47,10 +47,17 @@ function resubscribeLobbyDocs(uid: string, thisSub: MyLobbiesSubscription): void
     emit(thisSub);
     return;
   }
+  // Same fromCache guard as usePlayers.ts, scoped to this specific
+  // resubscription: a snapshot synthesized from whichever of these lobby
+  // docs already happen to be locally cached shouldn't be trusted as "the
+  // full set has loaded" until the server confirms it (2026-08-03).
+  let confirmed = false;
   thisSub.unsubscribeLobbyDocs = onSnapshot(
     query(collection(db, "lobbies"), where(documentId(), "in", ids)),
     (snapshot) => {
       if (subscriptions.get(uid) !== thisSub) return;
+      if (!confirmed && snapshot.metadata?.fromCache) return;
+      confirmed = true;
       thisSub.lobbyDocs = new Map(snapshot.docs.map((d) => [d.id, d.data() as Lobby]));
       emit(thisSub);
     },
@@ -71,10 +78,16 @@ function subscribeToMyLobbies(uid: string, onChange: (lobbies: MyLobby[]) => voi
       lobbyDocs: new Map(),
       latest: undefined,
     };
+    let membersConfirmed = false;
     thisSub.unsubscribeMembers = onSnapshot(
       query(collectionGroup(db, "members"), where("uid", "==", uid)),
       (snapshot) => {
         if (subscriptions.get(uid) !== thisSub) return;
+        // Same fromCache guard as above — this membership set feeds the
+        // "in" query below, so a partial one would under-report even once
+        // that second query itself confirms.
+        if (!membersConfirmed && snapshot.metadata?.fromCache) return;
+        membersConfirmed = true;
         thisSub.memberships = snapshot.docs.map((docSnap) => ({
           lobbyId: docSnap.ref.parent.parent!.id,
           joinedAt: (docSnap.data() as LobbyMember).joinedAt,
