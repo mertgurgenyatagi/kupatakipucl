@@ -16,11 +16,29 @@ import { AutoAdvance } from "../signup/AutoAdvance";
 import { BounceCheck } from "../signup/BounceCheck";
 import { sharpVariants } from "../signup/transitions";
 import { PAGE_UNAVAILABLE_MESSAGE } from "@/components/ui/page-unavailable";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // The scoring-example beat (index 1) is the only one with a visual.
 const SCORING_EXAMPLE_BEAT_INDEX = 1;
 
 type FlowStep = "intro" | "rank" | "done";
+
+// This page is a full-viewport animated intro sequence, not a data grid, and
+// usePrediction's loading is a single fast read that usually ends in an
+// immediate redirect — a couple of centered bars, not a pixel-matched
+// mockup of a UI that's about to be replaced or redirected away from.
+function PredictionsLoadingSkeleton() {
+  return (
+    <div
+      className="flex h-full min-h-0 flex-1 flex-col items-center justify-center gap-4 p-8"
+      aria-hidden
+      data-testid="predictions-skeleton"
+    >
+      <Skeleton className="h-8 w-64 rounded-md" />
+      <Skeleton className="h-4 w-80 rounded-sm" />
+    </div>
+  );
+}
 
 /**
  * /predictions is a one-time door now, not a page you keep coming back to
@@ -49,7 +67,7 @@ export function PredictionsPage() {
     return <p>{PAGE_UNAVAILABLE_MESSAGE}</p>;
   }
 
-  if (loading) return null;
+  if (loading) return <PredictionsLoadingSkeleton />;
 
   if (state !== "loggedin_notstarted" || prediction) {
     return <Navigate to="/" replace />;

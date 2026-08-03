@@ -112,11 +112,11 @@ describe("PredictionsPage", () => {
     expect(screen.getByText("Bu bölüm şu anda kullanılamıyor.")).toBeInTheDocument();
   });
 
-  it("renders nothing while the prediction is loading", () => {
+  it("shows a minimal loading skeleton while the prediction is loading", () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     mockUsePrediction.mockReturnValue({ prediction: null, loading: true });
-    const { container } = renderPage();
-    expect(container).toBeEmptyDOMElement();
+    renderPage();
+    expect(screen.getByTestId("predictions-skeleton")).toBeInTheDocument();
   });
 
   it("redirects home once a prediction already exists", () => {
