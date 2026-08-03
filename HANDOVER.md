@@ -6,6 +6,26 @@ This file is meant to be pruned/rewritten as things get resolved or folded into 
 
 ---
 
+## 2026-08-03 — Home's logged-in league-phase composition (+ preknockout/knockout reuse), merged to `main`
+
+Built and merged (branch `home-loggedin-leaguephase`, 8 commits): the `loggedin_leaguephase` composition of Home — the other "started" Home cell still on the generic `[Placeholder]` skeleton per the status grid, now that logged-out league-phase already shipped (previous entry family below). Design spec at `docs/superpowers/specs/2026-08-03-home-loggedin-leaguephase-design.md`, implementation plan at `docs/superpowers/plans/2026-08-03-home-loggedin-leaguephase.md` — built via brainstorm → spec → plan → inline task-by-task execution, from a hand-drawn wireframe.
+
+**Layout**: welcome banner (identical to logged-in-not-started's — extracted into a new shared `HomeWelcomeBanner.tsx` so both pages can't drift) above a 3-column bento: `UpcomingMatchesPreview` + `RecentPostsPreview` stacked in col 1, `HomeHero` alone in col 2, a new `NearbyStandingsList` widget + global-only `ChatRoom` stacked in col 3. Per direct instruction, **no `FrameHeader`/title band on any of the five widgets** — a deliberate departure from `HomeLandingLoggedIn`'s navy-banded cells — and the online-count badge that used to live in Sohbet's header moved to a plain inline line above the chat transcript instead.
+
+**Katılımcılar (the participant-list widget) and the Special Lobby switcher are absent from this page entirely** — replaced by `UpcomingMatchesPreview` and the new `NearbyStandingsList` respectively. `NearbyStandingsList` shows a 5-row window of the leaderboard centered on the viewer, **sliding** rather than padding at either edge (rank 1 or 2 shows ranks 1–5, last place shows the bottom 5, a viewer with no entry yet falls back to the top 5) — the windowing math is a small pure exported function (`selectNearbyWindow`), unit-tested directly against all four edge cases plus the middle case.
+
+**The welcome banner's CTA is unconditionally hidden** on this page (`showCta={false}`) regardless of prediction-submission status — `/predictions` redirects home for anyone visiting once the tournament has started, so reusing the old `!submitterUids.has(me.uid)` check would have linked to a dead end for anyone who missed the deadline.
+
+**Scope expanded mid-session, explicitly not a considered design**: right after this shipped, Mert asked to reuse the exact same composition for `loggedin_preknockout` and `loggedin_knockout` too — "populate the pages," his words, not a real pass at whether the layout is actually appropriate for those two phases ("we will go through all of them much much much later"). `HomePage.tsx` now routes all three states to the same `LoggedInHomeStarted`/`HomeLandingLoggedInStarted` pair; the only real change was threading the actual current `TournamentPhase` through to `MatchupPopup` (previously hardcoded to `"leaguephase"`) so its knockout branch still gates correctly if the admin sets the phase to `knockout` in production.
+
+**Verified**: `tsc -b` clean, full suite green (822 tests / 114 files, up from 792/110 pre-branch). **Not verified live**: reaching `loggedin_leaguephase`/`preknockout`/`knockout` requires a genuine Google sign-in plus the DevPanel phase override (§6.9's documented auth gap), and no credentials were available in this session — same limitation the Matchup Popup branch hit below. Correctness rests on the automated suite (94 new/changed tests across the six touched-or-added files), not a click-through.
+
+**Open follow-up, same backlog as every other entry below**:
+- `loggedin_preknockout`/`loggedin_knockout` reusing the league-phase layout verbatim is a placeholder-filling move, not a design decision — flagged directly by Mert as something to revisit in a real pass later.
+- `PROJECT_STATE.md` §4/§6.1's Home description and page-access matrix don't mention any of this yet — mechanical update, not urgent.
+
+---
+
 ## 2026-08-03 — Matchup Popup shipped, merged to `main`
 
 Built and merged (branch `matchup-popup`, 15 commits): the Matchup Popup — the last of the three popup families on the status grid, previously "Not Finished" everywhere except `notLogged_notStarted`. It fills in two pre-existing "reserved for a future match-detail view" no-op click handlers that had been sitting inert since earlier branches: `FixtureRow.tsx`'s row click (upcoming-fixtures drawer/preview) and `TeamPopup.tsx`'s `MatchRow`'s row click (match-history rows). Design spec at `docs/superpowers/specs/2026-08-02-matchup-popup-design.md`, implementation plan at `docs/superpowers/plans/2026-08-02-matchup-popup.md` — built via brainstorm → spec → plan → subagent-driven-development (10 implementation tasks, each with its own dispatch + task review, plus a final whole-branch review), all from three hand-drawn wireframes explicitly flagged by Mert as rough intent sketches, not a literal visual spec.
