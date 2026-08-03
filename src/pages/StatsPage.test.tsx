@@ -88,14 +88,14 @@ describe("StatsPage", () => {
     expect(screen.getByText("Bu bölüm şu anda kullanılamıyor.")).toBeInTheDocument();
   });
 
-  it("renders nothing while any data source is still loading", () => {
+  it("shows the stats skeleton while any data source is still loading", () => {
     mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     mockUsePlayers.mockReturnValue({ players: [], loading: true });
-    const { container } = render(<StatsPage />);
-    expect(container).toBeEmptyDOMElement();
+    render(<StatsPage />);
+    expect(screen.getByTestId("stats-skeleton")).toBeInTheDocument();
   });
 
-  it("renders all 7 tournament-stat widgets and 6 participant-stat widgets with computed data once loaded", () => {
+  it("renders all 7 tournament-stat widgets and 6 participant-stat widgets with computed data once loaded", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     render(<StatsPage />);
 
@@ -124,6 +124,6 @@ describe("StatsPage", () => {
     // Right: UCL is placeholder data — constant regardless of responses.
     expect(screen.getByText("UCL Takımı:5")).toBeInTheDocument();
     // Third section: the same hero carousel as the leaderboard page, minus its drawer.
-    expect(screen.getAllByTestId("hero-image").length).toBeGreaterThan(0);
+    expect((await screen.findAllByTestId("hero-image")).length).toBeGreaterThan(0);
   });
 });

@@ -22,6 +22,7 @@ import { STAT_WIDGETS } from "../leaderboard/StatWidget";
 import { StatsPageTuning, DEFAULT_STATS_PAGE_TUNING } from "../stats/statsPageTuning";
 import { StatsHero } from "../stats/StatsHero";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PageUnavailable } from "@/components/ui/page-unavailable";
 
 // Widened past the site's default 1100px cap for the same reason
@@ -37,6 +38,29 @@ const MAIN_ROW =
   "relative z-10 grid min-w-0 lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-[1fr_1fr_300px] [&>*]:min-h-0 [&>*]:min-w-0";
 // gap/padding are tunable (widgetGap/gridPadding), applied via inline style below.
 const WIDGET_GRID = "grid min-h-0 flex-1 grid-cols-2 content-start overflow-y-auto";
+
+// Matches PAGE_SHELL/MAIN_ROW's [1fr_1fr_300px] three-column shape: two
+// columns of widget-sized placeholder cards, a third Frame standing in for
+// StatsHero.
+function StatsSkeleton() {
+  return (
+    <div className={PAGE_SHELL} aria-hidden data-testid="stats-skeleton">
+      <div className={MAIN_ROW}>
+        <div className="grid min-h-0 flex-1 grid-cols-2 content-start gap-4 overflow-y-auto p-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={`a-${i}`} className="h-32 rounded-[var(--radius-4xl)]" />
+          ))}
+        </div>
+        <div className="grid min-h-0 flex-1 grid-cols-2 content-start gap-4 overflow-y-auto p-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={`b-${i}`} className="h-32 rounded-[var(--radius-4xl)]" />
+          ))}
+        </div>
+        <Frame className="min-h-[128px] lg:h-full" />
+      </div>
+    </div>
+  );
+}
 
 // UCL supported-team survey answer is still free text (about to become a
 // select — see docs/superpowers/specs/2026-07-23-stats-page-design.md's
@@ -168,7 +192,7 @@ export function StatsPage() {
     return <PageUnavailable />;
   }
 
-  if (leaderboardLoading || resultsLoading || playersLoading || responsesLoading) return null;
+  if (leaderboardLoading || resultsLoading || playersLoading || responsesLoading) return <StatsSkeleton />;
 
   return <StatsPageView entries={entries} results={results} players={players} responses={responses} />;
 }
