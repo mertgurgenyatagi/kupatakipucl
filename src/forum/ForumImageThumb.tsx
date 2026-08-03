@@ -1,7 +1,7 @@
 // src/forum/ForumImageThumb.tsx
-import { useState, type MouseEvent } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { X, ImageOff } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ForumImageThumbProps {
   src: string;
@@ -10,23 +10,50 @@ interface ForumImageThumbProps {
 
 type ImageStatus = "loading" | "loaded" | "error";
 
+// Same mount-when-ready idiom as AvatarImage/HeroCarousel — probe via a
+// detached Image() first, only render the real <img> once it has actually
+// decoded. An earlier version of this component mounted the <img>
+// immediately at opacity:0 and faded it in on load, but that just traded
+// one empty-looking box for another (worse for a real Storage-hosted photo,
+// which takes real network time, unlike this app's local dev assets):
+// nothing distinguishable painted where the image should be for the whole
+// fetch *plus* the fade's own 300ms, every single time (2026-08-03).
+function useImageStatus(src: string): ImageStatus {
+  const [status, setStatus] = useState<ImageStatus>("loading");
+
+  useEffect(() => {
+    setStatus("loading");
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (!cancelled) setStatus("loaded");
+    };
+    img.onerror = () => {
+      if (!cancelled) setStatus("error");
+    };
+    img.src = src;
+    return () => {
+      cancelled = true;
+    };
+  }, [src]);
+
+  return status;
+}
+
 /**
  * 4chan-style image treatment: a small bounded thumbnail (never full width),
  * expanding to the full image only on click, in a lightbox overlay. Every
  * forum image call site uses this instead of its own inline <img> so the
  * "bounded until clicked" behavior stays in one place.
  *
- * Unlike AvatarImage (base-ui's primitive, which only mounts once a photo
- * has already loaded), this is a plain <img> — the thumbnail box is already
- * fixed-size so there's no layout shift, but the image itself used to pop in
- * with no fade and no failure handling at all. Both the thumbnail and the
- * lightbox now track their own load status independently, since a broken
- * upload should show a fallback in both places, not just one.
+ * Thumbnail and lightbox share one status probe — same src, so once the
+ * thumbnail has decoded the browser already has the full image cached, and
+ * the lightbox's own <img> paints instantly instead of needing its own
+ * separate load.
  */
 export function ForumImageThumb({ src, className }: ForumImageThumbProps) {
   const [expanded, setExpanded] = useState(false);
-  const [thumbStatus, setThumbStatus] = useState<ImageStatus>("loading");
-  const [fullStatus, setFullStatus] = useState<ImageStatus>("loading");
+  const status = useImageStatus(src);
 
   function openLightbox(e: MouseEvent) {
     // Image click must never bubble into a post-row's own "open the thread
@@ -44,23 +71,15 @@ export function ForumImageThumb({ src, className }: ForumImageThumbProps) {
         aria-label="Resmi büyüt"
         className={className ?? "block size-16 shrink-0 cursor-pointer overflow-hidden rounded-md border border-color_border1/50"}
       >
-        {thumbStatus === "error" ? (
+        {status === "loading" && (
+          <Skeleton className="size-full rounded-none" data-testid="forum-image-skeleton" />
+        )}
+        {status === "error" && (
           <div className="flex size-full items-center justify-center bg-muted" data-testid="forum-image-fallback">
             <ImageOff className="size-4 text-color_textsecondary/50" aria-hidden />
           </div>
-        ) : (
-          <img
-            src={src}
-            alt=""
-            loading="lazy"
-            onLoad={() => setThumbStatus("loaded")}
-            onError={() => setThumbStatus("error")}
-            className={cn(
-              "size-full object-cover transition-opacity duration-300",
-              thumbStatus === "loaded" ? "opacity-100" : "opacity-0"
-            )}
-          />
         )}
+        {status === "loaded" && <img src={src} alt="" className="size-full object-cover" />}
       </button>
 
       {expanded && (
@@ -74,19 +93,16 @@ export function ForumImageThumb({ src, className }: ForumImageThumbProps) {
           }}
           className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-color_idk/80 p-6"
         >
-          {fullStatus === "error" ? (
+          {status === "error" ? (
             <p className="text-sm text-white">Resim yüklenemedi.</p>
+          ) : status === "loading" ? (
+            <Skeleton className="h-64 w-64 rounded-lg" />
           ) : (
             <img
               src={src}
               alt=""
               onClick={(e) => e.stopPropagation()}
-              onLoad={() => setFullStatus("loaded")}
-              onError={() => setFullStatus("error")}
-              className={cn(
-                "max-h-full max-w-full cursor-default rounded-lg object-contain transition-opacity duration-300",
-                fullStatus === "loaded" ? "opacity-100" : "opacity-0"
-              )}
+              className="max-h-full max-w-full cursor-default rounded-lg object-contain"
             />
           )}
           <button
