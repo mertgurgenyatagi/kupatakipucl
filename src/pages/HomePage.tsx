@@ -1,6 +1,7 @@
 // src/pages/HomePage.tsx
 import { useVisibilityState } from "../state/useVisibilityState";
 import { VisibilityState } from "../state/visibilityState";
+import { useTournamentPhase } from "../tournament/useTournamentPhase";
 import { useResults } from "../leaderboard/useResults";
 import { usePlayers } from "../profile/usePlayers";
 import { useLeaderboard } from "../leaderboard/useLeaderboard";
@@ -19,17 +20,15 @@ import { LoggedInHomeStarted } from "../home/LoggedInHomeStarted";
 // early returns below.
 const STARTED_LOGGEDOUT_BLURB =
   "[Placeholder] Started, not logged in: mission blurb + sign-up-closed notice + match days remaining go here.";
-const STARTED_LOGGEDIN_BLURB = "[Placeholder] Started, logged in: same as above, plus chat access.";
 
 const BLURB: Partial<Record<VisibilityState, string>> = {
   loggedout_preknockout: STARTED_LOGGEDOUT_BLURB,
-  loggedin_preknockout: STARTED_LOGGEDIN_BLURB,
   loggedout_knockout: STARTED_LOGGEDOUT_BLURB,
-  loggedin_knockout: STARTED_LOGGEDIN_BLURB,
 };
 
 export function HomePage() {
   const state = useVisibilityState();
+  const phase = useTournamentPhase();
   const started = !state.endsWith("_notstarted");
   const loggedIn = state.startsWith("loggedin_");
 
@@ -52,8 +51,12 @@ export function HomePage() {
   if (state === "loggedout_leaguephase") {
     return <HomeLandingLoggedOutStarted results={results} players={players} entries={entries} />;
   }
-  if (state === "loggedin_leaguephase") {
-    return <LoggedInHomeStarted results={results} players={players} entries={entries} />;
+  // loggedin_leaguephase's composition is reused as-is for preknockout/
+  // knockout too (2026-08-03, "populate the pages" pass — not a considered
+  // design decision for those two phases yet, just filling the placeholder
+  // in ahead of a proper pass later).
+  if (state === "loggedin_leaguephase" || state === "loggedin_preknockout" || state === "loggedin_knockout") {
+    return <LoggedInHomeStarted results={results} players={players} entries={entries} phase={phase} />;
   }
 
   return (

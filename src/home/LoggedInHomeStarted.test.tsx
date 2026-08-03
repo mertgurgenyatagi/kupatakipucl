@@ -119,40 +119,40 @@ describe("LoggedInHomeStarted", () => {
 
   it("renders nothing while there's no signed-in user", () => {
     mockUseAuth.mockReturnValue({ user: null, loading: false });
-    const { container } = render(<LoggedInHomeStarted players={players} results={{}} entries={[]} />);
+    const { container } = render(<LoggedInHomeStarted players={players} results={{}} entries={[]} phase="leaguephase" />);
     expect(container).toBeEmptyDOMElement();
   });
 
   it("renders nothing if the profile hasn't loaded yet (shouldn't normally happen post-ProfileGate)", () => {
     mockUseProfile.mockReturnValue({ profile: null, loading: false });
-    const { container } = render(<LoggedInHomeStarted players={players} results={{}} entries={[]} />);
+    const { container } = render(<LoggedInHomeStarted players={players} results={{}} entries={[]} phase="leaguephase" />);
     expect(container).toBeEmptyDOMElement();
   });
 
   it("combines the auth uid with the fetched profile into `me` and renders the view", () => {
-    render(<LoggedInHomeStarted players={players} results={{}} entries={[]} />);
+    render(<LoggedInHomeStarted players={players} results={{}} entries={[]} phase="leaguephase" />);
     expect(screen.getByText("home-landing-loggedin-started:uid1:0:false:true:4:0")).toBeInTheDocument();
   });
 
   it("sends a presence heartbeat for the signed-in uid", () => {
-    render(<LoggedInHomeStarted players={players} results={{}} entries={[]} />);
+    render(<LoggedInHomeStarted players={players} results={{}} entries={[]} phase="leaguephase" />);
     expect(mockUsePresenceHeartbeat).toHaveBeenCalledWith("uid1");
   });
 
   it("excludes the current user from their own typing-users list", () => {
-    render(<LoggedInHomeStarted players={players} results={{}} entries={[]} />);
+    render(<LoggedInHomeStarted players={players} results={{}} entries={[]} phase="leaguephase" />);
     expect(mockUseTypingUsers).toHaveBeenCalledWith("uid1");
   });
 
   it("wires the loadOlder callback from useMessages through to the view", () => {
-    render(<LoggedInHomeStarted players={players} results={{}} entries={[]} />);
+    render(<LoggedInHomeStarted players={players} results={{}} entries={[]} phase="leaguephase" />);
     fireEvent.click(screen.getByText("load-older"));
     expect(mockLoadOlder).toHaveBeenCalledTimes(1);
   });
 
   it("calls setPostLiked with true when liking a post nobody's uid has liked yet", async () => {
     mockSetPostLiked.mockResolvedValue(undefined);
-    render(<LoggedInHomeStarted players={players} results={{}} entries={[]} />);
+    render(<LoggedInHomeStarted players={players} results={{}} entries={[]} phase="leaguephase" />);
 
     fireEvent.click(screen.getByText("toggle-like"));
     await waitFor(() => expect(mockSetPostLiked).toHaveBeenCalledWith("p1", "uid1", true));
@@ -162,7 +162,7 @@ describe("LoggedInHomeStarted", () => {
   it("shows an error when the like write fails", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockSetPostLiked.mockRejectedValue(new Error("permission-denied"));
-    render(<LoggedInHomeStarted players={players} results={{}} entries={[]} />);
+    render(<LoggedInHomeStarted players={players} results={{}} entries={[]} phase="leaguephase" />);
 
     fireEvent.click(screen.getByText("toggle-like"));
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Beğeni kaydedilemedi, tekrar deneyin."));
@@ -172,7 +172,7 @@ describe("LoggedInHomeStarted", () => {
   it("calls setPostLiked with false when the post is already liked by this uid, per the live posts data", async () => {
     mockUsePosts.mockReturnValue({ posts: [makePost({ id: "p1", likedByUids: ["uid1"] })], loading: false, refetch: vi.fn() });
     mockSetPostLiked.mockResolvedValue(undefined);
-    render(<LoggedInHomeStarted players={players} results={{}} entries={[]} />);
+    render(<LoggedInHomeStarted players={players} results={{}} entries={[]} phase="leaguephase" />);
 
     expect(screen.getByText("home-landing-loggedin-started:uid1:1:false:true:4:0")).toBeInTheDocument();
     fireEvent.click(screen.getByText("toggle-like"));

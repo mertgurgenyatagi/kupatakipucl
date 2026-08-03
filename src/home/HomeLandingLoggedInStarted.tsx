@@ -15,12 +15,17 @@ import type { TeamResult } from "../leaderboard/teamResultTypes";
 import type { LeaderboardEntry } from "../leaderboard/leaderboardTypes";
 import type { MessageWithId } from "../chat/useMessages";
 import type { PostWithId } from "../forum/postTypes";
+import type { TournamentPhase } from "../tournament/tournamentPhase";
 
 interface HomeLandingLoggedInStartedProps {
   me: Player;
   players: Player[];
   results: Record<string, TeamResult>;
   entries: LeaderboardEntry[];
+  /** The real, current started phase — reused as-is for preknockout/knockout
+   *  (2026-08-03, "populate the pages" pass), so MatchupPopup's knockout
+   *  branch gates on the actual phase rather than a hardcoded leaguephase. */
+  phase: TournamentPhase;
   messages: MessageWithId[];
   onLoadOlderMessages: () => void;
   loadingOlderMessages: boolean;
@@ -60,6 +65,7 @@ export function HomeLandingLoggedInStarted({
   players,
   results,
   entries,
+  phase,
   messages,
   onLoadOlderMessages,
   loadingOlderMessages,
@@ -209,7 +215,7 @@ export function HomeLandingLoggedInStarted({
         onOpenChange={(open) => {
           if (!open) setSelectedFixtureId(null);
         }}
-        phase="leaguephase"
+        phase={phase}
         tournamentStarted
         entries={entries}
         players={players}

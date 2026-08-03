@@ -78,7 +78,9 @@ vi.mock("../leaderboard/TeamPopup", () => ({
 }));
 
 vi.mock("../leaderboard/MatchupPopup", () => ({
-  MatchupPopup: ({ fixtureId }: { fixtureId: string | null }) => <div>matchup-popup:{fixtureId ?? "closed"}</div>,
+  MatchupPopup: ({ fixtureId, phase }: { fixtureId: string | null; phase: string }) => (
+    <div>matchup-popup:{fixtureId ?? "closed"}:{phase}</div>
+  ),
 }));
 
 const me: Player = { uid: "me", firstName: "Mert", lastName: "Y.", photoURL: "", createdAt: 0 };
@@ -91,6 +93,7 @@ function renderPage(overrides: Partial<Parameters<typeof HomeLandingLoggedInStar
       players={players}
       results={{}}
       entries={[]}
+      phase="leaguephase"
       messages={[]}
       onLoadOlderMessages={vi.fn()}
       loadingOlderMessages={false}
@@ -143,12 +146,17 @@ describe("HomeLandingLoggedInStarted", () => {
 
   it("opens the Matchup Popup when a fixture is selected from the upcoming-matches preview or TeamPopup's match history", () => {
     renderPage();
-    expect(screen.getByText("matchup-popup:closed")).toBeInTheDocument();
+    expect(screen.getByText("matchup-popup:closed:leaguephase")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("upcoming-preview-fixture"));
-    expect(screen.getByText("matchup-popup:fixture-1")).toBeInTheDocument();
+    expect(screen.getByText("matchup-popup:fixture-1:leaguephase")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("team-popup-select-fixture"));
-    expect(screen.getByText("matchup-popup:fixture-2")).toBeInTheDocument();
+    expect(screen.getByText("matchup-popup:fixture-2:leaguephase")).toBeInTheDocument();
+  });
+
+  it("passes the real current phase through to MatchupPopup, e.g. for the knockout reuse", () => {
+    renderPage({ phase: "knockout" });
+    expect(screen.getByText("matchup-popup:closed:knockout")).toBeInTheDocument();
   });
 });

@@ -13,11 +13,13 @@ import { HomeLandingLoggedInStarted } from "./HomeLandingLoggedInStarted";
 import type { Player } from "../profile/usePlayers";
 import type { TeamResult } from "../leaderboard/teamResultTypes";
 import type { LeaderboardEntry } from "../leaderboard/leaderboardTypes";
+import type { TournamentPhase } from "../tournament/tournamentPhase";
 
 interface LoggedInHomeStartedProps {
   players: Player[];
   results: Record<string, TeamResult>;
   entries: LeaderboardEntry[];
+  phase: TournamentPhase;
 }
 
 /**
@@ -30,7 +32,7 @@ interface LoggedInHomeStartedProps {
  * none of the lobby or prediction-submitter hooks are fetched here (design
  * spec 2026-08-03).
  */
-export function LoggedInHomeStarted({ players, results, entries }: LoggedInHomeStartedProps) {
+export function LoggedInHomeStarted({ players, results, entries, phase }: LoggedInHomeStartedProps) {
   const { user } = useAuth();
   const { profile, loading: profileLoading } = useProfile(user?.uid ?? null);
   const { messages, loading: messagesLoading, loadOlder, loadingOlder, hasMoreOlder } = useMessages();
@@ -93,6 +95,7 @@ export function LoggedInHomeStarted({ players, results, entries }: LoggedInHomeS
       players={players}
       results={results}
       entries={entries}
+      phase={phase}
       messages={messages}
       onLoadOlderMessages={loadOlder}
       loadingOlderMessages={loadingOlder}
