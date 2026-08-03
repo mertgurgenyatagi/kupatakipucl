@@ -8,15 +8,10 @@ describe("AboutPage", () => {
     expect(screen.getByAltText("#kupatakipucl")).toHaveAttribute("src", "/brand/kupatakip-logo-white.svg");
   });
 
-  it("renders the essence statement, word by word", () => {
+  it("renders the encyclopedic essence paragraph, including the knockout scoring detail", () => {
     render(<AboutPage />);
-    expect(screen.getByText("Kupatakip,")).toBeInTheDocument();
-    expect(screen.getByText("oyunudur.")).toBeInTheDocument();
-  });
-
-  it("renders the prose paragraphs", () => {
-    render(<AboutPage />);
-    expect(screen.getByText(/her sezon yeniden düzenlenir/)).toBeInTheDocument();
+    expect(screen.getByText(/Kupatakip, Şampiyonlar Ligi için/)).toBeInTheDocument();
+    expect(screen.getByText(/şampiyon altı puan getirir/)).toBeInTheDocument();
   });
 
   it("renders all six key-dates timeline nodes with their labels and formatted dates", () => {
