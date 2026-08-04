@@ -4,6 +4,13 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 import { LeaderboardPage } from "./LeaderboardPage";
 import { TEAMS } from "../predictions/teams";
 
+// KnockoutBracket is a complex interactive widget; a lightweight stub is
+// sufficient for these integration tests — we only need to confirm the bracket
+// *slot* is present in the knockout layout, not test the bracket itself.
+vi.mock("../knockout/KnockoutBracket", () => ({
+  KnockoutBracket: () => <div data-testid="knockout-bracket-stub" />,
+}));
+
 const mockUseVisibilityState = vi.fn();
 const mockUseLeaderboard = vi.fn();
 const mockUsePlayers = vi.fn();
@@ -101,5 +108,31 @@ describe("LeaderboardPage", () => {
     const buttons = screen.getAllByRole("button");
     fireEvent.click(buttons[1]); // the first fixture row's own click target
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("renders the knockout bracket layout when the tournament phase is 'knockout'", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_knockout");
+    mockUseTournamentPhase.mockReturnValue("knockout");
+    mockUseLeaderboard.mockReturnValue({
+      entries: [{ uid: "uid1", firstName: "Ada", photoURL: "a.png", points: 36, ranking: [] }],
+      loading: false,
+    });
+    render(<LeaderboardPage />);
+    await act(async () => {});
+    expect(screen.getByTestId("knockout-bracket-stub")).toBeInTheDocument();
+  });
+
+  it("does not render the team table in knockout phase", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_knockout");
+    mockUseTournamentPhase.mockReturnValue("knockout");
+    mockUseLeaderboard.mockReturnValue({
+      entries: [{ uid: "uid1", firstName: "Ada", photoURL: "a.png", points: 36, ranking: [] }],
+      loading: false,
+    });
+    render(<LeaderboardPage />);
+    await act(async () => {});
+    // TeamTable's "AV" (Averaj) column header is unique to that component and
+    // is absent in both the bracket and the hero carousel / fixtures drawer.
+    expect(screen.queryByText("AV")).not.toBeInTheDocument();
   });
 });

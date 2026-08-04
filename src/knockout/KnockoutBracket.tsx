@@ -12,6 +12,11 @@ interface Props {
   submitting?: boolean;
   readOnly?: boolean;
   onSelectTeam?: (teamId: string) => void;
+  /** When true: tightens internal gaps and removes the max-width cap so the
+   *  bracket fills its container. Pill sizes are unaffected. Intended for
+   *  the leaderboard page where the bracket shares a 3-column row and needs
+   *  to compress without growing its own match boxes. */
+  compact?: boolean;
 }
 
 function findTeam(id: string): Team | null {
@@ -36,6 +41,7 @@ export function KnockoutBracket({
   submitting = false,
   readOnly = false,
   onSelectTeam,
+  compact = false,
 }: Props) {
   const [r16Picks, setR16Picks] = useState<(string | null)[]>(
     () => initialPrediction?.quarterFinalists ?? Array(8).fill(null)
@@ -154,34 +160,41 @@ export function KnockoutBracket({
   const fr = findTeam(sfPicks[1] ?? "");
 
   return (
-    <div className="flex h-full w-full flex-col gap-3 select-none overflow-hidden p-1">
-      {/* Top action bar (always occupied h-7 height so edit mode toggle never shifts layout) */}
-      <div className="flex h-7 shrink-0 items-center justify-between px-1">
-        {!readOnly && (
-          <>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleReset}
-              className="gap-1 font-mono text-xs text-color_textsecondary hover:text-color_text px-1.5 h-7"
-            >
-              <RotateCcw className="size-3" />
-              Sıfırla
-            </Button>
-            <Button
-              type="button"
-              disabled={!isComplete || submitting}
-              onClick={handleSubmit}
-              className="gap-1.5 bg-color_text px-4 py-1 h-7 text-xs font-bold text-background hover:opacity-90 disabled:opacity-30"
-            >
-              {submitting ? "Kaydediliyor..." : "Tahmini Kaydet"}
-            </Button>
-          </>
-        )}
-      </div>
+    <div className={cn("flex h-full w-full flex-col select-none overflow-hidden", compact ? "gap-1 p-0" : "gap-3 p-1")}>
+      {/* Top action bar — hidden entirely in compact+readOnly (no buttons to show,
+          and the h-7 spacer eats vertical space the bracket needs). In non-compact
+          or edit mode it stays so the Sıfırla/Kaydet buttons have a stable slot. */}
+      {!(compact && readOnly) && (
+        <div className="flex h-7 shrink-0 items-center justify-between px-1">
+          {!readOnly && (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleReset}
+                className="gap-1 font-mono text-xs text-color_textsecondary hover:text-color_text px-1.5 h-7"
+              >
+                <RotateCcw className="size-3" />
+                Sıfırla
+              </Button>
+              <Button
+                type="button"
+                disabled={!isComplete || submitting}
+                onClick={handleSubmit}
+                className="gap-1.5 bg-color_text px-4 py-1 h-7 text-xs font-bold text-background hover:opacity-90 disabled:opacity-30"
+              >
+                {submitting ? "Kaydediliyor..." : "Tahmini Kaydet"}
+              </Button>
+            </>
+          )}
+        </div>
+      )}
 
-      {/* Non-scrollable 7-Column Compact Grid with compressed width */}
-      <div className="grid flex-1 grid-cols-7 gap-2 items-center justify-center min-h-0 w-full max-w-4xl mx-auto overflow-hidden">
+      {/* 7-Column bracket grid. In compact mode: tighter gaps, no max-width cap. */}
+      <div className={cn(
+        "grid flex-1 grid-cols-7 items-center justify-center min-h-0 w-full overflow-hidden",
+        compact ? "gap-1 mx-0" : "gap-2 max-w-4xl mx-auto"
+      )}>
         {/* R16 Left */}
         <div className="flex h-full flex-col justify-around gap-2 items-center min-w-0">
           {MOCK_ROUND_OF_16.slice(0, 4).map((match, i) => (

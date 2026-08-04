@@ -6,6 +6,20 @@ This file is meant to be pruned/rewritten as things get resolved or folded into 
 
 **Term: "Xerox pass."** Reusing an existing, already-built page/composition wholesale for a different, not-yet-designed state — purely to replace placeholder text with *something real*, under explicit instruction not to worry about whether it's actually appropriate for that state ("don't overthink it," "we'll go through all of them much later"). Not a design decision, not even a rough one — a stopgap. A page/state marked as Xeroxed (from wherever) should be treated as **unreviewed** for its own specific context until a real pass happens; don't cite its current layout, copy, or behavior as an intentional choice for that state.
 
+## 2026-08-04/05 — Knockout Leaderboard Page Refactor, branch `main`
+
+Refactored the logged-in knockout leaderboard page (`LeaderboardPage.tsx`) to support `knockout` and `preknockout` phases with a bracket-dominant layout.
+
+- **Three-column layout**: Restructured the layout for knockout/preknockout to show the `KnockoutBracket` on the left, `LeaderboardHero` (carousel + fixtures drawer) in the middle, and `LeaderboardTable` (standings) on the right.
+- **Bracket Section Styling & Compression**:
+  - Overrode the bracket container `Frame` styling with `bg-background border-transparent shadow-none` so it blends cleanly into the main background canvas.
+  - Added a `compact` prop to `KnockoutBracket` that removes the top spacer (when in `readOnly` mode) and tightens gaps/paddings, keeping team pill sizes intact.
+- **Widget Sizing Ratios**:
+  - Standings widget set to `297px`.
+  - Hero carousel set to `256px`.
+  - The bracket takes up the remaining flexible width (`1fr`).
+- **Verified**: TypeScript compiles clean, and all `LeaderboardPage` unit tests pass.
+
 ---
 
 ## 2026-08-04 — Knockout popup refinements, branch `final-sweep`

@@ -13,6 +13,7 @@ import { LeaderboardHero } from "../leaderboard/LeaderboardHero";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { TeamPopup } from "../leaderboard/TeamPopup";
 import { MatchupPopup } from "../leaderboard/MatchupPopup";
+import { KnockoutBracket } from "../knockout/KnockoutBracket";
 import { evaluatePicks } from "../leaderboard/scoring";
 import { assignRanks } from "../leaderboard/ranking";
 import { TEAMS, teamCrestSrc } from "../predictions/teams";
@@ -36,28 +37,45 @@ import { PageUnavailable } from "@/components/ui/page-unavailable";
  * exact space they vacated rather than leaving it empty. Each column scrolls
  * inside its own frame(s); the document itself never scrolls on desktop (§55).
  *
- * Width note: this page loosens DESIGN-SPEC §0c's 1100px cap to 1400px — a
- * 6-column 36-row team table beside a hero column and a 51-row standings
- * genuinely needs the room. Flagged for discussion, not a silent drift.
+ * Width note: this page loosens DESIGN-SPEC §0c's 1100px cap to 1400px for
+ * league phases — a 6-column 36-row team table beside a hero column and a
+ * 51-row standings genuinely needs the room. Flagged for discussion, not a
+ * silent drift.
+ *
+ * During knockout/preknockout phases a different layout is used: the bracket
+ * dominates the left section and the standings are docked to the right. The
+ * team table and hero carousel are absent in this mode — the bracket is the
+ * star. Max-width is widened to 1600px for this variant.
+ *
+ *   ┌─ Knockout Bracket ──────────────────────────────┬─ standings ─┐
+ *   └─────────────────────────────────────────────────┴─────────────┘
  */
-const PAGE_SHELL =
+
+// ─── Layout tokens ────────────────────────────────────────────────────────────
+
+const LEAGUE_PAGE_SHELL =
   "relative mx-auto flex w-full max-w-[1400px] min-w-0 flex-col gap-4 p-4 sm:p-6 lg:h-full lg:min-h-0 lg:flex-1 lg:gap-5 lg:p-6";
+
 // [&>*]:min-w-0/[&>*]:min-h-0 — grid items default to min-width/min-height:auto,
-// which lets intrinsic content size (a wide table, a tall column) force the
-// grid itself wider/taller than its container. Without this, that's exactly
-// how a stray browser scrollbar sneaks in despite the fixed-viewport rule
-// (§55) — nothing here should ever scroll but this row's own frames.
-// The team-table column's 540px floor isn't a nice round number — it's the
-// two 18-row halves' real minimum (rank + team-code + O/A/Y/AV/P columns,
-// see TeamTable.tsx's grid) plus frame chrome. Below it the two halves no
-// longer both fit at once; measured live via Playwright, not eyeballed.
-const MAIN_ROW =
+// which lets intrinsic content size force the grid wider/taller than its
+// container. Without this, a stray scrollbar sneaks in despite the fixed-viewport
+// rule (§55).
+const LEAGUE_MAIN_ROW =
   "relative z-10 grid min-w-0 gap-4 lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(540px,1.3fr)_300px_minmax(340px,1fr)] lg:gap-5 [&>*]:min-h-0 [&>*]:min-w-0";
+
+// Knockout layout: same 3-column structure as league (bracket | hero | standings)
+// but the bracket takes the team-table slot. The bracket column uses a generous
+// flex share — it needs horizontal room for 7 columns of match boxes.
+const KNOCKOUT_PAGE_SHELL = LEAGUE_PAGE_SHELL;
+const KNOCKOUT_MAIN_ROW =
+  "relative z-10 grid min-w-0 gap-4 lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-[1fr_256px_297px] lg:gap-5 [&>*]:min-h-0 [&>*]:min-w-0";
+
+// ─── Skeleton placeholders ────────────────────────────────────────────────────
 
 function LedgerSkeleton() {
   return (
-    <div className={PAGE_SHELL} aria-hidden data-testid="leaderboard-skeleton">
-      <div className={MAIN_ROW}>
+    <div className={LEAGUE_PAGE_SHELL} aria-hidden data-testid="leaderboard-skeleton">
+      <div className={LEAGUE_MAIN_ROW}>
         <Frame className="min-h-0 lg:h-full">
           <div className="min-h-0 flex-1 px-4 py-3">
             {Array.from({ length: 9 }).map((_, i) => (
@@ -93,6 +111,47 @@ function LedgerSkeleton() {
   );
 }
 
+function KnockoutSkeleton() {
+  return (
+    <div className={KNOCKOUT_PAGE_SHELL} aria-hidden data-testid="leaderboard-skeleton">
+      <div className={KNOCKOUT_MAIN_ROW}>
+        {/* Bracket placeholder — 7 evenly-spaced column stubs */}
+        <Frame className="min-h-0 lg:h-full">
+          <div className="flex h-full items-center justify-around gap-2 p-4">
+            {Array.from({ length: 7 }).map((_, col) => (
+              <div key={col} className="flex h-full flex-col items-center justify-around gap-2">
+                {Array.from({ length: col === 3 ? 1 : col === 2 || col === 4 ? 1 : col === 1 || col === 5 ? 2 : 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-20 w-24 rounded-xl" />
+                ))}
+              </div>
+            ))}
+          </div>
+        </Frame>
+        {/* Hero placeholder */}
+        <Frame className="min-h-[128px] lg:h-full" />
+        {/* Standings placeholder */}
+        <Frame className="min-h-0 lg:h-full">
+          <div className="min-h-0 flex-1 px-4 py-3">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 border-b border-color_border1/60 py-3.5"
+              >
+                <Skeleton className="h-4 w-6 rounded-sm" />
+                <Skeleton className="size-8 rounded-full" />
+                <Skeleton className="h-4 flex-1 rounded-sm" />
+                <Skeleton className="h-4 w-8 rounded-sm" />
+              </div>
+            ))}
+          </div>
+        </Frame>
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export function LeaderboardPage() {
   const state = useVisibilityState();
   const { entries, loading } = useLeaderboard();
@@ -100,6 +159,9 @@ export function LeaderboardPage() {
   const { user } = useAuth();
   const { results } = useResults();
   const phase = useTournamentPhase();
+
+  const isKnockoutPhase = phase === "knockout" || phase === "preknockout";
+
   const imageUrls = useMemo(
     () => [...players.map((p) => p.photoURL).filter(Boolean), ...TEAMS.map((t) => teamCrestSrc(t.id))],
     [players]
@@ -164,26 +226,13 @@ export function LeaderboardPage() {
     return <PageUnavailable />;
   }
 
-  if (loading || !imagesReady) return <LedgerSkeleton />;
+  if (loading || !imagesReady) {
+    return isKnockoutPhase ? <KnockoutSkeleton /> : <LedgerSkeleton />;
+  }
 
-  return (
-    <div className={PAGE_SHELL}>
-      <div className={MAIN_ROW}>
-        <TeamTable
-          results={results}
-          highlightedTeamIds={highlightedTeamIds}
-          onSelectTeam={handleSelectTeam}
-        />
-        <LeaderboardHero results={results} onSelectFixture={handleSelectFixture} />
-        <LeaderboardTable
-          entries={entries}
-          players={players}
-          myUid={user?.uid}
-          revealCorrectness={phase !== "notstarted"}
-          onHoverEntry={setHoveredUid}
-          onSelectEntry={handleSelectParticipant}
-        />
-      </div>
+  // ── Shared popup layer (identical for both layouts) ────────────────────────
+  const popupLayer = (
+    <>
       <ParticipantPopup
         ranked={selectedRanked}
         entries={entries}
@@ -218,6 +267,65 @@ export function LeaderboardPage() {
         onSelectTeam={handleSelectTeam}
         onSelectParticipant={handleSelectParticipant}
       />
+    </>
+  );
+
+  // ── Knockout layout: bracket | hero | standings ──────────────────────────
+  if (isKnockoutPhase) {
+    return (
+      <div className={KNOCKOUT_PAGE_SHELL}>
+        <div className={KNOCKOUT_MAIN_ROW}>
+          {/* Bracket — compact+read-only; team pills open TeamPopup.
+              bg-background makes it dissolve into the page canvas rather than
+              sitting inside a card-colored box. border-transparent kills the
+              hairline so the bracket genuinely floats. shadow-none drops the
+              frame drop-shadow since there's no surface to lift. */}
+          <Frame className="relative min-h-0 animate-cotton-rise bg-background border-transparent shadow-none lg:h-full">
+            <KnockoutBracket
+              readOnly
+              compact
+              onSelectTeam={handleSelectTeam}
+            />
+          </Frame>
+
+          {/* Hero carousel + upcoming fixtures drawer — identical to league layout */}
+          <LeaderboardHero results={results} onSelectFixture={handleSelectFixture} />
+
+          {/* Standings — identical to the league-phase layout */}
+          <LeaderboardTable
+            entries={entries}
+            players={players}
+            myUid={user?.uid}
+            revealCorrectness={true /* always true in knockout/preknockout */}
+            onHoverEntry={setHoveredUid}
+            onSelectEntry={handleSelectParticipant}
+          />
+        </div>
+        {popupLayer}
+      </div>
+    );
+  }
+
+  // ── League / default layout: team table | hero | standings ────────────────
+  return (
+    <div className={LEAGUE_PAGE_SHELL}>
+      <div className={LEAGUE_MAIN_ROW}>
+        <TeamTable
+          results={results}
+          highlightedTeamIds={highlightedTeamIds}
+          onSelectTeam={handleSelectTeam}
+        />
+        <LeaderboardHero results={results} onSelectFixture={handleSelectFixture} />
+        <LeaderboardTable
+          entries={entries}
+          players={players}
+          myUid={user?.uid}
+          revealCorrectness={phase !== "notstarted"}
+          onHoverEntry={setHoveredUid}
+          onSelectEntry={handleSelectParticipant}
+        />
+      </div>
+      {popupLayer}
     </div>
   );
 }
