@@ -23,6 +23,11 @@ import { TeamPopupTuning, DEFAULT_TEAM_POPUP_TUNING } from "./teamPopupTuning";
 import { TEAMS } from "../predictions/teams";
 import { useImagePreload } from "@/lib/useImagePreload";
 import {
+  useAllKnockoutPredictions,
+  RO16_TEAM_IDS,
+  getKnockoutStageBadge,
+} from "../knockout/useAllKnockoutPredictions";
+import {
   Dialog,
   DialogContent,
   DialogTitle,
@@ -67,6 +72,9 @@ interface TeamPopupProps {
    *  this team" — shows a plain "not viewable yet" placeholder instead of
    *  real content, same treatment as ParticipantPopup.tsx. */
   tournamentStarted: boolean;
+  /** The current tournament phase — used to adjust header labels when in
+   *  the knockout stage. */
+  phase?: import("../tournament/tournamentPhase").TournamentPhase;
   /** Overrides for the tunable layout constants (column widths, row sizes,
    *  marker size, etc.) — defaults to the exact shipped look
    *  (DEFAULT_TEAM_POPUP_TUNING) when omitted, which is every real call
@@ -575,6 +583,7 @@ export const TeamPopup = memo(function TeamPopup({
   onSelectFixture,
   tuning,
   tournamentStarted,
+  phase,
 }: TeamPopupProps) {
   const t: TeamPopupTuning = { ...DEFAULT_TEAM_POPUP_TUNING, ...tuning };
   const playersByUid = useMemo(() => buildPlayersByUid(players), [players]);
@@ -588,9 +597,12 @@ export const TeamPopup = memo(function TeamPopup({
   }, [teamId]);
 
   const displayedId = teamId ?? lastTeamId;
-  const team = displayedId ? TEAM_BY_ID[displayedId] : null;
-
   const { outcomes } = useDevMatches();
+  const { predictions: knockoutPredictions } = useAllKnockoutPredictions();
+
+  const isRo16Team = displayedId ? RO16_TEAM_IDS.has(displayedId) : false;
+
+  const team = displayedId ? TEAM_BY_ID[displayedId] : null;
 
   const dossier = useMemo(() => (displayedId ? getTeamDossier(displayedId) : null), [displayedId]);
   const matchHistory = useMemo(
@@ -686,59 +698,56 @@ export const TeamPopup = memo(function TeamPopup({
                       {team.name} takım dosyası: sıra, puan, muhtemel 11, gol/asist/reyting
                       krallığı, maç geçmişi ve bu takımı tahmin eden katılımcılar.
                     </DialogDescription>
-                    <p className="truncate font-display text-sm text-color_textsecondary">{dossier.manager}</p>
+                    <div className="mt-0.5 flex items-center gap-2">
+                      <p className="truncate font-display text-sm text-color_textsecondary">{dossier.manager}</p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-5 sm:gap-6">
-                  {tournamentStarted && avgPredicted !== null && (
+                {phase === "knockout" ? (
+                  <div className="flex shrink-0 items-center">
+                    <span className="font-display text-lg sm:text-2xl font-black text-color_text tracking-wider uppercase">
+                      {isRo16Team ? "SON 16 TURU" : "LİG AŞAMASI ELENDİ"}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex shrink-0 items-center gap-5 sm:gap-6">
+                    {tournamentStarted && avgPredicted !== null && (
+                      <div className="flex flex-col items-end leading-none">
+                        <span className="font-mono text-[0.65rem] text-color_textsecondary uppercase tracking-wider">Ort. Sıra</span>
+                        <span className="font-display font-bold text-color_gold mt-1" style={{ fontSize: `${t.rankPtsSize * 0.85}rem` }}>
+                          {avgPredicted}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex flex-col items-end leading-none">
-                      <span className="font-mono text-[0.65rem] text-color_textsecondary uppercase tracking-wider">Ort. Sıra</span>
-                      <span className="font-display font-bold text-color_gold mt-1" style={{ fontSize: `${t.rankPtsSize * 0.85}rem` }}>
-                        {avgPredicted}
+                      <span className="font-mono text-[0.65rem] text-color_textsecondary uppercase tracking-wider">
+                        Gerçek Sıra
+                      </span>
+                      <span
+                        aria-label={`Sıra ${tournamentStarted && result ? result.position : "belirsiz"}`}
+                        className="font-display font-bold text-color_text mt-1 tnum"
+                        style={{ fontSize: `${t.rankPtsSize}rem` }}
+                      >
+                        {tournamentStarted && result ? `#${result.position}` : "#-"}
                       </span>
                     </div>
-                  )}
-                  <div className="flex flex-col items-end leading-none">
-                    <span className="font-mono text-[0.65rem] text-color_textsecondary uppercase tracking-wider">Gerçek Sıra</span>
-                    <span
-                      aria-label={`Sıra ${tournamentStarted && result ? result.position : "belirsiz"}`}
-                      className="font-display font-bold text-color_text mt-1 tnum"
-                      style={{ fontSize: `${t.rankPtsSize}rem` }}
-                    >
-                      {tournamentStarted && result ? `#${result.position}` : "#-"}
-                    </span>
+                    <div className="flex flex-col items-end leading-none">
+                      <span className="font-mono text-[0.65rem] text-color_textsecondary uppercase tracking-wider">Puan</span>
+                      <span
+                        aria-label={`Puan ${tournamentStarted ? (result?.points ?? "-") : "-"}`}
+                        className="font-display font-bold text-color_text mt-1 tnum"
+                        style={{ fontSize: `${t.rankPtsSize}rem` }}
+                      >
+                        {tournamentStarted ? (result?.points ?? "-") : "-"}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end leading-none">
-                    <span className="font-mono text-[0.65rem] text-color_textsecondary uppercase tracking-wider">Puan</span>
-                    <span
-                      aria-label={`Puan ${tournamentStarted ? (result?.points ?? "belirsiz") : "belirsiz"}`}
-                      className="font-display font-bold text-color_text mt-1 tnum"
-                      style={{ fontSize: `${t.rankPtsSize}rem` }}
-                    >
-                      {tournamentStarted ? (result?.points ?? "-") : "-"}
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
             <FrameBody className="no-scrollbar min-h-0 gap-3 overflow-y-auto p-3 sm:p-4">
-              {/* Three full-height columns now, not two — pitch (enlarged,
-                  fills the whole height), the three ranked lists (each
-                  enlarged to a third of the height instead of shrink-
-                  wrapping their own content), and predicted-by + match
-                  history stacked in the rightmost column at equal height.
-                  Width ratio 2.3:1:1.7 — started at 2:1:2, then pitch +15%
-                  with the rightmost column giving up the difference so the
-                  stat-list column (and the 5-part total) stay put; "increase
-                  2" turned out to mean the stat-list *rows*, not the column
-                  (see StatList's row sizing below) — column ratio stays a
-                  pitch/rightmost trade against a fixed stat-list column;
-                  then stat-list and rightmost set equal by growing the
-                  stat-list column up to the rightmost column's own width
-                  (not by shrinking the rightmost one), taking that width
-                  back out of the pitch column. */}
               <div
                 className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)]"
                 style={{ gridTemplateColumns: `${t.col1}fr ${t.col2}fr ${t.col3}fr`, gap: `${t.gridGap}rem` }}
@@ -772,8 +781,6 @@ export const TeamPopup = memo(function TeamPopup({
                 </div>
 
                 <div className="flex min-h-0 flex-col gap-3">
-                  {/* "Who predicted this team" — scrollable, sorted by
-                      real leaderboard rank. */}
                   <div
                     className={cn(WIDGET_BLOCK, "min-h-0 flex-1")}
                     title="Katılımcıların bu takım için tahmin ettiği sıralamalar, gerçek sıralamalarına göre"
@@ -786,49 +793,66 @@ export const TeamPopup = memo(function TeamPopup({
                           Bu takımı tahmin eden katılımcı yok.
                         </p>
                       ) : (
-                        predictors.map((p) => (
-                          <button
-                            key={p.entry.uid}
-                            type="button"
-                            onClick={() => onSelectParticipant(p.entry.uid)}
-                            className={cn(
-                              "group flex w-full cursor-pointer items-center rounded-lg px-1.5 text-left transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill",
-                              p.correct && "bg-color_green/[0.12]"
-                            )}
-                            style={{ gap: `${t.rowGap}rem`, paddingTop: `${t.rowPy}rem`, paddingBottom: `${t.rowPy}rem` }}
-                          >
-                            <Avatar
-                              className="shrink-0"
-                              style={{ width: `${t.rowAvatar}rem`, height: `${t.rowAvatar}rem` }}
+                        predictors.map((p) => {
+                          const koBadge = getKnockoutStageBadge(
+                            displayedId!,
+                            knockoutPredictions[p.entry.uid],
+                            isRo16Team
+                          );
+                          return (
+                            <button
+                              key={p.entry.uid}
+                              type="button"
+                              onClick={() => onSelectParticipant(p.entry.uid)}
+                              className={cn(
+                                "group flex w-full cursor-pointer items-center rounded-lg px-1.5 text-left transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill",
+                                p.correct && "bg-color_green/[0.12]"
+                              )}
+                              style={{ gap: `${t.rowGap}rem`, paddingTop: `${t.rowPy}rem`, paddingBottom: `${t.rowPy}rem` }}
                             >
-                              <AvatarImage src={p.entry.photoURL} alt="" />
-                              <AvatarFallback
-                                className="bg-secondary font-mono text-color_secondary"
-                                style={{ fontSize: `${(t.rowAvatar * 0.343).toFixed(3)}rem` }}
+                              <Avatar
+                                className="shrink-0"
+                                style={{ width: `${t.rowAvatar}rem`, height: `${t.rowAvatar}rem` }}
                               >
-                                {sharedInitials({ firstName: p.entry.firstName, lastName: playersByUid.get(p.entry.uid)?.lastName })}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span
-                              className="min-w-0 flex-1 truncate font-display font-medium text-color_text group-hover:underline"
-                              style={{ fontSize: `${t.fsName}rem` }}
-                            >
-                              {fullName({ firstName: p.entry.firstName, lastName: playersByUid.get(p.entry.uid)?.lastName })}
-                            </span>
-                            <span
-                              className={cn(ROW_RANK_W, "shrink-0 text-right font-mono text-color_textsecondary tnum")}
-                              style={{ fontSize: `${t.fsValue}rem` }}
-                            >
-                              {p.predictedPosition}
-                            </span>
-                          </button>
-                        ))
+                                <AvatarImage src={p.entry.photoURL} alt="" />
+                                <AvatarFallback
+                                  className="bg-secondary font-mono text-color_secondary"
+                                  style={{ fontSize: `${(t.rowAvatar * 0.343).toFixed(3)}rem` }}
+                                >
+                                  {sharedInitials({ firstName: p.entry.firstName, lastName: playersByUid.get(p.entry.uid)?.lastName })}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span
+                                className="min-w-0 flex-1 truncate font-display font-medium text-color_text group-hover:underline"
+                                style={{ fontSize: `${t.fsName}rem` }}
+                              >
+                                {fullName({ firstName: p.entry.firstName, lastName: playersByUid.get(p.entry.uid)?.lastName })}
+                              </span>
+                              {koBadge ? (
+                                <span
+                                  className={cn(
+                                    "shrink-0 font-mono text-[0.75rem] font-bold tnum px-1",
+                                    koBadge.isCrown ? "text-amber-300/90" : "text-sky-300/80"
+                                  )}
+                                  title={`Eleme tahmini son aşama: ${koBadge.label}`}
+                                >
+                                  {koBadge.label}
+                                </span>
+                              ) : !isRo16Team ? (
+                                <span
+                                  className={cn(ROW_RANK_W, "shrink-0 text-right font-mono text-color_textsecondary tnum")}
+                                  style={{ fontSize: `${t.fsValue}rem` }}
+                                >
+                                  {p.predictedPosition}
+                                </span>
+                              ) : null}
+                            </button>
+                          );
+                        })
                       )}
                     </div>
                   </div>
 
-                  {/* Match history — next fixture pinned on top, decided
-                      fixtures scrolling backward in time below it. */}
                   <div className={cn(WIDGET_BLOCK, "min-h-0 flex-1")}>
                     {!tournamentStarted ? (
                       <NotViewablePlaceholder />

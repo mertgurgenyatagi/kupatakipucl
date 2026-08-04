@@ -15,6 +15,11 @@ import { TEAMS, teamCrestSrc } from "../predictions/teams";
 import { TournamentPhase } from "../tournament/tournamentPhase";
 import { useImagePreload } from "@/lib/useImagePreload";
 import {
+  useAllKnockoutPredictions,
+  getKnockoutStageBadge,
+} from "../knockout/useAllKnockoutPredictions";
+import { KnockoutPrediction } from "../knockout/knockoutTypes";
+import {
   Dialog,
   DialogContent,
   DialogTitle,
@@ -54,7 +59,6 @@ const TIME_FMT = new Intl.DateTimeFormat("tr-TR", {
 });
 
 const NOT_STARTED_MESSAGE = "Turnuva başlamadan bu bilgi görüntülenemez.";
-const KNOCKOUT_NOT_BUILT_MESSAGE = "Bu özellik henüz mevcut değil.";
 
 function Placeholder({ message }: { message: string }) {
   return (
@@ -169,12 +173,94 @@ function PredictorList({
   );
 }
 
+function KnockoutPredictorList({
+  teamId,
+  entries,
+  knockoutPredictions,
+  playersByUid,
+  onSelectParticipant,
+}: {
+  teamId: string;
+  entries: LeaderboardEntry[];
+  knockoutPredictions: Record<string, KnockoutPrediction>;
+  playersByUid: Map<string, Player>;
+  onSelectParticipant: (uid: string) => void;
+}) {
+  const filtered = useMemo(() => {
+    return entries.filter((e) => {
+      const pred = knockoutPredictions[e.uid];
+      return pred?.quarterFinalists?.includes(teamId);
+    });
+  }, [entries, knockoutPredictions, teamId]);
+
+  if (filtered.length === 0) {
+    return (
+      <p className="px-3 py-4 font-display text-xs text-color_textsecondary italic text-center">
+        Bu takımı tur atlar seçen katılımcı yok.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {filtered.map((entry) => {
+        const pName = fullName({
+          firstName: entry.firstName,
+          lastName: playersByUid.get(entry.uid)?.lastName,
+        });
+        const pInitials = sharedInitials({
+          firstName: entry.firstName,
+          lastName: playersByUid.get(entry.uid)?.lastName,
+        });
+        const koBadge = getKnockoutStageBadge(
+          teamId,
+          knockoutPredictions[entry.uid],
+          true
+        );
+
+        return (
+          <button
+            key={entry.uid}
+            type="button"
+            onClick={() => onSelectParticipant(entry.uid)}
+            className="group flex w-full cursor-pointer items-center gap-2 rounded-lg border border-color_border1/30 bg-background/80 px-2.5 py-1.5 text-left transition-all duration-150 ease-[var(--ease-cotton)] hover:border-color_border1 hover:bg-color_hoverfill hover:shadow-sm"
+          >
+            <Avatar className="size-7 shrink-0 ring-1 ring-color_border1/40">
+              <AvatarImage src={entry.photoURL} alt="" />
+              <AvatarFallback className="bg-color_accent/20 font-mono text-[0.65rem] font-semibold text-color_text">
+                {pInitials}
+              </AvatarFallback>
+            </Avatar>
+            <span className="min-w-0 flex-1 truncate font-display text-xs font-semibold text-color_text group-hover:underline">
+              {pName}
+            </span>
+            {koBadge && (
+              <span
+                className={cn(
+                  "shrink-0 rounded px-1.5 py-0.5 font-mono text-[0.65rem] font-bold tnum",
+                  koBadge.isCrown
+                    ? "bg-amber-400/20 text-amber-300 border border-amber-400/40"
+                    : "bg-color_accent/15 text-color_accent border border-color_accent/30"
+                )}
+                title={`Tahmin edilen max aşama: ${koBadge.label}`}
+              >
+                {koBadge.label}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function TeamColumn({
   teamId,
   entries,
   isKnockoutFixture,
   tournamentStarted,
   predictors,
+  knockoutPredictions,
   playersByUid,
   onSelectParticipant,
 }: {
@@ -183,26 +269,38 @@ function TeamColumn({
   isKnockoutFixture: boolean;
   tournamentStarted: boolean;
   predictors: TeamPredictor[];
+  knockoutPredictions: Record<string, KnockoutPrediction>;
   playersByUid: Map<string, Player>;
   onSelectParticipant: (uid: string) => void;
 }) {
   const avg = useMemo(() => computeTeamAverage(teamId, entries), [teamId, entries]);
 
+  const knockoutAdvancersCount = useMemo(() => {
+    if (!isKnockoutFixture) return 0;
+    return entries.filter((e) => knockoutPredictions[e.uid]?.quarterFinalists?.includes(teamId)).length;
+  }, [isKnockoutFixture, entries, knockoutPredictions, teamId]);
+
   return (
     <div className="flex h-full min-h-0 flex-col rounded-2xl border border-color_border1/50 bg-background/60 p-3 shadow-sm">
       <div className="flex items-center justify-between border-b border-color_border1/30 pb-2 mb-2 px-2.5">
         <span className="font-display text-xs font-bold text-color_text uppercase tracking-wider">
-          Ortalama Sıra
+          {isKnockoutFixture ? "Tur Atlar Tahmini" : "Ortalama Sıra"}
         </span>
         <span className="font-mono text-sm sm:text-base font-extrabold text-color_gold tnum">
-          {avg !== null ? avg : "-"}
+          {isKnockoutFixture ? `${knockoutAdvancersCount} kişi` : (avg !== null ? avg : "-")}
         </span>
       </div>
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto pr-0.5">
         {!tournamentStarted ? (
           <Placeholder message={NOT_STARTED_MESSAGE} />
         ) : isKnockoutFixture ? (
-          <Placeholder message={KNOCKOUT_NOT_BUILT_MESSAGE} />
+          <KnockoutPredictorList
+            teamId={teamId}
+            entries={entries}
+            knockoutPredictions={knockoutPredictions}
+            playersByUid={playersByUid}
+            onSelectParticipant={onSelectParticipant}
+          />
         ) : (
           <PredictorList
             predictors={predictors}
@@ -262,6 +360,8 @@ export const MatchupPopup = memo(function MatchupPopup({
 
   const homeResult = home ? results[home.id] : undefined;
   const awayResult = away ? results[away.id] : undefined;
+
+  const { predictions: knockoutPredictions } = useAllKnockoutPredictions();
 
   return (
     <Dialog open={fixtureId !== null} onOpenChange={onOpenChange}>
@@ -357,6 +457,7 @@ export const MatchupPopup = memo(function MatchupPopup({
                     isKnockoutFixture={isKnockoutFixture}
                     tournamentStarted={tournamentStarted}
                     predictors={homePredictors}
+                    knockoutPredictions={knockoutPredictions}
                     playersByUid={playersByUid}
                     onSelectParticipant={onSelectParticipant}
                   />
@@ -366,6 +467,7 @@ export const MatchupPopup = memo(function MatchupPopup({
                     isKnockoutFixture={isKnockoutFixture}
                     tournamentStarted={tournamentStarted}
                     predictors={awayPredictors}
+                    knockoutPredictions={knockoutPredictions}
                     playersByUid={playersByUid}
                     onSelectParticipant={onSelectParticipant}
                   />

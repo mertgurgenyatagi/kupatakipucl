@@ -150,6 +150,7 @@ export function ForumPage() {
         onSelectTeam={() => {}}
         tournamentStarted={phase !== "notstarted"}
         viewerLoggedIn={Boolean(user)}
+        phase={phase}
       />
     </div>
   );
