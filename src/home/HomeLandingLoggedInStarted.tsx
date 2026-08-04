@@ -205,6 +205,7 @@ export function HomeLandingLoggedInStarted({
         }}
         onSelectTeam={handleSelectTeam}
         tournamentStarted
+        phase={phase}
       />
       <TeamPopup
         teamId={selectedTeamId}
@@ -218,6 +219,7 @@ export function HomeLandingLoggedInStarted({
         onSelectTeam={handleSelectTeam}
         onSelectFixture={handleSelectFixture}
         tournamentStarted
+        phase={phase}
       />
       <MatchupPopup
         fixtureId={selectedFixtureId}

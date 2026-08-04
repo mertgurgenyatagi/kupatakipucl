@@ -16,6 +16,9 @@ import { MESSI_RONALDO_LABEL, DEVICE_LABEL, ensurePeriod } from "../predictions/
 import { TeamCrest } from "./TeamCrest";
 import { TEAMS, teamCrestSrc } from "../predictions/teams";
 import { useImagePreload } from "@/lib/useImagePreload";
+import { useKnockoutPrediction } from "../knockout/useKnockoutPrediction";
+import { KnockoutBracket } from "../knockout/KnockoutBracket";
+import { TournamentPhase } from "../tournament/tournamentPhase";
 import {
   Dialog,
   DialogContent,
@@ -71,6 +74,9 @@ interface ParticipantPopupProps {
    *  gate — signed-in only — rather than attempting a read we already know
    *  fails and showing that as an error). */
   viewerLoggedIn?: boolean;
+  /** The current tournament phase — when preknockout or knockout, enables
+   *  toggling between League Prediction and Knockout Prediction. */
+  phase?: TournamentPhase;
 }
 
 const NOT_VIEWABLE_MESSAGE = "Turnuva başlamadan bu bilgi görüntülenemez.";
@@ -240,7 +246,10 @@ export const ParticipantPopup = memo(function ParticipantPopup({
   onSelectTeam,
   tournamentStarted,
   viewerLoggedIn = true,
+  phase,
 }: ParticipantPopupProps) {
+  const [activePredictionTab, setActivePredictionTab] = useState<"league" | "knockout">("league");
+
   // Keep rendering the last real participant while the dialog animates
   // closed — `ranked` goes null the instant the parent clears selection,
   // but the popup should fade out showing its own content, not an empty
@@ -263,6 +272,11 @@ export const ParticipantPopup = memo(function ParticipantPopup({
     tournamentStarted && viewerLoggedIn ? displayedUid : null
   );
 
+  const isKnockoutPhaseOrPre = phase === "preknockout" || phase === "knockout";
+  const { prediction: knockoutPrediction, loading: knockoutLoading } = useKnockoutPrediction(
+    isKnockoutPhaseOrPre && tournamentStarted ? displayedUid : null
+  );
+
   const rankHistory = useMemo(
     () => (tournamentStarted && displayedUid ? computeRankHistory(displayedUid, entries, outcomes) : []),
     [tournamentStarted, displayedUid, entries, outcomes]
@@ -278,11 +292,19 @@ export const ParticipantPopup = memo(function ParticipantPopup({
     <Dialog open={ranked !== null} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="w-full max-w-[calc(100%-2rem)] gap-0 rounded-none bg-transparent p-0 ring-0 sm:max-w-2xl"
+        className={cn(
+          "w-full gap-0 rounded-none bg-transparent p-0 ring-0",
+          isKnockoutPhaseOrPre
+            ? "max-w-[96vw] h-[94vh] max-h-[94vh] sm:max-w-[96vw]"
+            : "max-w-[calc(100%-2rem)] sm:max-w-2xl"
+        )}
       >
         {displayed && !popupImagesReady && (
           <Frame
-            className="h-[min(85vh,44rem)] w-full animate-cotton-rise border-color_border1/35"
+            className={cn(
+              "w-full animate-cotton-rise border-color_border1/35",
+              isKnockoutPhaseOrPre ? "h-[94vh]" : "h-[min(85vh,44rem)]"
+            )}
             aria-hidden
             data-testid="participant-popup-skeleton"
           >
@@ -293,11 +315,16 @@ export const ParticipantPopup = memo(function ParticipantPopup({
           </Frame>
         )}
         {displayed && popupImagesReady && (
-          <Frame className="max-h-[min(85vh,44rem)] w-full animate-cotton-rise border-color_border1/35">
+          <Frame
+            className={cn(
+              "w-full animate-cotton-rise border-color_border1/35",
+              isKnockoutPhaseOrPre ? "h-[94vh] max-h-[94vh] flex flex-col min-h-0" : "max-h-[min(85vh,44rem)]"
+            )}
+          >
             {/* 1. Profile tab — the participant's own photo, blurred and
                 scaled up into an abstract, darkened color field. Picture +
                 name on one line, rank/points (smaller) beneath. */}
-            <div className="relative shrink-0 overflow-hidden px-4 py-3 sm:px-5 sm:py-4">
+            <div className="relative shrink-0 overflow-hidden px-4 py-3 sm:px-5 sm:py-4 border-b border-color_border1/30">
               <img
                 src={displayed.entry.photoURL}
                 alt=""
@@ -358,181 +385,402 @@ export const ParticipantPopup = memo(function ParticipantPopup({
               </div>
             </div>
 
-            <FrameBody className="min-h-0 gap-3 p-3 sm:p-4">
-              {/* 2 + 3: predictions (top-left) and quiz answers (top-right),
-                  each its own color-distinct, independently scrollable
-                  widget block. */}
-              <div className="grid h-56 min-h-0 grid-cols-2 gap-3 sm:h-64">
-                <div className={WIDGET_BLOCK}>
-                  <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-2">
+            {isKnockoutPhaseOrPre ? (
+              /* KNOCKOUT EXPANDED VIEW: 60% left column (predictions), 40% right column (50/50 quiz & chart) */
+              <FrameBody className="min-h-0 flex-1 grid grid-cols-1 md:grid-cols-[60%_40%] gap-3 p-3 sm:p-4 overflow-hidden">
+                {/* LEFT COLUMN (60% width): Predictions container alone */}
+                <div className={cn(WIDGET_BLOCK, "h-full min-h-0 flex flex-col overflow-hidden")}>
+                  <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-2 flex flex-col">
                     {!tournamentStarted ? (
                       <NotViewablePlaceholder />
                     ) : (
-                    <div
-                      role="table"
-                      className="grid text-xs"
-                      style={{ gridTemplateColumns: PRED_GRID_COLUMNS }}
-                    >
-                      <div role="rowgroup" className="contents">
-                        <div role="row" className="contents">
-                          <div role="columnheader" className={cn(PRED_HEADER_CELL, "pl-1")} />
-                          <div
-                            role="columnheader"
+                      <>
+                        <div className="flex items-center gap-1 border-b border-color_border1/40 pb-2 mb-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setActivePredictionTab("league")}
                             className={cn(
-                              PRED_HEADER_CELL,
-                              "pl-1 font-mono text-[0.55rem] tracking-[0.12em] text-color_textsecondary uppercase"
+                              "rounded px-2.5 py-1 font-mono text-xs font-semibold transition-all cursor-pointer",
+                              activePredictionTab === "league"
+                                ? "bg-color_accent text-background shadow-xs"
+                                : "text-color_textsecondary hover:text-color_text"
                             )}
                           >
-                            Takım
-                          </div>
-                          {PRED_STAT_COLUMNS.map((col) => (
-                            <div
-                              key={col.key}
-                              role="columnheader"
-                              title={col.help}
-                              className={cn(
-                                PRED_HEADER_CELL,
-                                "justify-end pr-1 font-mono text-[0.55rem] tracking-[0.12em] text-color_textsecondary uppercase"
-                              )}
-                            >
-                              {col.label}
-                            </div>
-                          ))}
+                            Lig Tahmini
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActivePredictionTab("knockout")}
+                            className={cn(
+                              "rounded px-2.5 py-1 font-mono text-xs font-semibold transition-all cursor-pointer",
+                              activePredictionTab === "knockout"
+                                ? "bg-color_accent text-background shadow-xs"
+                                : "text-color_textsecondary hover:text-color_text"
+                            )}
+                          >
+                            Eleme Tahmini
+                          </button>
                         </div>
-                      </div>
 
-                      <div role="rowgroup" className="contents">
-                        {displayed.entry.ranking.map((teamId, index) => {
-                          const predictedPosition = index + 1;
-                          const team = TEAM_BY_ID[teamId];
-                          const result = results[teamId];
-                          const band = qualificationBand(predictedPosition);
-                          const correct = result ? isPickCorrect(predictedPosition, result.position) : false;
-                          const cell = cn(
-                            "flex items-center border-b border-color_border1/30 py-1 transition-colors duration-150 ease-[var(--ease-cotton)] group-hover:bg-color_hoverfill",
-                            correct && "bg-color_green/[0.12]"
-                          );
-                          const statCell = cn(cell, "justify-end pr-1");
-                          return (
-                            <div
-                              key={teamId}
-                              role="row"
-                              onClick={() => onSelectTeam(teamId)}
-                              className="group contents cursor-pointer"
-                            >
-                              <div role="cell" className={cn(cell, "gap-1 pl-1")}>
-                                {band === "direct" && (
-                                  <span className="h-2.5 w-1 shrink-0 rounded-r-full bg-color_accent" />
-                                )}
-                                {band === "playoff" && (
-                                  <span className="h-2.5 w-1 shrink-0 rounded-r-full bg-color_qualification" />
-                                )}
-                                {band === "eliminated" && <span className="w-1 shrink-0" />}
-                                <span className="font-mono text-[0.65rem] text-color_textsecondary tnum">
-                                  {predictedPosition}
-                                </span>
-                              </div>
-                              <div role="cell" className={cn(cell, "min-w-0 gap-1.5 pl-1")}>
-                                <TeamCrest teamId={teamId} className="size-5 shrink-0" />
-                                <span
-                                  title={team?.name}
-                                  className="min-w-0 truncate font-display text-xs font-medium text-color_text"
+                        {activePredictionTab === "league" ? (
+                          <div
+                            role="table"
+                            className="grid text-xs min-h-0 flex-1"
+                            style={{ gridTemplateColumns: PRED_GRID_COLUMNS }}
+                          >
+                            <div role="rowgroup" className="contents">
+                              <div role="row" className="contents">
+                                <div role="columnheader" className={cn(PRED_HEADER_CELL, "pl-1")} />
+                                <div
+                                  role="columnheader"
+                                  className={cn(
+                                    PRED_HEADER_CELL,
+                                    "pl-1 font-mono text-[0.55rem] tracking-[0.12em] text-color_textsecondary uppercase"
+                                  )}
                                 >
-                                  {team?.shortName ?? teamId}
-                                </span>
-                              </div>
-                              {PRED_STAT_COLUMNS.map((col) => (
-                                <div key={col.key} role="cell" className={statCell}>
-                                  <span
+                                  Takım
+                                </div>
+                                {PRED_STAT_COLUMNS.map((col) => (
+                                  <div
+                                    key={col.key}
+                                    role="columnheader"
+                                    title={col.help}
                                     className={cn(
-                                      "font-mono text-[0.65rem] tnum",
-                                      col.key === "points"
-                                        ? "font-bold text-color_text"
-                                        : "text-color_textsecondary"
+                                      PRED_HEADER_CELL,
+                                      "justify-end pr-1 font-mono text-[0.55rem] tracking-[0.12em] text-color_textsecondary uppercase"
                                     )}
                                   >
-                                    {result
-                                      ? col.key === "goalDifference"
-                                        ? signed(result.goalDifference)
-                                        : result[col.key]
-                                      : "-"}
-                                  </span>
-                                </div>
-                              ))}
+                                    {col.label}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+
+                            <div role="rowgroup" className="contents">
+                              {displayed.entry.ranking.map((teamId, index) => {
+                                const predictedPosition = index + 1;
+                                const team = TEAM_BY_ID[teamId];
+                                const result = results[teamId];
+                                const band = qualificationBand(predictedPosition);
+                                const correct = result ? isPickCorrect(predictedPosition, result.position) : false;
+                                const cell = cn(
+                                  "flex items-center border-b border-color_border1/30 py-1 transition-colors duration-150 ease-[var(--ease-cotton)] group-hover:bg-color_hoverfill",
+                                  correct && "bg-color_green/[0.12]"
+                                );
+                                const statCell = cn(cell, "justify-end pr-1");
+                                return (
+                                  <div
+                                    key={teamId}
+                                    role="row"
+                                    onClick={() => onSelectTeam(teamId)}
+                                    className="group contents cursor-pointer"
+                                  >
+                                    <div role="cell" className={cn(cell, "gap-1 pl-1")}>
+                                      {band === "direct" && (
+                                        <span className="h-2.5 w-1 shrink-0 rounded-r-full bg-color_accent" />
+                                      )}
+                                      {band === "playoff" && (
+                                        <span className="h-2.5 w-1 shrink-0 rounded-r-full bg-color_qualification" />
+                                      )}
+                                      {band === "eliminated" && <span className="w-1 shrink-0" />}
+                                      <span className="font-mono text-[0.65rem] text-color_textsecondary tnum">
+                                        {predictedPosition}
+                                      </span>
+                                    </div>
+                                    <div role="cell" className={cn(cell, "min-w-0 gap-1.5 pl-1")}>
+                                      <TeamCrest teamId={teamId} className="size-5 shrink-0" />
+                                      <span
+                                        title={team?.name}
+                                        className="min-w-0 truncate font-display text-xs font-medium text-color_text"
+                                      >
+                                        {team?.shortName ?? teamId}
+                                      </span>
+                                    </div>
+                                    {PRED_STAT_COLUMNS.map((col) => (
+                                      <div key={col.key} role="cell" className={statCell}>
+                                        <span
+                                          className={cn(
+                                            "font-mono text-[0.65rem] tnum",
+                                            col.key === "points"
+                                              ? "font-bold text-color_text"
+                                              : "text-color_textsecondary"
+                                          )}
+                                        >
+                                          {result
+                                            ? col.key === "goalDifference"
+                                              ? signed(result.goalDifference)
+                                              : result[col.key]
+                                            : "-"}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="no-scrollbar min-h-0 flex-1 overflow-auto flex items-center justify-center">
+                            {knockoutLoading ? (
+                              <Skeleton className="h-64 w-full rounded-xl" />
+                            ) : knockoutPrediction ? (
+                              <KnockoutBracket
+                                initialPrediction={knockoutPrediction}
+                                readOnly={true}
+                                onSelectTeam={onSelectTeam}
+                              />
+                            ) : (
+                              <p className="py-4 text-center font-display text-xs text-color_textsecondary italic">
+                                Bu katılımcı henüz eleme tahmini yapmamış.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
 
-                <div className={WIDGET_BLOCK}>
-                  <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-2">
+                {/* RIGHT COLUMN (40% width): Split 50/50 vertically */}
+                <div className="grid grid-rows-2 min-h-0 h-full gap-3 overflow-hidden">
+                  <div className={cn(WIDGET_BLOCK, "min-h-0 flex flex-col overflow-hidden")}>
+                    <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-2">
+                      {!tournamentStarted ? (
+                        <NotViewablePlaceholder />
+                      ) : !viewerLoggedIn ? (
+                        <p className="py-2 font-display text-sm text-color_textsecondary italic">
+                          Anket cevaplarını görmek için giriş yapmalısınız.
+                        </p>
+                      ) : survey ? (
+                        <div className="flex flex-col gap-2.5">
+                          {[
+                            { question: "Yaşınız", answer: String(survey.age) },
+                            {
+                              question: "Futbol bilginizi 1-7 arası değerlendirin",
+                              answer: `${survey.footballKnowledge} / 7`,
+                            },
+                            {
+                              question: "Messi mi Ronaldo mu?",
+                              answer: MESSI_RONALDO_LABEL[survey.messiOrRonaldo],
+                            },
+                            {
+                              question: "Süper Lig'de tuttuğunuz takım",
+                              answer: survey.superLigTeam,
+                            },
+                            {
+                              question: "Tuttuğunuz bir UCL takımı var mı? (varsa yazın)",
+                              answer: survey.uclTeam ?? "Yok",
+                            },
+                            {
+                              question: "Çoğunlukla hangi cihazı kullanıyorsunuz?",
+                              answer: DEVICE_LABEL[survey.device],
+                            },
+                          ].map((row) => (
+                            <div key={row.question}>
+                              <p className="font-display text-xs leading-snug font-semibold text-color_text">
+                                {row.question}
+                              </p>
+                              <p className="mt-0.5 font-display text-xs leading-snug font-light text-color_gold italic">
+                                {ensurePeriod(row.answer)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : surveyError ? (
+                        <p className="py-2 font-display text-sm text-color_textsecondary italic">
+                          Anket cevapları görüntülenemiyor.
+                        </p>
+                      ) : !surveyLoading ? (
+                        <p className="py-2 font-display text-sm text-color_textsecondary italic">
+                          Bu katılımcı anketi doldurmamış.
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className={cn(WIDGET_BLOCK, "min-h-0 flex flex-col overflow-hidden")}>
                     {!tournamentStarted ? (
                       <NotViewablePlaceholder />
-                    ) : !viewerLoggedIn ? (
-                      <p className="py-2 font-display text-sm text-color_textsecondary italic">
-                        Anket cevaplarını görmek için giriş yapmalısınız.
-                      </p>
-                    ) : survey ? (
-                      <div className="flex flex-col gap-4">
-                        {[
-                          { question: "Yaşınız", answer: String(survey.age) },
-                          {
-                            question: "Futbol bilginizi 1-7 arası değerlendirin",
-                            answer: `${survey.footballKnowledge} / 7`,
-                          },
-                          {
-                            question: "Messi mi Ronaldo mu?",
-                            answer: MESSI_RONALDO_LABEL[survey.messiOrRonaldo],
-                          },
-                          {
-                            question: "Süper Lig'de tuttuğunuz takım",
-                            answer: survey.superLigTeam,
-                          },
-                          {
-                            question: "Tuttuğunuz bir UCL takımı var mı? (varsa yazın)",
-                            answer: survey.uclTeam ?? "Yok",
-                          },
-                          {
-                            question: "Çoğunlukla hangi cihazı kullanıyorsunuz?",
-                            answer: DEVICE_LABEL[survey.device],
-                          },
-                        ].map((row) => (
-                          <div key={row.question}>
-                            <p className="font-display text-sm leading-snug font-semibold text-color_text">
-                              {row.question}
-                            </p>
-                            <p className="mt-0.5 font-display text-sm leading-snug font-light text-color_gold italic">
-                              {ensurePeriod(row.answer)}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : surveyError ? (
-                      <p className="py-2 font-display text-sm text-color_textsecondary italic">
-                        Anket cevapları görüntülenemiyor.
-                      </p>
-                    ) : !surveyLoading ? (
-                      <p className="py-2 font-display text-sm text-color_textsecondary italic">
-                        Bu katılımcı anketi doldurmamış.
-                      </p>
-                    ) : null}
+                    ) : (
+                      <RankHistoryChart checkpoints={rankHistory} totalParticipants={entries.length} />
+                    )}
                   </div>
                 </div>
-              </div>
+              </FrameBody>
+            ) : (
+              /* CLASSIC COMPACT VIEW: Non-knockout phases */
+              <FrameBody className="min-h-0 gap-3 p-3 sm:p-4">
+                <div className="grid h-56 min-h-0 grid-cols-2 gap-3 sm:h-64">
+                  <div className={WIDGET_BLOCK}>
+                    <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-2">
+                      {!tournamentStarted ? (
+                        <NotViewablePlaceholder />
+                      ) : (
+                        <div
+                          role="table"
+                          className="grid text-xs"
+                          style={{ gridTemplateColumns: PRED_GRID_COLUMNS }}
+                        >
+                          <div role="rowgroup" className="contents">
+                            <div role="row" className="contents">
+                              <div role="columnheader" className={cn(PRED_HEADER_CELL, "pl-1")} />
+                              <div
+                                role="columnheader"
+                                className={cn(
+                                  PRED_HEADER_CELL,
+                                  "pl-1 font-mono text-[0.55rem] tracking-[0.12em] text-color_textsecondary uppercase"
+                                )}
+                              >
+                                Takım
+                              </div>
+                              {PRED_STAT_COLUMNS.map((col) => (
+                                <div
+                                  key={col.key}
+                                  role="columnheader"
+                                  title={col.help}
+                                  className={cn(
+                                    PRED_HEADER_CELL,
+                                    "justify-end pr-1 font-mono text-[0.55rem] tracking-[0.12em] text-color_textsecondary uppercase"
+                                  )}
+                                >
+                                  {col.label}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
 
-              {/* 4. Rank-over-time — full width, bottom. */}
-              <div className={cn(WIDGET_BLOCK, "shrink-0", !tournamentStarted && "h-24")}>
-                {!tournamentStarted ? (
-                  <NotViewablePlaceholder />
-                ) : (
-                  <RankHistoryChart checkpoints={rankHistory} totalParticipants={entries.length} />
-                )}
-              </div>
-            </FrameBody>
+                          <div role="rowgroup" className="contents">
+                            {displayed.entry.ranking.map((teamId, index) => {
+                              const predictedPosition = index + 1;
+                              const team = TEAM_BY_ID[teamId];
+                              const result = results[teamId];
+                              const band = qualificationBand(predictedPosition);
+                              const correct = result ? isPickCorrect(predictedPosition, result.position) : false;
+                              const cell = cn(
+                                "flex items-center border-b border-color_border1/30 py-1 transition-colors duration-150 ease-[var(--ease-cotton)] group-hover:bg-color_hoverfill",
+                                correct && "bg-color_green/[0.12]"
+                              );
+                              const statCell = cn(cell, "justify-end pr-1");
+                              return (
+                                <div
+                                  key={teamId}
+                                  role="row"
+                                  onClick={() => onSelectTeam(teamId)}
+                                  className="group contents cursor-pointer"
+                                >
+                                  <div role="cell" className={cn(cell, "gap-1 pl-1")}>
+                                    {band === "direct" && (
+                                      <span className="h-2.5 w-1 shrink-0 rounded-r-full bg-color_accent" />
+                                    )}
+                                    {band === "playoff" && (
+                                      <span className="h-2.5 w-1 shrink-0 rounded-r-full bg-color_qualification" />
+                                    )}
+                                    {band === "eliminated" && <span className="w-1 shrink-0" />}
+                                    <span className="font-mono text-[0.65rem] text-color_textsecondary tnum">
+                                      {predictedPosition}
+                                    </span>
+                                  </div>
+                                  <div role="cell" className={cn(cell, "min-w-0 gap-1.5 pl-1")}>
+                                    <TeamCrest teamId={teamId} className="size-5 shrink-0" />
+                                    <span
+                                      title={team?.name}
+                                      className="min-w-0 truncate font-display text-xs font-medium text-color_text"
+                                    >
+                                      {team?.shortName ?? teamId}
+                                    </span>
+                                  </div>
+                                  {PRED_STAT_COLUMNS.map((col) => (
+                                    <div key={col.key} role="cell" className={statCell}>
+                                      <span
+                                        className={cn(
+                                          "font-mono text-[0.65rem] tnum",
+                                          col.key === "points"
+                                            ? "font-bold text-color_text"
+                                            : "text-color_textsecondary"
+                                        )}
+                                      >
+                                        {result
+                                          ? col.key === "goalDifference"
+                                            ? signed(result.goalDifference)
+                                            : result[col.key]
+                                          : "-"}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={WIDGET_BLOCK}>
+                    <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-2">
+                      {!tournamentStarted ? (
+                        <NotViewablePlaceholder />
+                      ) : !viewerLoggedIn ? (
+                        <p className="py-2 font-display text-sm text-color_textsecondary italic">
+                          Anket cevaplarını görmek için giriş yapmalısınız.
+                        </p>
+                      ) : survey ? (
+                        <div className="flex flex-col gap-4">
+                          {[
+                            { question: "Yaşınız", answer: String(survey.age) },
+                            {
+                              question: "Futbol bilginizi 1-7 arası değerlendirin",
+                              answer: `${survey.footballKnowledge} / 7`,
+                            },
+                            {
+                              question: "Messi mi Ronaldo mu?",
+                              answer: MESSI_RONALDO_LABEL[survey.messiOrRonaldo],
+                            },
+                            {
+                              question: "Süper Lig'de tuttuğunuz takım",
+                              answer: survey.superLigTeam,
+                            },
+                            {
+                              question: "Tuttuğunuz bir UCL takımı var mı? (varsa yazın)",
+                              answer: survey.uclTeam ?? "Yok",
+                            },
+                            {
+                              question: "Çoğunlukla hangi cihazı kullanıyorsunuz?",
+                              answer: DEVICE_LABEL[survey.device],
+                            },
+                          ].map((row) => (
+                            <div key={row.question}>
+                              <p className="font-display text-sm leading-snug font-semibold text-color_text">
+                                {row.question}
+                              </p>
+                              <p className="mt-0.5 font-display text-sm leading-snug font-light text-color_gold italic">
+                                {ensurePeriod(row.answer)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : surveyError ? (
+                        <p className="py-2 font-display text-sm text-color_textsecondary italic">
+                          Anket cevapları görüntülenemiyor.
+                        </p>
+                      ) : !surveyLoading ? (
+                        <p className="py-2 font-display text-sm text-color_textsecondary italic">
+                          Bu katılımcı anketi doldurmamış.
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                <div className={cn(WIDGET_BLOCK, "shrink-0", !tournamentStarted && "h-24")}>
+                  {!tournamentStarted ? (
+                    <NotViewablePlaceholder />
+                  ) : (
+                    <RankHistoryChart checkpoints={rankHistory} totalParticipants={entries.length} />
+                  )}
+                </div>
+              </FrameBody>
+            )}
           </Frame>
         )}
       </DialogContent>

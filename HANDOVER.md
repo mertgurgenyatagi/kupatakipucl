@@ -8,7 +8,22 @@ This file is meant to be pruned/rewritten as things get resolved or folded into 
 
 ---
 
-## 2026-08-04 — Knockout Predictions & Profile refinements
+## 2026-08-04 — Knockout popup refinements, branch `final-sweep`
+
+Built and merged (branch `final-sweep`): four design refinements to `TeamPopup`, `MatchupPopup`, and `ParticipantPopup` covering the `notlogged_knockout` and `logged_knockout` visibility states. These are surgical changes — no new components, no new data models.
+
+**Changes built:**
+
+1. **`TeamPopup` — knockout stage header** (`phase === "knockout"`): Replaced the three header stat boxes (Ort. Sıra, Gerçek Sıra, Puan) with a single, large, bold `font-display` uppercase label: `SON 16 TURU` for RO16 teams, `LİG AŞAMASI ELENDİ` for eliminated teams. The inline stage badge (previously a small pill next to the manager name in all phases) was removed from the sub-header row entirely — the large label replaces it. In non-knockout phases the header is unchanged and the stats render as before.
+
+2. **`TeamPopup` — predictor list for knockout teams** (`isRo16Team`): For teams in the Round of 16, the predicted-position number (formerly always shown at the right of each predictor row) is no longer shown. Only a faint, frameless, colorized stage badge remains: amber (`text-amber-300/90`) for 👑, sky-blue (`text-sky-300/80`) for `ÇF`/`YF`/`F`, nothing for `S16` (no badge rendered). No border, no background pill, no glow — just a plain tinted monospace label. For non-RO16 teams, the position number is still shown and the badge is never shown (unchanged behavior).
+
+3. **`MatchupPopup` — RO16 predictor lists**: Already built in the prior session (see "Knockout Predictions & Profile refinements" entry above). No changes this session.
+
+4. **`ParticipantPopup` — conditional sizing and layout split**: The wide `96vw` × `94vh` dialog is now **only active during knockout/preknockout phases** (`isKnockoutPhaseOrPre`). In league/notstarted phases the dialog reverts to the compact `sm:max-w-2xl` sizing used before the knockout work began, with the classic two-column + chart-row layout. In knockout phases the layout is a **60/40 horizontal grid** (left column: predictions alone; right column: right-side content), and the right column is now a **`grid-rows-2` 50/50 vertical split** (top: Quiz Answers, bottom: Rank History Chart) instead of the old flex-grow + shrink-0 pair.
+
+**Verified**: `tsc -b` clean, full suite green (861 tests / 122 files) before merge.
+
 
 Completed layout, styling, and flow refinements for knockout predictions across the homepage, main predictions page, and profile page.
 

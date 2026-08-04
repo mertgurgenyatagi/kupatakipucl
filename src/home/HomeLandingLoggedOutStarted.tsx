@@ -148,6 +148,7 @@ export function HomeLandingLoggedOutStarted({ results, players, entries, phase }
         // widget stays gated behind the same viewerLoggedIn flag Forum uses,
         // rather than removing the popup/standings column outright.
         viewerLoggedIn={false}
+        phase={phase}
       />
       <TeamPopup
         teamId={selectedTeamId}
@@ -161,6 +162,7 @@ export function HomeLandingLoggedOutStarted({ results, players, entries, phase }
         onSelectTeam={handleSelectTeam}
         onSelectFixture={handleSelectFixture}
         tournamentStarted
+        phase={phase}
       />
       <MatchupPopup
         fixtureId={selectedFixtureId}

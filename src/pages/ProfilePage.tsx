@@ -524,6 +524,7 @@ export function ProfilePage() {
         onOpenChange={handlePopupOpenChange}
         onSelectTeam={handleSelectTeam}
         tournamentStarted={predictionLocked}
+        phase={phase}
       />
       <TeamPopup
         teamId={selectedTeamId}
@@ -535,6 +536,7 @@ export function ProfilePage() {
         onSelectTeam={handleSelectTeam}
         onSelectFixture={handleSelectFixture}
         tournamentStarted={predictionLocked}
+        phase={phase}
       />
       <MatchupPopup
         fixtureId={selectedFixtureId}

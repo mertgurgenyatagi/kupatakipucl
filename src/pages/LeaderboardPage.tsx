@@ -192,6 +192,8 @@ export function LeaderboardPage() {
         onOpenChange={handlePopupOpenChange}
         onSelectTeam={handleSelectTeam}
         tournamentStarted={phase !== "notstarted"}
+        viewerLoggedIn={Boolean(user)}
+        phase={phase}
       />
       <TeamPopup
         teamId={selectedTeamId}
@@ -203,6 +205,7 @@ export function LeaderboardPage() {
         onSelectTeam={handleSelectTeam}
         onSelectFixture={handleSelectFixture}
         tournamentStarted={phase !== "notstarted"}
+        phase={phase}
       />
       <MatchupPopup
         fixtureId={selectedFixtureId}
