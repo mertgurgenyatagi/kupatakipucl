@@ -212,8 +212,8 @@ export function TeamRanker({ teams, initialOrder, onSubmit }: TeamRankerProps) {
             <TeamDropList ranking={ranking} teamsById={teamsById} />
           </div>
 
-          {/* Right — team crest grid, vertically centered */}
-          <div className="no-scrollbar flex min-h-0 flex-1 flex-col justify-center overflow-y-auto">
+          {/* Right — team crest grid, top-aligned to prevent flexbox overflow clipping */}
+          <div className="no-scrollbar flex min-h-0 flex-1 flex-col justify-start py-2 overflow-y-auto">
             <TeamGrid teams={sortedTeams} placedTeamIds={placedTeamIds} />
           </div>
         </div>
