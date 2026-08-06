@@ -1,0 +1,1072 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mobile Wireframes — #kupatakipucl</title>
+<style>
+  :root {
+    --bg: #14161a;
+    --panel: #1b1e24;
+    --panel-2: #232730;
+    --line: #2f3540;
+    --line-soft: #262b34;
+    --ink: #e6e9ef;
+    --ink-dim: #9aa3b2;
+    --ink-faint: #666e7d;
+    --accent: #7fd1a6;
+    --accent-dim: #3f6b56;
+    --danger: #e2645c;
+    --phone: #101216;
+  }
+  * { box-sizing: border-box; }
+  /* Several overlays set display:flex on an id, which outranks the UA [hidden] rule. */
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 13px/1.45 ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+    display: grid; grid-template-columns: 210px 1fr 260px; height: 100vh;
+    overflow: hidden; cursor: default;
+  }
+  button, select, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-thumb { background: #333a45; border-radius: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* ---------------------------------------------------------------- rail */
+  #rail { background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; }
+  .rail-group {
+    padding: 12px 12px 5px; font-size: 10px; letter-spacing: .11em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+  .rail-item {
+    display: flex; justify-content: space-between; align-items: center; gap: 6px;
+    padding: 6px 12px; border: 0; background: none; width: 100%; text-align: left;
+    color: var(--ink-dim); border-left: 2px solid transparent;
+  }
+  .rail-item:hover { background: var(--panel-2); color: var(--ink); }
+  .rail-item.active { background: var(--panel-2); color: var(--ink); border-left-color: var(--accent); }
+  .rail-count { font-size: 10px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+  /* ---------------------------------------------------------------- main */
+  #main { display: flex; flex-direction: column; min-width: 0; }
+  #topbar {
+    display: flex; align-items: center; gap: 10px; padding: 9px 14px;
+    border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  #screen-title { font-weight: 600; margin-right: auto; }
+  #screen-title small { color: var(--ink-faint); font-weight: 400; margin-left: 8px; }
+  .btn {
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 5px;
+    padding: 5px 10px; color: var(--ink-dim);
+  }
+  .btn:hover { border-color: var(--accent-dim); color: var(--ink); }
+  .btn.on { border-color: var(--accent); color: var(--accent); }
+  .btn.ghost { background: none; }
+
+  #states { display: flex; gap: 4px; padding: 7px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .state-tab {
+    display: flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 5px;
+    border: 1px solid var(--line-soft); background: none; color: var(--ink-faint); font-size: 11px;
+  }
+  .state-tab:hover:not(:disabled) { color: var(--ink); border-color: var(--line); }
+  .state-tab.active { border-color: var(--accent); color: var(--ink); background: var(--panel-2); }
+  .state-tab:disabled { opacity: .28; cursor: default; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #3b414d; }
+  .dot.empty { background: #3b414d; }
+  .dot.drawn { background: var(--accent); }
+  .dot.alias { background: var(--accent-dim); }
+  .dot.na { background: transparent; box-shadow: inset 0 0 0 1px #4a515e; }
+
+  #stage { flex: 1; overflow: auto; display: flex; justify-content: center; padding: 26px 20px 90px; }
+
+  /* --------------------------------------------------------------- phone */
+  #phone-wrap { position: relative; }
+  #phone {
+    position: relative; width: 360px; background: var(--phone);
+    border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+    touch-action: none;
+  }
+  #grid-bg { position: absolute; inset: 0; pointer-events: none; }
+  #grid-bg .v { position: absolute; top: 0; bottom: 0; width: 1px; background: #2b323c; }
+  #grid-bg .h { position: absolute; left: 0; right: 0; height: 1px; background: #232932; }
+  #grid-bg .fold { background: #4c5a6b; height: 1px; }
+  #grid-bg .fold-label {
+    position: absolute; right: 5px; font-size: 9px; color: #55606f;
+    transform: translateY(-11px); letter-spacing: .08em;
+  }
+
+  .blk {
+    position: absolute; border: 1px solid #55606f; border-radius: 4px;
+    background: rgba(90,104,124,.20); display: flex; align-items: center; justify-content: center;
+    padding: 3px 5px; text-align: center; overflow: hidden; cursor: grab;
+  }
+  .blk .nm { font-size: 11px; line-height: 1.2; color: var(--ink); word-break: break-word; }
+  .blk .fl { position: absolute; left: 4px; bottom: 2px; font-size: 9px; color: var(--ink-faint); }
+  .blk.sel { border-color: var(--accent); background: rgba(127,209,166,.16); box-shadow: 0 0 0 1px var(--accent); }
+  .blk.bad { border-color: var(--danger) !important; background: rgba(226,100,92,.22) !important; }
+  .blk.tint1 { background: rgba(127,209,166,.15); border-color: #4e8a6e; }
+  .blk.tint2 { background: rgba(122,162,214,.15); border-color: #4f6f96; }
+  .blk.tint3 { background: rgba(214,178,122,.15); border-color: #96804f; }
+  .blk.tint4 { background: rgba(196,130,196,.15); border-color: #8a5c8a; }
+  .blk.tint5 { background: rgba(226,100,92,.14); border-color: #96524d; }
+  .blk .grip {
+    position: absolute; right: -3px; bottom: -3px; width: 11px; height: 11px;
+    border-right: 2px solid var(--accent); border-bottom: 2px solid var(--accent);
+    border-radius: 0 0 3px 0; cursor: nwse-resize; opacity: 0;
+  }
+  .blk.sel .grip { opacity: 1; }
+
+  #ghost-shell { position: absolute; left: 0; right: 0; pointer-events: none; z-index: 2; }
+  .ghost-blk {
+    position: absolute; border: 1px dashed #3e4653; background: repeating-linear-gradient(
+      45deg, rgba(120,132,150,.07), rgba(120,132,150,.07) 4px, transparent 4px, transparent 8px);
+    border-radius: 3px; display: flex; align-items: center; justify-content: center;
+  }
+  .ghost-blk span { font-size: 10px; color: #5b6472; }
+
+  #sheet-veil { position: absolute; left: 0; right: 0; top: 0; background: rgba(6,8,11,.62); z-index: 1; }
+  #sheet-handle {
+    position: absolute; left: 0; right: 0; height: 12px; z-index: 3; cursor: ns-resize;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #sheet-handle::after { content: ""; width: 44px; height: 3px; border-radius: 2px; background: #5d6875; }
+
+  #draft { position: absolute; border: 1px dashed var(--accent); background: rgba(127,209,166,.10); border-radius: 4px; pointer-events: none; }
+  #draft.bad { border-color: var(--danger); background: rgba(226,100,92,.12); }
+
+  #name-pop {
+    position: absolute; z-index: 20; background: var(--panel-2); border: 1px solid var(--accent);
+    border-radius: 5px; padding: 4px;
+  }
+  #name-pop input { background: var(--phone); border: 1px solid var(--line); border-radius: 3px; padding: 4px 6px; width: 190px; }
+
+  #na-veil {
+    position: absolute; inset: 0; z-index: 12; background: rgba(12,14,18,.86);
+    display: flex; align-items: center; justify-content: center; color: var(--ink-faint);
+  }
+  #alias-veil {
+    position: absolute; inset: 0; z-index: 11; background: rgba(12,14,18,.55);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    text-align: center; padding: 20px;
+  }
+  #alias-veil p { margin: 0; color: var(--ink-dim); max-width: 260px; }
+
+  /* ----------------------------------------------------------- inspector */
+  #side { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; padding: 12px; }
+  .sec { margin-bottom: 16px; }
+  .sec h3 {
+    font-size: 10px; letter-spacing: .11em; text-transform: uppercase;
+    color: var(--ink-faint); margin: 0 0 7px;
+  }
+  .field { display: block; margin-bottom: 7px; }
+  .field span { display: block; font-size: 10px; color: var(--ink-faint); margin-bottom: 3px; }
+  .field input, .field textarea, .field select {
+    width: 100%; background: var(--bg); border: 1px solid var(--line);
+    border-radius: 4px; padding: 5px 7px;
+  }
+  .field textarea { resize: vertical; min-height: 46px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip {
+    border: 1px solid var(--line); background: none; border-radius: 20px;
+    padding: 3px 9px; font-size: 11px; color: var(--ink-faint);
+  }
+  .chip.on { border-color: var(--accent); color: var(--accent); }
+  .swatches { display: flex; gap: 4px; }
+  .sw { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--line); }
+  .sw.on { border-color: var(--ink); }
+  .wlist { display: flex; flex-direction: column; gap: 2px; }
+  .witem {
+    display: flex; gap: 7px; align-items: baseline; text-align: left; width: 100%;
+    background: none; border: 0; padding: 4px 5px; border-radius: 4px; color: var(--ink-dim); font-size: 11.5px;
+  }
+  .witem:hover:not(.used) { background: var(--panel-2); color: var(--ink); }
+  .witem.used { color: var(--ink-faint); text-decoration: line-through; cursor: default; }
+  .witem .mk { color: var(--accent); width: 10px; flex: none; }
+  .witem.used .mk { color: var(--accent-dim); }
+  .hint { color: var(--ink-faint); font-size: 11px; }
+  .empty-note { color: var(--ink-faint); font-size: 11.5px; font-style: italic; }
+
+  /* -------------------------------------------------------------- modals */
+  .modal { position: fixed; inset: 0; background: rgba(8,10,13,.8); display: flex; z-index: 90; }
+  .modal-box {
+    margin: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 9px;
+    padding: 16px; max-width: min(1100px, 92vw); max-height: 88vh; overflow: auto;
+  }
+  .modal-box h2 { margin: 0 0 12px; font-size: 15px; }
+  #matrix table { border-collapse: collapse; font-size: 11px; }
+  #matrix th { color: var(--ink-faint); font-weight: 500; padding: 4px 5px; text-align: center; }
+  #matrix th.rowh { text-align: left; padding-right: 12px; white-space: nowrap; }
+  #matrix td { padding: 2px; }
+  .mcell {
+    width: 26px; height: 22px; border-radius: 4px; border: 1px solid var(--line-soft);
+    background: none; display: block;
+  }
+  .mcell.drawn { background: var(--accent); border-color: var(--accent); }
+  .mcell.alias { background: rgba(127,209,166,.22); border-color: var(--accent-dim); }
+  .mcell.na { background: repeating-linear-gradient(45deg,#252a33,#252a33 2px,transparent 2px,transparent 5px); }
+  .mcell.dead { border: 0; background: none; cursor: default; }
+  .mcell.cur { box-shadow: 0 0 0 2px var(--ink); }
+  #export-text {
+    width: min(860px, 88vw); height: 62vh; background: var(--bg); border: 1px solid var(--line);
+    border-radius: 5px; padding: 10px; font: 12px/1.45 ui-monospace, "Cascadia Code", Consolas, monospace;
+    white-space: pre; overflow: auto; resize: none;
+  }
+  .row-actions { display: flex; gap: 7px; margin-top: 11px; align-items: center; }
+  #toast {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    background: var(--panel-2); border: 1px solid var(--accent-dim); color: var(--ink);
+    padding: 7px 14px; border-radius: 6px; z-index: 120; opacity: 0; transition: opacity .18s;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  #warn {
+    background: #3a2a22; border-bottom: 1px solid #6b4a35; color: #e8c9a8;
+    padding: 6px 14px; font-size: 11.5px;
+  }
+  kbd {
+    background: var(--bg); border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 3px; padding: 0 4px; font: 10px ui-monospace, monospace; color: var(--ink-dim);
+  }
+</style>
+</head>
+<body>
+
+<nav id="rail"></nav>
+
+<div id="main">
+  <div id="warn" hidden></div>
+  <div id="topbar">
+    <div id="screen-title"></div>
+    <button class="btn ghost" id="btn-matrix">Matrix</button>
+    <button class="btn ghost" id="btn-export">Copy for Claude</button>
+    <button class="btn ghost" id="btn-save">Save file</button>
+    <button class="btn ghost" id="btn-load">Load file</button>
+    <input type="file" id="file-input" accept="application/json" hidden />
+  </div>
+  <div id="states"></div>
+  <div id="stage">
+    <div id="phone-wrap">
+      <div id="phone">
+        <div id="grid-bg"></div>
+        <div id="sheet-veil" hidden></div>
+        <div id="ghost-shell"></div>
+        <div id="blocks"></div>
+        <div id="sheet-handle" hidden></div>
+        <div id="draft" hidden></div>
+        <div id="name-pop" hidden><input id="name-input" list="widget-names" placeholder="name this block…" /></div>
+        <div id="alias-veil" hidden></div>
+        <div id="na-veil" hidden>marked not applicable</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<aside id="side"></aside>
+
+<datalist id="widget-names"></datalist>
+
+<div class="modal" id="matrix" hidden><div class="modal-box">
+  <h2>Coverage</h2>
+  <div id="matrix-body"></div>
+  <div class="row-actions"><button class="btn" data-close>Close</button></div>
+</div></div>
+
+<div class="modal" id="export" hidden><div class="modal-box">
+  <h2>Text spec</h2>
+  <textarea id="export-text" readonly spellcheck="false"></textarea>
+  <div class="row-actions">
+    <button class="btn on" id="btn-copy">Copy to clipboard</button>
+    <label class="hint"><input type="radio" name="scope" value="one" checked /> this screen</label>
+    <label class="hint"><input type="radio" name="scope" value="all" /> everything</label>
+    <button class="btn" data-close style="margin-left:auto">Close</button>
+  </div>
+</div></div>
+
+<div id="toast"></div>
+
+<script src="lib.js"></script>
+<script>
+(function () {
+  "use strict";
+  const { GRID, CELL_W, CELL_H, STATES, FLAGS, ROWS, ROW_BY_ID, SHELL_ID } = WF;
+  const $ = (s) => document.querySelector(s);
+  const el = (tag, cls, text) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  };
+
+  const STORE_KEY = "kupatakip-mobile-wireframes-v1";
+
+  // ------------------------------------------------------------------ state
+  let doc = WF.createDoc();
+  let currentRow = "home";
+  let currentKey = STATES[0];      // a VisibilityState, or a step index for sequences
+  let selectedId = null;
+  let history = [];
+  let future = [];
+  let storageOk = true;
+
+  function screenId() {
+    if (currentRow === SHELL_ID) return SHELL_ID;
+    return WF.makeScreenId(currentRow, currentKey);
+  }
+  function screen() { return doc.screens[screenId()]; }
+  /** The screen whose blocks are actually shown — may be another cell, via alias. */
+  function sourceScreen() { return doc.screens[WF.resolveScreen(doc, screenId()).id]; }
+  function isAliased() {
+    const r = WF.resolveScreen(doc, screenId());
+    return r.aliasOf != null && r.aliasOf !== screenId();
+  }
+  function editable() { return !screen().na && !isAliased(); }
+
+  // ------------------------------------------------------------ persistence
+  function snapshot() {
+    history.push(JSON.stringify(doc.screens));
+    if (history.length > 120) history.shift();
+    future = [];
+  }
+  function undo() {
+    if (!history.length) return;
+    future.push(JSON.stringify(doc.screens));
+    doc.screens = JSON.parse(history.pop());
+    selectedId = null;
+    save(); renderAll();
+  }
+  function redo() {
+    if (!future.length) return;
+    history.push(JSON.stringify(doc.screens));
+    doc.screens = JSON.parse(future.pop());
+    selectedId = null;
+    save(); renderAll();
+  }
+  function save() {
+    if (!storageOk) return;
+    try {
+      doc.savedAt = new Date().toISOString();
+      localStorage.setItem(STORE_KEY, JSON.stringify(doc));
+    } catch (e) {
+      storageOk = false;
+      warn("Autosave is unavailable in this browser — use Save file often.");
+    }
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) doc = WF.migrateDoc(JSON.parse(raw));
+    } catch (e) {
+      storageOk = false;
+      warn("Could not read autosaved work — starting fresh. Use Save file to keep work.");
+    }
+  }
+  function warn(msg) {
+    const w = $("#warn");
+    w.textContent = msg;
+    w.hidden = false;
+  }
+  function toast(msg) {
+    const t = $("#toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove("show"), 1600);
+  }
+
+  // -------------------------------------------------------------- rendering
+  function renderRail() {
+    const rail = $("#rail");
+    rail.textContent = "";
+    const groups = [
+      ["shell", "Shell", [{ id: SHELL_ID, label: "App Shell" }]],
+      ["pages", "Pages", ROWS.filter((r) => r.group === "pages")],
+      ["overlays", "Overlays", ROWS.filter((r) => r.group === "overlays")],
+      ["sequences", "Sequences", ROWS.filter((r) => r.group === "sequences")],
+    ];
+    for (const [, label, items] of groups) {
+      rail.append(el("div", "rail-group", label));
+      for (const row of items) {
+        const b = el("button", "rail-item" + (row.id === currentRow ? " active" : ""));
+        b.append(el("span", null, row.label));
+        if (row.id !== SHELL_ID) {
+          const ids = WF.screenIdsForRow(row.id);
+          const done = ids.filter((i) => {
+            const st = WF.cellStatus(doc, i);
+            return st === "drawn" || st === "alias" || st === "na";
+          }).length;
+          b.append(el("span", "rail-count", `${done}/${ids.length}`));
+        }
+        b.onclick = () => {
+          currentRow = row.id;
+          if (row.id !== SHELL_ID) {
+            const r = ROW_BY_ID[row.id];
+            currentKey = r.group === "sequences" ? 0 : r.states[0];
+          }
+          selectedId = null;
+          renderAll();
+        };
+        rail.append(b);
+      }
+    }
+  }
+
+  function renderStates() {
+    const bar = $("#states");
+    bar.textContent = "";
+    if (currentRow === SHELL_ID) {
+      bar.append(el("span", "hint", "The persistent chrome. Whatever you draw here appears ghosted on every page."));
+      return;
+    }
+    const row = ROW_BY_ID[currentRow];
+    if (row.group === "sequences") {
+      row.steps.forEach((step, i) => {
+        const t = el("button", "state-tab" + (i === currentKey ? " active" : ""));
+        t.append(el("span", "dot " + WF.cellStatus(doc, WF.makeScreenId(row.id, i))));
+        t.append(el("span", null, `${i + 1}. ${step}`));
+        t.onclick = () => { currentKey = i; selectedId = null; renderAll(); };
+        bar.append(t);
+      });
+      return;
+    }
+    for (const st of STATES) {
+      const live = row.states.includes(st);
+      const t = el("button", "state-tab" + (st === currentKey ? " active" : ""));
+      t.disabled = !live;
+      t.append(el("span", "dot " + (live ? WF.cellStatus(doc, WF.makeScreenId(row.id, st)) : "na")));
+      t.append(el("span", null, st.replace("logged", "").replace("_", " · ")));
+      t.onclick = () => { currentKey = st; selectedId = null; renderAll(); };
+      bar.append(t);
+    }
+    if (row.note) bar.append(el("span", "hint", row.note));
+  }
+
+  function totalRows() { return WF.screenRowCount(sourceScreen()); }
+
+  /**
+   * Rows the canvas actually draws. A scrolling screen gets a few spare rows past its
+   * content so there is always somewhere to drag into — drawing there grows the canvas
+   * on the next render. A fixed screen gets exactly one screenful, no spare.
+   */
+  const SPARE_ROWS = 6;
+  function drawRows() {
+    const s = sourceScreen();
+    return s.scroll === "fixed" ? GRID.rowsPerScreen : totalRows() + SPARE_ROWS;
+  }
+
+  function renderGrid() {
+    const rows = drawRows();
+    const phone = $("#phone");
+    phone.style.height = rows * CELL_H + "px";
+    const bg = $("#grid-bg");
+    bg.textContent = "";
+    for (let c = 1; c < GRID.cols; c++) {
+      const v = el("div", "v");
+      v.style.left = c * CELL_W + "px";
+      bg.append(v);
+    }
+    for (let r = 1; r < rows; r++) {
+      const isFold = r % GRID.rowsPerScreen === 0;
+      const h = el("div", "h" + (isFold ? " fold" : ""));
+      h.style.top = r * CELL_H + "px";
+      bg.append(h);
+      if (isFold) {
+        const lab = el("div", "fold-label", "fold");
+        lab.style.top = r * CELL_H + "px";
+        bg.append(lab);
+      }
+    }
+  }
+
+  function renderGhostShell() {
+    const host = $("#ghost-shell");
+    host.textContent = "";
+    const parsed = WF.parseScreenId(screenId());
+    const isPage = parsed && parsed.kind === "page";
+    if (!isPage) return;
+    for (const b of doc.screens[SHELL_ID].blocks) {
+      const g = el("div", "ghost-blk");
+      Object.assign(g.style, {
+        left: b.x * CELL_W + "px", top: b.y * CELL_H + "px",
+        width: b.w * CELL_W + "px", height: b.h * CELL_H + "px",
+      });
+      g.append(el("span", null, b.name));
+      host.append(g);
+    }
+  }
+
+  function renderSheet() {
+    const s = sourceScreen();
+    const veil = $("#sheet-veil");
+    const handle = $("#sheet-handle");
+    const on = s.sheetTopRow != null;
+    veil.hidden = !on;
+    handle.hidden = !on;
+    if (!on) return;
+    veil.style.height = s.sheetTopRow * CELL_H + "px";
+    handle.style.top = s.sheetTopRow * CELL_H - 6 + "px";
+  }
+
+  function renderBlocks() {
+    const host = $("#blocks");
+    host.textContent = "";
+    for (const b of sourceScreen().blocks) {
+      const n = el("div", "blk" + (b.id === selectedId ? " sel" : "") + (b.tint ? " tint" + b.tint : ""));
+      n.dataset.id = b.id;
+      Object.assign(n.style, {
+        left: b.x * CELL_W + "px", top: b.y * CELL_H + "px",
+        width: b.w * CELL_W - 1 + "px", height: b.h * CELL_H - 1 + "px",
+      });
+      n.append(el("div", "nm", b.name || "(unnamed)"));
+      if (b.flags.length) {
+        n.append(el("div", "fl", b.flags.map((f) => ({
+          scrolls: "↕", sticky: "📌", collapsed: "▸", overlay: "⬚",
+        }[f])).join(" ")));
+      }
+      if (b.id === selectedId) n.append(el("div", "grip"));
+      host.append(n);
+    }
+    $("#na-veil").hidden = !screen().na;
+    renderAliasVeil();
+  }
+
+  function renderAliasVeil() {
+    const veil = $("#alias-veil");
+    if (!isAliased()) { veil.hidden = true; return; }
+    veil.hidden = false;
+    veil.textContent = "";
+    const src = WF.resolveScreen(doc, screenId()).id;
+    veil.append(el("p", null, `Mirrors ${WF.screenTitle(src)}.`));
+    const b = el("button", "btn on", "Edit this state separately");
+    b.onclick = () => {
+      snapshot();
+      const s = screen();
+      s.alias = null;
+      s.blocks = JSON.parse(JSON.stringify(doc.screens[src].blocks)).map((x) => ({ ...x, id: WF.nextBlockId() }));
+      s.scroll = doc.screens[src].scroll;
+      s.sheetTopRow = doc.screens[src].sheetTopRow;
+      save(); renderAll();
+    };
+    veil.append(b);
+  }
+
+  function renderSide() {
+    const side = $("#side");
+    side.textContent = "";
+    const s = screen();
+    const src = sourceScreen();
+
+    // --- screen settings
+    const sec = el("div", "sec");
+    sec.append(el("h3", null, "Screen"));
+    if (currentRow !== SHELL_ID) {
+      const na = el("button", "btn" + (s.na ? " on" : ""), s.na ? "Not applicable ✓" : "Mark not applicable");
+      na.style.width = "100%";
+      na.onclick = () => { snapshot(); s.na = !s.na; save(); renderAll(); };
+      sec.append(na);
+    }
+    if (editable()) {
+      const scroll = el("label", "field");
+      scroll.append(el("span", null, "Scroll"));
+      const sel = el("select");
+      for (const [v, t] of [["fixed", "Fixed — one screenful"], ["scrolling", "Scrolls vertically"]]) {
+        const o = el("option", null, t); o.value = v;
+        if (src.scroll === v) o.selected = true;
+        sel.append(o);
+      }
+      sel.onchange = () => { snapshot(); src.scroll = sel.value; save(); renderAll(); };
+      scroll.append(sel);
+      sec.append(scroll);
+
+      if (src.sheetTopRow != null) {
+        const sh = el("label", "field");
+        sh.append(el("span", null, `Sheet opens at row ${src.sheetTopRow} of ${GRID.rowsPerScreen}`));
+        const rng = el("input"); rng.type = "range"; rng.min = 0; rng.max = GRID.rowsPerScreen - 2;
+        rng.value = src.sheetTopRow;
+        rng.oninput = () => { src.sheetTopRow = Number(rng.value); renderSheet(); renderSide(); };
+        rng.onchange = () => { snapshot(); save(); };
+        sh.append(rng);
+        sec.append(sh);
+      }
+
+      const note = el("label", "field");
+      note.append(el("span", null, "Screen note"));
+      const ta = el("textarea"); ta.value = src.note || "";
+      ta.oninput = () => { src.note = ta.value; };
+      ta.onchange = () => { snapshot(); save(); };
+      note.append(ta);
+      sec.append(note);
+    }
+    side.append(sec);
+
+    // --- selected block
+    if (editable()) {
+      const b = src.blocks.find((x) => x.id === selectedId);
+      const bs = el("div", "sec");
+      bs.append(el("h3", null, "Block"));
+      if (!b) {
+        bs.append(el("div", "empty-note", "Drag on the phone to draw one."));
+      } else {
+        const nf = el("label", "field");
+        nf.append(el("span", null, "Name"));
+        const ni = el("input"); ni.value = b.name; ni.setAttribute("list", "widget-names");
+        ni.oninput = () => { b.name = ni.value; renderBlocks(); };
+        ni.onchange = () => { snapshot(); save(); renderSide(); };
+        nf.append(ni); bs.append(nf);
+
+        const nt = el("label", "field");
+        nt.append(el("span", null, "Note"));
+        const nta = el("textarea"); nta.value = b.note;
+        nta.oninput = () => { b.note = nta.value; };
+        nta.onchange = () => { snapshot(); save(); };
+        nt.append(nta); bs.append(nt);
+
+        const chips = el("div", "chips");
+        for (const f of FLAGS) {
+          const c = el("button", "chip" + (b.flags.includes(f) ? " on" : ""), WF.FLAG_LABELS[f]);
+          c.onclick = () => {
+            snapshot();
+            b.flags = b.flags.includes(f) ? b.flags.filter((x) => x !== f) : [...b.flags, f];
+            save(); renderBlocks(); renderSide();
+          };
+          chips.append(c);
+        }
+        bs.append(chips);
+
+        const sws = el("div", "swatches");
+        sws.style.marginTop = "8px";
+        for (let i = 0; i <= 5; i++) {
+          const sw = el("button", "sw" + (b.tint === i ? " on" : ""));
+          sw.style.background = ["transparent", "rgba(127,209,166,.35)", "rgba(122,162,214,.35)",
+            "rgba(214,178,122,.35)", "rgba(196,130,196,.35)", "rgba(226,100,92,.35)"][i];
+          sw.onclick = () => { snapshot(); b.tint = i; save(); renderBlocks(); renderSide(); };
+          sws.append(sw);
+        }
+        bs.append(sws);
+
+        const del = el("button", "btn", "Delete block");
+        del.style.cssText = "width:100%;margin-top:9px";
+        del.onclick = () => {
+          snapshot();
+          src.blocks = src.blocks.filter((x) => x.id !== b.id);
+          selectedId = null; save(); renderAll();
+        };
+        bs.append(del);
+      }
+      side.append(bs);
+    }
+
+    // --- widget checklist
+    const widgets = currentRow === SHELL_ID ? SHELL_WIDGETS : WF.widgetsFor(currentRow, currentKey);
+    if (widgets.length) {
+      const ws = el("div", "sec");
+      const placed = new Set(src.blocks.map((b) => b.name));
+      const used = widgets.filter((w) => placed.has(w)).length;
+      ws.append(el("h3", null, `Desktop has — ${used} of ${widgets.length} placed`));
+      const list = el("div", "wlist");
+      for (const w of widgets) {
+        const isUsed = placed.has(w);
+        const it = el("button", "witem" + (isUsed ? " used" : ""));
+        it.append(el("span", "mk", isUsed ? "✓" : "○"));
+        it.append(el("span", null, w));
+        it.disabled = isUsed || !editable();
+        it.onclick = () => dropWidget(w);
+        list.append(it);
+      }
+      ws.append(list);
+      side.append(ws);
+    }
+
+    const help = el("div", "sec");
+    help.append(el("h3", null, "Keys"));
+    help.innerHTML += `<div class="hint">
+      <kbd>drag</kbd> draw · <kbd>Del</kbd> remove · <kbd>Ctrl</kbd>+<kbd>D</kbd> duplicate<br>
+      <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>↑↓←→</kbd> nudge · <kbd>Shift</kbd>+<kbd>↑↓←→</kbd> resize</div>`;
+    side.append(help);
+  }
+
+  const SHELL_WIDGETS = ["logo / wordmark", "nav links", "account slot (avatar + name)",
+    "LoginButton / LogoutButton", "Toaster"];
+
+  function renderDatalist() {
+    const dl = $("#widget-names");
+    dl.textContent = "";
+    const names = new Set(SHELL_WIDGETS);
+    for (const row of ROWS) {
+      const w = row.widgets;
+      const lists = Array.isArray(w) ? [w] : Object.values(w || {});
+      for (const l of lists) for (const n of l) names.add(n);
+    }
+    for (const n of [...names].sort()) {
+      const o = document.createElement("option");
+      o.value = n;
+      dl.append(o);
+    }
+  }
+
+  function renderTitle() {
+    const t = $("#screen-title");
+    t.textContent = WF.screenTitle(screenId());
+    const row = ROW_BY_ID[currentRow];
+    if (row && row.route) t.append(el("small", null, row.route));
+  }
+
+  function renderAll() {
+    renderRail(); renderStates(); renderTitle();
+    renderGrid(); renderGhostShell(); renderSheet(); renderBlocks(); renderSide();
+  }
+
+  // ------------------------------------------------------------ block edits
+
+  /**
+   * A cell starts on "auto", meaning it mirrors whichever cell in its row is drawn first.
+   * The moment blocks land on a cell it has to stop being a follower and become that
+   * source — otherwise the row never gets a primary and every state stays blank.
+   */
+  function claim() {
+    const s = screen();
+    if (s.alias === "auto") s.alias = null;
+  }
+
+  function dropWidget(name) {
+    claim();
+    const src = sourceScreen();
+    const rows = drawRows();
+    for (let y = 0; y <= rows - 3; y++) {
+      const rect = { x: 0, y, w: GRID.cols, h: 3 };
+      if (WF.canPlace(src.blocks, rect, { maxRows: rows })) {
+        snapshot();
+        const b = WF.normalizeBlock({ ...rect, name });
+        src.blocks.push(b);
+        selectedId = b.id;
+        save(); renderAll();
+        return;
+      }
+    }
+    if (src.scroll === "scrolling") {
+      snapshot();
+      const b = WF.normalizeBlock({ x: 0, y: rows, w: GRID.cols, h: 3, name });
+      src.blocks.push(b);
+      selectedId = b.id;
+      save(); renderAll();
+    } else {
+      toast("No room left on this fixed screen.");
+    }
+  }
+
+  // ------------------------------------------------------- pointer handling
+  const phone = $("#phone");
+  let drag = null;
+
+  function localPoint(ev) {
+    const r = phone.getBoundingClientRect();
+    return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+  }
+
+  phone.addEventListener("pointerdown", (ev) => {
+    if (!editable()) return;
+    if (ev.target.closest("#name-pop") || ev.target.closest("#alias-veil")) return;
+    const p = localPoint(ev);
+    const src = sourceScreen();
+
+    if (ev.target.classList.contains("grip")) {
+      const b = src.blocks.find((x) => x.id === selectedId);
+      drag = { mode: "resize", b, origin: { ...b } };
+    } else if (ev.target.closest(".blk")) {
+      const id = ev.target.closest(".blk").dataset.id;
+      const b = src.blocks.find((x) => x.id === id);
+      selectedId = id;
+      drag = { mode: "move", b, origin: { ...b }, grab: p };
+      renderBlocks(); renderSide();
+    } else if (ev.target.id === "sheet-handle") {
+      drag = { mode: "sheet", originSheet: src.sheetTopRow };
+    } else {
+      selectedId = null;
+      drag = { mode: "draw", from: p };
+      renderBlocks(); renderSide();
+    }
+    if (drag) { phone.setPointerCapture(ev.pointerId); snapshot(); }
+  });
+
+  phone.addEventListener("pointermove", (ev) => {
+    if (!drag) return;
+    const p = localPoint(ev);
+    const rows = drawRows();
+    const src = sourceScreen();
+
+    if (drag.mode === "draw") {
+      const r = WF.snapRect(drag.from.x, drag.from.y, p.x, p.y, rows);
+      const ok = WF.canPlace(src.blocks, r, { maxRows: rows });
+      const d = $("#draft");
+      d.hidden = false;
+      d.classList.toggle("bad", !ok);
+      Object.assign(d.style, {
+        left: r.x * CELL_W + "px", top: r.y * CELL_H + "px",
+        width: r.w * CELL_W + "px", height: r.h * CELL_H + "px",
+      });
+      drag.rect = r; drag.ok = ok;
+      return;
+    }
+
+    if (drag.mode === "sheet") {
+      const row = Math.max(0, Math.min(GRID.rowsPerScreen - 2, Math.round(p.y / CELL_H)));
+      src.sheetTopRow = row;
+      renderSheet(); renderSide();
+      return;
+    }
+
+    const b = drag.b;
+    if (!b) return;
+    if (drag.mode === "move") {
+      const dx = Math.round((p.x - drag.grab.x) / CELL_W);
+      const dy = Math.round((p.y - drag.grab.y) / CELL_H);
+      const rect = {
+        x: Math.max(0, Math.min(GRID.cols - b.w, drag.origin.x + dx)),
+        y: Math.max(0, drag.origin.y + dy), w: b.w, h: b.h,
+      };
+      applyIfValid(b, rect, rows);
+    } else {
+      const r = WF.snapRect(drag.origin.x * CELL_W, drag.origin.y * CELL_H, p.x, p.y, rows);
+      applyIfValid(b, { x: drag.origin.x, y: drag.origin.y, w: Math.max(1, r.x + r.w - drag.origin.x), h: Math.max(1, r.y + r.h - drag.origin.y) }, rows);
+    }
+  });
+
+  function applyIfValid(b, rect, rows) {
+    const src = sourceScreen();
+    const isOverlay = b.flags.includes("overlay");
+    const maxRows = src.scroll === "fixed" ? rows : null;
+    const ok = WF.canPlace(src.blocks, rect, { ignoreId: b.id, isOverlay, maxRows });
+    const node = $(`.blk[data-id="${b.id}"]`);
+    if (ok) {
+      Object.assign(b, rect);
+      drag.lastValid = { ...rect };
+      if (node) {
+        node.classList.remove("bad");
+        Object.assign(node.style, {
+          left: rect.x * CELL_W + "px", top: rect.y * CELL_H + "px",
+          width: rect.w * CELL_W - 1 + "px", height: rect.h * CELL_H - 1 + "px",
+        });
+      }
+    } else if (node) {
+      node.classList.add("bad");
+    }
+  }
+
+  phone.addEventListener("pointerup", (ev) => {
+    if (!drag) return;
+    const src = sourceScreen();
+    const mode = drag.mode;
+    const d = $("#draft");
+
+    if (mode === "draw") {
+      d.hidden = true;
+      if (drag.rect && drag.ok) {
+        claim();
+        const b = WF.normalizeBlock({ ...drag.rect, name: "" });
+        sourceScreen().blocks.push(b);
+        selectedId = b.id;
+        renderAll();
+        openNamePop(b);
+      } else {
+        history.pop();
+      }
+    } else if (mode === "move" || mode === "resize") {
+      const final = drag.lastValid || drag.origin;
+      Object.assign(drag.b, final);
+      // A click that selected a block without moving it should not cost an undo step.
+      const moved = ["x", "y", "w", "h"].some((k) => final[k] !== drag.origin[k]);
+      if (!moved) history.pop();
+    } else if (mode === "sheet") {
+      if (src.sheetTopRow === drag.originSheet) history.pop();
+    }
+    drag = null;
+    save();
+    if (mode !== "draw") renderAll();
+    try { phone.releasePointerCapture(ev.pointerId); } catch (e) { /* already released */ }
+  });
+
+  function openNamePop(b) {
+    const pop = $("#name-pop");
+    const input = $("#name-input");
+    pop.hidden = false;
+    pop.style.left = Math.min(b.x * CELL_W, GRID.phoneW - 210) + "px";
+    pop.style.top = (b.y + b.h) * CELL_H + 3 + "px";
+    input.value = "";
+    input.focus();
+    const commit = (keep) => {
+      pop.hidden = true;
+      if (keep) b.name = input.value.trim();
+      if (!b.name) {
+        sourceScreen().blocks = sourceScreen().blocks.filter((x) => x.id !== b.id);
+        selectedId = null;
+      }
+      save(); renderAll();
+    };
+    input.onkeydown = (e) => {
+      e.stopPropagation();
+      if (e.key === "Enter") commit(true);
+      if (e.key === "Escape") commit(false);
+    };
+    input.onblur = () => { if (!pop.hidden) commit(true); };
+  }
+
+  // --------------------------------------------------------------- keyboard
+  document.addEventListener("keydown", (e) => {
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+    if (mod && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
+    if (!editable()) return;
+    const src = sourceScreen();
+    const b = src.blocks.find((x) => x.id === selectedId);
+    if (mod && e.key.toLowerCase() === "d" && b) {
+      e.preventDefault();
+      const rows = totalRows();
+      const rect = { x: b.x, y: b.y + b.h, w: b.w, h: b.h };
+      if (WF.canPlace(src.blocks, rect, { maxRows: src.scroll === "fixed" ? rows : null })) {
+        snapshot(); claim();
+        const n = WF.normalizeBlock({ ...b, ...rect, id: WF.nextBlockId() });
+        sourceScreen().blocks.push(n); selectedId = n.id; save(); renderAll();
+      } else toast("No room directly below.");
+      return;
+    }
+    if ((e.key === "Delete" || e.key === "Backspace") && b) {
+      e.preventDefault(); snapshot();
+      src.blocks = src.blocks.filter((x) => x.id !== b.id);
+      selectedId = null; save(); renderAll(); return;
+    }
+    const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    if (arrows[e.key] && b) {
+      e.preventDefault();
+      const [dx, dy] = arrows[e.key];
+      const rows = totalRows();
+      const rect = e.shiftKey
+        ? { x: b.x, y: b.y, w: Math.max(1, b.w + dx), h: Math.max(1, b.h + dy) }
+        : { x: b.x + dx, y: b.y + dy, w: b.w, h: b.h };
+      if (rect.x < 0 || rect.y < 0 || rect.x + rect.w > GRID.cols) return;
+      const maxRows = src.scroll === "fixed" ? rows : null;
+      if (WF.canPlace(src.blocks, rect, { ignoreId: b.id, isOverlay: b.flags.includes("overlay"), maxRows })) {
+        snapshot(); Object.assign(b, rect); save(); renderAll();
+      }
+    }
+  });
+
+  // ----------------------------------------------------------------- modals
+  document.querySelectorAll("[data-close]").forEach((b) => {
+    b.onclick = () => b.closest(".modal").hidden = true;
+  });
+  document.querySelectorAll(".modal").forEach((m) => {
+    m.onclick = (e) => { if (e.target === m) m.hidden = true; };
+  });
+
+  $("#btn-matrix").onclick = () => {
+    const body = $("#matrix-body");
+    body.textContent = "";
+    const table = el("table");
+    const head = el("tr");
+    head.append(el("th", "rowh", ""));
+    for (const s of STATES) {
+      head.append(el("th", null, s.replace("loggedout_", "out·").replace("loggedin_", "in·")));
+    }
+    table.append(head);
+    for (const row of ROWS.filter((r) => r.group !== "sequences")) {
+      const tr = el("tr");
+      tr.append(el("th", "rowh", row.label));
+      for (const s of STATES) {
+        const td = el("td");
+        if (!row.states.includes(s)) {
+          td.append(el("div", "mcell dead"));
+        } else {
+          const id = WF.makeScreenId(row.id, s);
+          const c = el("button", "mcell " + WF.cellStatus(doc, id) +
+            (id === screenId() ? " cur" : ""));
+          c.title = WF.screenTitle(id) + " — " + WF.cellStatus(doc, id);
+          c.onclick = () => {
+            currentRow = row.id; currentKey = s; selectedId = null;
+            $("#matrix").hidden = true; renderAll();
+          };
+          td.append(c);
+        }
+        tr.append(td);
+      }
+      table.append(tr);
+    }
+    body.append(table);
+    const seqWrap = el("div");
+    seqWrap.style.marginTop = "14px";
+    for (const row of ROWS.filter((r) => r.group === "sequences")) {
+      const line = el("div");
+      line.style.cssText = "display:flex;gap:3px;align-items:center;margin-bottom:5px";
+      const lab = el("span", null, row.label);
+      lab.style.cssText = "width:130px;color:var(--ink-dim);font-size:11px";
+      line.append(lab);
+      row.steps.forEach((step, i) => {
+        const id = WF.makeScreenId(row.id, i);
+        const c = el("button", "mcell " + WF.cellStatus(doc, id) + (id === screenId() ? " cur" : ""));
+        c.title = `${row.label} — ${step}`;
+        c.onclick = () => {
+          currentRow = row.id; currentKey = i; selectedId = null;
+          $("#matrix").hidden = true; renderAll();
+        };
+        line.append(c);
+      });
+      seqWrap.append(line);
+    }
+    body.append(seqWrap);
+    $("#matrix").hidden = false;
+  };
+
+  function refreshExport() {
+    const all = document.querySelector('input[name="scope"]:checked').value === "all";
+    $("#export-text").value = all ? WF.renderAllText(doc) : WF.renderScreenText(doc, screenId());
+  }
+  $("#btn-export").onclick = () => { refreshExport(); $("#export").hidden = false; };
+  document.querySelectorAll('input[name="scope"]').forEach((r) => { r.onchange = refreshExport; });
+  $("#btn-copy").onclick = async () => {
+    const text = $("#export-text").value;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast("Copied.");
+    } catch (e) {
+      // file:// often blocks the async clipboard API; select-all is the fallback.
+      $("#export-text").select();
+      toast("Press Ctrl+C to copy.");
+    }
+  };
+
+  $("#btn-save").onclick = () => {
+    doc.savedAt = new Date().toISOString();
+    const blob = new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "mobile-wireframes.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast("Saved — drop it in tools/mobile-wireframe/");
+  };
+  $("#btn-load").onclick = () => $("#file-input").click();
+  $("#file-input").onchange = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const fr = new FileReader();
+    fr.onload = () => {
+      try {
+        doc = WF.migrateDoc(JSON.parse(fr.result));
+        history = []; future = []; selectedId = null;
+        save(); renderAll(); toast("Loaded.");
+      } catch (err) { toast("That file could not be read."); }
+    };
+    fr.readAsText(f);
+    e.target.value = "";
+  };
+
+  // ------------------------------------------------------------------ boot
+  load();
+  renderDatalist();
+  renderAll();
+})();
+</script>
+</body>
+</html>
