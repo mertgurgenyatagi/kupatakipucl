@@ -49,8 +49,38 @@ are the ones with a real argument behind them rather than just space: the dossie
 fabricated data (`PROJECT_STATE.md` §6.3) taking two of three columns, and rank history has no
 production data path at all (same §).
 
-**Two real bugs the browser caught that the suite could not** — the pattern this file has now
-logged three times, and it held again:
+**Second pass, 2026-08-07 — two corrections from Mert.**
+
+1. ***"Every page apart from the forum should be globally unscrollable."*** The mobile shell is
+   now a fixed viewport like desktop's: `html/body/#root` get `height:100%; overflow:hidden`
+   **unconditionally** (it was `@media (min-width: 1024px)` before), plus
+   `overscroll-behavior:none` to kill the iOS rubber-band that makes a non-scrolling page look
+   like it has come loose. The Forum feed is the only scrolling region left in the mobile app.
+   This also deleted the `.mobile-screenful` utility from the first pass — it only existed
+   because `min-h-dvh` gave flex children no definite height, and with a real height on the
+   root, plain `flex-1` does the job everywhere.
+2. ***"Not happy with the profiles at all."*** Fair, and my miss: **Profile was wireframed —
+   three states of it — and I never built it.** I let the desktop page stack itself out of its
+   `lg:` breakpoint classes and treated the cell as done, and I moved the delete button out of
+   the profile block to the page foot and "flagged it as a decision," when the wireframe had
+   already decided it ("profile shit here, also has delete profile button"). It is now built:
+   three blocks in the wireframe's own proportions, compact standing figures, delete back in
+   the profile block.
+
+   **Treat a drawn cell as work to do, not as something that already works.** Every other drawn
+   cell got a composition; this one got breakpoint classes and no screenshot, and it was the one
+   thing Mert objected to.
+
+**Three real bugs the browser caught that the suite could not** — the pattern this file has now
+logged four times, and it held again. The third is the sharpest:
+
+- **A silent no-op edit.** The `MAIN_ROW` change that was supposed to make Profile a flex
+  column matched a string missing a `gap-4` the file actually had, and the script didn't assert
+  on the replacement — so it did nothing, the page stayed a CSS grid, and the prediction block
+  rendered 2439px tall inside a 787px viewport. **It passed the document-scroll check**, because
+  the overflow was clipped rather than scrolled. Two lessons: assert on every scripted
+  replacement, and "the document doesn't scroll" is not the same as "the content fits" —
+  measure the blocks.
 
 - **The standings pair grew to fit all 16 rows and pushed the bracket off screen.** The shell's
   root is `min-h-dvh` on purpose (a feed must be able to scroll the document), but `min-height`
@@ -79,17 +109,23 @@ invariant covers both.
 - **No logged-in or started-phase screen has been verified against real data** — the §6.9 auth
   wall again, now doubly blocking since `profiles/{uid}` went signed-in-only in the 2026-08-02
   privacy split, so even the DevPanel's `loggedInOverride` can't get through without
-  credentials. They *were* verified for layout, overflow and fit at 390×844 through a
-  temporary preview harness rendering the real components with synthetic props (deleted before
-  commit; that is how both bugs above were found). **That proves geometry, not Firestore
-  behaviour.** Home logged-out/not-started, About, the nav drawer and the Forum gate are the
-  only screens checked against the real app.
+  credentials. They *were* verified for layout, overflow and fit at 390×844, twice: first
+  through a preview harness rendering the mobile components with synthetic props, then — for
+  the second pass — by **temporarily faking `AuthProvider`/`useProfile`/`useSurveyResponse`/
+  `usePrediction` behind a `#…?fake` hash guard**, which renders the *real* pages. Both were
+  reverted; nothing of either is committed. That technique is worth reaching for again: it is
+  how all three bugs above were found. **It proves geometry, not Firestore behaviour** — under
+  the fake, `usePlayers()` still fails its real permission check, so participant lists come
+  back empty and forum authors render as "Silindi". Home logged-out/not-started, About, the nav
+  drawer and the Forum gate are the only screens checked against the genuinely real app.
+- **Unscrollability is verified for the seven logged-out-reachable routes**, by measurement
+  (`scrollHeight === clientHeight` on each, with the only elements past the fold being the
+  decorative `DustHaze` blobs). The logged-in/started compositions were checked the same way
+  under the fake, but a real click-through should re-confirm — especially preknockout Home,
+  which now has to fit four blocks instead of three.
 - **`KnockoutStagePicker` is a third copy of the bracket pick machine**, still not on
   `useKnockoutPicks`. It's desktop-only and was left alone deliberately rather than widen this
   branch's blast radius — but it should be folded in.
-- Profile's delete button sits below the predictions frame on mobile, not inside the profile
-  block as the wireframe draws it. Deliberate: a destructive action is better off not adjacent
-  to the avatar. Flag if wrong.
 - The About page keeps its contact line, which the wireframe omits — one line of real content,
   and the site's only way to reach anyone. Trivially cut if that reads as a misjudgement.
 - Landscape phone is untuned, and tablets get the phone layout in a centred column capped at
