@@ -55,10 +55,11 @@ Three reasons, in order of weight:
    `grid-cols-3 → grid-cols-1` change; it is a different set of children. Expressing it in
    breakpoint classes means shipping every desktop widget to every phone and hiding it with
    `hidden lg:block` — the exact busyness the golden rule forbids, plus the download cost.
-2. **Desktop is a fixed-viewport app; mobile scrolls.** `index.css` pins
-   `html/body/#root` to `height:100%; overflow:hidden` above 1024px, and every desktop region
-   owns an internal scroll container. Mobile is the opposite: the document scrolls and frames
-   size to content. These are contradictory layout models in the same tree.
+2. **~~Desktop is a fixed-viewport app; mobile scrolls.~~** *Superseded 2026-08-07 — both are
+   fixed-viewport now (see below), so this is no longer a reason for the fork.* It was one at
+   the time: desktop pinned `html/body/#root` to `height:100%; overflow:hidden` above 1024px
+   while mobile scrolled its document, which are contradictory models in one tree. Reasons 1
+   and 3 are what the fork actually rests on.
 3. **Desktop is the shipped product and must not regress.** 930 tests cover it. A separate
    tree means the blast radius of this branch on desktop is exactly the shell and nothing
    else.
