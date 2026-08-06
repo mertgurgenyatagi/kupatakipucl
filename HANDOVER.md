@@ -6,7 +6,98 @@ This file is meant to be pruned/rewritten as things get resolved or folded into 
 
 **Term: "Xerox pass."** Reusing an existing, already-built page/composition wholesale for a different, not-yet-designed state — purely to replace placeholder text with *something real*, under explicit instruction not to worry about whether it's actually appropriate for that state ("don't overthink it," "we'll go through all of them much later"). Not a design decision, not even a rough one — a stopgap. A page/state marked as Xeroxed (from wherever) should be treated as **unreviewed** for its own specific context until a real pass happens; don't cite its current layout, copy, or behavior as an intentional choice for that state.
 
-## 2026-08-06 — Mobile wireframe tool built, branch `mobile-wireframe-tool` (not yet merged)
+## 2026-08-06 — Mobile built, branch `mobile` (not yet merged)
+
+Mert filled in the wireframe tool (19 of ~76 cells drawn, committed at
+`tools/mobile-wireframe/mobile-wireframes.json`) and handed the rest over with one
+instruction, quoted because it drove every judgement call below: *"Rest you can fill on your
+own. Trust your skills and trust the golden rule (which I just made up right now): **ruthlessly
+sacrifice elements for the sake of non-busyness**."* Spec at
+`docs/superpowers/specs/2026-08-06-mobile-design.md`. `tsc -b` clean, `vite build` clean,
+**956 tests / 126 files** (up from 930/123).
+
+**Mobile is a fork, not a reflow.** Below 1024px the app runs its own shell and its own page
+compositions, sharing every data hook and leaf component with desktop. The reasoning is in the
+spec, but the short version: desktop Home is a five-widget three-column bento and mobile Home
+is three stacked frames — that is a different set of children, not a `grid-cols-3 → 1` change,
+and expressing it in breakpoint classes means shipping every desktop widget to every phone to
+hide it with `hidden lg:block`. The breakpoint reuses the exact 1024px line `index.css` already
+used for its fixed-viewport switch, so **the dead zone where a fixed-viewport desktop
+composition rendered inside a scrolling document is gone** — that was most of why the old
+sub-1024 experience was bad. Desktop is untouched below the fork; the 930 pre-existing tests
+still pass unmodified because `test/setup.ts`'s `matchMedia` polyfill returns `false`.
+
+**Three structural changes worth knowing before touching anything mobile:**
+
+1. **Chat is no longer page content.** It is a right-edge drawer in the shell, reachable from
+   every screen, which is what freed Home to have three widgets instead of four.
+2. **There is one popup layer for the whole mobile app** (`MobilePopupHost`), not one per page.
+   Desktop keeps a private copy in LeaderboardPage/ProfilePage/HomeLandingLoggedOutStarted/
+   ForumPage; mobile can't, because a shell-level chat drawer has no page to hold that state
+   for it. Any new mobile surface should call `useMobilePopups()` rather than declare its own.
+   Its data hooks mount lazily on first open, so About/Forum don't pay for them.
+3. **The centre of the mobile header is your own face once signed in, not the wordmark.** This
+   is wireframed and deliberate, reads odd written down, and has a test pinning it so it
+   doesn't get "fixed" by accident.
+
+**What the golden rule actually cut**, listed so nobody re-adds it thinking it was an
+oversight: the hero carousel (everywhere — 17 preloaded portraits of pure decoration), chat
+from Home, the fixtures widget/drawer from Home and Leaderboard, the 36-team `TeamTable` from
+Leaderboard, the avatar stack from the landing page, the share button from the header,
+**`TeamPopup`'s entire dossier tab**, and `ParticipantPopup`'s rank-history chart. The last two
+are the ones with a real argument behind them rather than just space: the dossier is 100%
+fabricated data (`PROJECT_STATE.md` §6.3) taking two of three columns, and rank history has no
+production data path at all (same §).
+
+**Two real bugs the browser caught that the suite could not** — the pattern this file has now
+logged three times, and it held again:
+
+- **The standings pair grew to fit all 16 rows and pushed the bracket off screen.** The shell's
+  root is `min-h-dvh` on purpose (a feed must be able to scroll the document), but `min-height`
+  gives a flex child no definite height to divide, so two frames meant to split one screenful
+  just grew. Fixed with a `.mobile-screenful` utility computed from the header's own geometry.
+- **Both prediction pages were `h-dvh` while rendering below a 56px header**, overflowing by
+  exactly the header's height. Desktop never showed it because `html/body` are
+  `overflow:hidden` above 1024px, so the excess silently clipped. **Any full-viewport page
+  inside the shell needs `.mobile-screenful`, not `h-dvh`.**
+
+**Predictions needed the most real work**, and for a reason worth remembering: `TeamGrid`
+shows a crest and puts the team's name in a **hover** tooltip. Touch has no hover — and every
+crest in this app is deliberately assigned to the wrong club pending the roster replacement
+(§9), so the pool on a phone would have been 36 unidentifiable badges. That is why the
+wireframe says "list". `MobileTeamPool` is a named list reusing the same drag ids. Separately,
+`PointerSensor`'s 5px threshold claims the drag the page needs for scrolling, so touch now
+activates on press-and-hold; desktop's sensor is untouched.
+
+**Deduplication done along the way:** the bracket's pick state machine is now
+`useKnockoutPicks`, shared by the desktop and mobile brackets, with the eviction rules
+(deselecting a quarter-finalist must empty the trophy) covered by real tests. `NAV_LINKS` moved
+to `src/shell/navLinks.ts` so both shells read one table and the nav-matches-`pageAccess`
+invariant covers both.
+
+**Open follow-ups:**
+- **No logged-in or started-phase screen has been verified against real data** — the §6.9 auth
+  wall again, now doubly blocking since `profiles/{uid}` went signed-in-only in the 2026-08-02
+  privacy split, so even the DevPanel's `loggedInOverride` can't get through without
+  credentials. They *were* verified for layout, overflow and fit at 390×844 through a
+  temporary preview harness rendering the real components with synthetic props (deleted before
+  commit; that is how both bugs above were found). **That proves geometry, not Firestore
+  behaviour.** Home logged-out/not-started, About, the nav drawer and the Forum gate are the
+  only screens checked against the real app.
+- **`KnockoutStagePicker` is a third copy of the bracket pick machine**, still not on
+  `useKnockoutPicks`. It's desktop-only and was left alone deliberately rather than widen this
+  branch's blast radius — but it should be folded in.
+- Profile's delete button sits below the predictions frame on mobile, not inside the profile
+  block as the wireframe draws it. Deliberate: a destructive action is better off not adjacent
+  to the avatar. Flag if wrong.
+- The About page keeps its contact line, which the wireframe omits — one line of real content,
+  and the site's only way to reach anyone. Trivially cut if that reads as a misjudgement.
+- Landscape phone is untuned, and tablets get the phone layout in a centred column capped at
+  34rem. Both deliberate, neither designed.
+
+---
+
+## 2026-08-06 — Mobile wireframe tool built, branch `mobile-wireframe-tool` (merged to `main`)
 
 Mobile design is now in scope after being explicitly out of scope for the whole project to date (every prior entry below says so). Rather than have Mert design mobile layouts freeform, built a small standalone tool for him to lay them out first: `tools/mobile-wireframe/index.html` — double-click to open, no server/build/install, self-contained (`lib.js` holds the pure logic as a classic script so it loads over `file://`; `lib.test.ts` covers it, 65 tests, runs in the normal `npm test`). Design spec at `docs/superpowers/specs/2026-08-06-mobile-wireframe-tool-design.md`.
 
@@ -16,7 +107,9 @@ Mobile design is now in scope after being explicitly out of scope for the whole 
 
 **Real bugs the browser-verification pass caught that the unit tests didn't** (worth a second read of `PROJECT_STATE.md`'s existing loading-flash lesson from 2026-08-03, which keeps re-earning itself): an ID selector's `display:flex` was outranking the `[hidden]` attribute, so an alias/N/A veil could show on a screen that wasn't actually N/A; a cell that had blocks drawn on it never actually left `alias: "auto"`, so the whole mirroring mechanic — the thing that makes the matrix tractable — silently did nothing until a fix in both the live-edit path and `migrateDoc` (so an already-saved file self-heals too); the phone canvas was taller than any real viewport and never fit, fixed with a zoom control defaulting to "fit one screenful" plus a `min-height:0` fix on the flex chain (its absence was also making the fit measurement circular).
 
-**Not merged to `main` yet** — no reason given to hold it back, just hasn't been asked for. `tsc -b` clean, full suite 930 tests / 123 files (up from 865/122 before this branch) at every checkpoint.
+~~**Not merged to `main` yet**~~ **Merged to `main` 2026-08-06**, along with Mert's completed
+`mobile-wireframes.json`, as the first step of the mobile build above. `tsc -b` clean, full
+suite 930 tests / 123 files (up from 865/122 before this branch) at every checkpoint.
 
 ---
 
