@@ -6,7 +6,7 @@ This file is meant to be pruned/rewritten as things get resolved or folded into 
 
 **Term: "Xerox pass."** Reusing an existing, already-built page/composition wholesale for a different, not-yet-designed state — purely to replace placeholder text with *something real*, under explicit instruction not to worry about whether it's actually appropriate for that state ("don't overthink it," "we'll go through all of them much later"). Not a design decision, not even a rough one — a stopgap. A page/state marked as Xeroxed (from wherever) should be treated as **unreviewed** for its own specific context until a real pass happens; don't cite its current layout, copy, or behavior as an intentional choice for that state.
 
-## 2026-08-06 — Mobile built, branch `mobile` (not yet merged)
+## 2026-08-06/07 — Mobile built, branch `mobile` → merged to `main`
 
 Mert filled in the wireframe tool (19 of ~76 cells drawn, committed at
 `tools/mobile-wireframe/mobile-wireframes.json`) and handed the rest over with one
