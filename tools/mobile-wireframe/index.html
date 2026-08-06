@@ -51,7 +51,9 @@
   .rail-count { font-size: 10px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
 
   /* ---------------------------------------------------------------- main */
-  #main { display: flex; flex-direction: column; min-width: 0; }
+  /* min-height:0 on both, or the flex items grow to their content instead of
+     scrolling — which also makes the fit-zoom measurement circular. */
+  #main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
   #topbar {
     display: flex; align-items: center; gap: 10px; padding: 9px 14px;
     border-bottom: 1px solid var(--line); background: var(--panel);
@@ -80,14 +82,19 @@
   .dot.alias { background: var(--accent-dim); }
   .dot.na { background: transparent; box-shadow: inset 0 0 0 1px #4a515e; }
 
-  #stage { flex: 1; overflow: auto; display: flex; justify-content: center; padding: 26px 20px 90px; }
+  #stage {
+    flex: 1; min-height: 0; overflow: auto; display: flex;
+    align-items: flex-start; justify-content: center; padding: 12px 20px 24px;
+  }
 
   /* --------------------------------------------------------------- phone */
-  #phone-wrap { position: relative; }
+  /* The wrapper carries the scaled footprint so the stage lays out and scrolls
+     correctly; #phone itself is always drawn at true 360px and scaled visually. */
+  #phone-wrap { position: relative; flex: none; }
   #phone {
-    position: relative; width: 360px; background: var(--phone);
+    position: absolute; top: 0; left: 0; width: 360px; background: var(--phone);
     border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
-    touch-action: none;
+    touch-action: none; transform-origin: top left;
   }
   #grid-bg { position: absolute; inset: 0; pointer-events: none; }
   #grid-bg .v { position: absolute; top: 0; bottom: 0; width: 1px; background: #2b323c; }
@@ -103,8 +110,9 @@
     background: rgba(90,104,124,.20); display: flex; align-items: center; justify-content: center;
     padding: 3px 5px; text-align: center; overflow: hidden; cursor: grab;
   }
-  .blk .nm { font-size: 11px; line-height: 1.2; color: var(--ink); word-break: break-word; }
-  .blk .fl { position: absolute; left: 4px; bottom: 2px; font-size: 9px; color: var(--ink-faint); }
+  /* --inv is 1/zoom, so labels stay the same on-screen size however far we zoom out. */
+  .blk .nm { font-size: calc(11px * var(--inv, 1)); line-height: 1.2; color: var(--ink); word-break: break-word; }
+  .blk .fl { position: absolute; left: 4px; bottom: 2px; font-size: calc(9px * var(--inv, 1)); color: var(--ink-faint); }
   .blk.sel { border-color: var(--accent); background: rgba(127,209,166,.16); box-shadow: 0 0 0 1px var(--accent); }
   .blk.bad { border-color: var(--danger) !important; background: rgba(226,100,92,.22) !important; }
   .blk.tint1 { background: rgba(127,209,166,.15); border-color: #4e8a6e; }
@@ -125,7 +133,7 @@
       45deg, rgba(120,132,150,.07), rgba(120,132,150,.07) 4px, transparent 4px, transparent 8px);
     border-radius: 3px; display: flex; align-items: center; justify-content: center;
   }
-  .ghost-blk span { font-size: 10px; color: #5b6472; }
+  .ghost-blk span { font-size: calc(10px * var(--inv, 1)); color: #5b6472; }
 
   #sheet-veil { position: absolute; left: 0; right: 0; top: 0; background: rgba(6,8,11,.62); z-index: 1; }
   #sheet-handle {
@@ -240,6 +248,13 @@
   <div id="warn" hidden></div>
   <div id="topbar">
     <div id="screen-title"></div>
+    <select id="zoom" class="btn ghost" title="Zoom">
+      <option value="fit">Fit</option>
+      <option value="0.6">60%</option>
+      <option value="0.75">75%</option>
+      <option value="1">100%</option>
+      <option value="1.25">125%</option>
+    </select>
     <button class="btn ghost" id="btn-matrix">Matrix</button>
     <button class="btn ghost" id="btn-export">Copy for Claude</button>
     <button class="btn ghost" id="btn-save">Save file</button>
@@ -456,10 +471,30 @@
     return s.scroll === "fixed" ? GRID.rowsPerScreen : totalRows() + SPARE_ROWS;
   }
 
+  /**
+   * Zoom is chosen so one screenful fits the stage, never so the whole scroll length
+   * does — otherwise a long page would render at a different scale from a short one
+   * and proportions would stop being comparable between screens.
+   */
+  let zoomPref = "fit";
+  let zoom = 1;
+  function computeZoom() {
+    if (zoomPref !== "fit") return Number(zoomPref);
+    const stage = $("#stage");
+    const avail = stage.clientHeight - 36;
+    return Math.max(0.4, Math.min(1, avail / (GRID.rowsPerScreen * CELL_H)));
+  }
+
   function renderGrid() {
     const rows = drawRows();
     const phone = $("#phone");
+    zoom = computeZoom();
     phone.style.height = rows * CELL_H + "px";
+    phone.style.transform = `scale(${zoom})`;
+    phone.style.setProperty("--inv", String(1 / zoom));
+    const wrap = $("#phone-wrap");
+    wrap.style.width = GRID.phoneW * zoom + "px";
+    wrap.style.height = rows * CELL_H * zoom + "px";
     const bg = $("#grid-bg");
     bg.textContent = "";
     for (let c = 1; c < GRID.cols; c++) {
@@ -760,9 +795,10 @@
   const phone = $("#phone");
   let drag = null;
 
+  // getBoundingClientRect reports the *scaled* box, so undo the zoom to get grid pixels.
   function localPoint(ev) {
     const r = phone.getBoundingClientRect();
-    return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+    return { x: (ev.clientX - r.left) / zoom, y: (ev.clientY - r.top) / zoom };
   }
 
   phone.addEventListener("pointerdown", (ev) => {
@@ -893,6 +929,9 @@
     pop.hidden = false;
     pop.style.left = Math.min(b.x * CELL_W, GRID.phoneW - 210) + "px";
     pop.style.top = (b.y + b.h) * CELL_H + 3 + "px";
+    // Counter-scale so the name field stays legible however far the phone is zoomed out.
+    pop.style.transformOrigin = "top left";
+    pop.style.transform = `scale(${1 / zoom})`;
     input.value = "";
     input.focus();
     const commit = (keep) => {
@@ -1062,7 +1101,23 @@
     e.target.value = "";
   };
 
+  $("#zoom").onchange = (e) => {
+    zoomPref = e.target.value;
+    try { localStorage.setItem(STORE_KEY + ":zoom", zoomPref); } catch (err) { /* ignore */ }
+    renderGrid(); renderBlocks(); renderGhostShell(); renderSheet();
+  };
+  let resizeTimer = null;
+  window.addEventListener("resize", () => {
+    if (zoomPref !== "fit") return;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { renderGrid(); renderBlocks(); renderGhostShell(); renderSheet(); }, 120);
+  });
+
   // ------------------------------------------------------------------ boot
+  try {
+    const z = localStorage.getItem(STORE_KEY + ":zoom");
+    if (z) { zoomPref = z; $("#zoom").value = z; }
+  } catch (e) { /* storage unavailable; fit is a fine default */ }
   load();
   renderDatalist();
   renderAll();
