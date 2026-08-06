@@ -65,7 +65,7 @@ export function MobileHomeNotStartedLoggedIn({
     : players;
 
   return (
-    <div className="mobile-screenful flex min-h-0 flex-col gap-3 px-3 py-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 px-3 py-3">
       <MobileWelcomeBanner me={me} showCta={!submitterUids.has(me.uid)} />
 
       <Frame className="flex min-h-0 flex-1 flex-col animate-cotton-rise">

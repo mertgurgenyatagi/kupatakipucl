@@ -27,7 +27,7 @@ import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { TeamPopup } from "../leaderboard/TeamPopup";
 import { MatchupPopup } from "../leaderboard/MatchupPopup";
 import { useTournamentPhase } from "../tournament/useTournamentPhase";
-import { CameraIcon } from "lucide-react";
+import { CameraIcon, Trash2 } from "lucide-react";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -51,14 +51,14 @@ type PredictionUiStep = "idle" | "rank" | "confirm-overwrite";
 // isn't a wide data table like Leaderboard/Stats, so it doesn't earn their
 // 1400px exception.
 const PAGE_SHELL =
-  "relative mx-auto flex w-full max-w-[1100px] min-w-0 flex-col gap-4 p-4 sm:p-6 lg:h-full lg:min-h-0 lg:flex-1 lg:gap-5 lg:p-6";
+  "relative mx-auto flex h-full min-h-0 w-full max-w-[1100px] min-w-0 flex-1 flex-col gap-3 p-3 sm:p-6 lg:gap-5 lg:p-6";
 // Two columns: profile + quiz stacked on the left, the prediction (the
 // heavier, potentially-36-row content) taking the full row height on the
 // right — mirrors the "tall anchor beside narrower stacked cells" rhythm
 // LeaderboardPage/StatsPage already use, just mirrored left/right.
 const MAIN_ROW =
   "relative z-10 grid min-w-0 gap-4 lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-[340px_1fr] lg:gap-5 [&>*]:min-h-0 [&>*]:min-w-0";
-const LEFT_COLUMN = "flex min-h-0 flex-col gap-4 lg:gap-5";
+const LEFT_COLUMN = "flex min-h-0 flex-1 flex-col gap-3 lg:flex-none lg:gap-5";
 
 const TEAM_CREST_URLS = TEAMS.map((t) => teamCrestSrc(t.id));
 
@@ -308,6 +308,24 @@ export function ProfilePage() {
                   {displayedProfile?.firstName} {displayedProfile?.lastName}
                 </p>
               </div>
+
+              {/* Delete lives inside the profile block on mobile, which is
+                  where the wireframe puts it ("profile shit here, also has
+                  delete profile button"). Desktop keeps it as its own
+                  bottom-anchored column beside the prediction frame. */}
+              {isMobile && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteError(null);
+                    setDeleteConfirmOpen(true);
+                  }}
+                  aria-label="Profili sil"
+                  className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-color_border1/70 text-color_remove transition-colors duration-150 active:bg-color_remove/10 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_remove"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              )}
             </div>
 
             {/* Bottom-left: rank + points, same plaque-engraving mono voice
@@ -317,14 +335,14 @@ export function ProfilePage() {
                 yet), so the whole block is dropped rather than shown as a
                 dash pair. */}
             {predictionLocked && (
-              <div className="flex items-end gap-5">
+              <div className="flex items-end gap-5 pt-2 lg:pt-0">
                 <div>
-                  <p className="font-mono text-[0.75rem] tracking-[0.22em] text-color_textsecondary uppercase">
+                  <p className="font-mono text-[0.62rem] tracking-[0.22em] text-color_textsecondary uppercase lg:text-[0.75rem]">
                     Sıra
                   </p>
                   <p
                     className={cn(
-                      "font-mono text-[1.91rem] font-semibold tnum",
+                      "font-mono text-xl font-semibold tnum lg:text-[1.91rem]",
                       myEntry?.rank === 1 ? "text-color_accent" : "text-color_text"
                     )}
                   >
@@ -332,10 +350,10 @@ export function ProfilePage() {
                   </p>
                 </div>
                 <div>
-                  <p className="font-mono text-[0.75rem] tracking-[0.22em] text-color_textsecondary uppercase">
+                  <p className="font-mono text-[0.62rem] tracking-[0.22em] text-color_textsecondary uppercase lg:text-[0.75rem]">
                     Puan
                   </p>
-                  <p className="font-mono text-[1.91rem] font-semibold text-color_text tnum">
+                  <p className="font-mono text-xl font-semibold text-color_text tnum lg:text-[1.91rem]">
                     {myEntry ? myEntry.entry.points : "—"}
                   </p>
                 </div>
@@ -538,19 +556,21 @@ export function ProfilePage() {
         </FrameBody>
       </Frame>
 
-      <div className="flex shrink-0 flex-col justify-end">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            setDeleteError(null);
-            setDeleteConfirmOpen(true);
-          }}
-          className="text-color_remove hover:text-color_remove"
-        >
-          Profili sil
-        </Button>
-      </div>
+      {!isMobile && (
+        <div className="flex shrink-0 flex-col justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setDeleteError(null);
+              setDeleteConfirmOpen(true);
+            }}
+            className="text-color_remove hover:text-color_remove"
+          >
+            Profili sil
+          </Button>
+        </div>
+      )}
       </div>
       </div>
 

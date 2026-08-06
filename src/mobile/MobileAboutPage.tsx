@@ -47,7 +47,7 @@ export function MobileAboutPage() {
   const initial = reduceMotion ? "visible" : "hidden";
 
   return (
-    <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+    <section className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
       <DustHaze />
       <div className="absolute inset-0 bg-linear-to-t from-background via-background/30 to-transparent" />
 
@@ -55,18 +55,22 @@ export function MobileAboutPage() {
         initial={initial}
         animate="visible"
         variants={staggerGroup}
-        className="relative z-10 flex flex-col items-center gap-7 px-6 py-8"
+        // Distributed rather than stacked with a fixed gap: this page has to land
+        // inside one screenful now, and `justify-between` absorbs the difference
+        // between a 667px phone and an 926px one without any of the four blocks
+        // needing a breakpoint of its own.
+        className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-between gap-4 px-6 py-5"
       >
         <motion.img
           variants={riseIn}
           src="/brand/kupatakip-logo-white.svg"
           alt="#kupatakipucl"
-          className="h-24 w-auto shrink-0"
+          className="h-[clamp(3.5rem,9vh,6rem)] w-auto shrink-0"
         />
 
         <motion.p
           variants={riseIn}
-          className="font-display text-[0.82rem] leading-relaxed font-light text-color_textsecondary"
+          className="min-h-0 overflow-y-auto font-display text-[0.78rem] leading-relaxed font-light text-color_textsecondary"
         >
           {ESSENCE_TEXT}
         </motion.p>
@@ -105,7 +109,7 @@ function VerticalDateTimeline() {
         const isCurrent = status === "current";
         return (
           <Fragment key={item.label}>
-            <li className="flex items-center gap-3.5">
+            <li className="flex items-center gap-3.5 py-0.5">
               <span
                 className={cn(
                   "size-3.5 shrink-0 rounded-full",
@@ -134,7 +138,7 @@ function VerticalDateTimeline() {
             </li>
             {/* The rail segment, inset to sit under the node's centre. */}
             {i < KEY_DATES.length - 1 && (
-              <span aria-hidden className="ml-[0.4rem] h-4 w-px shrink-0 bg-color_border1" />
+              <span aria-hidden className="ml-[0.4rem] h-[clamp(0.5rem,1.4vh,1rem)] w-px shrink-0 bg-color_border1" />
             )}
           </Fragment>
         );

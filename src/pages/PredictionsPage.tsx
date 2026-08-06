@@ -112,9 +112,9 @@ export function PredictionsPage() {
       className={cn(
         "relative flex w-full cursor-default items-center justify-center overflow-hidden bg-background px-6 py-10",
         // h-dvh is a full viewport, but this page renders *below* the shell
-        // header — on mobile that overflows by exactly the header's height.
-        // Desktop never showed it because html/body are overflow:hidden there.
-        isMobile ? "mobile-screenful py-6" : "h-dvh"
+        // header. On mobile the shell is itself a fixed viewport now, so this
+        // just fills what it's given; on desktop it keeps its own h-dvh.
+        isMobile ? "h-full py-6" : "h-dvh"
       )}
     >
       <AnimatePresence mode="wait">

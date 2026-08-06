@@ -40,7 +40,7 @@ export function MobileStandingsPair({
   bottomBias?: boolean;
 }) {
   return (
-    <div className="mobile-screenful flex min-h-0 flex-col gap-3 px-3 py-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 px-3 py-3">
       <div className="flex min-h-0 flex-1 flex-col">
         <LeaderboardTable
           entries={entries}

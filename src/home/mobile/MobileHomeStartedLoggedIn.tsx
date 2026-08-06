@@ -1,5 +1,4 @@
 import { Frame, FrameBody } from "@/components/ui/frame";
-import { cn } from "@/lib/utils";
 import { MobileWelcomeBanner } from "./MobileWelcomeBanner";
 import { KnockoutPredictionWidget } from "../KnockoutPredictionWidget";
 import { NearbyStandingsList } from "../../leaderboard/NearbyStandingsList";
@@ -53,15 +52,7 @@ export function MobileHomeStartedLoggedIn({
   phase: TournamentPhase;
 }) {
   return (
-    <div
-      className={cn(
-        "flex min-h-0 flex-col gap-3 px-3 py-3",
-        // preknockout carries a third block (the knockout CTA). Rather than
-        // squeeze the standings and the forum into what is left, the page is
-        // allowed to scroll in that one phase.
-        phase === "preknockout" ? "flex-1" : "mobile-screenful"
-      )}
-    >
+    <div className="flex min-h-0 flex-1 flex-col gap-3 px-3 py-3">
       {/* showCta is false throughout: /predictions redirects home once the
           tournament has started, so the league-prediction CTA would be a
           link to a bounce. Same reasoning as the desktop started page. */}

@@ -92,7 +92,7 @@ export function KnockoutPredictionsPage() {
 
   return (
     <div
-      className={`relative flex w-full cursor-default items-center justify-center overflow-hidden px-4 py-6 sm:px-6 sm:py-8 ${isMobile ? "mobile-screenful" : "h-dvh"}`}
+      className={`relative flex w-full cursor-default items-center justify-center overflow-hidden px-4 py-6 sm:px-6 sm:py-8 ${isMobile ? "h-full" : "h-dvh"}`}
       style={{ background: "radial-gradient(ellipse at 30% 0%, #1a1a24 0%, #0d0d12 45%, #050508 100%)" }}
     >
       {/* Monochromatic ambient depth blobs */}

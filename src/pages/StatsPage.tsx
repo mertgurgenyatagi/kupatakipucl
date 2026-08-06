@@ -33,13 +33,13 @@ import { PageUnavailable } from "@/components/ui/page-unavailable";
 // LeaderboardPage.tsx widens to 1400px — a third (hero) column genuinely
 // needs the room, same three-section shape as that page.
 const PAGE_SHELL =
-  "relative mx-auto flex w-full max-w-[1400px] min-w-0 flex-col gap-4 p-4 sm:p-6 lg:h-full lg:min-h-0 lg:flex-1 lg:gap-5 lg:p-6";
+  "relative mx-auto flex h-full min-h-0 w-full max-w-[1400px] min-w-0 flex-1 flex-col gap-3 p-3 sm:p-6 lg:gap-5 lg:p-6";
 // gap is tunable (columnGap), applied via inline style below. Third column
 // is a fixed 300px for the hero section, matching LeaderboardPage's own
 // hero-column width. First two columns split the remaining space equally
 // (tournament stats / participant stats).
 const MAIN_ROW =
-  "relative z-10 grid min-w-0 lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-[1fr_1fr_300px] [&>*]:min-h-0 [&>*]:min-w-0";
+  "relative z-10 flex min-h-0 min-w-0 flex-1 flex-col gap-3 lg:grid lg:h-full lg:grid-cols-[1fr_1fr_300px] [&>*]:min-h-0 [&>*]:min-w-0";
 // gap/padding are tunable (widgetGap/gridPadding), applied via inline style below.
 // grid-cols-2 at 390px puts two ranked stat lists side by side in ~180px
 // each, which is not a design decision so much as a broken one. Stats is the
@@ -47,7 +47,7 @@ const MAIN_ROW =
 // design effort," not "leave it unusable," so mobile gets the minimum: one
 // column, and the document scrolling instead of each frame trapping its own.
 const WIDGET_GRID =
-  "grid min-h-0 flex-1 grid-cols-1 content-start lg:grid-cols-2 lg:overflow-y-auto";
+  "grid min-h-0 flex-1 grid-cols-1 content-start overflow-y-auto lg:grid-cols-2";
 
 // Matches PAGE_SHELL/MAIN_ROW's [1fr_1fr_300px] three-column shape: two
 // columns of widget-sized placeholder cards, a third Frame standing in for

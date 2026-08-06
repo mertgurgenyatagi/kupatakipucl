@@ -139,12 +139,11 @@ export function Forum({
         </p>
       )}
 
-      {/* Desktop scrolls the feed inside its own region, because the document
-          never scrolls there (§55). Mobile does the opposite on purpose: a
-          feed is the one thing a phone should scroll with the document, so
-          the address bar collapses and the rubber-band lands where the thumb
-          expects. Hence `lg:` on the overflow rather than unconditional. */}
-      <div className="min-h-0 flex-1 lg:overflow-y-auto">
+      {/* The one scrolling region in the mobile app. Every other page is
+          "globally unscrollable" (Mert, 2026-08-07) and fits its screenful;
+          a forum can't, so the feed owns an internal scroll on both sides of
+          the breakpoint. The composer above it stays put while it moves. */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {roots.length === 0 ? (
           <div className="flex flex-1 items-center justify-center py-12">
             <p className="text-center font-display text-sm text-color_textsecondary italic">

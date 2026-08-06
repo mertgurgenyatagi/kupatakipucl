@@ -166,36 +166,31 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Desktop is a fixed-viewport app shell: the document itself never
-     scrolls; regions that overflow get their own internal scroll
-     container (DESIGN-SPEC §55). Mobile scrolls normally (§53). */
-  @media (min-width: 1024px) {
-    html, body, #root {
-      height: 100%;
-      overflow: hidden;
-    }
+  /* A fixed-viewport app shell, at every width. The document itself never
+     scrolls; any region that overflows gets its own internal scroll
+     container (DESIGN-SPEC §55).
+
+     This used to be desktop-only, with mobile scrolling normally (§53).
+     Mert's call on 2026-08-07 extended it: "every page apart from the forum
+     should be globally unscrollable." The Forum feed is now the single
+     scrolling region in the app on mobile, and it owns that scroll itself.
+
+     height:100% rather than 100dvh deliberately — with overflow hidden the
+     mobile URL bar never collapses, so the small viewport *is* the visible
+     area, and a dvh here would mismatch it as the bar animates. */
+  html, body, #root {
+    height: 100%;
+    overflow: hidden;
+    /* Kills the rubber-band overscroll at the document edge, which on iOS
+       still moves a non-scrolling page and reads as the layout coming
+       loose. */
+    overscroll-behavior: none;
   }
 }
 
 @layer utilities {
   .font-display { font-family: var(--font-display); }
   .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
-
-  /* Exactly one screenful, below the mobile shell's header.
-   *
-   * The shell's root is `min-h-dvh`, deliberately — a feed (Forum, About)
-   * has to be able to grow past the viewport and let the document scroll,
-   * which is what a phone should do. But `min-height` gives a flex child no
-   * definite height to divide, so a page that wants to *split* one screenful
-   * between two internally-scrolling frames (the standings pair, Home) can't
-   * express that with `flex-1`: its children just grow to their content and
-   * push the rest off the bottom.
-   *
-   * Hence a real height, computed from the header's own geometry: py-2 (1rem)
-   * plus a 2.5rem control row, plus whatever the device's top inset is. */
-  .mobile-screenful {
-    height: calc(100dvh - 3.5rem - env(safe-area-inset-top));
-  }
 
   /* Horizontal nav strip stays scrollable on mobile without a visible
      scrollbar chrome (DESIGN-SPEC §39 always-visible nav, §53 clarity). */

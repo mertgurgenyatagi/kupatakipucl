@@ -55,7 +55,16 @@ export function MobileShell({ children }: { children: ReactNode }) {
 
   return (
     <MobilePopupHost>
-      <div className="flex min-h-dvh cursor-default flex-col bg-background">
+      {/* A fixed viewport, not a scrolling document — the same model desktop
+          has always used (DESIGN-SPEC §55), now applied to mobile too on
+          Mert's call: "every page apart from the forum should be globally
+          unscrollable."
+
+          This is what gives every page below a *definite* height to divide,
+          which is the thing `min-h-dvh` could not do. Any region that
+          genuinely needs to overflow gets its own internal scroll container;
+          the Forum feed is the only one that does. */}
+      <div className="flex h-full cursor-default flex-col overflow-hidden bg-background">
         {/* Cursorify (DESIGN.md §6): the root cursor reset, same as
             AppShell's — no I-beam anywhere by default, interactive elements
             opt back into a pointer individually. */}
@@ -130,13 +139,13 @@ export function MobileShell({ children }: { children: ReactNode }) {
 
         <Toaster closeButton position="top-center" />
 
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {/* Capped and centred rather than stretched: everything below
               1024px renders the phone composition, and a 1000px-wide phone
               layout is worse than a centred column with air either side. */}
           <div
             key={location.pathname}
-            className="mx-auto flex w-full max-w-[34rem] min-h-0 min-w-0 flex-1 flex-col animate-cotton-fade"
+            className="mx-auto flex w-full max-w-[34rem] min-h-0 min-w-0 flex-1 flex-col overflow-hidden animate-cotton-fade"
           >
             {children}
           </div>
