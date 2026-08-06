@@ -82,14 +82,15 @@ logged four times, and it held again. The third is the sharpest:
   replacement, and "the document doesn't scroll" is not the same as "the content fits" —
   measure the blocks.
 
-- **The standings pair grew to fit all 16 rows and pushed the bracket off screen.** The shell's
-  root is `min-h-dvh` on purpose (a feed must be able to scroll the document), but `min-height`
-  gives a flex child no definite height to divide, so two frames meant to split one screenful
-  just grew. Fixed with a `.mobile-screenful` utility computed from the header's own geometry.
+- **The standings pair grew to fit all 16 rows and pushed the bracket off screen.** `min-height`
+  on the shell root gives a flex child no definite height to divide, so two frames meant to
+  split one screenful just grew instead. (Fixed at the time with a `.mobile-screenful` utility;
+  the second pass made the root a real fixed height and deleted the utility, so plain `flex-1`
+  now does this everywhere.)
 - **Both prediction pages were `h-dvh` while rendering below a 56px header**, overflowing by
   exactly the header's height. Desktop never showed it because `html/body` are
-  `overflow:hidden` above 1024px, so the excess silently clipped. **Any full-viewport page
-  inside the shell needs `.mobile-screenful`, not `h-dvh`.**
+  `overflow:hidden` above 1024px, so the excess silently clipped. **A full-viewport page inside
+  the shell must fill what the shell gives it (`h-full`), never restate `h-dvh`.**
 
 **Predictions needed the most real work**, and for a reason worth remembering: `TeamGrid`
 shows a crest and puts the team's name in a **hover** tooltip. Touch has no hover — and every

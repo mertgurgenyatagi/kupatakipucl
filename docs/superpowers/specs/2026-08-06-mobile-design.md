@@ -80,27 +80,29 @@ Tablets therefore get the phone layout. That is deliberate: the wireframes are p
 and a tablet showing a comfortable centred column beats a tablet showing a broken bento.
 Mobile compositions cap at a readable measure and centre, rather than stretching to 1023px.
 
-### Two height models, and the utility that reconciles them
+### One height model: a fixed viewport, everywhere
 
-*(Added during the build — this was not obvious up front and cost a real bug.)*
+*(Revised 2026-08-07 on Mert's instruction: "every page apart from the forum should be globally
+unscrollable." The first pass tried to support both models at once and it cost two bugs.)*
 
-The mobile shell's root is `min-h-dvh`, deliberately: a feed (Forum, About) has to grow past
-the viewport and let the **document** scroll, which is what a phone should do and what the
-address bar's collapse behaviour depends on.
+`html`, `body` and `#root` are `height:100%; overflow:hidden` at **every** width — what used to
+be a `@media (min-width: 1024px)` rule for desktop only. Plus `overscroll-behavior:none`, so
+the iOS rubber-band doesn't move a page that isn't supposed to move.
 
-But `min-height` gives a flex child no definite height to divide. So a page that wants to
-*split* one screenful between two internally-scrolling frames — the standings pair, Home —
-cannot express that with `flex-1`: its children size to their content and push the rest off
-the bottom. That is exactly what happened, and no test caught it.
+That gives every page a definite height to divide, so `flex-1` behaves the same way it does on
+desktop and no page needs a bespoke height calculation. **The Forum feed is the single
+scrolling region in the mobile app**, and it owns that scroll itself; every other page fits its
+screenful, with individual frames scrolling internally where their content is longer than their
+share (standings, league table, quiz, prediction list, bracket).
 
-`.mobile-screenful` (`src/styles/index.css`) is the reconciliation: a real height, computed
-from the header's own geometry (`100dvh - 3.5rem - env(safe-area-inset-top)`). Pages that
-split a screenful use it; pages that scroll don't.
+Two consequences worth knowing:
 
-**The mirror-image bug is worth knowing too:** both prediction pages were `h-dvh` while
-rendering *below* the 56px shell header, overflowing by exactly the header's height. Desktop
-never showed it because `html/body` are `overflow:hidden` above 1024px, so the excess simply
-clipped. Any full-viewport page inside the shell needs the utility, not `h-dvh`.
+- **A full-viewport page inside the shell must fill what it's given (`h-full`), never restate
+  `h-dvh`** — that double-counts the header and overflows by exactly its height. Both prediction
+  pages did this; desktop never showed it because the excess was clipped by `overflow:hidden`.
+- **"The document doesn't scroll" is not the same as "the content fits."** With `overflow:hidden`
+  an overflowing block is silently clipped, so a scroll-height check passes while a block is
+  three times the viewport. Measure the blocks, not just the document.
 
 ### Detection
 
