@@ -23,12 +23,20 @@ function Avatar({
   )
 }
 
+// No per-image fade-in here anymore. It dated from the first pass at the
+// loading-flash work (2026-08-03), before the sitewide useImagePreload gate
+// landed and made pages wait for their own images — so by the time an avatar
+// mounts it is already decoded and in cache, and the 0.7s fade was animating
+// something that had nothing left to reveal. It also cost real scroll
+// smoothness: an element with a running animation gets its own compositing
+// layer, and promoting/demoting ~50 of them while a list scrolls is what made
+// the pictures visibly wobble.
 function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
       className={cn(
-        "aspect-square size-full rounded-full object-cover animate-cotton-fade",
+        "aspect-square size-full rounded-full object-cover",
         className
       )}
       {...props}

@@ -1,14 +1,13 @@
 // src/forum/ThreadCard.tsx
+import { memo, useMemo } from "react";
 import { Heart, MessageCircle, Trash2 } from "lucide-react";
 import { PostWithId } from "./postTypes";
 import { Player } from "../profile/usePlayers";
-import { ThreadStats } from "./threadStats";
 import { ReplyRow } from "./ReplyRow";
 import { ForumImageThumb } from "./ForumImageThumb";
-import { timeAgo } from "./forumTime";
+import { useTimeAgo } from "./forumTime";
+import { PostAuthorLink } from "./PostAuthorLink";
 import { splitMentionSegments } from "../chat/chatMentions";
-import { fullName, avatarSrc, initials } from "../profile/deletedAccount";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 const PREVIEW_REPLY_COUNT = 3;
@@ -19,8 +18,10 @@ interface ThreadCardProps {
   /** Every reply to this root, any order — the card slices its own
    *  most-recent-3 preview (forum-round-02 Q5: oldest of the three first). */
   replies: PostWithId[];
-  stats: ThreadStats;
   players: Player[];
+  /** Same players, pre-indexed by uid — built once by the parent instead of
+   *  an O(n) `players.find` per card and per reply row. */
+  playersByUid: Map<string, Player>;
   /** The full, currently-loaded post list — threaded through to ReplyRow
    *  for its quote-still-exists check. */
   posts: PostWithId[];
@@ -35,11 +36,11 @@ interface ThreadCardProps {
   onDelete?: (postId: string) => void;
 }
 
-export function ThreadCard({
+function ThreadCardImpl({
   post,
   replies,
-  stats,
   players,
+  playersByUid,
   posts,
   uid,
   likesByPost,
@@ -48,41 +49,37 @@ export function ThreadCard({
   onExpand,
   onDelete,
 }: ThreadCardProps) {
-  const author = players.find((p) => p.uid === post.uid);
+  const author = playersByUid.get(post.uid);
   const isOwn = uid !== null && uid === post.uid;
   const isLong = post.text.length > LONG_TEXT_THRESHOLD || post.text.split("\n").length > 3;
   const likedBy = likesByPost.get(post.id);
   const liked = uid ? (likedBy?.has(uid) ?? false) : false;
   const likeCount = likedBy?.size ?? 0;
+  // The root post's own time, not the thread's last activity — a reply used
+  // to rewrite this line, so a week-old post read "2 dk önce" under its
+  // original author's name. Last activity still drives sort order upstream.
+  const postedAgo = useTimeAgo(post.createdAt);
 
-  const sortedReplies = replies.slice().sort((a, b) => a.createdAt - b.createdAt);
-  const preview = sortedReplies.slice(-PREVIEW_REPLY_COUNT);
-  const omittedCount = sortedReplies.length - preview.length;
+  const { preview, omittedCount, replyCount } = useMemo(() => {
+    const sorted = replies.slice().sort((a, b) => a.createdAt - b.createdAt);
+    const slice = sorted.slice(-PREVIEW_REPLY_COUNT);
+    return { preview: slice, omittedCount: sorted.length - slice.length, replyCount: sorted.length };
+  }, [replies]);
 
   return (
     <div className="flex h-[27rem] flex-col gap-3 overflow-hidden rounded-xl border border-color_border1/60 bg-background p-4">
       <div className="flex shrink-0 items-start justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => onSelectParticipant(post.uid)}
-          className="group flex min-w-0 cursor-pointer items-center gap-2.5"
-        >
-          <Avatar className="size-8 shrink-0">
-            <AvatarImage src={avatarSrc(author)} alt="" />
-            <AvatarFallback className="font-mono text-[0.6rem] text-color_textsecondary">
-              {initials(author)}
-            </AvatarFallback>
-          </Avatar>
-          <span className="min-w-0 text-left">
-            <span className="block truncate font-display text-sm font-medium text-color_text group-hover:underline">
-              {fullName(author)}
-            </span>
+        <PostAuthorLink
+          author={author}
+          uid={post.uid}
+          onSelect={onSelectParticipant}
+          meta={
             <span className="block font-mono text-[0.62rem] text-color_textsecondary tnum">
-              {timeAgo(stats.lastActivityAt)}
+              {postedAgo}
               {post.editedAt && " · düzenlendi"}
             </span>
-          </span>
-        </button>
+          }
+        />
         {isOwn && onDelete && (
           <button
             type="button"
@@ -146,7 +143,7 @@ export function ThreadCard({
           className="flex cursor-pointer items-center gap-1 rounded-full px-1.5 py-0.5 text-color_textsecondary outline-none transition-colors hover:text-color_accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent"
         >
           <MessageCircle className="size-3.5" aria-hidden />
-          <span className="font-mono text-[0.68rem] tnum">{sortedReplies.length} yanıt</span>
+          <span className="font-mono text-[0.68rem] tnum">{replyCount} yanıt</span>
         </button>
       </div>
 
@@ -155,7 +152,7 @@ export function ThreadCard({
           preview always uses ReplyRow's compact layout, sized so its 3 rows
           fit here in full — never scrolls, never clips mid-row. */}
       <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-hidden border-t border-color_border1/40 pt-2">
-        {sortedReplies.length === 0 ? (
+        {replyCount === 0 ? (
           <p className="flex flex-1 items-center justify-center text-center font-display text-xs text-color_textsecondary italic">
             Henüz yanıt yok.
           </p>
@@ -178,6 +175,7 @@ export function ThreadCard({
                     key={reply.id}
                     reply={reply}
                     players={players}
+                    playersByUid={playersByUid}
                     posts={posts}
                     uid={uid}
                     liked={uid ? (rLikedBy?.has(uid) ?? false) : false}
@@ -195,3 +193,9 @@ export function ThreadCard({
     </div>
   );
 }
+
+// The /forum grid renders up to 50 of these at once and re-renders on every
+// like toggle, search keystroke, and live snapshot. Memoized so a card only
+// re-renders when something it actually shows changed — the parent now hands
+// down stable, memoized `replies` arrays for this to be worth anything.
+export const ThreadCard = memo(ThreadCardImpl);

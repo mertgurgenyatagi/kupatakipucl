@@ -59,16 +59,15 @@ export function LeagueTableList({ results, onSelectTeam }: LeagueTableListProps)
             <span className="w-8 shrink-0 text-right">P</span>
           </div>
           <ul>
-            {ordered.map((team, index) => {
+            {ordered.map((team) => {
               const result = results[team.id];
               const band = result ? qualificationBand(result.position) : null;
               return (
                 <li
                   key={team.id}
                   onClick={() => onSelectTeam?.(team.id)}
-                  style={{ animationDelay: `${Math.min(index * 16, 500)}ms` }}
                   className={cn(
-                    "flex h-12 animate-cotton-rise cursor-pointer items-center gap-2 border-b border-color_border1/50 px-2 transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill",
+                    "flex h-12 cursor-pointer items-center gap-2 border-b border-color_border1/50 px-2 transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill",
                     !result && "opacity-55"
                   )}
                 >

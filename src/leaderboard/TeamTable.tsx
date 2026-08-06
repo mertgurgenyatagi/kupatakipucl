@@ -155,12 +155,12 @@ function TeamTableHalf({
       </div>
 
       <div role="rowgroup" className="contents">
-        {teams.map((team, index) => {
+        {teams.map((team) => {
           const result = results[team.id];
           const band = result ? qualificationBand(result.position) : null;
           const highlighted = highlightedTeamIds?.has(team.id) ?? false;
           const cell = cn(
-            "flex items-center border-b border-color_border1/50 py-1 transition-colors duration-150 ease-[var(--ease-cotton)] animate-cotton-rise group-hover:bg-color_hoverfill",
+            "flex items-center border-b border-color_border1/50 py-1 transition-colors duration-150 ease-[var(--ease-cotton)] group-hover:bg-color_hoverfill",
             !result && "opacity-55",
             highlighted && "bg-color_green/[0.12]"
           );
@@ -171,7 +171,6 @@ function TeamTableHalf({
               role="row"
               onClick={() => onSelectTeam?.(team.id)}
               className="group contents cursor-pointer"
-              style={{ animationDelay: `${Math.min(index * 16, 500)}ms` }}
             >
               {/* Sıra — a hard-left/rounded-right oblong to the numeral's
                   left carries the qualification-route signal (green =
@@ -304,9 +303,9 @@ export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTab
                   </div>
                 </div>
                 <div role="rowgroup" className="contents">
-                  {half.map((team, index) => {
+                  {half.map((team) => {
                     const cell = cn(
-                      "flex items-center border-b border-color_border1/50 py-1 transition-colors duration-150 ease-[var(--ease-cotton)] animate-cotton-rise group-hover:bg-color_hoverfill"
+                      "flex items-center border-b border-color_border1/50 py-1 transition-colors duration-150 ease-[var(--ease-cotton)] group-hover:bg-color_hoverfill"
                     );
                     return (
                       <div
@@ -314,7 +313,6 @@ export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTab
                         role="row"
                         onClick={() => onSelectTeam?.(team.id)}
                         className="group contents cursor-pointer"
-                        style={{ animationDelay: `${Math.min(index * 16, 500)}ms` }}
                       >
                         <div role="cell" className={cn(cell, "min-w-0 pl-3")}>
                           <span className="flex min-w-0 items-center gap-2.5">

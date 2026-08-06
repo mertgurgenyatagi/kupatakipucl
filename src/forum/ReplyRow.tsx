@@ -1,18 +1,20 @@
 // src/forum/ReplyRow.tsx
-import { useState, type KeyboardEvent } from "react";
+import { memo, useMemo, useState, type KeyboardEvent } from "react";
 import { Heart, Quote, Pencil, Trash2 } from "lucide-react";
 import { PostWithId } from "./postTypes";
 import { Player } from "../profile/usePlayers";
 import { splitMentionSegments } from "../chat/chatMentions";
-import { timeAgo } from "./forumTime";
+import { useTimeAgo } from "./forumTime";
+import { PostAuthorLink } from "./PostAuthorLink";
 import { ForumImageThumb } from "./ForumImageThumb";
-import { fullName, firstNameOnly, avatarSrc, initials } from "../profile/deletedAccount";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { firstNameOnly } from "../profile/deletedAccount";
 import { cn } from "@/lib/utils";
 
 interface ReplyRowProps {
   reply: PostWithId;
   players: Player[];
+  /** Same players, pre-indexed by uid — see ThreadCard's identical prop. */
+  playersByUid: Map<string, Player>;
   /** The full, currently-loaded post list — used only to check whether
    *  `reply.quotedPostId` still exists, to decide the accent-vs-gray quote
    *  treatment (forum-round-02 Q9). */
@@ -41,9 +43,10 @@ interface ReplyRowProps {
   compact?: boolean;
 }
 
-export function ReplyRow({
+function ReplyRowImpl({
   reply,
   players,
+  playersByUid,
   posts,
   uid,
   liked,
@@ -58,14 +61,18 @@ export function ReplyRow({
   onJumpToQuote,
   compact,
 }: ReplyRowProps) {
-  const author = players.find((p) => p.uid === reply.uid);
+  const author = playersByUid.get(reply.uid);
   const isOwn = uid !== null && uid === reply.uid;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(reply.text);
   const [hoverPreview, setHoverPreview] = useState<{ x: number; y: number } | null>(null);
+  const repliedAgo = useTimeAgo(reply.createdAt);
 
-  const quoteTargetExists = reply.quotedPostId ? posts.some((p) => p.id === reply.quotedPostId) : false;
-  const quoteAuthor = reply.quotedAuthorUid ? players.find((p) => p.uid === reply.quotedAuthorUid) : undefined;
+  const quoteTargetExists = useMemo(
+    () => (reply.quotedPostId ? posts.some((p) => p.id === reply.quotedPostId) : false),
+    [reply.quotedPostId, posts]
+  );
+  const quoteAuthor = reply.quotedAuthorUid ? playersByUid.get(reply.quotedAuthorUid) : undefined;
   const quoteClickable = Boolean(onJumpToQuote && quoteTargetExists);
 
   if (compact) {
@@ -78,21 +85,15 @@ export function ReplyRow({
         )}
       >
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onSelectParticipant(reply.uid)}
-            className="group flex min-w-0 flex-1 cursor-pointer items-center gap-1.5"
-          >
-            <Avatar className="size-5 shrink-0">
-              <AvatarImage src={avatarSrc(author)} alt="" />
-              <AvatarFallback className="font-mono text-[0.5rem] text-color_textsecondary">
-                {initials(author)}
-              </AvatarFallback>
-            </Avatar>
-            <span className="truncate font-display text-[0.76rem] font-medium text-color_text group-hover:underline">
-              {fullName(author)}
-            </span>
-          </button>
+          <PostAuthorLink
+            author={author}
+            uid={reply.uid}
+            onSelect={onSelectParticipant}
+            className="min-w-0 flex-1 gap-1.5"
+            avatarClassName="size-5"
+            fallbackClassName="text-[0.5rem]"
+            nameClassName="text-[0.76rem]"
+          />
           <button
             type="button"
             onClick={() => uid && onToggleLike(reply.id)}
@@ -150,23 +151,17 @@ export function ReplyRow({
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => onSelectParticipant(reply.uid)}
-          className="group flex min-w-0 cursor-pointer items-center gap-2"
-        >
-          <Avatar className="size-6 shrink-0">
-            <AvatarImage src={avatarSrc(author)} alt="" />
-            <AvatarFallback className="font-mono text-[0.55rem] text-color_textsecondary">
-              {initials(author)}
-            </AvatarFallback>
-          </Avatar>
-          <span className="truncate font-display text-[0.82rem] font-medium text-color_text group-hover:underline">
-            {fullName(author)}
-          </span>
-        </button>
+        <PostAuthorLink
+          author={author}
+          uid={reply.uid}
+          onSelect={onSelectParticipant}
+          className="gap-2"
+          avatarClassName="size-6"
+          fallbackClassName="text-[0.55rem]"
+          nameClassName="text-[0.82rem]"
+        />
         <span className="shrink-0 font-mono text-[0.6rem] text-color_textsecondary tnum">
-          {timeAgo(reply.createdAt)}
+          {repliedAgo}
           {reply.editedAt && " · düzenlendi"}
         </span>
       </div>
@@ -325,3 +320,7 @@ export function ReplyRow({
     </li>
   );
 }
+
+// Rendered up to 3× per thread card across a 50-card grid, plus every reply
+// in an open thread popup — same memo rationale as ThreadCard.
+export const ReplyRow = memo(ReplyRowImpl);

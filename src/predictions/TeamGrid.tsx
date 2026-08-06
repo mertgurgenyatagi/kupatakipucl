@@ -1,5 +1,5 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { useRef, useState } from "react";
+import { memo, useRef, useState } from "react";
 import { Team } from "./teams";
 import { TeamCrest } from "../leaderboard/TeamCrest";
 import { cn } from "@/lib/utils";
@@ -11,7 +11,7 @@ interface TeamGridProps {
   placedTeamIds: Set<string>;
 }
 
-function GridCell({ team, isPlaced }: { team: Team; isPlaced: boolean }) {
+const GridCell = memo(function GridCell({ team, isPlaced }: { team: Team; isPlaced: boolean }) {
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: `grid:${team.id}`,
   });
@@ -59,7 +59,11 @@ function GridCell({ team, isPlaced }: { team: Team; isPlaced: boolean }) {
       onMouseLeave={handleMouseLeave}
       className={cn(
         "relative flex aspect-square flex-col items-center justify-center rounded-xl border select-none p-1.5",
-        "transition-[border-color,background-color,opacity,transform] duration-200 ease-[var(--ease-cotton)]",
+        // Transform deliberately left out of the transition list, and the
+        // hover scale dropped: 36 cells each animating a transform kept the
+        // whole grid on its own compositing layers during a drag, which is
+        // most of what made this panel feel heavy. Color/opacity only now.
+        "transition-[border-color,background-color,opacity] duration-200 ease-[var(--ease-cotton)]",
         isPlaced
           ? [
               "border-dashed bg-foreground/[0.01]",
@@ -71,7 +75,7 @@ function GridCell({ team, isPlaced }: { team: Team; isPlaced: boolean }) {
               "border-color_border1/60 bg-background/80 cursor-grab shadow-sm",
               isOver
                 ? "border-color_accent/80 bg-foreground/[0.08]"
-                : "hover:border-color_border1 hover:bg-foreground/[0.06] hover:scale-[1.03]",
+                : "hover:border-color_border1 hover:bg-foreground/[0.06]",
               "active:cursor-grabbing",
             ],
         isDragging && "opacity-0"
@@ -95,7 +99,7 @@ function GridCell({ team, isPlaced }: { team: Team; isPlaced: boolean }) {
       )}
     </div>
   );
-}
+});
 
 /**
  * The right-side pool panel — a 6-column grid of every team's crest. Teams

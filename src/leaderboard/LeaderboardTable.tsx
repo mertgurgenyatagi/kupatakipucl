@@ -92,13 +92,12 @@ export const LeaderboardTable = memo(function LeaderboardTable({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {ranked.map(({ entry, rank }, index) => {
+                {ranked.map(({ entry, rank }) => {
                   const canReveal = revealCorrectness && entry.ranking.length > 0;
                   const isMe = entry.uid === myUid;
                   return (
                     <TableRow
                       key={entry.uid}
-                      style={{ animationDelay: `${Math.min(index * 45, 900)}ms` }}
                       onMouseEnter={canReveal ? () => onHoverEntry?.(entry.uid) : undefined}
                       onMouseLeave={canReveal ? () => onHoverEntry?.(null) : undefined}
                       onClick={canReveal ? () => onSelectEntry?.(entry.uid) : undefined}
@@ -115,7 +114,7 @@ export const LeaderboardTable = memo(function LeaderboardTable({
                       tabIndex={canReveal ? 0 : undefined}
                       aria-haspopup={canReveal ? "dialog" : undefined}
                       className={cn(
-                        "group animate-cotton-rise border-b border-color_border1/60 transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill",
+                        "group border-b border-color_border1/60 transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill",
                         canReveal && "cursor-pointer outline-none focus-visible:bg-color_hoverfill focus-visible:ring-1 focus-visible:ring-color_border2/50 focus-visible:ring-inset",
                         isMe && "bg-color_gold/10"
                       )}

@@ -1,7 +1,7 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVerticalIcon } from "lucide-react";
-import { motion } from "motion/react";
+import { memo, useCallback } from "react";
 import { Team } from "./teams";
 import { TeamCrest } from "../leaderboard/TeamCrest";
 import { useBoundaryHover } from "./useBoundaryHover";
@@ -13,13 +13,13 @@ interface TeamDropListProps {
   teamsById: Map<string, Team>;
 }
 
-function ListSlot({
+const ListSlot = memo(function ListSlot({
   index,
   teamId,
   team,
   inBand,
   isOrigin,
-  onMouseEnter,
+  onHoverStart,
   onMouseLeave,
 }: {
   index: number;
@@ -27,7 +27,9 @@ function ListSlot({
   team: Team | undefined;
   inBand: boolean;
   isOrigin: boolean;
-  onMouseEnter: () => void;
+  /** Stable across renders — the slot builds its own bound handler below, so
+   *  the parent doesn't hand down a fresh closure per row and defeat memo. */
+  onHoverStart: (index: number) => void;
   onMouseLeave: () => void;
 }) {
   // Every slot is a drop target.
@@ -57,15 +59,24 @@ function ListSlot({
 
   const highlighted = inBand && !isDragging;
 
+  const handleMouseEnter = useCallback(() => {
+    if (teamId !== null) onHoverStart(index);
+  }, [teamId, index, onHoverStart]);
+
+  // Plain <li>, not <motion.li layout>. The layout animation re-measured all
+  // 36 slots' bounding boxes on every render — and this list re-renders on
+  // every pointer move during a drag — while never actually animating
+  // anything: the list is a fixed 36 slots keyed by index, so a slot never
+  // changes position, only its contents do. That measurement pass was the
+  // single biggest cost in both the predictions page and the profile edit
+  // popup (2026-08-06).
   return (
-    <motion.li
-      layout
-      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+    <li
       ref={combinedRef}
       style={style}
       {...(teamId !== null ? attributes : {})}
       {...(teamId !== null ? listeners : {})}
-      onMouseEnter={onMouseEnter}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={onMouseLeave}
       className={cn(
         "flex h-[42px] items-center gap-2.5 rounded-lg border px-3 py-2 select-none",
@@ -103,9 +114,9 @@ function ListSlot({
           Buraya sürükle
         </span>
       )}
-    </motion.li>
+    </li>
   );
-}
+});
 
 /**
  * The left-side ranking column — 36 numbered drop slots, initially all
@@ -132,7 +143,7 @@ export function TeamDropList({ ranking, teamsById }: TeamDropListProps) {
             team={teamId !== null ? teamsById.get(teamId) : undefined}
             inBand={inBand}
             isOrigin={isOrigin}
-            onMouseEnter={() => teamId !== null && handleMouseEnter(index)}
+            onHoverStart={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           />
         );

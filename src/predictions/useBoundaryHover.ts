@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 // A deliberate dwell, not an instant hover — round-02 Q9: firing immediately
 // would flash constantly as a cursor just passes over rows on its way
@@ -12,18 +12,20 @@ export function useBoundaryHover() {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function handleMouseEnter(index: number) {
+  // Stable identities so the 36 memoized slot/row components that take these
+  // as props aren't invalidated on every parent render.
+  const handleMouseEnter = useCallback((index: number) => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => setActiveIndex(index), HOVER_DELAY_MS);
-  }
+  }, []);
 
-  function handleMouseLeave() {
+  const handleMouseLeave = useCallback(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
     setActiveIndex(null);
-  }
+  }, []);
 
   return { activeIndex, handleMouseEnter, handleMouseLeave };
 }

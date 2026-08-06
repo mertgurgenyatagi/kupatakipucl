@@ -560,7 +560,14 @@ export function ProfilePage() {
           }
         }}
       >
-        <DialogContent className="w-full max-w-5xl h-[88vh] max-h-[88vh] bg-background border border-color_border1/60 p-4 sm:p-6 flex flex-col min-h-0 gap-3 rounded-2xl shadow-2xl">
+        {/* The width override has to carry the `sm:` prefix. DialogContent's
+            own base class ends in `sm:max-w-sm`, which is emitted after any
+            unprefixed max-w in the stylesheet — so the previous `max-w-5xl`
+            here never actually applied above 640px and this dialog was
+            rendering at ~384px on desktop, which is what made a 36-team
+            ranker feel cramped and unusable. 1344px is ~3.5× that real
+            width, capped to the viewport on smaller screens. */}
+        <DialogContent className="w-full max-w-[calc(100%-2rem)] sm:max-w-[1344px] h-[88vh] max-h-[88vh] bg-background border border-color_border1/60 p-4 sm:p-6 flex flex-col min-h-0 gap-3 rounded-2xl shadow-2xl">
           <DialogHeader className="shrink-0 pb-1">
             <DialogTitle className="font-display text-lg font-bold text-color_text">
               Lig Tahmininizi Düzenleyin

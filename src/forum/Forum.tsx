@@ -63,6 +63,22 @@ export function Forum({
   const playersByUid = useMemo(() => buildPlayersByUid(players), [players]);
   const stats = useMemo(() => computeThreadStats(posts), [posts]);
 
+  // One pass to bucket replies by root, instead of a fresh
+  // `posts.filter(...)` inside the render loop for each of up to 50 cards —
+  // that was both O(cards × posts) and a new array identity every render,
+  // which defeated any memoization on ThreadCard.
+  const repliesByRoot = useMemo(() => {
+    const map = new Map<string, PostWithId[]>();
+    for (const post of posts) {
+      if (post.parentId === null) continue;
+      const bucket = map.get(post.parentId);
+      if (bucket) bucket.push(post);
+      else map.set(post.parentId, [post]);
+    }
+    return map;
+  }, [posts]);
+  const NO_REPLIES: PostWithId[] = useMemo(() => [], []);
+
   const roots = useMemo(() => {
     const trimmed = searchQuery.trim().toLowerCase();
     return posts
@@ -136,11 +152,9 @@ export function Forum({
               <div key={post.id} className="mx-auto w-full lg:w-[90%]">
                 <ThreadCard
                   post={post}
-                  replies={posts.filter((p) => p.parentId === post.id)}
-                  stats={
-                    stats.get(post.id) ?? { replyCount: 0, lastActivityAt: post.createdAt, latestReply: null }
-                  }
+                  replies={repliesByRoot.get(post.id) ?? NO_REPLIES}
                   players={players}
+                  playersByUid={playersByUid}
                   posts={posts}
                   uid={uid}
                   likesByPost={likesByPost}

@@ -7,12 +7,13 @@ import { Player } from "../profile/usePlayers";
 import { ReplyRow } from "./ReplyRow";
 import { PostForm } from "./PostForm";
 import { ForumImageThumb } from "./ForumImageThumb";
-import { timeAgo } from "./forumTime";
+import { useTimeAgo } from "./forumTime";
+import { PostAuthorLink } from "./PostAuthorLink";
+import { buildPlayersByUid } from "../profile/playersByUid";
 import { splitMentionSegments } from "../chat/chatMentions";
-import { fullName, avatarSrc, initials } from "../profile/deletedAccount";
+import { fullName } from "../profile/deletedAccount";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Frame, FrameBody } from "@/components/ui/frame";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 // How long the flash lingers before it starts fading (forum-round-03 Q4:
@@ -86,8 +87,10 @@ export function ThreadPopup({
     }
   }, [rootId]);
 
-  const author = root ? players.find((p) => p.uid === root.uid) : undefined;
+  const playersByUid = useMemo(() => buildPlayersByUid(players), [players]);
+  const author = root ? playersByUid.get(root.uid) : undefined;
   const isOwnRoot = Boolean(root && uid !== null && uid === root.uid);
+  const postedAgo = useTimeAgo(root?.createdAt ?? NaN);
 
   function handleQuote(reply: PostWithId) {
     setQuote({ postId: reply.id, authorUid: reply.uid, text: reply.text.slice(0, 140) });
@@ -120,30 +123,33 @@ export function ThreadPopup({
         {root && (
           <Frame className="flex max-h-[min(88vh,52rem)] w-full min-h-0 flex-col animate-cotton-rise border-color_border1/35">
             <div className="relative flex shrink-0 items-start justify-between gap-3 border-b border-color_border1/60 px-4 py-3 sm:px-5">
-              <button
-                type="button"
-                onClick={() => onSelectParticipant(root.uid)}
-                className="group flex min-w-0 cursor-pointer items-center gap-2.5"
-              >
-                <Avatar className="size-8 shrink-0">
-                  <AvatarImage src={avatarSrc(author)} alt="" />
-                  <AvatarFallback className="font-mono text-[0.6rem] text-color_textsecondary">
-                    {initials(author)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="min-w-0 text-left">
-                  <DialogTitle className="truncate font-display text-sm font-medium text-color_text group-hover:underline">
+              <PostAuthorLink
+                author={author}
+                uid={root.uid}
+                onSelect={onSelectParticipant}
+                nameSlot={
+                  // Rendered as a span, not its default h2 — it now sits
+                  // inside the name button, which may only contain phrasing
+                  // content. Still the dialog's accessible title.
+                  <DialogTitle
+                    render={<span />}
+                    className="block truncate font-display text-sm font-medium text-color_text"
+                  >
                     {fullName(author)}
                   </DialogTitle>
-                  <DialogDescription className="sr-only">
-                    {fullName(author)} tarafından paylaşılan konu ve tüm yanıtları.
-                  </DialogDescription>
-                  <span className="block font-mono text-[0.62rem] text-color_textsecondary tnum">
-                    {timeAgo(root.createdAt)}
-                    {root.editedAt && " · düzenlendi"}
-                  </span>
-                </span>
-              </button>
+                }
+                meta={
+                  <>
+                    <DialogDescription className="sr-only">
+                      {fullName(author)} tarafından paylaşılan konu ve tüm yanıtları.
+                    </DialogDescription>
+                    <span className="block font-mono text-[0.62rem] text-color_textsecondary tnum">
+                      {postedAgo}
+                      {root.editedAt && " · düzenlendi"}
+                    </span>
+                  </>
+                }
+              />
 
               <div className="flex shrink-0 items-center gap-1">
                 {isOwnRoot && !editingRoot && (
@@ -177,7 +183,7 @@ export function ThreadPopup({
             </div>
 
             <FrameBody className="min-h-0 flex-1 gap-0 overflow-hidden p-0">
-              <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-5">
+              <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-5">
                 <div className="flex items-start gap-3">
                   {/* Never shown while editing — editing only ever touches
                       the text, never the attached image. */}
@@ -241,6 +247,7 @@ export function ThreadPopup({
                           key={reply.id}
                           reply={reply}
                           players={players}
+                          playersByUid={playersByUid}
                           posts={posts}
                           uid={uid}
                           liked={uid ? (likedBy?.has(uid) ?? false) : false}

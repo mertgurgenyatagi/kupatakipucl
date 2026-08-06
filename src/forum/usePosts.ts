@@ -47,7 +47,11 @@ export function usePosts() {
   const byId = useRef(new Map<string, PostWithId>((cached ?? []).map((p) => [p.id, p])));
   const [posts, setPosts] = useState<PostWithId[]>(cached ?? []);
   const [loading, setLoading] = useState(cached === undefined);
-  const [hasMore, setHasMore] = useState(true);
+  // Starts null ("don't know yet"), not true. It used to start true, so on a
+  // warm cache the feed painted with "Daha eski konuları yükle" already
+  // visible for the split second before the first snapshot came back and set
+  // it false — a flash of a button that was never actually applicable.
+  const [hasMore, setHasMore] = useState<boolean | null>(null);
   const backfillToken = useRef(0);
 
   const commit = useCallback(() => {
@@ -80,7 +84,7 @@ export function usePosts() {
         docs.forEach((post) => byId.current.set(post.id, post));
         commit();
         setLoading(false);
-        if (docs.length < PAGE_SIZE) setHasMore(false);
+        setHasMore(docs.length >= PAGE_SIZE);
         backfillRoots();
       },
       (err: Error) => {
@@ -91,7 +95,7 @@ export function usePosts() {
   }, [commit, backfillRoots]);
 
   const loadOlder = useCallback(async () => {
-    if (!hasMore) return;
+    if (hasMore !== true) return;
     const oldest = Array.from(byId.current.values()).reduce<number | null>(
       (min, p) => (min === null || p.createdAt < min ? p.createdAt : min),
       null
@@ -113,5 +117,7 @@ export function usePosts() {
 
   const refetch = useCallback(() => {}, []);
 
-  return { posts, loading, refetch, loadOlder, hasMore };
+  // Collapses the tri-state to the boolean consumers actually render on:
+  // "not known yet" shows no button, same as "no more".
+  return { posts, loading, refetch, loadOlder, hasMore: hasMore === true };
 }

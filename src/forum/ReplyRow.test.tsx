@@ -33,6 +33,7 @@ function renderRow(overrides: Partial<ComponentProps<typeof ReplyRow>> = {}) {
     <ReplyRow
       reply={makePost()}
       players={players}
+      playersByUid={new Map(players.map((p) => [p.uid, p]))}
       posts={[makePost()]}
       uid="uid1"
       liked={false}

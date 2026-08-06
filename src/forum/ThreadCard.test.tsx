@@ -4,7 +4,6 @@ import { describe, it, expect, vi } from "vitest";
 import type { ComponentProps } from "react";
 import { ThreadCard } from "./ThreadCard";
 import { PostWithId } from "./postTypes";
-import { ThreadStats } from "./threadStats";
 
 const players = [
   { uid: "uid1", firstName: "Mert", lastName: "G", photoURL: "", createdAt: 1 },
@@ -29,15 +28,13 @@ function makePost(overrides: Partial<PostWithId> = {}): PostWithId {
   };
 }
 
-const stats: ThreadStats = { replyCount: 0, lastActivityAt: 1, latestReply: null };
-
 function renderCard(overrides: Partial<ComponentProps<typeof ThreadCard>> = {}) {
   return render(
     <ThreadCard
       post={makePost()}
       replies={[]}
-      stats={stats}
       players={players}
+      playersByUid={new Map(players.map((p) => [p.uid, p]))}
       posts={[makePost()]}
       uid="uid1"
       likesByPost={new Map()}

@@ -26,8 +26,13 @@ function DialogOverlay({
       data-slot="dialog-overlay"
       className={cn(
         // Cotton easing (DESIGN-SPEC §43/§50), not shadcn's stock 100ms snap
-        // — every enter/exit motion in this app shares this curve.
-        "fixed inset-0 isolate z-50 bg-black/25 duration-500 ease-[var(--ease-cotton)] supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        // — every enter/exit motion in this app shares this curve. The
+        // duration was 500ms in both directions, which read as opening and
+        // closing in slow motion; 180/130 keeps the curve's character while
+        // staying inside the ~200ms window where a dialog still feels
+        // instant. Closing is faster than opening on purpose — a dismissal
+        // that lingers is what actually felt broken.
+        "fixed inset-0 isolate z-50 bg-black/25 duration-200 ease-[var(--ease-cotton)] supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className
       )}
       {...props}
@@ -52,7 +57,7 @@ function DialogContent({
           // Cursorify (DESIGN.md §6): dialogs portal outside AppShell's own
           // DOM subtree, so its root cursor-default doesn't cascade in here
           // — set it again at this boundary for the same reason.
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 cursor-default gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-500 ease-[var(--ease-cotton)] outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 cursor-default gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-200 ease-[var(--ease-cotton)] outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
         {...props}

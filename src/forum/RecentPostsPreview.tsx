@@ -5,12 +5,18 @@ import { PostWithId } from "./postTypes";
 import { Player } from "../profile/usePlayers";
 import { buildPlayersByUid } from "../profile/playersByUid";
 import { computeThreadStats } from "./threadStats";
-import { timeAgo } from "./forumTime";
+import { useTimeAgo } from "./forumTime";
 import { ForumImageThumb } from "./ForumImageThumb";
 import { ThreadPopup } from "./ThreadPopup";
 import { fullName, firstNameOnly, avatarSrc, initials } from "../profile/deletedAccount";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+
+/** A one-line wrapper so the live-ticking `useTimeAgo` hook can be used from
+ *  inside the row map, where calling a hook directly isn't allowed. */
+function PostedAgo({ createdAt }: { createdAt: number }) {
+  return <>{useTimeAgo(createdAt)}</>;
+}
 
 interface RecentPostsPreviewProps {
   posts: PostWithId[];
@@ -100,17 +106,39 @@ export function RecentPostsPreview({
                 onKeyDown={(e) => handleRowKeyDown(e, post.id)}
                 className="flex cursor-pointer items-start gap-3 rounded-lg px-2 py-4 outline-none transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_text/[0.06] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-color_accent"
               >
-                <Avatar className="size-8 shrink-0">
-                  <AvatarImage src={avatarSrc(author)} alt="" />
-                  <AvatarFallback className="font-mono text-[0.6rem] text-color_textsecondary">
-                    {initials(author)}
-                  </AvatarFallback>
-                </Avatar>
+                {/* Avatar and name are each their own click target into the
+                    participant popup, and each stops the row's own
+                    open-the-thread handler from also firing. */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectParticipant(post.uid);
+                  }}
+                  aria-label={`${fullName(author)} profilini aç`}
+                  className="shrink-0 cursor-pointer rounded-full outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_accent"
+                >
+                  <Avatar className="size-8 shrink-0">
+                    <AvatarImage src={avatarSrc(author)} alt="" />
+                    <AvatarFallback className="font-mono text-[0.6rem] text-color_textsecondary">
+                      {initials(author)}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate font-display text-sm font-medium text-color_text">{fullName(author)}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectParticipant(post.uid);
+                      }}
+                      className="min-w-0 cursor-pointer truncate text-left font-display text-sm font-medium text-color_text outline-none hover:underline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-color_accent"
+                    >
+                      {fullName(author)}
+                    </button>
                     <span className="shrink-0 font-mono text-[0.62rem] text-color_textsecondary tnum">
-                      {timeAgo(threadStats.lastActivityAt)}
+                      <PostedAgo createdAt={post.createdAt} />
                     </span>
                   </div>
                   <div className="mt-1.5 flex items-start gap-2.5">
