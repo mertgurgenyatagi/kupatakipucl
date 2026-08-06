@@ -28,12 +28,12 @@ import {
   getKnockoutStageBadge,
 } from "../knockout/useAllKnockoutPredictions";
 import {
-  Dialog,
-  DialogContent,
   DialogTitle,
   DialogDescription,
   DialogClose,
 } from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { Frame, FrameBody } from "@/components/ui/frame";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -586,6 +586,7 @@ export const TeamPopup = memo(function TeamPopup({
   phase,
 }: TeamPopupProps) {
   const t: TeamPopupTuning = { ...DEFAULT_TEAM_POPUP_TUNING, ...tuning };
+  const isMobile = useIsMobile();
   const playersByUid = useMemo(() => buildPlayersByUid(players), [players]);
 
   // Same "keep showing the last real content while the exit animation
@@ -639,14 +640,16 @@ export const TeamPopup = memo(function TeamPopup({
   const popupImagesReady = useImagePreload(popupImageUrls);
 
   return (
-    <Dialog open={teamId !== null} onOpenChange={onOpenChange}>
-      <DialogContent
-        showCloseButton={false}
-        className="w-full max-w-[calc(100%-2rem)] gap-0 rounded-none bg-transparent p-0 ring-0 sm:max-w-4xl"
-      >
+    <ResponsiveDialog
+      open={teamId !== null}
+      onOpenChange={onOpenChange}
+      showCloseButton={false}
+      desktopClassName="w-full max-w-[calc(100%-2rem)] gap-0 rounded-none bg-transparent p-0 ring-0 sm:max-w-4xl"
+      mobileClassName="h-[88dvh] bg-transparent p-0"
+    >
         {team && dossier && !popupImagesReady && (
           <Frame
-            className="h-[min(92vh,60rem)] w-full animate-cotton-rise border-color_border1/35"
+            className="h-full w-full animate-cotton-rise border-color_border1/35 lg:h-[min(92vh,60rem)]"
             aria-hidden
             data-testid="team-popup-skeleton"
           >
@@ -657,7 +660,7 @@ export const TeamPopup = memo(function TeamPopup({
           </Frame>
         )}
         {team && dossier && popupImagesReady && (
-          <Frame className="h-[min(92vh,60rem)] w-full animate-cotton-rise border-color_border1/35">
+          <Frame className="h-full w-full animate-cotton-rise border-color_border1/35 lg:h-[min(92vh,60rem)]">
             {/* Profile tab — the team's own crest, blurred and scaled into
                 an abstract, darkened backdrop (was the stadium photo;
                 dropped in favor of reusing an asset that already exists).
@@ -748,14 +751,30 @@ export const TeamPopup = memo(function TeamPopup({
             </div>
 
             <FrameBody className="no-scrollbar min-h-0 gap-3 overflow-y-auto p-3 sm:p-4">
+              {/* Mobile drops the entire dossier — the pitch diagram and the
+                  three stat lists — keeping only the real content: who
+                  predicted this team, and its actual matches. That dossier is
+                  100% fabricated data (PROJECT_STATE §6.3, "there is no
+                  existing API for football data wired right now"), and it
+                  occupies two of these three columns. Giving a phone screen
+                  to invented statistics ahead of real ones is exactly the
+                  trade the golden rule exists to prevent. */}
               <div
                 className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)]"
-                style={{ gridTemplateColumns: `${t.col1}fr ${t.col2}fr ${t.col3}fr`, gap: `${t.gridGap}rem` }}
+                style={{
+                  gridTemplateColumns: isMobile
+                    ? "minmax(0,1fr)"
+                    : `${t.col1}fr ${t.col2}fr ${t.col3}fr`,
+                  gap: `${t.gridGap}rem`,
+                }}
               >
-                <div className={cn(WIDGET_BLOCK, "min-h-0")}>
-                  {tournamentStarted ? <PitchDiagram dossier={dossier} teamId={team.id} t={t} /> : <NotViewablePlaceholder />}
-                </div>
+                {!isMobile && (
+                  <div className={cn(WIDGET_BLOCK, "min-h-0")}>
+                    {tournamentStarted ? <PitchDiagram dossier={dossier} teamId={team.id} t={t} /> : <NotViewablePlaceholder />}
+                  </div>
+                )}
 
+                {!isMobile && (
                 <div className="flex min-h-0 flex-col gap-3">
                   <div className={cn(WIDGET_BLOCK, "min-h-0 flex-1")}>
                     {tournamentStarted ? (
@@ -779,6 +798,7 @@ export const TeamPopup = memo(function TeamPopup({
                     )}
                   </div>
                 </div>
+                )}
 
                 <div className="flex min-h-0 flex-col gap-3">
                   <div
@@ -910,7 +930,6 @@ export const TeamPopup = memo(function TeamPopup({
             </FrameBody>
           </Frame>
         )}
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 });

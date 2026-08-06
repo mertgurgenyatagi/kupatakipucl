@@ -20,12 +20,11 @@ import {
 } from "../knockout/useAllKnockoutPredictions";
 import { KnockoutPrediction } from "../knockout/knockoutTypes";
 import {
-  Dialog,
-  DialogContent,
   DialogTitle,
   DialogDescription,
   DialogClose,
 } from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -364,11 +363,13 @@ export const MatchupPopup = memo(function MatchupPopup({
   const { predictions: knockoutPredictions } = useAllKnockoutPredictions();
 
   return (
-    <Dialog open={fixtureId !== null} onOpenChange={onOpenChange}>
-      <DialogContent
-        showCloseButton={false}
-        className="w-full max-w-[calc(100%-2rem)] gap-0 rounded-none bg-transparent p-0 ring-0 sm:max-w-3xl"
-      >
+    <ResponsiveDialog
+      open={fixtureId !== null}
+      onOpenChange={onOpenChange}
+      showCloseButton={false}
+      desktopClassName="w-full max-w-[calc(100%-2rem)] gap-0 rounded-none bg-transparent p-0 ring-0 sm:max-w-3xl"
+      mobileClassName="max-h-[85dvh] bg-transparent p-0"
+    >
         {fixture && home && away && !popupImagesReady && (
           <Frame
             className="h-[min(88vh,48rem)] w-full animate-cotton-rise border-color_border1/40 rounded-2xl shadow-2xl"
@@ -476,7 +477,6 @@ export const MatchupPopup = memo(function MatchupPopup({
             </FrameBody>
           </Frame>
         )}
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 });

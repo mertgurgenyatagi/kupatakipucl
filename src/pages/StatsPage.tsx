@@ -21,6 +21,7 @@ import { NumberBox } from "../stats/NumberBox";
 import { STAT_WIDGETS } from "../leaderboard/StatWidget";
 import { StatsPageTuning, DEFAULT_STATS_PAGE_TUNING } from "../stats/statsPageTuning";
 import { StatsHero } from "../stats/StatsHero";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { HERO_IMAGES } from "../leaderboard/HeroCarousel";
 import { TEAMS, teamCrestSrc } from "../predictions/teams";
 import { useImagePreload } from "@/lib/useImagePreload";
@@ -40,7 +41,13 @@ const PAGE_SHELL =
 const MAIN_ROW =
   "relative z-10 grid min-w-0 lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-[1fr_1fr_300px] [&>*]:min-h-0 [&>*]:min-w-0";
 // gap/padding are tunable (widgetGap/gridPadding), applied via inline style below.
-const WIDGET_GRID = "grid min-h-0 flex-1 grid-cols-2 content-start overflow-y-auto";
+// grid-cols-2 at 390px puts two ranked stat lists side by side in ~180px
+// each, which is not a design decision so much as a broken one. Stats is the
+// one page Mert's wireframe marks "ignore" — that is read here as "spend no
+// design effort," not "leave it unusable," so mobile gets the minimum: one
+// column, and the document scrolling instead of each frame trapping its own.
+const WIDGET_GRID =
+  "grid min-h-0 flex-1 grid-cols-1 content-start lg:grid-cols-2 lg:overflow-y-auto";
 
 // Matches PAGE_SHELL/MAIN_ROW's [1fr_1fr_300px] three-column shape: two
 // columns of widget-sized placeholder cards, a third Frame standing in for
@@ -105,6 +112,7 @@ interface StatsPageViewProps {
  */
 export function StatsPageView({ entries, results, players, responses, tuning }: StatsPageViewProps) {
   const t: StatsPageTuning = { ...DEFAULT_STATS_PAGE_TUNING, ...tuning };
+  const isMobile = useIsMobile();
   const rankings = entries.map((entry) => entry.ranking);
 
   const bias = computeTeamBias(rankings, results);
@@ -147,6 +155,7 @@ export function StatsPageView({ entries, results, players, responses, tuning }: 
 
   const gridStyle = { gap: `${t.widgetGap}rem`, padding: `${t.gridPadding}rem` };
 
+
   return (
     <div className={PAGE_SHELL}>
       <div className={MAIN_ROW} style={{ gap: `${t.columnGap}rem` }}>
@@ -182,7 +191,9 @@ export function StatsPageView({ entries, results, players, responses, tuning }: 
             <BarChartWidget label="UCL Takımı" bars={UCL_TEAM_PLACEHOLDER} tuning={tuning} />
           </FrameBody>
         </Frame>
-        <StatsHero />
+        {/* No hero carousel on mobile — 17 preloaded portraits of pure
+            decoration, dropped sitewide on phones. */}
+        {!isMobile && <StatsHero />}
       </div>
     </div>
   );
