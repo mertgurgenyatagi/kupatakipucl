@@ -122,7 +122,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
               </button>
             ) : (
               <div className="shrink-0 [&_button]:cursor-pointer [&_button]:rounded-full [&_button]:border [&_button]:border-color_border1 [&_button]:px-3 [&_button]:py-2 [&_button]:font-mono [&_button]:text-[0.68rem] [&_button]:text-color_text [&_[role=alert]]:sr-only [&_svg]:size-4">
-                {!loading && <LoginButton />}
+                {!loading && <LoginButton label="Giriş" />}
               </div>
             )}
           </div>

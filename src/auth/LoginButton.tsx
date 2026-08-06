@@ -2,7 +2,10 @@ import { useState } from "react";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../firebase";
 
-export function LoginButton() {
+/** `label` exists for the mobile header's right slot, where the full
+ *  "Google ile giriş yap" crowds the wordmark off its own bar. Everywhere
+ *  else keeps the long form. */
+export function LoginButton({ label = "Google ile giriş yap" }: { label?: string } = {}) {
   const [error, setError] = useState<string | null>(null);
 
   async function handleClick() {
@@ -36,7 +39,7 @@ export function LoginButton() {
             d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .95 4.97l3 2.33C4.66 5.17 6.65 3.58 9 3.58Z"
           />
         </svg>
-        Google ile giriş yap
+        {label}
       </button>
       {error && <p role="alert">{error}</p>}
     </div>

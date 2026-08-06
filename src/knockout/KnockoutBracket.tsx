@@ -1,8 +1,9 @@
-import { useState } from "react";
 import { RotateCcw, Trophy } from "lucide-react";
-import { TEAMS, teamCrestSrc, Team } from "../predictions/teams";
+import { teamCrestSrc } from "../predictions/teams";
 import { MOCK_ROUND_OF_16 } from "./mockKnockoutData";
 import { KnockoutPrediction } from "./knockoutTypes";
+import { useKnockoutPicks } from "./useKnockoutPicks";
+import { CompactMatchBox, findTeam } from "./bracketParts";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -19,17 +20,6 @@ interface Props {
   compact?: boolean;
 }
 
-function findTeam(id: string): Team | null {
-  if (!id) return null;
-  return (
-    TEAMS.find((t) => t.id === id) ?? {
-      id,
-      name: id.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
-      shortName: id.slice(0, 3).toUpperCase(),
-    }
-  );
-}
-
 /**
  * Non-scrollable 2-halves symmetric bracket for ProfilePage inline editing & viewing.
  * Left half (R16, QF, SF) -> Center (Trophy & Final) <- Right half (SF, QF, R16).
@@ -43,104 +33,33 @@ export function KnockoutBracket({
   onSelectTeam,
   compact = false,
 }: Props) {
-  const [r16Picks, setR16Picks] = useState<(string | null)[]>(
-    () => initialPrediction?.quarterFinalists ?? Array(8).fill(null)
-  );
-  const [qfPicks, setQfPicks] = useState<(string | null)[]>(
-    () => initialPrediction?.semiFinalists ?? Array(4).fill(null)
-  );
-  const [sfPicks, setSfPicks] = useState<(string | null)[]>(
-    () => initialPrediction?.finalists ?? Array(2).fill(null)
-  );
-  const [championPick, setChampionPick] = useState<string | null>(
-    () => initialPrediction?.champion ?? null
-  );
+  const {
+    r16Picks,
+    qfPicks,
+    sfPicks,
+    championPick,
+    pickR16,
+    pickQf,
+    pickSf,
+    pickChampion,
+    reset,
+    isComplete,
+    toPrediction,
+  } = useKnockoutPicks(initialPrediction);
 
-  function clearDownstream(teamId: string) {
-    setQfPicks((prev) => prev.map((id) => (id === teamId ? null : id)));
-    setSfPicks((prev) => prev.map((id) => (id === teamId ? null : id)));
-    setChampionPick((prev) => (prev === teamId ? null : prev));
-  }
-
-  function handleR16Click(i: number, teamId: string) {
-    if (readOnly) return;
-    const cur = r16Picks[i];
-    if (cur === teamId) {
-      const next = [...r16Picks];
-      next[i] = null;
-      setR16Picks(next);
-      clearDownstream(teamId);
-    } else {
-      if (cur) clearDownstream(cur);
-      const next = [...r16Picks];
-      next[i] = teamId;
-      setR16Picks(next);
-    }
-  }
-
-  function handleQfClick(i: number, teamId: string) {
-    if (readOnly) return;
-    const cur = qfPicks[i];
-    if (cur === teamId) {
-      const next = [...qfPicks];
-      next[i] = null;
-      setQfPicks(next);
-      setSfPicks((prev) => prev.map((id) => (id === teamId ? null : id)));
-      if (championPick === teamId) setChampionPick(null);
-    } else {
-      if (cur) {
-        setSfPicks((prev) => prev.map((id) => (id === cur ? null : id)));
-        if (championPick === cur) setChampionPick(null);
-      }
-      const next = [...qfPicks];
-      next[i] = teamId;
-      setQfPicks(next);
-    }
-  }
-
-  function handleSfClick(i: number, teamId: string) {
-    if (readOnly) return;
-    const cur = sfPicks[i];
-    if (cur === teamId) {
-      const next = [...sfPicks];
-      next[i] = null;
-      setSfPicks(next);
-      if (championPick === teamId) setChampionPick(null);
-    } else {
-      if (cur && championPick === cur) setChampionPick(null);
-      const next = [...sfPicks];
-      next[i] = teamId;
-      setSfPicks(next);
-    }
-  }
-
-  function handleChampionClick(teamId: string) {
-    if (readOnly) return;
-    setChampionPick((prev) => (prev === teamId ? null : teamId));
-  }
-
-  function handleReset() {
-    if (readOnly) return;
-    setR16Picks(Array(8).fill(null));
-    setQfPicks(Array(4).fill(null));
-    setSfPicks(Array(2).fill(null));
-    setChampionPick(null);
-  }
-
-  const isComplete =
-    r16Picks.every(Boolean) &&
-    qfPicks.every(Boolean) &&
-    sfPicks.every(Boolean) &&
-    Boolean(championPick);
+  // readOnly is enforced at this boundary rather than inside the hook: the
+  // hook is the rules, this component decides whether the viewer is allowed
+  // to apply them.
+  const handleR16Click = (i: number, teamId: string) => { if (!readOnly) pickR16(i, teamId); };
+  const handleQfClick = (i: number, teamId: string) => { if (!readOnly) pickQf(i, teamId); };
+  const handleSfClick = (i: number, teamId: string) => { if (!readOnly) pickSf(i, teamId); };
+  const handleChampionClick = (teamId: string) => { if (!readOnly) pickChampion(teamId); };
+  const handleReset = () => { if (!readOnly) reset(); };
 
   function handleSubmit() {
-    if (readOnly || !isComplete || !championPick || !onSubmit) return;
-    onSubmit({
-      quarterFinalists: r16Picks.filter((x): x is string => Boolean(x)),
-      semiFinalists: qfPicks.filter((x): x is string => Boolean(x)),
-      finalists: sfPicks.filter((x): x is string => Boolean(x)),
-      champion: championPick,
-    });
+    if (readOnly || !onSubmit) return;
+    const payload = toPrediction();
+    if (payload) onSubmit(payload);
   }
 
   const lqf0h = findTeam(r16Picks[0] ?? "");
@@ -333,114 +252,5 @@ export function KnockoutBracket({
         </div>
       </div>
     </div>
-  );
-}
-
-function CompactMatchBox({
-  isFinal = false,
-  match,
-  team1: team1Prop,
-  team2: team2Prop,
-  selectedWinner,
-  onPick,
-  readOnly = false,
-  onSelectTeam,
-}: {
-  isFinal?: boolean;
-  match?: { homeTeamId: string; awayTeamId: string };
-  team1?: Team | null;
-  team2?: Team | null;
-  selectedWinner: string | null;
-  onPick: (teamId: string) => void;
-  readOnly?: boolean;
-  onSelectTeam?: (teamId: string) => void;
-}) {
-  const team1 = match ? findTeam(match.homeTeamId) : (team1Prop ?? null);
-  const team2 = match ? findTeam(match.awayTeamId) : (team2Prop ?? null);
-
-  return (
-    <div
-      className={cn(
-        "flex w-24 flex-col gap-1.5 rounded-xl border p-1.5 bg-card/40 min-w-0 overflow-hidden shrink-0",
-        isFinal ? "border-amber-400/40 bg-amber-400/5" : "border-color_border1/30"
-      )}
-    >
-      <CompactTeamPill
-        team={team1}
-        isSelected={selectedWinner === team1?.id}
-        isFinal={isFinal}
-        onClick={() => team1 && onPick(team1.id)}
-        readOnly={readOnly}
-        onSelectTeam={onSelectTeam}
-      />
-      <div className="h-px bg-color_border1/20" />
-      <CompactTeamPill
-        team={team2}
-        isSelected={selectedWinner === team2?.id}
-        isFinal={isFinal}
-        onClick={() => team2 && onPick(team2.id)}
-        readOnly={readOnly}
-        onSelectTeam={onSelectTeam}
-      />
-    </div>
-  );
-}
-
-function CompactTeamPill({
-  team,
-  isSelected,
-  isFinal,
-  onClick,
-  readOnly = false,
-  onSelectTeam,
-}: {
-  team: Team | null;
-  isSelected: boolean;
-  isFinal: boolean;
-  onClick: () => void;
-  readOnly?: boolean;
-  onSelectTeam?: (teamId: string) => void;
-}) {
-  if (!team) {
-    return (
-      <div className="flex h-9 items-center justify-center rounded border border-dashed border-color_border1/20 bg-background/20 px-1 min-w-0">
-        <span className="font-mono text-xs text-color_textsecondary/30 select-none">—</span>
-      </div>
-    );
-  }
-
-  const selectedStyle = isFinal
-    ? "border-amber-400 bg-amber-400/15 text-amber-200"
-    : "border-white bg-white/10 text-white font-bold";
-
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        if (readOnly) {
-          if (team && onSelectTeam) {
-            onSelectTeam(team.id);
-          }
-        } else {
-          onClick();
-        }
-      }}
-      className={cn(
-        "group flex h-9 w-full items-center gap-1.5 rounded border px-2 text-left transition-colors duration-150 outline-none min-w-0 overflow-hidden cursor-pointer",
-        isSelected
-          ? selectedStyle
-          : "border-color_border1/30 bg-card/60 text-color_textsecondary hover:border-color_border1/60 hover:text-color_text"
-      )}
-    >
-      <img
-        src={teamCrestSrc(team.id)}
-        alt=""
-        aria-hidden
-        className="size-[18px] shrink-0 object-contain"
-      />
-      <span className="truncate font-mono text-sm font-semibold tracking-tight">
-        {team.shortName}
-      </span>
-    </button>
   );
 }

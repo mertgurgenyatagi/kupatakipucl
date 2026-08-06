@@ -13,6 +13,9 @@ import { HERO_IMAGES } from "../leaderboard/HeroCarousel";
 import { TEAMS, teamCrestSrc } from "../predictions/teams";
 import { useImagePreload } from "@/lib/useImagePreload";
 import { HomeHeroBandSkeleton, HomeBentoSkeleton } from "../home/HomeSkeletons";
+import { useIsMobile } from "@/lib/useIsMobile";
+import { MobileHomeNotStartedLoggedOut } from "../home/mobile/MobileHomeNotStartedLoggedOut";
+import { MobileHomeStartedLoggedOut } from "../home/mobile/MobileHomeStartedLoggedOut";
 
 // Every image already known at this level (i.e. not still behind a
 // deeper data-fetching wrapper's own hook, like LoggedInHome's posts) —
@@ -39,6 +42,7 @@ function homeImageUrls(
 export function HomePage() {
   const state = useVisibilityState();
   const phase = useTournamentPhase();
+  const isMobile = useIsMobile();
 
   const { results, loading: resultsLoading } = useResults();
   const { players, loading: playersLoading } = usePlayers();
@@ -54,8 +58,17 @@ export function HomePage() {
   // Every VisibilityState has its own dedicated landing composition — see
   // onboarding/PAGE_BRIEFING.txt's "HOME - not logged in, not started" and
   // "HOME - logged in, not started" sections, plus PAGEMAP_SPEC.md §3.
+  // Mobile runs its own composition per state — a separate tree, not a
+  // reflow of the desktop one. See the mobile design spec for why. The two
+  // logged-in branches fork one level deeper instead, inside their existing
+  // data-fetching wrappers, so the (substantial) fetching logic isn't
+  // duplicated.
   if (state === "loggedout_notstarted") {
-    return <HomeLandingLoggedOut players={players} />;
+    return isMobile ? (
+      <MobileHomeNotStartedLoggedOut players={players} />
+    ) : (
+      <HomeLandingLoggedOut players={players} />
+    );
   }
   if (state === "loggedin_notstarted") {
     return <LoggedInHome players={players} />;
@@ -66,7 +79,11 @@ export function HomePage() {
   // in ahead of a proper pass later), same treatment as the logged-in branch
   // below.
   if (state === "loggedout_leaguephase" || state === "loggedout_preknockout" || state === "loggedout_knockout") {
-    return <HomeLandingLoggedOutStarted results={results} players={players} entries={entries} phase={phase} />;
+    return isMobile ? (
+      <MobileHomeStartedLoggedOut players={players} entries={entries} results={results} phase={phase} />
+    ) : (
+      <HomeLandingLoggedOutStarted results={results} players={players} entries={entries} phase={phase} />
+    );
   }
   // loggedin_leaguephase's composition is reused as-is for preknockout/
   // knockout too (2026-08-03, "populate the pages" pass — not a considered

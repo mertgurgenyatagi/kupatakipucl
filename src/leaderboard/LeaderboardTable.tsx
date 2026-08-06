@@ -75,7 +75,14 @@ export const LeaderboardTable = memo(function LeaderboardTable({
             </p>
           </div>
         ) : (
-          <div className="no-scrollbar min-h-0 flex-1 px-2 sm:px-3 lg:overflow-y-auto">
+          /* Unconditional overflow-y-auto: this was `lg:overflow-y-auto` back
+             when one component had to serve both widths — below lg the
+             document itself scrolled, so an internal scroller would have
+             trapped the list. Since the mobile shell fork (2026-08-06) this
+             component only ever renders inside a height-bounded frame on both
+             sides of the breakpoint, so the prefix was doing nothing but
+             stopping the mobile standings from scrolling. */
+          <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-2 sm:px-3">
             <Table className="text-sm">
               <TableHeader className="sticky top-0 z-10 bg-card [&_tr]:border-b [&_tr]:border-color_border1">
                 <TableRow className="hover:bg-transparent">

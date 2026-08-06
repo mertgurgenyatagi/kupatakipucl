@@ -17,6 +17,9 @@ import { useLobbyMembers } from "../lobbies/useLobbyMembers";
 import { useLobbyMessages } from "../lobbies/useLobbyMessages";
 import { createLobby } from "../lobbies/createLobby";
 import { LOBBY_MAX_OWNED, LOBBY_MAX_JOINED } from "../lobbies/lobbyTypes";
+import { useIsMobile } from "@/lib/useIsMobile";
+import { useMobilePopups } from "../shell/MobilePopupHost";
+import { MobileHomeNotStartedLoggedIn } from "./mobile/MobileHomeNotStartedLoggedIn";
 import type { Player } from "../profile/usePlayers";
 
 /**
@@ -30,6 +33,8 @@ import type { Player } from "../profile/usePlayers";
  */
 export function LoggedInHome({ players }: { players: Player[] }) {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
+  const { openParticipant } = useMobilePopups();
   const { profile, loading: profileLoading } = useProfile(user?.uid ?? null);
   const { submitterUids, loading: submittersLoading } = usePredictionSubmitters();
   const { messages, loading: messagesLoading, loadOlder, loadingOlder, hasMoreOlder } = useMessages();
@@ -157,6 +162,36 @@ export function LoggedInHome({ players }: { players: Player[] }) {
 
   if (!user || profileLoading || submittersLoading || messagesLoading || postsLoading || !profile || !postImagesReady) {
     return null;
+  }
+
+  // Mobile forks here rather than in HomePage, so everything above — a
+  // hundred-odd lines of listeners, lobby-scope fallbacks and forum action
+  // handlers — is written once and shared. Only the layout differs, and the
+  // mobile layout needs a strict subset of these props (no chat: it lives in
+  // the shell drawer now).
+  if (isMobile) {
+    return (
+      <MobileHomeNotStartedLoggedIn
+        me={{ uid: user.uid, ...profile }}
+        players={players}
+        submitterUids={submitterUids}
+        posts={posts}
+        likesByPost={likesByPost}
+        onToggleLike={handleToggleLike}
+        onDeletePost={handleDeletePost}
+        onSaveEdit={handleSaveEdit}
+        onRefetchPosts={refetchPosts}
+        onSelectParticipant={openParticipant}
+        myLobbies={myLobbies}
+        lobbyId={katilimcilarLobbyId}
+        onChangeLobby={setKatilimcilarLobbyId}
+        lobbyMemberUids={
+          katilimcilarLobbyId ? new Set(katilimcilarLobbyMembers.members.map((m) => m.uid)) : null
+        }
+        canCreateLobby={canCreateLobby}
+        onOpenCreateDialog={() => setCreateDialogOpen(true)}
+      />
+    );
   }
 
   return (
