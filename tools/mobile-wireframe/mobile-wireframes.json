@@ -1,0 +1,1371 @@
+{
+  "version": 1,
+  "savedAt": "2026-08-06T19:14:47.026Z",
+  "grid": {
+    "cols": 12,
+    "rowsPerScreen": 20,
+    "phoneW": 360,
+    "phoneH": 780
+  },
+  "screens": {
+    "shell": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshtwgor2",
+          "x": 0,
+          "y": 1,
+          "w": 12,
+          "h": 2,
+          "name": "nav",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshtwqws3",
+          "x": 1,
+          "y": 1,
+          "w": 2,
+          "h": 2,
+          "name": "left drawer opener circular button",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshu37da8",
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 1,
+          "name": "the phone's own status bar, unavoidable",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshv2c46o",
+          "x": 4,
+          "y": 1,
+          "w": 4,
+          "h": 2,
+          "name": "logo and title for not logged in, profile opener for logged in",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshv64a2q",
+          "x": 9,
+          "y": 1,
+          "w": 2,
+          "h": 2,
+          "name": "if logged in, right drawer chatroom opener circular button. if logged out, a log in button.",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:home@loggedout_notstarted": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "there will be dust haze",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshu45cqa",
+          "x": 1,
+          "y": 4,
+          "w": 10,
+          "h": 4,
+          "name": "36 takım.  x katılımcı. 1 turnuva.",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshu4v88c",
+          "x": 1,
+          "y": 9,
+          "w": 10,
+          "h": 4,
+          "name": "Şampiyonlar Ligi başlamadan önce tahminlerini gönder. Turnuva boyunca gerçek sonuçlara göre puan kazan ve arkadaşlarınla yarış.",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshu59wid",
+          "x": 1,
+          "y": 13,
+          "w": 10,
+          "h": 4,
+          "name": "Kayıtların Kapanmasına 32 Gün 02 Saat 45 Dakika 35 Saniye",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshu5ifhe",
+          "x": 2,
+          "y": 17,
+          "w": 8,
+          "h": 2,
+          "name": "Sign in with google",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:home@loggedout_leaguephase": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshucs961f",
+          "x": 1,
+          "y": 4,
+          "w": 10,
+          "h": 7,
+          "name": "scrollable participant leaderboard",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshud9d81g",
+          "x": 1,
+          "y": 12,
+          "w": 10,
+          "h": 7,
+          "name": "scrollable league table",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshulo7k1",
+          "x": 1,
+          "y": 4,
+          "w": 10,
+          "h": 2,
+          "name": "participant element",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshum7oe2",
+          "x": 2,
+          "y": 4,
+          "w": 2,
+          "h": 2,
+          "name": "profile picture",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshumqeg3",
+          "x": 4,
+          "y": 4,
+          "w": 5,
+          "h": 2,
+          "name": "name",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshumyly4",
+          "x": 1,
+          "y": 4,
+          "w": 1,
+          "h": 2,
+          "name": "rank",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshun2ld5",
+          "x": 9,
+          "y": 4,
+          "w": 2,
+          "h": 2,
+          "name": "score",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshuo00v7",
+          "x": 1,
+          "y": 12,
+          "w": 10,
+          "h": 1,
+          "name": "team element. full details, three letters for names",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:home@loggedout_preknockout": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshuq6kk9",
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 20,
+          "name": "exact same as out-leaguephase",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:home@loggedout_knockout": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshus4edb",
+          "x": 1,
+          "y": 4,
+          "w": 10,
+          "h": 6,
+          "name": "scrollable participant leaderboard, same as out-leaguephase",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshut7nic",
+          "x": 1,
+          "y": 11,
+          "w": 10,
+          "h": 8,
+          "name": "horizontally scrollable bracket",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:home@loggedin_notstarted": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshux956e",
+          "x": 0,
+          "y": 3,
+          "w": 12,
+          "h": 2,
+          "name": "welcome&predictnow&countdown",
+          "note": "Not touching the edges. It's an oblong inside this frame.",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshuxzsrf",
+          "x": 1,
+          "y": 6,
+          "w": 10,
+          "h": 6,
+          "name": "participant scroller, with a header this time, because special lobbies etc exist",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshuyycjg",
+          "x": 1,
+          "y": 6,
+          "w": 10,
+          "h": 1,
+          "name": "header",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshuz71qh",
+          "x": 6,
+          "y": 6,
+          "w": 4,
+          "h": 1,
+          "name": "create special lobby or whatever",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshuzhc2i",
+          "x": 1,
+          "y": 13,
+          "w": 10,
+          "h": 6,
+          "name": "forum widget",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:home@loggedin_leaguephase": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshvmb07r",
+          "x": 0,
+          "y": 4,
+          "w": 12,
+          "h": 3,
+          "name": "welcome etc",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshvola7s",
+          "x": 1,
+          "y": 8,
+          "w": 10,
+          "h": 5,
+          "name": "mini leaderboard",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshvoq2ct",
+          "x": 1,
+          "y": 14,
+          "w": 10,
+          "h": 5,
+          "name": "forum widget",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:home@loggedin_preknockout": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshvpm7zu",
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 20,
+          "name": "exact same as in-leaguephase. Put the make prediction reminder and counter somewhere. You can shrink the forum and mini leaderboard",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:home@loggedin_knockout": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshvt2jlv",
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 20,
+          "name": "exact same as in-leaguephase",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:about@loggedout_notstarted": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshvtshsw",
+          "x": 3,
+          "y": 4,
+          "w": 6,
+          "h": 4,
+          "name": "logo",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshvu9jsx",
+          "x": 3,
+          "y": 13,
+          "w": 6,
+          "h": 6,
+          "name": "timeline, as vertical elements this time",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshvuux4y",
+          "x": 1,
+          "y": 9,
+          "w": 10,
+          "h": 3,
+          "name": "about text",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:about@loggedout_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:about@loggedout_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:about@loggedout_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:about@loggedin_notstarted": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:about@loggedin_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:about@loggedin_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:about@loggedin_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:predictions@loggedin_notstarted": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshvwz64z",
+          "x": 1,
+          "y": 4,
+          "w": 10,
+          "h": 7,
+          "name": "leaderboard to place the teams",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshvxt7w10",
+          "x": 1,
+          "y": 12,
+          "w": 10,
+          "h": 7,
+          "name": "teams, alphabetical, list",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:predictions@loggedin_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:predictions@loggedin_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:predictions@loggedin_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:knockoutPredictions@loggedin_notstarted": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshw0k7y11",
+          "x": 1,
+          "y": 4,
+          "w": 10,
+          "h": 15,
+          "name": "horizontally scrollable bracket, one sided",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:knockoutPredictions@loggedin_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:knockoutPredictions@loggedin_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:knockoutPredictions@loggedin_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:leaderboard@loggedin_leaguephase": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshw20iu12",
+          "x": 1,
+          "y": 4,
+          "w": 10,
+          "h": 15,
+          "name": "same stuff as out-leaguephase",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:leaderboard@loggedin_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:leaderboard@loggedin_knockout": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshw2j7913",
+          "x": 1,
+          "y": 4,
+          "w": 10,
+          "h": 15,
+          "name": "same stuff as out-leaguephase, except the league table is instead a frame of fully scrollable (both hor and vert) bracket",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:forum@loggedin_notstarted": {
+      "alias": null,
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshw3ght14",
+          "x": 1,
+          "y": 4,
+          "w": 10,
+          "h": 2,
+          "name": "new post, etc",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshw3m6h15",
+          "x": 1,
+          "y": 7,
+          "w": 10,
+          "h": 5,
+          "name": "forum element",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshw3z3z16",
+          "x": 1,
+          "y": 13,
+          "w": 10,
+          "h": 5,
+          "name": "forum element",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshw4dn118",
+          "x": 1,
+          "y": 19,
+          "w": 10,
+          "h": 5,
+          "name": "forum element and so on",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:forum@loggedin_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:forum@loggedin_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:forum@loggedin_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:forum@loggedout_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:forum@loggedout_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:forum@loggedout_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:stats@loggedin_leaguephase": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshw4ts41a",
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 20,
+          "name": "ignore",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:stats@loggedin_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:stats@loggedin_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:profile@loggedin_notstarted": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshw5q5e1b",
+          "x": 1,
+          "y": 4,
+          "w": 10,
+          "h": 2,
+          "name": "profile shit here, also has delete profile button",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshw62081c",
+          "x": 1,
+          "y": 7,
+          "w": 10,
+          "h": 4,
+          "name": "quiz answers",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshw6e501e",
+          "x": 1,
+          "y": 12,
+          "w": 10,
+          "h": 7,
+          "name": "league predictions",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:profile@loggedin_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "page:profile@loggedin_preknockout": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshw6nra1f",
+          "x": 1,
+          "y": 4,
+          "w": 10,
+          "h": 2,
+          "name": "profile shit here, also has delete profile button",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshw6nra1g",
+          "x": 1,
+          "y": 7,
+          "w": 10,
+          "h": 4,
+          "name": "quiz answers",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshw6nra1h",
+          "x": 1,
+          "y": 12,
+          "w": 10,
+          "h": 7,
+          "name": "bracket predictions",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "page:profile@loggedin_knockout": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": [
+        {
+          "id": "bmshw6wt51i",
+          "x": 1,
+          "y": 4,
+          "w": 10,
+          "h": 2,
+          "name": "profile shit here, also has delete profile button",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshw6wt51j",
+          "x": 1,
+          "y": 7,
+          "w": 10,
+          "h": 4,
+          "name": "quiz answers",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        },
+        {
+          "id": "bmshw6wt51k",
+          "x": 1,
+          "y": 12,
+          "w": 10,
+          "h": 7,
+          "name": "bracket predictions",
+          "note": "",
+          "flags": [],
+          "tint": 0
+        }
+      ]
+    },
+    "overlay:teamPopup@loggedin_notstarted": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:teamPopup@loggedin_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:teamPopup@loggedin_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:teamPopup@loggedin_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:teamPopup@loggedout_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:teamPopup@loggedout_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:teamPopup@loggedout_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:participantPopup@loggedin_notstarted": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:participantPopup@loggedin_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:participantPopup@loggedin_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:participantPopup@loggedin_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:participantPopup@loggedout_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:participantPopup@loggedout_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:participantPopup@loggedout_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:matchupPopup@loggedin_notstarted": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:matchupPopup@loggedin_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:matchupPopup@loggedin_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:matchupPopup@loggedin_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:matchupPopup@loggedout_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:matchupPopup@loggedout_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:matchupPopup@loggedout_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:threadPopup@loggedin_notstarted": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:threadPopup@loggedin_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:threadPopup@loggedin_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:threadPopup@loggedin_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:threadPopup@loggedout_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:threadPopup@loggedout_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:threadPopup@loggedout_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:upcomingDrawer@loggedin_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:upcomingDrawer@loggedin_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:upcomingDrawer@loggedin_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:lobbyPanel@loggedin_notstarted": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:lobbyPanel@loggedin_leaguephase": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:lobbyPanel@loggedin_preknockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "overlay:lobbyPanel@loggedin_knockout": {
+      "alias": "auto",
+      "na": false,
+      "scroll": "scrolling",
+      "note": "",
+      "sheetTopRow": 6,
+      "blocks": []
+    },
+    "seq:signup#0": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:signup#1": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:signup#2": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:signup#3": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:signup#4": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:signup#5": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:signup#6": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:signup#7": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:signup#8": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:signup#9": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:signup#10": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:predictionsFlow#0": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:predictionsFlow#1": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:predictionsFlow#2": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:predictionsFlow#3": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:knockoutFlow#0": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:knockoutFlow#1": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:knockoutFlow#2": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    },
+    "seq:knockoutFlow#3": {
+      "alias": null,
+      "na": false,
+      "scroll": "fixed",
+      "note": "",
+      "sheetTopRow": null,
+      "blocks": []
+    }
+  }
+}
