@@ -21,6 +21,8 @@ import { useImagePreload } from "@/lib/useImagePreload";
 import { Frame } from "@/components/ui/frame";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageUnavailable } from "@/components/ui/page-unavailable";
+import { useIsMobile } from "@/lib/useIsMobile";
+import { MobileLeaderboardPage } from "../mobile/MobileLeaderboardPage";
 
 /**
  * The leaderboard, per Mert's brief, rolls the participant standings and the
@@ -159,6 +161,7 @@ export function LeaderboardPage() {
   const { user } = useAuth();
   const { results } = useResults();
   const phase = useTournamentPhase();
+  const isMobile = useIsMobile();
 
   const isKnockoutPhase = phase === "knockout" || phase === "preknockout";
 
@@ -228,6 +231,21 @@ export function LeaderboardPage() {
 
   if (loading || !imagesReady) {
     return isKnockoutPhase ? <KnockoutSkeleton /> : <LedgerSkeleton />;
+  }
+
+  // Mobile drops the hero carousel, the full team table and the fixtures
+  // drawer, keeping the two frames the wireframe asks for. Its popups come
+  // from MobilePopupHost at the shell, so `popupLayer` below isn't rendered.
+  if (isMobile) {
+    return (
+      <MobileLeaderboardPage
+        entries={entries}
+        players={players}
+        results={results}
+        phase={phase}
+        myUid={user?.uid}
+      />
+    );
   }
 
   // ── Shared popup layer (identical for both layouts) ────────────────────────
