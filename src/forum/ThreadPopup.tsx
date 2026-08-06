@@ -12,7 +12,8 @@ import { PostAuthorLink } from "./PostAuthorLink";
 import { buildPlayersByUid } from "../profile/playersByUid";
 import { splitMentionSegments } from "../chat/chatMentions";
 import { fullName } from "../profile/deletedAccount";
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import { DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Frame, FrameBody } from "@/components/ui/frame";
 import { Button } from "@/components/ui/button";
 
@@ -115,13 +116,15 @@ export function ThreadPopup({
   }
 
   return (
-    <Dialog open={rootId !== null} onOpenChange={onOpenChange}>
-      <DialogContent
-        showCloseButton={false}
-        className="w-full max-w-[calc(100%-2rem)] gap-0 rounded-none bg-transparent p-0 ring-0 sm:max-w-2xl"
-      >
+    <ResponsiveDialog
+      open={rootId !== null}
+      onOpenChange={onOpenChange}
+      showCloseButton={false}
+      desktopClassName="w-full max-w-[calc(100%-2rem)] gap-0 rounded-none bg-transparent p-0 ring-0 sm:max-w-2xl"
+      mobileClassName="max-h-[88dvh] bg-transparent p-0"
+    >
         {root && (
-          <Frame className="flex max-h-[min(88vh,52rem)] w-full min-h-0 flex-col animate-cotton-rise border-color_border1/35">
+          <Frame className="flex max-h-[min(88vh,52rem)] w-full min-h-0 flex-col animate-cotton-rise border-color_border1/35 lg:max-h-[min(88vh,52rem)]">
             <div className="relative flex shrink-0 items-start justify-between gap-3 border-b border-color_border1/60 px-4 py-3 sm:px-5">
               <PostAuthorLink
                 author={author}
@@ -287,7 +290,6 @@ export function ThreadPopup({
             </FrameBody>
           </Frame>
         )}
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 }

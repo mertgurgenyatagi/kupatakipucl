@@ -5,7 +5,9 @@ import {
   DragStartEvent,
   KeyboardSensor,
   Modifier,
+  MouseSensor,
   PointerSensor,
+  TouchSensor,
   pointerWithin,
   useSensor,
   useSensors,
@@ -15,9 +17,11 @@ import { useMemo, useState } from "react";
 import { Team } from "./teams";
 import { TeamCrest } from "../leaderboard/TeamCrest";
 import { TeamGrid } from "./TeamGrid";
+import { MobileTeamPool } from "./MobileTeamPool";
 import { TeamDropList } from "./TeamDropList";
 import { Button } from "@/components/ui/button";
 import { GripVerticalIcon } from "lucide-react";
+import { useIsMobile } from "@/lib/useIsMobile";
 
 interface TeamRankerProps {
   teams: Team[];
@@ -73,13 +77,28 @@ export function TeamRanker({ teams, initialOrder, onSubmit }: TeamRankerProps) {
   });
 
   const [activeId, setActiveId] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
-  const sensors = useSensors(
+  // Touch needs a fundamentally different activation gesture from a mouse.
+  // A 5px-distance PointerSensor on a phone claims the very drag the page
+  // needs for scrolling, so both of this screen's panels become unscrollable
+  // the moment a finger lands on a team. Press-and-hold separates the two
+  // intents cleanly: a swipe scrolls, a held finger drags.
+  //
+  // Desktop keeps PointerSensor exactly as it was — this branches rather
+  // than replacing it outright so nothing about the mouse path changes.
+  const mobileSensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+  const desktopSensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
     }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+  const sensors = isMobile ? mobileSensors : desktopSensors;
 
   const sortedTeams = useMemo(
     () => [...teams].sort((a, b) => a.name.localeCompare(b.name)),
@@ -197,24 +216,41 @@ export function TeamRanker({ teams, initialOrder, onSubmit }: TeamRankerProps) {
       onDragEnd={handleDragEnd}
     >
       <div className="flex min-h-0 flex-1 flex-col gap-3">
-        {/* Instruction */}
+        {/* Instruction — the mobile gesture is genuinely different, so the
+            sentence describing it has to be too. */}
         <p className="text-center font-display text-sm text-color_textsecondary">
-          Sağdaki takımları sürükleyerek solda sıralamana yerleştir.{" "}
-          <span className="text-color_textsecondary/60">
-            Yerleştirdiğin takımları geri çekebilir veya yeniden sıralayabilirsin.
-          </span>
+          {isMobile ? (
+            <>
+              Takımlara basılı tutup yukarıdaki sıralamana sürükle.{" "}
+              <span className="text-color_textsecondary/60">
+                Yerleştirdiğin takımları geri çekebilir veya yeniden sıralayabilirsin.
+              </span>
+            </>
+          ) : (
+            <>
+              Sağdaki takımları sürükleyerek solda sıralamana yerleştir.{" "}
+              <span className="text-color_textsecondary/60">
+                Yerleştirdiğin takımları geri çekebilir veya yeniden sıralayabilirsin.
+              </span>
+            </>
+          )}
         </p>
 
-        {/* Two panels */}
-        <div className="flex min-h-0 flex-1 gap-3">
-          {/* Left — ranking drop list */}
-          <div className="flex w-64 shrink-0 flex-col min-h-0">
+        {/* Two panels — side by side on desktop, stacked on mobile with the
+            ranking on top and the pool beneath, per the wireframe. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row">
+          {/* Ranking drop list */}
+          <div className="flex min-h-0 flex-1 flex-col lg:w-64 lg:flex-none lg:shrink-0">
             <TeamDropList ranking={ranking} teamsById={teamsById} />
           </div>
 
-          {/* Right — team crest grid, top-aligned to prevent flexbox overflow clipping */}
-          <div className="no-scrollbar flex min-h-0 flex-1 flex-col justify-start py-2 overflow-y-auto">
-            <TeamGrid teams={sortedTeams} placedTeamIds={placedTeamIds} />
+          {/* Team crest grid, top-aligned to prevent flexbox overflow clipping */}
+          <div className="no-scrollbar flex min-h-0 flex-1 flex-col justify-start overflow-y-auto py-2">
+            {isMobile ? (
+              <MobileTeamPool teams={sortedTeams} placedTeamIds={placedTeamIds} />
+            ) : (
+              <TeamGrid teams={sortedTeams} placedTeamIds={placedTeamIds} />
+            )}
           </div>
         </div>
 

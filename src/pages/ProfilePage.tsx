@@ -11,6 +11,7 @@ import { usePrediction, savePrediction, deletePrediction } from "../predictions/
 import { Prediction } from "../predictions/predictionTypes";
 import { useKnockoutPrediction, saveKnockoutPrediction } from "../knockout/useKnockoutPrediction";
 import { KnockoutBracket } from "../knockout/KnockoutBracket";
+import { MobileKnockoutBracket } from "../knockout/MobileKnockoutBracket";
 import { KnockoutPrediction } from "../knockout/knockoutTypes";
 import { useSurveyResponse } from "../predictions/useSurveyResponse";
 import { MESSI_RONALDO_LABEL, DEVICE_LABEL, ensurePeriod } from "../predictions/surveyLabels";
@@ -26,7 +27,7 @@ import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { TeamPopup } from "../leaderboard/TeamPopup";
 import { MatchupPopup } from "../leaderboard/MatchupPopup";
 import { useTournamentPhase } from "../tournament/useTournamentPhase";
-import { CameraIcon } from "lucide-react";
+import { CameraIcon, Trash2 } from "lucide-react";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -41,6 +42,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/lib/useIsMobile";
+import { useMobilePopups } from "../shell/MobilePopupHost";
 
 type PredictionUiStep = "idle" | "rank" | "confirm-overwrite";
 
@@ -48,14 +51,22 @@ type PredictionUiStep = "idle" | "rank" | "confirm-overwrite";
 // isn't a wide data table like Leaderboard/Stats, so it doesn't earn their
 // 1400px exception.
 const PAGE_SHELL =
-  "relative mx-auto flex w-full max-w-[1100px] min-w-0 flex-col gap-4 p-4 sm:p-6 lg:h-full lg:min-h-0 lg:flex-1 lg:gap-5 lg:p-6";
+  "relative mx-auto flex h-full min-h-0 w-full max-w-[1100px] min-w-0 flex-1 flex-col gap-3 p-3 sm:p-6 lg:gap-5 lg:p-6";
 // Two columns: profile + quiz stacked on the left, the prediction (the
 // heavier, potentially-36-row content) taking the full row height on the
 // right — mirrors the "tall anchor beside narrower stacked cells" rhythm
 // LeaderboardPage/StatsPage already use, just mirrored left/right.
+// Mobile stacks and has to divide a fixed screenful rather than let the three
+// blocks size to their content. Mert's wireframe gives them 3 / 5 / 8 of its
+// 16 content rows (profile / quiz / prediction), which is what the flex
+// ratios on the blocks themselves encode.
 const MAIN_ROW =
-  "relative z-10 grid min-w-0 gap-4 lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-[340px_1fr] lg:gap-5 [&>*]:min-h-0 [&>*]:min-w-0";
-const LEFT_COLUMN = "flex min-h-0 flex-col gap-4 lg:gap-5";
+  "relative z-10 flex min-h-0 min-w-0 flex-1 flex-col gap-3 lg:grid lg:h-full lg:gap-5 lg:grid-cols-[340px_1fr] [&>*]:min-h-0 [&>*]:min-w-0";
+// `contents` on mobile: the wrapper exists to group profile+quiz into
+// desktop's left column, but on a phone that grouping would force the pair to
+// share one flex ratio against the prediction. Dissolving it makes all three
+// direct children of MAIN_ROW, so each can take the wireframe's own share.
+const LEFT_COLUMN = "contents lg:flex lg:min-h-0 lg:flex-col lg:gap-5";
 
 const TEAM_CREST_URLS = TEAMS.map((t) => teamCrestSrc(t.id));
 
@@ -96,6 +107,8 @@ function ProfileSkeleton() {
 }
 
 export function ProfilePage() {
+  const isMobile = useIsMobile();
+  const mobilePopups = useMobilePopups();
   const { user } = useAuth();
   const state = useVisibilityState();
   const navigate = useNavigate();
@@ -155,21 +168,36 @@ export function ProfilePage() {
   const handleFixturePopupOpenChange = useCallback((open: boolean) => {
     if (!open) setSelectedFixtureId(null);
   }, []);
-  const handleSelectParticipant = useCallback((participantUid: string) => {
-    setSelectedUid(participantUid);
-    setSelectedTeamId(null);
-    setSelectedFixtureId(null);
-  }, []);
-  const handleSelectTeam = useCallback((teamId: string) => {
-    setSelectedTeamId(teamId);
-    setSelectedUid(null);
-    setSelectedFixtureId(null);
-  }, []);
-  const handleSelectFixture = useCallback((fixtureId: string) => {
-    setSelectedFixtureId(fixtureId);
-    setSelectedTeamId(null);
-    setSelectedUid(null);
-  }, []);
+  // On mobile these delegate to the shell's popup host instead of driving
+  // this page's own popup state — the page's three <Popup>s aren't rendered
+  // there (see the guard further down), so local state would open nothing.
+  const handleSelectParticipant = useCallback(
+    (participantUid: string) => {
+      if (isMobile) return mobilePopups.openParticipant(participantUid);
+      setSelectedUid(participantUid);
+      setSelectedTeamId(null);
+      setSelectedFixtureId(null);
+    },
+    [isMobile, mobilePopups]
+  );
+  const handleSelectTeam = useCallback(
+    (teamId: string) => {
+      if (isMobile) return mobilePopups.openTeam(teamId);
+      setSelectedTeamId(teamId);
+      setSelectedUid(null);
+      setSelectedFixtureId(null);
+    },
+    [isMobile, mobilePopups]
+  );
+  const handleSelectFixture = useCallback(
+    (fixtureId: string) => {
+      if (isMobile) return mobilePopups.openFixture(fixtureId);
+      setSelectedFixtureId(fixtureId);
+      setSelectedTeamId(null);
+      setSelectedUid(null);
+    },
+    [isMobile, mobilePopups]
+  );
 
   if (!isPageAllowed("profile", state)) {
     return <PageUnavailable />;
@@ -288,6 +316,24 @@ export function ProfilePage() {
                   {displayedProfile?.firstName} {displayedProfile?.lastName}
                 </p>
               </div>
+
+              {/* Delete lives inside the profile block on mobile, which is
+                  where the wireframe puts it ("profile shit here, also has
+                  delete profile button"). Desktop keeps it as its own
+                  bottom-anchored column beside the prediction frame. */}
+              {isMobile && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteError(null);
+                    setDeleteConfirmOpen(true);
+                  }}
+                  aria-label="Profili sil"
+                  className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-color_border1/70 text-color_remove transition-colors duration-150 active:bg-color_remove/10 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_remove"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              )}
             </div>
 
             {/* Bottom-left: rank + points, same plaque-engraving mono voice
@@ -297,14 +343,14 @@ export function ProfilePage() {
                 yet), so the whole block is dropped rather than shown as a
                 dash pair. */}
             {predictionLocked && (
-              <div className="flex items-end gap-5">
+              <div className="flex items-end gap-5 pt-2 lg:pt-0">
                 <div>
-                  <p className="font-mono text-[0.75rem] tracking-[0.22em] text-color_textsecondary uppercase">
+                  <p className="font-mono text-[0.62rem] tracking-[0.22em] text-color_textsecondary uppercase lg:text-[0.75rem]">
                     Sıra
                   </p>
                   <p
                     className={cn(
-                      "font-mono text-[1.91rem] font-semibold tnum",
+                      "font-mono text-xl font-semibold tnum lg:text-[1.91rem]",
                       myEntry?.rank === 1 ? "text-color_accent" : "text-color_text"
                     )}
                   >
@@ -312,10 +358,10 @@ export function ProfilePage() {
                   </p>
                 </div>
                 <div>
-                  <p className="font-mono text-[0.75rem] tracking-[0.22em] text-color_textsecondary uppercase">
+                  <p className="font-mono text-[0.62rem] tracking-[0.22em] text-color_textsecondary uppercase lg:text-[0.75rem]">
                     Puan
                   </p>
-                  <p className="font-mono text-[1.91rem] font-semibold text-color_text tnum">
+                  <p className="font-mono text-xl font-semibold text-color_text tnum lg:text-[1.91rem]">
                     {myEntry ? myEntry.entry.points : "—"}
                   </p>
                 </div>
@@ -328,7 +374,7 @@ export function ProfilePage() {
             question/answer row treatment as ParticipantPopup's own quiz
             widget, so a participant sees their answers rendered identically
             wherever they show up. */}
-        <Frame className="min-h-0 flex-1 animate-cotton-rise" style={{ animationDelay: "60ms" }}>
+        <Frame className="min-h-0 flex-[5] animate-cotton-rise lg:flex-1" style={{ animationDelay: "60ms" }}>
           <FrameHeader tone="navy">
             <FrameTitle className="text-color_text">Anket Cevaplarınız</FrameTitle>
           </FrameHeader>
@@ -386,7 +432,7 @@ export function ProfilePage() {
           PAGEMAP_SPEC.md §5b. The delete-profile control rides alongside it
           as a narrow, unaffiliated column of its own — outside the Frame's
           own box, bottom-anchored, the Frame shrinking to make room. */}
-      <div className="flex min-h-0 min-w-0 flex-1 gap-3">
+      <div className="flex min-h-0 min-w-0 flex-[8] gap-3 lg:flex-1">
       <Frame className="min-h-0 min-w-0 flex-1 animate-cotton-rise" style={{ animationDelay: "120ms" }}>
         <FrameHeader tone="navy">
           {isKnockoutPhaseOrPre ? (
@@ -484,38 +530,62 @@ export function ProfilePage() {
             )
           ) : (
             <div className="no-scrollbar min-h-0 flex-1 overflow-hidden">
-              <KnockoutBracket
-                key={knockoutEditMode ? "edit" : "view"}
-                initialPrediction={currentKnockoutPrediction}
-                readOnly={!knockoutEditMode}
-                submitting={knockoutSubmitting}
-                onSelectTeam={setSelectedTeamId}
-                onSubmit={(data) => {
-                  setPendingKnockoutPicks(data);
-                  setConfirmKnockoutOpen(true);
-                }}
-              />
+              {/* Desktop's bracket is the symmetric two-half one, sized to a
+                  1400px page. It has no phone-width form, so mobile gets the
+                  one-sided scrolling layout instead — same picks, same
+                  submit path, different geometry. */}
+              {isMobile ? (
+                <MobileKnockoutBracket
+                  key={knockoutEditMode ? "edit" : "view"}
+                  initialPrediction={currentKnockoutPrediction}
+                  readOnly={!knockoutEditMode}
+                  submitting={knockoutSubmitting}
+                  onSelectTeam={handleSelectTeam}
+                  onSubmit={(data) => {
+                    setPendingKnockoutPicks(data);
+                    setConfirmKnockoutOpen(true);
+                  }}
+                />
+              ) : (
+                <KnockoutBracket
+                  key={knockoutEditMode ? "edit" : "view"}
+                  initialPrediction={currentKnockoutPrediction}
+                  readOnly={!knockoutEditMode}
+                  submitting={knockoutSubmitting}
+                  onSelectTeam={setSelectedTeamId}
+                  onSubmit={(data) => {
+                    setPendingKnockoutPicks(data);
+                    setConfirmKnockoutOpen(true);
+                  }}
+                />
+              )}
             </div>
           )}
         </FrameBody>
       </Frame>
 
-      <div className="flex shrink-0 flex-col justify-end">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            setDeleteError(null);
-            setDeleteConfirmOpen(true);
-          }}
-          className="text-color_remove hover:text-color_remove"
-        >
-          Profili sil
-        </Button>
-      </div>
+      {!isMobile && (
+        <div className="flex shrink-0 flex-col justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setDeleteError(null);
+              setDeleteConfirmOpen(true);
+            }}
+            className="text-color_remove hover:text-color_remove"
+          >
+            Profili sil
+          </Button>
+        </div>
+      )}
       </div>
       </div>
 
+      {/* Mobile uses the shell's popup host — see MobilePopupHost. Rendering
+          these here too would give a phone two competing dialog layers. */}
+      {!isMobile && (
+        <>
       <ParticipantPopup
         ranked={selectedRanked}
         entries={entries}
@@ -549,6 +619,8 @@ export function ProfilePage() {
         onSelectTeam={handleSelectTeam}
         onSelectParticipant={handleSelectParticipant}
       />
+        </>
+      )}
 
       {/* Big popup for editing predictions */}
       <Dialog

@@ -166,14 +166,25 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Desktop is a fixed-viewport app shell: the document itself never
-     scrolls; regions that overflow get their own internal scroll
-     container (DESIGN-SPEC §55). Mobile scrolls normally (§53). */
-  @media (min-width: 1024px) {
-    html, body, #root {
-      height: 100%;
-      overflow: hidden;
-    }
+  /* A fixed-viewport app shell, at every width. The document itself never
+     scrolls; any region that overflows gets its own internal scroll
+     container (DESIGN-SPEC §55).
+
+     This used to be desktop-only, with mobile scrolling normally (§53).
+     Mert's call on 2026-08-07 extended it: "every page apart from the forum
+     should be globally unscrollable." The Forum feed is now the single
+     scrolling region in the app on mobile, and it owns that scroll itself.
+
+     height:100% rather than 100dvh deliberately — with overflow hidden the
+     mobile URL bar never collapses, so the small viewport *is* the visible
+     area, and a dvh here would mismatch it as the bar animates. */
+  html, body, #root {
+    height: 100%;
+    overflow: hidden;
+    /* Kills the rubber-band overscroll at the document edge, which on iOS
+       still moves a non-scrolling page and reads as the layout coming
+       loose. */
+    overscroll-behavior: none;
   }
 }
 

@@ -1,62 +1,21 @@
 import { Fragment } from "react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import { DustHaze } from "../home/DustHaze";
-import { TOURNAMENT_START_ISO } from "../home/deadlines";
+import {
+  CONTACT_EMAIL,
+  ESSENCE_TEXT,
+  KEY_DATES,
+  currentThresholdFor,
+  formatChipDate,
+  getDateStatus,
+} from "./aboutContent";
+import { useIsMobile } from "@/lib/useIsMobile";
+import { MobileAboutPage } from "../mobile/MobileAboutPage";
 import { cn } from "@/lib/utils";
 
 // Matches --ease-cotton (src/styles/index.css) / HomeLandingLoggedOut.tsx's
 // own copy of the same curve, so every page's motion reads as one system.
 const EASE_COTTON = [0.22, 0.61, 0.36, 1] as const;
-
-// Encyclopedic, not dramatic (explicit call) — a single paragraph that
-// assumes no prior knowledge: what the site is, who it's for, exactly how
-// scoring works, and what else the site includes beyond the prediction
-// itself.
-const ESSENCE_TEXT =
-  "Kupatakip, Şampiyonlar Ligi için bir tahmin oyunudur: turnuva başlamadan önce 36 takım tahmin sırasına göre dizilir ve tahmin edilen sıra gerçek sıradan en fazla iki basamak sapıyorsa o takımdan üç puan, otuz altı takımın tamamı isabetliyse toplamda yüz sekiz puan kazanılır; eleme aşamasında ise çeyrek finalistler üç, yarı finalistler dört, finalistler beş, şampiyon altı puan getirir. Puanlar tek bir puan durumu tablosunda toplanır; site ayrıca bir forum, genel ve özel lobi sohbetlerini, takım/katılımcı detay pencerelerini ve bir istatistik sayfasını içerir.";
-
-// Real, fixed UEFA-format dates (the project's own hard-dates record).
-// TOURNAMENT_START_ISO is the only one with a live consumer elsewhere
-// (src/home/deadlines.ts) — the others have no other consumer yet, same
-// situation that constant was in before it got its own file. The last
-// entry's date is a rough placeholder (Mert: "not important, dates will
-// be changed anyway") — there's no real knockout-phase-end date fixed
-// yet, unlike the other five.
-const KEY_DATES: { label: string; date: Date }[] = [
-  { label: "Lig Tahminleri Açılır", date: new Date("2026-08-26T00:00:00+03:00") },
-  { label: "Lig Tahminleri Kapanır", date: new Date(TOURNAMENT_START_ISO) },
-  { label: "Lig Aşaması", date: new Date("2027-01-27T00:00:00+03:00") },
-  { label: "Eleme Tahminleri Açılır", date: new Date("2027-02-26T00:00:00+03:00") },
-  { label: "Eleme Tahminleri Kapanır", date: new Date("2027-03-09T00:00:00+03:00") },
-  { label: "Eleme Aşaması", date: new Date("2027-05-30T00:00:00+03:00") },
-];
-
-const TR_MONTHS_SHORT = [
-  "Oca",
-  "Şub",
-  "Mar",
-  "Nis",
-  "May",
-  "Haz",
-  "Tem",
-  "Ağu",
-  "Eyl",
-  "Eki",
-  "Kas",
-  "Ara",
-];
-
-function formatChipDate(d: Date): string {
-  return `${String(d.getDate()).padStart(2, "0")} ${TR_MONTHS_SHORT[d.getMonth()]}`;
-}
-
-type DateStatus = "past" | "current" | "future";
-
-function getDateStatus(date: Date, now: number, currentThreshold: number | null): DateStatus {
-  if (date.getTime() < now) return "past";
-  if (currentThreshold !== null && date.getTime() === currentThreshold) return "current";
-  return "future";
-}
 
 const logoIn: Variants = {
   hidden: { opacity: 0, y: -10 },
@@ -89,8 +48,7 @@ const contactIn: Variants = {
 // current stage, everything after it stays hollow/future.
 function DateTimeline() {
   const now = Date.now();
-  const upcoming = KEY_DATES.find((item) => item.date.getTime() >= now);
-  const currentThreshold = upcoming ? upcoming.date.getTime() : null;
+  const currentThreshold = currentThresholdFor(now);
 
   return (
     <div className="flex w-full max-w-3xl items-start">
@@ -143,9 +101,15 @@ function DateTimeline() {
  * real-sequence date timeline on the right.
  */
 export function AboutPage() {
+  const isMobile = useIsMobile();
   const reduceMotion = useReducedMotion();
   const initial = reduceMotion ? "visible" : "hidden";
   const animate = "visible";
+
+  // This page's desktop composition was built explicitly desktop-only
+  // ("completely disregard mobile from your thoughts"), so mobile gets its
+  // own rather than a reflow of a layout that was never meant to bend.
+  if (isMobile) return <MobileAboutPage />;
 
   return (
     <section className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
@@ -176,10 +140,10 @@ export function AboutPage() {
                 İletişim
               </span>
               <a
-                href="mailto:mert.gurgenyatagi@gmail.com"
+                href={`mailto:${CONTACT_EMAIL}`}
                 className="w-fit font-display text-sm text-color_text no-underline transition-colors duration-150 ease-[var(--ease-cotton)] hover:text-color_accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_text"
               >
-                mert.gurgenyatagi@gmail.com
+                {CONTACT_EMAIL}
               </a>
             </motion.div>
           </div>

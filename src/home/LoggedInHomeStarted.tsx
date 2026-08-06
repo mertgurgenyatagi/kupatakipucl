@@ -16,6 +16,9 @@ import { useLobbyMessages } from "../lobbies/useLobbyMessages";
 import { createLobby } from "../lobbies/createLobby";
 import { LOBBY_MAX_OWNED, LOBBY_MAX_JOINED } from "../lobbies/lobbyTypes";
 import { HomeLandingLoggedInStarted } from "./HomeLandingLoggedInStarted";
+import { useIsMobile } from "@/lib/useIsMobile";
+import { useMobilePopups } from "../shell/MobilePopupHost";
+import { MobileHomeStartedLoggedIn } from "./mobile/MobileHomeStartedLoggedIn";
 import type { Player } from "../profile/usePlayers";
 import type { TeamResult } from "../leaderboard/teamResultTypes";
 import type { LeaderboardEntry } from "../leaderboard/leaderboardTypes";
@@ -30,6 +33,8 @@ interface LoggedInHomeStartedProps {
 
 export function LoggedInHomeStarted({ players, results, entries, phase }: LoggedInHomeStartedProps) {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
+  const { openParticipant } = useMobilePopups();
   const { profile, loading: profileLoading } = useProfile(user?.uid ?? null);
   const { messages, loading: messagesLoading, loadOlder, loadingOlder, hasMoreOlder } = useMessages();
   const { posts, loading: postsLoading, refetch: refetchPosts } = usePosts();
@@ -146,6 +151,26 @@ export function LoggedInHomeStarted({ players, results, entries, phase }: Logged
 
   if (!user || profileLoading || messagesLoading || postsLoading || !profile || !postImagesReady) {
     return null;
+  }
+
+  // Same fork point and same reasoning as LoggedInHome's — the fetching
+  // above is shared, only the layout below differs.
+  if (isMobile) {
+    return (
+      <MobileHomeStartedLoggedIn
+        me={{ uid: user.uid, ...profile }}
+        players={players}
+        entries={entries}
+        posts={posts}
+        likesByPost={likesByPost}
+        onToggleLike={handleToggleLike}
+        onDeletePost={handleDeletePost}
+        onSaveEdit={handleSaveEdit}
+        onRefetchPosts={refetchPosts}
+        onSelectParticipant={openParticipant}
+        phase={phase}
+      />
+    );
   }
 
   return (

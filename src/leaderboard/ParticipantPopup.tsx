@@ -20,12 +20,13 @@ import { useKnockoutPrediction } from "../knockout/useKnockoutPrediction";
 import { KnockoutBracket } from "../knockout/KnockoutBracket";
 import { TournamentPhase } from "../tournament/tournamentPhase";
 import {
-  Dialog,
-  DialogContent,
   DialogTitle,
   DialogDescription,
   DialogClose,
 } from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
+import { useIsMobile } from "@/lib/useIsMobile";
+import { MobileKnockoutBracket } from "../knockout/MobileKnockoutBracket";
 import { Frame, FrameBody } from "@/components/ui/frame";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -272,6 +273,7 @@ export const ParticipantPopup = memo(function ParticipantPopup({
     tournamentStarted && viewerLoggedIn ? displayedUid : null
   );
 
+  const isMobile = useIsMobile();
   const isKnockoutPhaseOrPre = phase === "preknockout" || phase === "knockout";
   const { prediction: knockoutPrediction, loading: knockoutLoading } = useKnockoutPrediction(
     isKnockoutPhaseOrPre && tournamentStarted ? displayedUid : null
@@ -289,21 +291,23 @@ export const ParticipantPopup = memo(function ParticipantPopup({
   const popupImagesReady = useImagePreload(popupImageUrls);
 
   return (
-    <Dialog open={ranked !== null} onOpenChange={onOpenChange}>
-      <DialogContent
-        showCloseButton={false}
-        className={cn(
-          "w-full gap-0 rounded-none bg-transparent p-0 ring-0",
-          isKnockoutPhaseOrPre
-            ? "max-w-[96vw] h-[94vh] max-h-[94vh] sm:max-w-[96vw]"
-            : "max-w-[calc(100%-2rem)] sm:max-w-2xl"
-        )}
-      >
+    <ResponsiveDialog
+      open={ranked !== null}
+      onOpenChange={onOpenChange}
+      showCloseButton={false}
+      desktopClassName={cn(
+        "w-full gap-0 rounded-none bg-transparent p-0 ring-0",
+        isKnockoutPhaseOrPre
+          ? "max-w-[96vw] h-[94vh] max-h-[94vh] sm:max-w-[96vw]"
+          : "max-w-[calc(100%-2rem)] sm:max-w-2xl"
+      )}
+      mobileClassName="h-[88dvh] bg-transparent p-0"
+    >
         {displayed && !popupImagesReady && (
           <Frame
             className={cn(
               "w-full animate-cotton-rise border-color_border1/35",
-              isKnockoutPhaseOrPre ? "h-[94vh]" : "h-[min(85vh,44rem)]"
+              isMobile ? "h-full" : isKnockoutPhaseOrPre ? "h-[94vh]" : "h-[min(85vh,44rem)]"
             )}
             aria-hidden
             data-testid="participant-popup-skeleton"
@@ -524,11 +528,19 @@ export const ParticipantPopup = memo(function ParticipantPopup({
                             {knockoutLoading ? (
                               <Skeleton className="h-64 w-full rounded-xl" />
                             ) : knockoutPrediction ? (
-                              <KnockoutBracket
-                                initialPrediction={knockoutPrediction}
-                                readOnly={true}
-                                onSelectTeam={onSelectTeam}
-                              />
+                              isMobile ? (
+                                <MobileKnockoutBracket
+                                  initialPrediction={knockoutPrediction}
+                                  readOnly
+                                  onSelectTeam={onSelectTeam}
+                                />
+                              ) : (
+                                <KnockoutBracket
+                                  initialPrediction={knockoutPrediction}
+                                  readOnly={true}
+                                  onSelectTeam={onSelectTeam}
+                                />
+                              )
                             ) : (
                               <p className="py-4 text-center font-display text-xs text-color_textsecondary italic">
                                 Bu katılımcı henüz eleme tahmini yapmamış.
@@ -610,7 +622,7 @@ export const ParticipantPopup = memo(function ParticipantPopup({
             ) : (
               /* CLASSIC COMPACT VIEW: Non-knockout phases */
               <FrameBody className="min-h-0 gap-3 p-3 sm:p-4">
-                <div className="grid h-56 min-h-0 grid-cols-2 gap-3 sm:h-64">
+                <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:h-56 lg:flex-none lg:grid-cols-2 lg:sm:h-64">
                   <div className={WIDGET_BLOCK}>
                     <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-2">
                       {!tournamentStarted ? (
@@ -772,18 +784,24 @@ export const ParticipantPopup = memo(function ParticipantPopup({
                   </div>
                 </div>
 
-                <div className={cn(WIDGET_BLOCK, "shrink-0", !tournamentStarted && "h-24")}>
-                  {!tournamentStarted ? (
-                    <NotViewablePlaceholder />
-                  ) : (
-                    <RankHistoryChart checkpoints={rankHistory} totalParticipants={entries.length} />
-                  )}
-                </div>
+                {/* Rank history is dropped on mobile. It is the one widget
+                    here with no production data path at all — the trajectory
+                    is replayed from the dev-only devMatches collection, and
+                    real results have no equivalent mechanism (PROJECT_STATE
+                    §6.3). A sparkline of nothing is not worth a phone row. */}
+                {!isMobile && (
+                  <div className={cn(WIDGET_BLOCK, "shrink-0", !tournamentStarted && "h-24")}>
+                    {!tournamentStarted ? (
+                      <NotViewablePlaceholder />
+                    ) : (
+                      <RankHistoryChart checkpoints={rankHistory} totalParticipants={entries.length} />
+                    )}
+                  </div>
+                )}
               </FrameBody>
             )}
           </Frame>
         )}
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 });

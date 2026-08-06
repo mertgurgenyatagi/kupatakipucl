@@ -139,7 +139,11 @@ export function Forum({
         </p>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto lg:min-h-0">
+      {/* The one scrolling region in the mobile app. Every other page is
+          "globally unscrollable" (Mert, 2026-08-07) and fits its screenful;
+          a forum can't, so the feed owns an internal scroll on both sides of
+          the breakpoint. The composer above it stays put while it moves. */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {roots.length === 0 ? (
           <div className="flex flex-1 items-center justify-center py-12">
             <p className="text-center font-display text-sm text-color_textsecondary italic">

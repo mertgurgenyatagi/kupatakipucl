@@ -4,60 +4,29 @@ import { Link, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { useAuth } from "../auth/AuthProvider";
 import { useTournamentPhase } from "../tournament/useTournamentPhase";
-import { getVisibilityState, VisibilityState } from "../state/visibilityState";
+import { getVisibilityState } from "../state/visibilityState";
 import { useProfile } from "../profile/useProfile";
 import { LoginButton } from "../auth/LoginButton";
 import { LogoutButton } from "../auth/LogoutButton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/lib/useIsMobile";
+import { MobileShell } from "./MobileShell";
+import { NAV_LINKS } from "./navLinks";
 
-interface NavLink {
-  path: string;
-  label: string;
+/**
+ * The shell fork. Below 1024px the whole app runs a different shell and, from
+ * there down, different page compositions — see
+ * docs/superpowers/specs/2026-08-06-mobile-design.md for why this is a fork
+ * rather than a set of breakpoint classes. Everything below this component is
+ * the desktop shell, unchanged.
+ */
+export function AppShell({ children }: { children: ReactNode }) {
+  const isMobile = useIsMobile();
+  return isMobile ? <MobileShell>{children}</MobileShell> : <DesktopShell>{children}</DesktopShell>;
 }
 
-// No nav distinction yet between league phase / pre-knockout / knockout —
-// all three started phases share the same link set per login state.
-// Hakkında (About) is static content, ungated in every VisibilityState —
-// same precedent as Ana Sayfa, appended last in every link set below.
-const NOTSTARTED_LOGGEDOUT_LINKS: NavLink[] = [
-  { path: "/", label: "Ana Sayfa" },
-  { path: "/about", label: "Hakkında" },
-];
-const NOTSTARTED_LOGGEDIN_LINKS: NavLink[] = [
-  { path: "/", label: "Ana Sayfa" },
-  { path: "/forum", label: "Forum" },
-  { path: "/about", label: "Hakkında" },
-];
-// Forum re-added for logged-out visitors 2026-08-02, reversing the earlier
-// round-1 pagemap closure — see src/state/pageAccess.ts's matching comment.
-// Leaderboard is signed-in-only (participant standings shouldn't be
-// browsable, let alone linked from the nav, without an account).
-const STARTED_LOGGEDOUT_LINKS: NavLink[] = [
-  { path: "/", label: "Ana Sayfa" },
-  { path: "/forum", label: "Forum" },
-  { path: "/about", label: "Hakkında" },
-];
-const STARTED_LOGGEDIN_LINKS: NavLink[] = [
-  { path: "/", label: "Ana Sayfa" },
-  { path: "/leaderboard", label: "Puan Durumu" },
-  { path: "/forum", label: "Forum" },
-  { path: "/stats", label: "İstatistikler" },
-  { path: "/about", label: "Hakkında" },
-];
-
-const NAV_LINKS: Record<VisibilityState, NavLink[]> = {
-  loggedout_notstarted: NOTSTARTED_LOGGEDOUT_LINKS,
-  loggedin_notstarted: NOTSTARTED_LOGGEDIN_LINKS,
-  loggedout_leaguephase: STARTED_LOGGEDOUT_LINKS,
-  loggedin_leaguephase: STARTED_LOGGEDIN_LINKS,
-  loggedout_preknockout: STARTED_LOGGEDOUT_LINKS,
-  loggedin_preknockout: STARTED_LOGGEDIN_LINKS,
-  loggedout_knockout: STARTED_LOGGEDOUT_LINKS,
-  loggedin_knockout: STARTED_LOGGEDIN_LINKS,
-};
-
-export function AppShell({ children }: { children: ReactNode }) {
+function DesktopShell({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const phase = useTournamentPhase();
   const location = useLocation();

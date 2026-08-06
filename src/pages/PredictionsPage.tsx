@@ -18,6 +18,8 @@ import { BounceCheck } from "../signup/BounceCheck";
 import { sharpVariants } from "../signup/transitions";
 import { PAGE_UNAVAILABLE_MESSAGE } from "@/components/ui/page-unavailable";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/lib/useIsMobile";
+import { cn } from "@/lib/utils";
 
 // The scoring-example beat (index 1) is the only one with a visual.
 const SCORING_EXAMPLE_BEAT_INDEX = 1;
@@ -61,6 +63,7 @@ function PredictionsLoadingSkeleton() {
  * transition pieces instead of inventing new ones.
  */
 export function PredictionsPage() {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const state = useVisibilityState();
   const navigate = useNavigate();
@@ -105,7 +108,15 @@ export function PredictionsPage() {
   }
 
   return (
-    <div className="relative flex h-dvh w-full cursor-default items-center justify-center overflow-hidden bg-background px-6 py-10">
+    <div
+      className={cn(
+        "relative flex w-full cursor-default items-center justify-center overflow-hidden bg-background px-6 py-10",
+        // h-dvh is a full viewport, but this page renders *below* the shell
+        // header. On mobile the shell is itself a fixed viewport now, so this
+        // just fills what it's given; on desktop it keeps its own h-dvh.
+        isMobile ? "h-full py-6" : "h-dvh"
+      )}
+    >
       <AnimatePresence mode="wait">
         {step === "intro" && (
           <motion.div

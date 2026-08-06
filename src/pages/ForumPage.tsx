@@ -18,6 +18,8 @@ import { resolveMentionedUids } from "../chat/chatMentions";
 import { Forum } from "../forum/Forum";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageUnavailable } from "@/components/ui/page-unavailable";
+import { useIsMobile } from "@/lib/useIsMobile";
+import { useMobilePopups } from "../shell/MobilePopupHost";
 
 function ForumSkeleton() {
   return (
@@ -50,6 +52,8 @@ export function ForumPage() {
 
   const [actionError, setActionError] = useState<string | null>(null);
   const [selectedParticipantUid, setSelectedParticipantUid] = useState<string | null>(null);
+  const isMobile = useIsMobile();
+  const { openParticipant } = useMobilePopups();
 
   const likesByPost = useMemo(() => buildLikesByPost(posts), [posts]);
   const rankedEntries = useMemo(() => assignRanks(entries), [entries]);
@@ -133,7 +137,7 @@ export function ForumPage() {
         players={players}
         likesByPost={likesByPost}
         onToggleLike={handleToggleLike}
-        onSelectParticipant={setSelectedParticipantUid}
+        onSelectParticipant={isMobile ? openParticipant : setSelectedParticipantUid}
         onDeletePost={handleDeletePost}
         onSaveEdit={handleSaveEdit}
         onRefetch={refetch}
@@ -141,6 +145,9 @@ export function ForumPage() {
         hasMoreOlder={hasMore}
         actionError={actionError}
       />
+      {/* Mobile routes participant taps to the shell's popup host instead,
+          so this page doesn't open a second, competing dialog. */}
+      {!isMobile && (
       <ParticipantPopup
         ranked={selectedRanked}
         entries={entries}
@@ -152,6 +159,7 @@ export function ForumPage() {
         viewerLoggedIn={Boolean(user)}
         phase={phase}
       />
+      )}
     </div>
   );
 }
