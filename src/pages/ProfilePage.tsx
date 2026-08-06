@@ -11,6 +11,7 @@ import { usePrediction, savePrediction, deletePrediction } from "../predictions/
 import { Prediction } from "../predictions/predictionTypes";
 import { useKnockoutPrediction, saveKnockoutPrediction } from "../knockout/useKnockoutPrediction";
 import { KnockoutBracket } from "../knockout/KnockoutBracket";
+import { MobileKnockoutBracket } from "../knockout/MobileKnockoutBracket";
 import { KnockoutPrediction } from "../knockout/knockoutTypes";
 import { useSurveyResponse } from "../predictions/useSurveyResponse";
 import { MESSI_RONALDO_LABEL, DEVICE_LABEL, ensurePeriod } from "../predictions/surveyLabels";
@@ -41,6 +42,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/lib/useIsMobile";
+import { useMobilePopups } from "../shell/MobilePopupHost";
 
 type PredictionUiStep = "idle" | "rank" | "confirm-overwrite";
 
@@ -96,6 +99,8 @@ function ProfileSkeleton() {
 }
 
 export function ProfilePage() {
+  const isMobile = useIsMobile();
+  const mobilePopups = useMobilePopups();
   const { user } = useAuth();
   const state = useVisibilityState();
   const navigate = useNavigate();
@@ -155,21 +160,36 @@ export function ProfilePage() {
   const handleFixturePopupOpenChange = useCallback((open: boolean) => {
     if (!open) setSelectedFixtureId(null);
   }, []);
-  const handleSelectParticipant = useCallback((participantUid: string) => {
-    setSelectedUid(participantUid);
-    setSelectedTeamId(null);
-    setSelectedFixtureId(null);
-  }, []);
-  const handleSelectTeam = useCallback((teamId: string) => {
-    setSelectedTeamId(teamId);
-    setSelectedUid(null);
-    setSelectedFixtureId(null);
-  }, []);
-  const handleSelectFixture = useCallback((fixtureId: string) => {
-    setSelectedFixtureId(fixtureId);
-    setSelectedTeamId(null);
-    setSelectedUid(null);
-  }, []);
+  // On mobile these delegate to the shell's popup host instead of driving
+  // this page's own popup state — the page's three <Popup>s aren't rendered
+  // there (see the guard further down), so local state would open nothing.
+  const handleSelectParticipant = useCallback(
+    (participantUid: string) => {
+      if (isMobile) return mobilePopups.openParticipant(participantUid);
+      setSelectedUid(participantUid);
+      setSelectedTeamId(null);
+      setSelectedFixtureId(null);
+    },
+    [isMobile, mobilePopups]
+  );
+  const handleSelectTeam = useCallback(
+    (teamId: string) => {
+      if (isMobile) return mobilePopups.openTeam(teamId);
+      setSelectedTeamId(teamId);
+      setSelectedUid(null);
+      setSelectedFixtureId(null);
+    },
+    [isMobile, mobilePopups]
+  );
+  const handleSelectFixture = useCallback(
+    (fixtureId: string) => {
+      if (isMobile) return mobilePopups.openFixture(fixtureId);
+      setSelectedFixtureId(fixtureId);
+      setSelectedTeamId(null);
+      setSelectedUid(null);
+    },
+    [isMobile, mobilePopups]
+  );
 
   if (!isPageAllowed("profile", state)) {
     return <PageUnavailable />;
@@ -484,17 +504,35 @@ export function ProfilePage() {
             )
           ) : (
             <div className="no-scrollbar min-h-0 flex-1 overflow-hidden">
-              <KnockoutBracket
-                key={knockoutEditMode ? "edit" : "view"}
-                initialPrediction={currentKnockoutPrediction}
-                readOnly={!knockoutEditMode}
-                submitting={knockoutSubmitting}
-                onSelectTeam={setSelectedTeamId}
-                onSubmit={(data) => {
-                  setPendingKnockoutPicks(data);
-                  setConfirmKnockoutOpen(true);
-                }}
-              />
+              {/* Desktop's bracket is the symmetric two-half one, sized to a
+                  1400px page. It has no phone-width form, so mobile gets the
+                  one-sided scrolling layout instead — same picks, same
+                  submit path, different geometry. */}
+              {isMobile ? (
+                <MobileKnockoutBracket
+                  key={knockoutEditMode ? "edit" : "view"}
+                  initialPrediction={currentKnockoutPrediction}
+                  readOnly={!knockoutEditMode}
+                  submitting={knockoutSubmitting}
+                  onSelectTeam={handleSelectTeam}
+                  onSubmit={(data) => {
+                    setPendingKnockoutPicks(data);
+                    setConfirmKnockoutOpen(true);
+                  }}
+                />
+              ) : (
+                <KnockoutBracket
+                  key={knockoutEditMode ? "edit" : "view"}
+                  initialPrediction={currentKnockoutPrediction}
+                  readOnly={!knockoutEditMode}
+                  submitting={knockoutSubmitting}
+                  onSelectTeam={setSelectedTeamId}
+                  onSubmit={(data) => {
+                    setPendingKnockoutPicks(data);
+                    setConfirmKnockoutOpen(true);
+                  }}
+                />
+              )}
             </div>
           )}
         </FrameBody>
@@ -516,6 +554,10 @@ export function ProfilePage() {
       </div>
       </div>
 
+      {/* Mobile uses the shell's popup host — see MobilePopupHost. Rendering
+          these here too would give a phone two competing dialog layers. */}
+      {!isMobile && (
+        <>
       <ParticipantPopup
         ranked={selectedRanked}
         entries={entries}
@@ -549,6 +591,8 @@ export function ProfilePage() {
         onSelectTeam={handleSelectTeam}
         onSelectParticipant={handleSelectParticipant}
       />
+        </>
+      )}
 
       {/* Big popup for editing predictions */}
       <Dialog

@@ -6,6 +6,8 @@ import { useVisibilityState } from "../state/useVisibilityState";
 import { isPageAllowed } from "../state/pageAccess";
 import { useKnockoutPrediction, saveKnockoutPrediction } from "../knockout/useKnockoutPrediction";
 import { KnockoutStagePicker } from "../knockout/KnockoutStagePicker";
+import { MobileKnockoutBracket } from "../knockout/MobileKnockoutBracket";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { KnockoutPrediction } from "../knockout/knockoutTypes";
 import { IntroBeat } from "../predictions/IntroBeat";
 import { AutoAdvance } from "../signup/AutoAdvance";
@@ -45,6 +47,7 @@ function KnockoutSkeleton() {
 }
 
 export function KnockoutPredictionsPage() {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const state = useVisibilityState();
   const navigate = useNavigate();
@@ -124,11 +127,21 @@ export function KnockoutPredictionsPage() {
             exit="exit"
             className="no-scrollbar flex h-full max-h-[calc(100dvh-4rem)] w-full max-w-7xl mx-auto flex-col"
           >
-            <KnockoutStagePicker
-              initialPrediction={prediction}
-              onSubmit={handleSubmit}
-              submitting={submitting}
-            />
+            {/* The symmetric 7-column picker has no phone-width form; the
+                wireframe asks for a one-sided scrolling bracket instead. */}
+            {isMobile ? (
+              <MobileKnockoutBracket
+                initialPrediction={prediction}
+                onSubmit={handleSubmit}
+                submitting={submitting}
+              />
+            ) : (
+              <KnockoutStagePicker
+                initialPrediction={prediction}
+                onSubmit={handleSubmit}
+                submitting={submitting}
+              />
+            )}
             {error && (
               <p role="alert" className="mt-2 text-sm text-color_remove text-center">
                 {error}
