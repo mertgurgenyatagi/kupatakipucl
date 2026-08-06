@@ -13,13 +13,13 @@ globalThis.WF = (function () {
   // ---------------------------------------------------------------- constants
 
   const GRID = Object.freeze({
-    cols: 6,
+    cols: 12,
     rowsPerScreen: 20,
     phoneW: 360,
     phoneH: 780,
   });
 
-  const CELL_W = GRID.phoneW / GRID.cols; // 60
+  const CELL_W = GRID.phoneW / GRID.cols; // 30
   const CELL_H = GRID.phoneH / GRID.rowsPerScreen; // 39
 
   const PHASES = ["notstarted", "leaguephase", "preknockout", "knockout"];
@@ -468,19 +468,35 @@ globalThis.WF = (function () {
     };
   }
 
+  /**
+   * A block's x/w from a file saved under a different column count (e.g. the tool's
+   * original 6-column grid) is meaningless against today's GRID.cols — rescale it
+   * proportionally before it ever reaches normalizeBlock.
+   */
+  function rescaleBlockCols(b, fromCols) {
+    if (!fromCols || fromCols === GRID.cols) return b;
+    const scale = GRID.cols / fromCols;
+    const x = clamp(Math.round((b.x || 0) * scale), 0, GRID.cols - 1);
+    const w = clamp(Math.round((b.w || 0) * scale), 1, GRID.cols - x);
+    return { ...b, x, w };
+  }
+
   /** Fill in anything a loaded file is missing, so old saves keep opening. */
   function migrateDoc(raw) {
     const doc = createDoc();
     if (!raw || typeof raw !== "object") return doc;
     doc.savedAt = raw.savedAt || null;
     const incoming = raw.screens || {};
+    const fromCols = raw.grid && Number.isFinite(raw.grid.cols) ? raw.grid.cols : GRID.cols;
     for (const id of Object.keys(doc.screens)) {
       const s = incoming[id];
       if (!s) continue;
       doc.screens[id] = {
         ...doc.screens[id],
         ...s,
-        blocks: Array.isArray(s.blocks) ? s.blocks.map(normalizeBlock) : [],
+        blocks: Array.isArray(s.blocks)
+          ? s.blocks.map((b) => normalizeBlock(rescaleBlockCols(b, fromCols)))
+          : [],
       };
       // A cell holding blocks cannot also be following its row — that combination
       // leaves the row with no primary and every state renders blank.
@@ -541,7 +557,7 @@ globalThis.WF = (function () {
 
   /**
    * Blocks may stack freely, so the only constraints left are the frame's own edges:
-   * inside the 6 columns, and — on a fixed screen — above the fold.
+   * inside GRID.cols columns, and — on a fixed screen — above the fold.
    */
   function canPlace(blocks, rect, opts) {
     const o = opts || {};
@@ -699,7 +715,8 @@ globalThis.WF = (function () {
    */
   function renderBoxArt(allBlocks, totalRows) {
     const blocks = baseBlocks(allBlocks);
-    const INNER = 26;
+    // 3 characters per column at 12 columns — narrower than that truncates every label.
+    const INNER = GRID.cols * 3;
     const colW = INNER / GRID.cols;
     const bounds = new Set([0, totalRows]);
     for (const b of blocks) {

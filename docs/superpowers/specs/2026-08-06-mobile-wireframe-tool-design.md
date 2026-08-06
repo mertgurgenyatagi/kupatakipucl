@@ -57,13 +57,19 @@ without forcing a dev server into the workflow. Vitest's default `include` alrea
 | Property | Value |
 |---|---|
 | Phone frame | 360 × 780 CSS px |
-| Columns | 6 |
+| Columns | 12 (was 6; widened 2026-08-06 — see below) |
 | Row height | 39px |
 | Rows per screenful | 20 |
 
 Six columns was chosen over four (cannot express thirds) and twelve (30px columns, precision Mert
-explicitly did not want). Six expresses full-width, halves, thirds, and two-thirds + third — which
-covers essentially every real mobile layout.
+explicitly did not want). Six expresses full-width, halves, thirds, and two-thirds + third.
+
+**Update, same day:** widened to 12 columns (15px cells) after direct feedback that six was too
+coarse. `CELL_W` is derived from `GRID.cols`, so nothing else in the geometry, overlap, or export
+logic changed shape — only the box-art elevation width, which is now `GRID.cols * 3` characters so
+narrow columns still have room for a label. A file saved under the old 6-column grid loads
+correctly: `migrateDoc` reads the saved `grid.cols`, and if it differs from the current value,
+scales every block's `x`/`w` proportionally before normalizing.
 
 ### Interaction
 

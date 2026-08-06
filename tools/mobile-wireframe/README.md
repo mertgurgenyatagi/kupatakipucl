@@ -10,8 +10,9 @@ Everything else is optional: drag a block to move it, drag its corner to resize,
 note or a flag. `Del` removes, `Ctrl+D` duplicates below, `Ctrl+Z` undoes, arrows nudge,
 `Shift`+arrows resize.
 
-The grid is 6 columns wide and 20 rows tall per screenful, so a block can be full-width, a half,
-a third, or two-thirds.
+The grid is 12 columns wide and 20 rows tall per screenful, so a block can be full-width, a half,
+a third, a quarter, a sixth, or any combination that adds up — much finer than a 6-column grid
+without going all the way to pixel fiddling.
 
 ## Stacking
 

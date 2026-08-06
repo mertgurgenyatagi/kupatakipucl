@@ -71,7 +71,8 @@ describe("catalog", () => {
 describe("snapRect", () => {
   it("snaps pixel corners outward to whole cells", () => {
     // one pixel inside col 0 / row 0, dragged to just past col 2 / row 1
-    expect(WF.snapRect(1, 1, 125, 45)).toEqual({ x: 0, y: 0, w: 3, h: 2 });
+    const r = WF.snapRect(1, 1, WF.CELL_W * 2 + 5, WF.CELL_H * 1 + 6);
+    expect(r).toEqual({ x: 0, y: 0, w: 3, h: 2 });
   });
 
   it("normalises a drag made up-and-left", () => {
@@ -87,13 +88,14 @@ describe("snapRect", () => {
   });
 
   it("clamps a drag that runs off the right and bottom edges", () => {
-    const r = WF.snapRect(300, 700, 9999, 9999, 20);
-    expect(r.x + r.w).toBe(6);
+    const r = WF.snapRect(300, 700, 99999, 9999, 20);
+    expect(r.x + r.w).toBe(WF.GRID.cols);
     expect(r.y + r.h).toBe(20);
   });
 
   it("clamps a drag starting off-canvas", () => {
-    const r = WF.snapRect(-500, -500, 60, 39);
+    // end point stays inside the first cell so this isolates the start-clamp behaviour
+    const r = WF.snapRect(-500, -500, 5, 5);
     expect(r).toEqual({ x: 0, y: 0, w: 1, h: 1 });
   });
 
@@ -118,7 +120,7 @@ describe("canPlace", () => {
   });
 
   it("still rejects a rect past the right edge", () => {
-    expect(WF.canPlace([], { x: 4, y: 0, w: 3, h: 1 })).toBe(false);
+    expect(WF.canPlace([], { x: WF.GRID.cols - 2, y: 0, w: 3, h: 1 })).toBe(false);
     expect(WF.canPlace([], { x: -1, y: 0, w: 2, h: 1 })).toBe(false);
   });
 
@@ -445,13 +447,16 @@ describe("export", () => {
 
 describe("renderBoxArt", () => {
   it("keeps every line the same width for full, half and third splits", () => {
+    const full = WF.GRID.cols;
+    const half = full / 2;
+    const third = full / 3;
     const blocks = [
-      block({ x: 0, y: 0, w: 6, h: 3, name: "full" }),
-      block({ x: 0, y: 3, w: 3, h: 3, name: "half" }),
-      block({ x: 3, y: 3, w: 3, h: 3, name: "half2" }),
-      block({ x: 0, y: 6, w: 2, h: 3, name: "a" }),
-      block({ x: 2, y: 6, w: 2, h: 3, name: "b" }),
-      block({ x: 4, y: 6, w: 2, h: 3, name: "c" }),
+      block({ x: 0, y: 0, w: full, h: 3, name: "full" }),
+      block({ x: 0, y: 3, w: half, h: 3, name: "half" }),
+      block({ x: half, y: 3, w: half, h: 3, name: "half2" }),
+      block({ x: 0, y: 6, w: third, h: 3, name: "a" }),
+      block({ x: third, y: 6, w: third, h: 3, name: "b" }),
+      block({ x: 2 * third, y: 6, w: third, h: 3, name: "c" }),
     ];
     const art = WF.renderBoxArt(blocks, 20);
     const widths = new Set(art.map((l: string) => l.length));
@@ -491,6 +496,46 @@ describe("migrateDoc", () => {
 
   it("drops flags it does not recognise", () => {
     expect(WF.normalizeBlock({ flags: ["scrolls", "bogus"] }).flags).toEqual(["scrolls"]);
+  });
+
+  it("rescales blocks from a file saved under a different column count", () => {
+    const id = WF.makeScreenId("leaderboard", "loggedin_leaguephase");
+    const doc = WF.migrateDoc({
+      grid: { cols: 6 },
+      screens: {
+        [id]: {
+          alias: null,
+          blocks: [
+            { x: 0, y: 0, w: 6, h: 3, name: "full-width-under-six" },
+            { x: 3, y: 3, w: 3, h: 3, name: "right-half-under-six" },
+          ],
+        },
+      },
+    });
+    const [full, half] = doc.screens[id].blocks;
+    // a 6-col file's full width (0..6) must still be full width under 12 columns
+    expect(full).toMatchObject({ x: 0, w: WF.GRID.cols });
+    expect(half).toMatchObject({ x: WF.GRID.cols / 2, w: WF.GRID.cols / 2 });
+  });
+
+  it("leaves blocks alone when the saved column count already matches", () => {
+    const id = WF.makeScreenId("leaderboard", "loggedin_leaguephase");
+    const doc = WF.migrateDoc({
+      grid: { cols: WF.GRID.cols },
+      screens: { [id]: { alias: null, blocks: [{ x: 2, y: 0, w: 4, h: 3, name: "x" }] } },
+    });
+    expect(doc.screens[id].blocks[0]).toMatchObject({ x: 2, w: 4 });
+  });
+
+  it("clamps a rescaled block that would otherwise overshoot the new grid", () => {
+    // a file from some hypothetical wider grid, rescaled down — width must not push past the edge
+    const id = WF.makeScreenId("leaderboard", "loggedin_leaguephase");
+    const doc = WF.migrateDoc({
+      grid: { cols: 24 },
+      screens: { [id]: { alias: null, blocks: [{ x: 23, y: 0, w: 1, h: 3, name: "x" }] } },
+    });
+    const b = doc.screens[id].blocks[0];
+    expect(b.x + b.w).toBeLessThanOrEqual(WF.GRID.cols);
   });
 
   it("promotes a saved cell that has blocks but is still following its row", () => {
