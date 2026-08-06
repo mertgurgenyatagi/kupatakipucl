@@ -11,7 +11,20 @@ note or a flag. `Del` removes, `Ctrl+D` duplicates below, `Ctrl+Z` undoes, arrow
 `Shift`+arrows resize.
 
 The grid is 6 columns wide and 20 rows tall per screenful, so a block can be full-width, a half,
-a third, or two-thirds. Blocks cannot overlap unless you flag one as `overlay`.
+a third, or two-thirds.
+
+## Stacking
+
+Blocks can sit on top of each other freely. Since dragging inside a block moves it, starting a
+*new* block over an existing one needs either **Alt+drag** or the **Draw over** toggle in the
+toolbar.
+
+Later blocks sit on top. `[` and `]` send back and bring forward, and the **Layers** list in the
+right panel shows everything on the screen top-first — which is the only way to reach a block that
+is completely buried under another.
+
+The exported elevation can only draw one layer, so anything stacked is left out of the box art and
+reported underneath it instead, with its exact rows, columns, and what it covers. Nothing is lost.
 
 ## Screens
 

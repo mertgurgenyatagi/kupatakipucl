@@ -106,12 +106,10 @@ describe("snapRect", () => {
 describe("canPlace", () => {
   const existing = [block({ id: "a", x: 0, y: 0, w: 6, h: 4 })];
 
-  it("rejects an intersecting rect", () => {
-    expect(WF.canPlace(existing, { x: 0, y: 3, w: 6, h: 2 })).toBe(false);
-  });
-
-  it("allows a rect that only touches an edge", () => {
-    expect(WF.canPlace(existing, { x: 0, y: 4, w: 6, h: 2 })).toBe(true);
+  it("allows a rect on top of another — blocks stack freely", () => {
+    expect(WF.canPlace(existing, { x: 0, y: 3, w: 6, h: 2 })).toBe(true);
+    expect(WF.canPlace(existing, { x: 1, y: 1, w: 2, h: 2 })).toBe(true);
+    expect(WF.canPlace(existing, { x: 0, y: 0, w: 6, h: 4 })).toBe(true);
   });
 
   it("allows side-by-side rects in the same rows", () => {
@@ -119,26 +117,62 @@ describe("canPlace", () => {
     expect(WF.canPlace(half, { x: 3, y: 0, w: 3, h: 4 })).toBe(true);
   });
 
-  it("ignores the block being moved", () => {
-    expect(WF.canPlace(existing, { x: 0, y: 1, w: 6, h: 4 }, { ignoreId: "a" })).toBe(true);
-  });
-
-  it("exempts an overlay block being placed", () => {
-    expect(WF.canPlace(existing, { x: 0, y: 0, w: 6, h: 2 }, { isOverlay: true })).toBe(true);
-  });
-
-  it("exempts an existing overlay block from blocking others", () => {
-    const withOverlay = [block({ id: "o", x: 0, y: 0, w: 6, h: 4, flags: ["overlay"] })];
-    expect(WF.canPlace(withOverlay, { x: 0, y: 0, w: 6, h: 4 })).toBe(true);
-  });
-
-  it("rejects a rect past the right edge", () => {
+  it("still rejects a rect past the right edge", () => {
     expect(WF.canPlace([], { x: 4, y: 0, w: 3, h: 1 })).toBe(false);
+    expect(WF.canPlace([], { x: -1, y: 0, w: 2, h: 1 })).toBe(false);
   });
 
-  it("rejects a rect past a fixed screen's last row", () => {
+  it("still rejects a rect past a fixed screen's last row", () => {
     expect(WF.canPlace([], { x: 0, y: 18, w: 6, h: 4 }, { maxRows: 20 })).toBe(false);
     expect(WF.canPlace([], { x: 0, y: 18, w: 6, h: 2 }, { maxRows: 20 })).toBe(true);
+  });
+
+  it("rejects a degenerate rect", () => {
+    expect(WF.canPlace([], { x: 0, y: 0, w: 0, h: 3 })).toBe(false);
+  });
+});
+
+describe("stacking", () => {
+  const base = block({ id: "bg", x: 0, y: 0, w: 6, h: 6, name: "hero" });
+  const badge = block({ id: "bd", x: 4, y: 0, w: 2, h: 2, name: "badge" });
+  const apart = block({ id: "ap", x: 0, y: 8, w: 6, h: 3, name: "list" });
+
+  it("reports what a block covers, using array order as z-order", () => {
+    expect(WF.coveredBy([base, badge, apart], "bd")).toEqual(["hero"]);
+    expect(WF.coveredBy([base, badge, apart], "bg")).toEqual([]);
+    expect(WF.coveredBy([base, badge, apart], "ap")).toEqual([]);
+  });
+
+  it("treats the lower block as covering once order is reversed", () => {
+    expect(WF.coveredBy([badge, base, apart], "bg")).toEqual(["badge"]);
+    expect(WF.coveredBy([badge, base, apart], "bd")).toEqual([]);
+  });
+
+  it("splits base from stacked blocks", () => {
+    const all = [base, badge, apart];
+    expect(WF.baseBlocks(all).map((b: { name: string }) => b.name)).toEqual(["hero", "list"]);
+    expect(WF.stackedBlocks(all).map((b: { name: string }) => b.name)).toEqual(["badge"]);
+  });
+
+  it("names every block it covers when stacked on several", () => {
+    const wide = block({ id: "w", x: 0, y: 0, w: 6, h: 12, name: "sheet" });
+    expect(WF.coveredBy([base, apart, wide], "w")).toEqual(["hero", "list"]);
+  });
+
+  it("raises and lowers within the array", () => {
+    const arr = [base, badge, apart];
+    WF.raise(arr, "bg");
+    expect(arr.map((b) => b.id)).toEqual(["bd", "ap", "bg"]);
+    WF.lower(arr, "bg");
+    expect(arr.map((b) => b.id)).toEqual(["bg", "bd", "ap"]);
+  });
+
+  it("is a no-op raising the top or lowering the bottom", () => {
+    const arr = [base, badge];
+    WF.raise(arr, "bd");
+    expect(arr.map((b) => b.id)).toEqual(["bg", "bd"]);
+    WF.lower(arr, "bg");
+    expect(arr.map((b) => b.id)).toEqual(["bg", "bd"]);
   });
 });
 
@@ -343,6 +377,28 @@ describe("export", () => {
     const text = WF.renderScreenText(doc, later);
     expect(text).toContain("identical to");
     expect(text).not.toContain("crest");
+  });
+
+  it("keeps a stacked block out of the elevation but reports it explicitly", () => {
+    const doc = docWith(leaderboard, [
+      block({ x: 0, y: 0, w: 6, h: 6, name: "hero" }),
+      block({ x: 4, y: 0, w: 2, h: 2, name: "badge" }),
+    ]);
+    const text = WF.renderScreenText(doc, leaderboard);
+    // the elevation shows the base layer only...
+    const art = WF.renderBoxArt(doc.screens[leaderboard].blocks, 20).join("\n");
+    expect(art).toContain("hero");
+    expect(art).not.toContain("badge");
+    // ...but the block is never lost
+    expect(text).toContain("stacked (not drawn in the elevation above");
+    expect(text).toContain("badge — rows 0–2, cols 4–6, over hero");
+    expect(text).toContain("[2] badge");
+    expect(text).toContain("over hero");
+  });
+
+  it("says nothing about stacking when nothing is stacked", () => {
+    const doc = docWith(leaderboard, [block({ x: 0, y: 0, w: 6, h: 3, name: "solo" })]);
+    expect(WF.renderScreenText(doc, leaderboard)).not.toContain("stacked");
   });
 
   it("renders an N/A cell as not applicable", () => {

@@ -72,10 +72,22 @@ The core loop is **drag a rectangle → type a word → Enter.** Everything else
 - Drag on empty grid draws a new block, snapped to cells. On release, an inline name field
   appears, autofocused; Enter commits, Escape cancels the draw.
 - Drag a block's body to move it; drag an edge or corner to resize. Both snap.
-- **Overlap is refused.** An invalid position renders red during the drag and reverts to the last
-  valid position on release. The `overlay` flag exempts a block from this check.
 - `Delete` removes the selection, `Ctrl+D` duplicates it, `Ctrl+Z` / `Ctrl+Shift+Z` undo and redo.
 - Arrow keys nudge the selection by one cell; `Shift`+arrows resize by one cell.
+
+### Stacking
+
+**Blocks may overlap freely** (changed 2026-08-06; overlap was originally refused outright). The
+only placement constraints left are the frame's own edges, and the fold on a fixed screen. This has
+three consequences the design has to answer:
+
+- **Starting a draw inside an existing block.** A drag beginning on a block moves it, so drawing on
+  top requires **Alt+drag** or a **Draw over** toggle in the toolbar.
+- **Z-order.** Array order is stacking order; later is on top. `[` / `]` and inspector buttons
+  reorder. The `overlay` flag is removed — it existed solely to bypass the old overlap check and
+  has no job left.
+- **Reaching a buried block.** A fully covered block cannot be clicked, so the inspector carries a
+  **Layers** list of every block on the screen, top-first, as the way to select one.
 
 ### Scroll modes
 
@@ -90,12 +102,11 @@ scroll" is one of the questions the desktop layouts cannot answer for us.
 |---|---|---|
 | `name` | string | required; autocompletes from the widget catalog but accepts any text |
 | `note` | string | optional free text |
-| `flags` | set | `scrolls` · `sticky` · `collapsed` · `overlay` |
+| `flags` | set | `scrolls` · `sticky` · `collapsed` |
 | `tint` | 0–5 | optional, purely for on-screen readability; not exported |
 
-Flags exist for the things a rectangle physically cannot show. `overlay` additionally exempts the
-block from overlap checking, which is what makes floating chrome (a FAB, a sticky action bar)
-expressible at all.
+Flags exist for the things a rectangle physically cannot show. Floating chrome (a FAB, a sticky
+action bar) is expressed by stacking plus the `sticky` flag.
 
 ## The shell
 
@@ -223,7 +234,9 @@ the dimmed page showing above it. Dragging the sheet handle to row 0 expresses a
 `lib.test.ts` covers the pure logic where a silent bug corrupts everything downstream:
 
 - **snapping** — pixel coordinates to grid cells, including drags that start or end outside the frame
-- **overlap** — rejection of intersecting rects, and the `overlay` exemption
+- **bounds** — rejection past the frame edges and past a fixed screen's fold
+- **stacking** — z-order from array order, what a block covers, raise/lower, and the split between
+  base blocks (drawable as art) and stacked ones (reported separately)
 - **clamping** — fixed screens refuse blocks past row 20; scrolling screens grow correctly
 - **aliases** — transitive resolution, cycle detection and refusal, and what happens when an alias
   target is deleted

@@ -113,7 +113,13 @@
   /* --inv is 1/zoom, so labels stay the same on-screen size however far we zoom out. */
   .blk .nm { font-size: calc(11px * var(--inv, 1)); line-height: 1.2; color: var(--ink); word-break: break-word; }
   .blk .fl { position: absolute; left: 4px; bottom: 2px; font-size: calc(9px * var(--inv, 1)); color: var(--ink-faint); }
+  /* A block sitting on another needs to read as lifted, or the two are indistinguishable. */
+  .blk.stacked {
+    background: rgba(58,68,84,.92); border-color: #6d7A8b;
+    box-shadow: 0 3px 10px rgba(0,0,0,.55);
+  }
   .blk.sel { border-color: var(--accent); background: rgba(127,209,166,.16); box-shadow: 0 0 0 1px var(--accent); }
+  .blk.stacked.sel { background: rgba(90,140,118,.92); }
   .blk.bad { border-color: var(--danger) !important; background: rgba(226,100,92,.22) !important; }
   .blk.tint1 { background: rgba(127,209,166,.15); border-color: #4e8a6e; }
   .blk.tint2 { background: rgba(122,162,214,.15); border-color: #4f6f96; }
@@ -194,6 +200,7 @@
   .witem.used { color: var(--ink-faint); text-decoration: line-through; cursor: default; }
   .witem .mk { color: var(--accent); width: 10px; flex: none; }
   .witem.used .mk { color: var(--accent-dim); }
+  .witem.layer-sel { background: var(--panel-2); color: var(--accent); }
   .hint { color: var(--ink-faint); font-size: 11px; }
   .empty-note { color: var(--ink-faint); font-size: 11.5px; font-style: italic; }
 
@@ -248,6 +255,7 @@
   <div id="warn" hidden></div>
   <div id="topbar">
     <div id="screen-title"></div>
+    <button class="btn ghost" id="btn-draw" title="Alt held down does the same thing">Draw over</button>
     <select id="zoom" class="btn ghost" title="Zoom">
       <option value="fit">Fit</option>
       <option value="0.6">60%</option>
@@ -325,6 +333,7 @@
   let history = [];
   let future = [];
   let storageOk = true;
+  let drawOver = false;
 
   function screenId() {
     if (currentRow === SHELL_ID) return SHELL_ID;
@@ -547,8 +556,11 @@
   function renderBlocks() {
     const host = $("#blocks");
     host.textContent = "";
-    for (const b of sourceScreen().blocks) {
-      const n = el("div", "blk" + (b.id === selectedId ? " sel" : "") + (b.tint ? " tint" + b.tint : ""));
+    const all = sourceScreen().blocks;
+    for (const b of all) {
+      const stacked = WF.coveredBy(all, b.id).length > 0;
+      const n = el("div", "blk" + (b.id === selectedId ? " sel" : "") +
+        (b.tint ? " tint" + b.tint : "") + (stacked ? " stacked" : ""));
       n.dataset.id = b.id;
       Object.assign(n.style, {
         left: b.x * CELL_W + "px", top: b.y * CELL_H + "px",
@@ -557,7 +569,7 @@
       n.append(el("div", "nm", b.name || "(unnamed)"));
       if (b.flags.length) {
         n.append(el("div", "fl", b.flags.map((f) => ({
-          scrolls: "↕", sticky: "📌", collapsed: "▸", overlay: "⬚",
+          scrolls: "↕", sticky: "📌", collapsed: "▸",
         }[f])).join(" ")));
       }
       if (b.id === selectedId) n.append(el("div", "grip"));
@@ -681,6 +693,21 @@
         }
         bs.append(sws);
 
+        const over = WF.coveredBy(src.blocks, b.id);
+        if (over.length) {
+          const info = el("div", "hint", `sits on top of ${over.join(", ")}`);
+          info.style.marginTop = "8px";
+          bs.append(info);
+        }
+        const zrow = el("div", "chips");
+        zrow.style.marginTop = "8px";
+        const front = el("button", "chip", "Bring to front");
+        front.onclick = () => { snapshot(); WF.raise(src.blocks, b.id); save(); renderBlocks(); renderSide(); };
+        const back = el("button", "chip", "Send to back");
+        back.onclick = () => { snapshot(); WF.lower(src.blocks, b.id); save(); renderBlocks(); renderSide(); };
+        zrow.append(front, back);
+        bs.append(zrow);
+
         const del = el("button", "btn", "Delete block");
         del.style.cssText = "width:100%;margin-top:9px";
         del.onclick = () => {
@@ -691,6 +718,23 @@
         bs.append(del);
       }
       side.append(bs);
+    }
+
+    // --- layers
+    // Once blocks can stack, a fully covered one is unreachable by clicking the canvas.
+    if (editable() && src.blocks.length) {
+      const ls = el("div", "sec");
+      ls.append(el("h3", null, `Layers — ${src.blocks.length}, top first`));
+      const list = el("div", "wlist");
+      [...src.blocks].reverse().forEach((blk) => {
+        const it = el("button", "witem" + (blk.id === selectedId ? " layer-sel" : ""));
+        it.append(el("span", "mk", WF.coveredBy(src.blocks, blk.id).length ? "▲" : "·"));
+        it.append(el("span", null, blk.name || "(unnamed)"));
+        it.onclick = () => { selectedId = blk.id; renderBlocks(); renderSide(); };
+        list.append(it);
+      });
+      ls.append(list);
+      side.append(ls);
     }
 
     // --- widget checklist
@@ -717,8 +761,10 @@
     const help = el("div", "sec");
     help.append(el("h3", null, "Keys"));
     help.innerHTML += `<div class="hint">
-      <kbd>drag</kbd> draw · <kbd>Del</kbd> remove · <kbd>Ctrl</kbd>+<kbd>D</kbd> duplicate<br>
-      <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>↑↓←→</kbd> nudge · <kbd>Shift</kbd>+<kbd>↑↓←→</kbd> resize</div>`;
+      <kbd>drag</kbd> draw · <kbd>Alt</kbd>+<kbd>drag</kbd> draw on top of a block<br>
+      <kbd>Del</kbd> remove · <kbd>Ctrl</kbd>+<kbd>D</kbd> duplicate · <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo<br>
+      <kbd>[</kbd> <kbd>]</kbd> send back / bring front<br>
+      <kbd>↑↓←→</kbd> nudge · <kbd>Shift</kbd>+<kbd>↑↓←→</kbd> resize</div>`;
     side.append(help);
   }
 
@@ -807,10 +853,14 @@
     const p = localPoint(ev);
     const src = sourceScreen();
 
-    if (ev.target.classList.contains("grip")) {
+    // Blocks may sit on top of each other, so there has to be a way to begin a drag
+    // inside an existing block without grabbing it. Alt, or the Draw-over toggle.
+    const forceDraw = drawOver || ev.altKey;
+
+    if (!forceDraw && ev.target.classList.contains("grip")) {
       const b = src.blocks.find((x) => x.id === selectedId);
       drag = { mode: "resize", b, origin: { ...b } };
-    } else if (ev.target.closest(".blk")) {
+    } else if (!forceDraw && ev.target.closest(".blk")) {
       const id = ev.target.closest(".blk").dataset.id;
       const b = src.blocks.find((x) => x.id === id);
       selectedId = id;
@@ -871,9 +921,8 @@
 
   function applyIfValid(b, rect, rows) {
     const src = sourceScreen();
-    const isOverlay = b.flags.includes("overlay");
     const maxRows = src.scroll === "fixed" ? rows : null;
-    const ok = WF.canPlace(src.blocks, rect, { ignoreId: b.id, isOverlay, maxRows });
+    const ok = WF.canPlace(src.blocks, rect, { ignoreId: b.id, maxRows });
     const node = $(`.blk[data-id="${b.id}"]`);
     if (ok) {
       Object.assign(b, rect);
@@ -971,6 +1020,12 @@
       } else toast("No room directly below.");
       return;
     }
+    if (e.key === "]" && b) {
+      e.preventDefault(); snapshot(); WF.raise(src.blocks, b.id); save(); renderBlocks(); renderSide(); return;
+    }
+    if (e.key === "[" && b) {
+      e.preventDefault(); snapshot(); WF.lower(src.blocks, b.id); save(); renderBlocks(); renderSide(); return;
+    }
     if ((e.key === "Delete" || e.key === "Backspace") && b) {
       e.preventDefault(); snapshot();
       src.blocks = src.blocks.filter((x) => x.id !== b.id);
@@ -986,7 +1041,7 @@
         : { x: b.x + dx, y: b.y + dy, w: b.w, h: b.h };
       if (rect.x < 0 || rect.y < 0 || rect.x + rect.w > GRID.cols) return;
       const maxRows = src.scroll === "fixed" ? rows : null;
-      if (WF.canPlace(src.blocks, rect, { ignoreId: b.id, isOverlay: b.flags.includes("overlay"), maxRows })) {
+      if (WF.canPlace(src.blocks, rect, { ignoreId: b.id, maxRows })) {
         snapshot(); Object.assign(b, rect); save(); renderAll();
       }
     }
@@ -1099,6 +1154,12 @@
     };
     fr.readAsText(f);
     e.target.value = "";
+  };
+
+  $("#btn-draw").onclick = () => {
+    drawOver = !drawOver;
+    $("#btn-draw").classList.toggle("on", drawOver);
+    $("#phone").style.cursor = drawOver ? "crosshair" : "";
   };
 
   $("#zoom").onchange = (e) => {

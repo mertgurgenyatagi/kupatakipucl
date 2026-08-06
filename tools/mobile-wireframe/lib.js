@@ -44,13 +44,14 @@ globalThis.WF = (function () {
     knockout: "Eleme",
   };
 
-  const FLAGS = ["scrolls", "sticky", "collapsed", "overlay"];
+  // `overlay` used to exist purely to bypass the overlap check. Blocks may now stack
+  // freely, so the flag has no job left and is dropped from saved data on load.
+  const FLAGS = ["scrolls", "sticky", "collapsed"];
 
   const FLAG_LABELS = {
     scrolls: "scrolls inside",
     sticky: "sticky",
     collapsed: "collapsed",
-    overlay: "overlay",
   };
 
   function statesFor(logins, phases) {
@@ -539,20 +540,51 @@ globalThis.WF = (function () {
   }
 
   /**
-   * Blocks may not intersect. A block flagged `overlay` is exempt in both directions —
-   * it floats, which is the only way to express a FAB or a sticky action bar.
+   * Blocks may stack freely, so the only constraints left are the frame's own edges:
+   * inside the 6 columns, and — on a fixed screen — above the fold.
    */
   function canPlace(blocks, rect, opts) {
     const o = opts || {};
+    if (rect.w < 1 || rect.h < 1) return false;
     if (rect.x < 0 || rect.y < 0 || rect.x + rect.w > GRID.cols) return false;
     if (o.maxRows != null && rect.y + rect.h > o.maxRows) return false;
-    if (o.isOverlay) return true;
-    return !blocks.some(
-      (b) =>
-        b.id !== o.ignoreId &&
-        !(b.flags || []).includes("overlay") &&
-        rectsOverlap(b, rect)
-    );
+    return true;
+  }
+
+  /**
+   * Array order is stacking order: later blocks sit on top. For block `id`, the names of
+   * whatever it covers — used by the export so a stack is never silently flattened.
+   */
+  function coveredBy(blocks, id) {
+    const i = blocks.findIndex((b) => b.id === id);
+    if (i < 0) return [];
+    return blocks
+      .slice(0, i)
+      .filter((b) => rectsOverlap(b, blocks[i]))
+      .map((b) => b.name || "(unnamed)");
+  }
+
+  /** Blocks that sit flat in the layout — nothing beneath them. Only these can be drawn as art. */
+  function baseBlocks(blocks) {
+    return blocks.filter((b) => coveredBy(blocks, b.id).length === 0);
+  }
+
+  function stackedBlocks(blocks) {
+    return blocks.filter((b) => coveredBy(blocks, b.id).length > 0);
+  }
+
+  function raise(blocks, id) {
+    const i = blocks.findIndex((b) => b.id === id);
+    if (i < 0 || i === blocks.length - 1) return blocks;
+    blocks.push(blocks.splice(i, 1)[0]);
+    return blocks;
+  }
+
+  function lower(blocks, id) {
+    const i = blocks.findIndex((b) => b.id === id);
+    if (i <= 0) return blocks;
+    blocks.unshift(blocks.splice(i, 1)[0]);
+    return blocks;
   }
 
   function lowestRow(screen) {
@@ -660,8 +692,13 @@ globalThis.WF = (function () {
     return s.length <= n ? s : s.slice(0, Math.max(0, n - 1)) + "…";
   }
 
-  /** ASCII elevation of a screen, one text line per ~3 grid rows, folds marked. */
-  function renderBoxArt(blocks, totalRows) {
+  /**
+   * ASCII elevation, one text line per ~3 grid rows, folds marked. A flat elevation
+   * cannot show depth, so only base blocks are drawn — anything stacked on top is
+   * reported separately by renderScreenText rather than being dropped.
+   */
+  function renderBoxArt(allBlocks, totalRows) {
+    const blocks = baseBlocks(allBlocks);
     const INNER = 26;
     const colW = INNER / GRID.cols;
     const bounds = new Set([0, totalRows]);
@@ -684,8 +721,6 @@ globalThis.WF = (function () {
         const cells = [];
         let cursor = 0;
         for (const b of band) {
-          // An overlay block can genuinely sit on top of another; it cannot be drawn
-          // side-by-side in a text elevation, so it appears in the listing only.
           if (b.x < cursor) continue;
           if (b.x > cursor) cells.push({ from: cursor, to: b.x, text: "" });
           cells.push({ from: b.x, to: b.x + b.w, text: label ? b.name || "?" : "" });
@@ -730,7 +765,9 @@ globalThis.WF = (function () {
         prevY = null;
       }
       const range = b.y === prevY ? " ".repeat(11) : pad(`rows ${b.y}–${b.y + b.h}`, 11);
-      out.push(`${range} [${b.w}] ${b.name || "(unnamed)"}${flagSuffix(b)}`);
+      const over = coveredBy(blocks, b.id);
+      const stack = over.length ? `  over ${over.join(" + ")}` : "";
+      out.push(`${range} [${b.w}] ${b.name || "(unnamed)"}${flagSuffix(b)}${stack}`);
       prevY = b.y;
     }
     return out;
@@ -779,6 +816,19 @@ globalThis.WF = (function () {
     const artW = art.reduce((m, l) => Math.max(m, l.length), 0);
     for (let i = 0; i < height; i++) {
       lines.push(`${pad(art[i] || "", artW)}   ${listing[i] || ""}`.trimEnd());
+    }
+
+    const stacked = stackedBlocks(blocks);
+    if (stacked.length) {
+      lines.push(
+        "",
+        "stacked (not drawn in the elevation above, listed bottom to top):",
+        ...stacked.map(
+          (b) =>
+            `  ${b.name || "(unnamed)"} — rows ${b.y}–${b.y + b.h}, cols ${b.x}–${b.x + b.w}` +
+            `, over ${coveredBy(blocks, b.id).join(" + ")}`
+        )
+      );
     }
 
     const notes = blocks.filter((b) => b.note).map((b) => `  ${b.name}: "${b.note}"`);
@@ -851,6 +901,11 @@ globalThis.WF = (function () {
     snapRect,
     rectsOverlap,
     canPlace,
+    coveredBy,
+    baseBlocks,
+    stackedBlocks,
+    raise,
+    lower,
     screenRowCount,
     contentDepth,
     rowPrimary,
