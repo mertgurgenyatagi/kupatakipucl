@@ -6,9 +6,11 @@ import { TeamResult } from "../leaderboard/teamResultTypes";
 
 export const HomeStartedHero = memo(function HomeStartedHero({
   results,
+  onSelectTeam,
   onSelectFixture,
 }: {
   results: Record<string, TeamResult>;
+  onSelectTeam?: (teamId: string) => void;
   onSelectFixture?: (fixtureId: string) => void;
 }) {
   return (
@@ -19,6 +21,7 @@ export const HomeStartedHero = memo(function HomeStartedHero({
       {/* Bottom Drawer: Yaklaşan Maçlar */}
       <UpcomingMatchesDrawer
         results={results}
+        onSelectTeam={onSelectTeam}
         onSelectFixture={onSelectFixture}
       />
     </Frame>

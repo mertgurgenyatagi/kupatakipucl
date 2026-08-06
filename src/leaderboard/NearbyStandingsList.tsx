@@ -103,9 +103,11 @@ export function NearbyStandingsList({ entries, players, myUid, onSelectParticipa
     <ul
       onScroll={handleScroll}
       className="no-scrollbar min-h-0 flex-1 divide-y divide-border/30 overflow-y-auto px-2 py-3 sm:px-3"
+      /* A deeper fade band at both edges (was 21px) so rows dissolve into
+         the frame instead of stopping at a near-hard line. */
       style={{
-        maskImage: "linear-gradient(to bottom, transparent 0%, black 21px, black calc(100% - 21px), transparent 100%)",
-        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 21px, black calc(100% - 21px), transparent 100%)",
+        maskImage: "linear-gradient(to bottom, transparent 0%, black 52px, black calc(100% - 52px), transparent 100%)",
+        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 52px, black calc(100% - 52px), transparent 100%)",
       }}
     >
       {loadingAbove && (

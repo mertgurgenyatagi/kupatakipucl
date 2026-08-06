@@ -23,15 +23,17 @@ import { TeamResult } from "./teamResultTypes";
  */
 export const LeaderboardHero = memo(function LeaderboardHero({
   results,
+  onSelectTeam,
   onSelectFixture,
 }: {
   results: Record<string, TeamResult>;
+  onSelectTeam?: (teamId: string) => void;
   onSelectFixture?: (fixtureId: string) => void;
 }) {
   return (
     <Frame className="relative h-full animate-cotton-rise border-color_border1/35">
       <HeroCarousel />
-      <UpcomingMatchesDrawer results={results} onSelectFixture={onSelectFixture} />
+      <UpcomingMatchesDrawer results={results} onSelectTeam={onSelectTeam} onSelectFixture={onSelectFixture} />
     </Frame>
   );
 });

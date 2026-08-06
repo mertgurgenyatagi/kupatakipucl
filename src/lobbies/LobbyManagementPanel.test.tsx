@@ -94,10 +94,19 @@ describe("LobbyManagementPanel", () => {
     expect(screen.queryByText("Özel lobiyi sil")).toBeNull();
   });
 
-  it("leaves without a confirmation dialog", async () => {
+  it("requires confirmation before leaving", async () => {
     renderPanel();
     fireEvent.click(screen.getByText("Özel lobiden ayrıl"));
+    expect(mockLeaveLobby).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("Evet, ayrıl"));
     await waitFor(() => expect(mockLeaveLobby).toHaveBeenCalledTimes(1));
+  });
+
+  it("does not leave if the confirmation is dismissed", () => {
+    renderPanel();
+    fireEvent.click(screen.getByText("Özel lobiden ayrıl"));
+    fireEvent.click(screen.getByText("Vazgeç"));
+    expect(mockLeaveLobby).not.toHaveBeenCalled();
   });
 
   it("requires confirmation before deleting", async () => {

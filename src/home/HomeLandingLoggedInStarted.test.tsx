@@ -108,6 +108,19 @@ function renderPage(overrides: Partial<Parameters<typeof HomeLandingLoggedInStar
       onSaveEdit={vi.fn()}
       onRefetchPosts={vi.fn()}
       forumActionError={null}
+      myLobbies={[]}
+      sohbetLobbyId={null}
+      onChangeSohbetLobby={vi.fn()}
+      sohbetLobbyMessages={{ messages: [], loading: false, loadOlder: vi.fn(), loadingOlder: false, hasMoreOlder: false }}
+      sohbetLobbyMembers={[]}
+      standingsLobbyId={null}
+      onChangeStandingsLobby={vi.fn()}
+      standingsLobbyMembers={[]}
+      managingLobbyId={null}
+      onOpenLobbyManagement={vi.fn()}
+      onCloseLobbyManagement={vi.fn()}
+      onLeftManagedLobby={vi.fn()}
+      onDeletedManagedLobby={vi.fn()}
       {...overrides}
     />
   );

@@ -12,7 +12,13 @@ import { assignRanks } from "../leaderboard/ranking";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { LOBBY_NAME_MAX_LENGTH } from "../lobbies/lobbyTypes";
+import { Settings } from "lucide-react";
+import { LobbySwitcher, getLobbySwitcherLabel } from "../lobbies/LobbySwitcher";
+import { LobbyManagementPanel } from "../lobbies/LobbyManagementPanel";
+import { buildPlayersByUid } from "../profile/playersByUid";
+import type { MyLobby } from "../lobbies/useMyLobbies";
+import type { useLobbyMessages } from "../lobbies/useLobbyMessages";
+import { LobbyMember, LOBBY_NAME_MAX_LENGTH } from "../lobbies/lobbyTypes";
 import type { Player } from "../profile/usePlayers";
 import type { TeamResult } from "../leaderboard/teamResultTypes";
 import type { LeaderboardEntry } from "../leaderboard/leaderboardTypes";
@@ -40,6 +46,19 @@ interface HomeLandingLoggedInStartedProps {
   onSaveEdit: (postId: string, text: string) => void;
   onRefetchPosts: () => void;
   forumActionError: string | null;
+  myLobbies: MyLobby[];
+  sohbetLobbyId: string | null;
+  onChangeSohbetLobby: (lobbyId: string | null) => void;
+  sohbetLobbyMessages: ReturnType<typeof useLobbyMessages>;
+  sohbetLobbyMembers: LobbyMember[];
+  standingsLobbyId: string | null;
+  onChangeStandingsLobby: (lobbyId: string | null) => void;
+  standingsLobbyMembers: LobbyMember[];
+  managingLobbyId: string | null;
+  onOpenLobbyManagement: (lobbyId: string) => void;
+  onCloseLobbyManagement: () => void;
+  onLeftManagedLobby: () => void;
+  onDeletedManagedLobby: () => void;
   canCreateLobby?: boolean;
   createDialogOpen?: boolean;
   onOpenCreateDialog?: () => void;
@@ -74,6 +93,19 @@ export function HomeLandingLoggedInStarted({
   onSaveEdit,
   onRefetchPosts,
   forumActionError,
+  myLobbies,
+  sohbetLobbyId,
+  onChangeSohbetLobby,
+  sohbetLobbyMessages,
+  sohbetLobbyMembers,
+  standingsLobbyId,
+  onChangeStandingsLobby,
+  standingsLobbyMembers,
+  managingLobbyId,
+  onOpenLobbyManagement,
+  onCloseLobbyManagement,
+  onLeftManagedLobby,
+  onDeletedManagedLobby,
   createDialogOpen = false,
   onOpenCreateDialog,
   onCloseCreateDialog,
@@ -86,6 +118,29 @@ export function HomeLandingLoggedInStarted({
 
   const rankedEntries = useMemo(() => assignRanks(entries), [entries]);
   const selectedRanked = rankedEntries.find((r) => r.entry.uid === selectedUid) ?? null;
+
+  const playersByUid = useMemo(() => buildPlayersByUid(players), [players]);
+
+  // Chat is scoped by collection path (lobbies/{id}/messages vs messages), so
+  // it takes a different message list entirely; the standings widget is
+  // scoped by *filtering* the global leaderboard down to lobby members and
+  // re-ranking within that set, so a lobby of five reads 1–5, not 12/27/31.
+  const sohbetMessages = sohbetLobbyId ? sohbetLobbyMessages.messages : messages;
+  const sohbetMentionCandidates = useMemo(
+    () =>
+      sohbetLobbyId
+        ? sohbetLobbyMembers.map((m) => playersByUid.get(m.uid)).filter((p): p is Player => p !== undefined)
+        : players,
+    [sohbetLobbyId, sohbetLobbyMembers, playersByUid, players]
+  );
+
+  const standingsEntries = useMemo(() => {
+    if (!standingsLobbyId) return entries;
+    const memberUids = new Set(standingsLobbyMembers.map((m) => m.uid));
+    return entries.filter((e) => memberUids.has(e.uid));
+  }, [standingsLobbyId, standingsLobbyMembers, entries]);
+
+  const managedLobby = myLobbies.find((l) => l.id === managingLobbyId);
 
   const myRanked = useMemo(() => rankedEntries.find((r) => r.entry.uid === me.uid), [rankedEntries, me.uid]);
   const myRank = myRanked ? myRanked.rank : "-";
@@ -121,9 +176,30 @@ export function HomeLandingLoggedInStarted({
         {/* Col 2: Stacked Mini Standings (Top) & Forum (Bottom) */}
         <div className="flex min-h-0 flex-col gap-4 lg:gap-5">
           <Frame className="h-[260px] shrink-0 animate-cotton-rise border-color_border1/35" style={{ animationDelay: "60ms" }}>
+            {myLobbies.length > 0 && (
+              <FrameHeader tone="navy">
+                <FrameTitle className="text-sm text-color_text">
+                  {getLobbySwitcherLabel(myLobbies, standingsLobbyId, "Puan Durumu")}
+                </FrameTitle>
+                <div className="flex items-center gap-2">
+                  <LobbySwitcher options={myLobbies} current={standingsLobbyId} onChange={onChangeStandingsLobby} />
+                  <span className="w-6" aria-hidden />
+                  {standingsLobbyId && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenLobbyManagement(standingsLobbyId)}
+                      aria-label="Özel lobi ayarları"
+                      className="cursor-pointer text-color_textsecondary hover:text-color_accent"
+                    >
+                      <Settings className="size-3.5" aria-hidden />
+                    </button>
+                  )}
+                </div>
+              </FrameHeader>
+            )}
             <FrameBody>
               <NearbyStandingsList
-                entries={entries}
+                entries={standingsEntries}
                 players={players}
                 myUid={me.uid}
                 onSelectParticipant={handleSelectParticipant}
@@ -157,6 +233,7 @@ export function HomeLandingLoggedInStarted({
         {/* Col 3: Hero Carousel with Bottom (Matches) Drawer */}
         <HomeStartedHero
           results={results}
+          onSelectTeam={handleSelectTeam}
           onSelectFixture={handleSelectFixture}
         />
 
@@ -170,25 +247,43 @@ export function HomeLandingLoggedInStarted({
           >
             <FrameHeader tone="navy">
               <FrameTitle className="text-base text-color_text sm:text-lg">
-                Sohbet
+                {getLobbySwitcherLabel(myLobbies, sohbetLobbyId, "Sohbet")}
               </FrameTitle>
-              <span className="flex items-center gap-1.5 font-mono text-[0.62rem] tracking-[0.1em] text-color_text/70 uppercase tnum">
-                <span className="size-1.5 rounded-full bg-color_accent" aria-hidden />
-                {onlineCount} çevrimiçi
-              </span>
+              <div className="flex items-center gap-2">
+                <LobbySwitcher options={myLobbies} current={sohbetLobbyId} onChange={onChangeSohbetLobby} />
+                <span className="w-6" aria-hidden />
+                <span className="flex items-center gap-1.5 font-mono text-[0.62rem] tracking-[0.1em] text-color_text/70 uppercase tnum">
+                  <span className="size-1.5 rounded-full bg-color_accent" aria-hidden />
+                  {onlineCount} çevrimiçi
+                </span>
+                {sohbetLobbyId && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenLobbyManagement(sohbetLobbyId)}
+                    aria-label="Özel lobi ayarları"
+                    className="cursor-pointer text-color_textsecondary hover:text-color_accent"
+                  >
+                    <Settings className="size-3.5" aria-hidden />
+                  </button>
+                )}
+              </div>
             </FrameHeader>
             <FrameBody>
+              {/* `players` (global) for author lookup vs lobby-scoped mention
+                  candidates — same deliberate split as the not-started Home:
+                  someone who has left the lobby must still resolve to their
+                  real name on their old messages, not "Silindi". */}
               <ChatRoom
                 uid={me.uid}
                 players={players}
-                mentionCandidates={players}
-                messages={messages}
-                onLoadOlder={onLoadOlderMessages}
-                loadingOlder={loadingOlderMessages}
-                hasMoreOlder={hasMoreOlderMessages}
+                mentionCandidates={sohbetMentionCandidates}
+                messages={sohbetMessages}
+                onLoadOlder={sohbetLobbyId ? sohbetLobbyMessages.loadOlder : onLoadOlderMessages}
+                loadingOlder={sohbetLobbyId ? sohbetLobbyMessages.loadingOlder : loadingOlderMessages}
+                hasMoreOlder={sohbetLobbyId ? sohbetLobbyMessages.hasMoreOlder : hasMoreOlderMessages}
                 typingUids={typingUids}
                 onSelectParticipant={handleSelectParticipant}
-                lobbyId={null}
+                lobbyId={sohbetLobbyId}
               />
             </FrameBody>
           </Frame>
@@ -234,6 +329,20 @@ export function HomeLandingLoggedInStarted({
         onSelectTeam={handleSelectTeam}
         onSelectParticipant={handleSelectParticipant}
       />
+
+      {managedLobby && (
+        <LobbyManagementPanel
+          lobby={managedLobby}
+          members={standingsLobbyId === managingLobbyId ? standingsLobbyMembers : sohbetLobbyMembers}
+          players={players}
+          myUid={me.uid}
+          myFirstName={me.firstName}
+          open={true}
+          onOpenChange={(open) => !open && onCloseLobbyManagement()}
+          onLeft={onLeftManagedLobby}
+          onDeleted={onDeletedManagedLobby}
+        />
+      )}
 
       <Dialog open={createDialogOpen} onOpenChange={(open) => !open && onCloseCreateDialog?.()}>
         <DialogContent>

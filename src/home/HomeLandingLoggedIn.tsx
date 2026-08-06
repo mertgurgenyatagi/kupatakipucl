@@ -162,9 +162,14 @@ export function HomeLandingLoggedIn({
         <Frame className={CELL} style={{ animationDelay: "60ms" }}>
           <FrameHeader tone="navy">
             <FrameTitle className="text-base text-color_text sm:text-lg">
-              {getLobbySwitcherLabel(myLobbies, katilimcilarLobbyId)}
+              {getLobbySwitcherLabel(myLobbies, katilimcilarLobbyId, "Katılımcılar")}
             </FrameTitle>
+            {/* Switcher sits to the left of the settings gear, well clear of
+                it — they do unrelated things and were previously adjacent
+                enough to mis-click. */}
             <div className="flex items-center gap-2">
+              <LobbySwitcher options={myLobbies} current={katilimcilarLobbyId} onChange={onChangeKatilimcilarLobby} />
+              <span className="w-6" aria-hidden />
               {katilimcilarLobbyId ? (
                 <button
                   type="button"
@@ -183,7 +188,6 @@ export function HomeLandingLoggedIn({
                   Özel lobi oluştur
                 </button>
               ) : null}
-              <LobbySwitcher options={myLobbies} current={katilimcilarLobbyId} onChange={onChangeKatilimcilarLobby} />
             </div>
           </FrameHeader>
           <FrameBody>
@@ -229,9 +233,15 @@ export function HomeLandingLoggedIn({
         <Frame className={CELL} style={{ animationDelay: "240ms" }}>
           <FrameHeader tone="navy">
             <FrameTitle className="text-base text-color_text sm:text-lg">
-              {getLobbySwitcherLabel(myLobbies, sohbetLobbyId)}
+              {getLobbySwitcherLabel(myLobbies, sohbetLobbyId, "Sohbet")}
             </FrameTitle>
             <div className="flex items-center gap-2">
+              <LobbySwitcher options={myLobbies} current={sohbetLobbyId} onChange={onChangeSohbetLobby} />
+              <span className="w-6" aria-hidden />
+              <span className="flex items-center gap-1.5 font-mono text-[0.62rem] tracking-[0.1em] text-color_text/70 uppercase tnum">
+                <span className="size-1.5 rounded-full bg-color_accent" aria-hidden />
+                {onlineCount} çevrimiçi
+              </span>
               {sohbetLobbyId && (
                 <button
                   type="button"
@@ -242,11 +252,6 @@ export function HomeLandingLoggedIn({
                   <Settings className="size-3.5" aria-hidden />
                 </button>
               )}
-              <span className="flex items-center gap-1.5 font-mono text-[0.62rem] tracking-[0.1em] text-color_text/70 uppercase tnum">
-                <span className="size-1.5 rounded-full bg-color_accent" aria-hidden />
-                {onlineCount} çevrimiçi
-              </span>
-              <LobbySwitcher options={myLobbies} current={sohbetLobbyId} onChange={onChangeSohbetLobby} />
             </div>
           </FrameHeader>
           <FrameBody>

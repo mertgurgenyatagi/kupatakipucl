@@ -41,10 +41,16 @@ const PANEL_ID = "upcoming-matches-panel";
  */
 export function UpcomingMatchesDrawer({
   results,
+  onSelectTeam,
   onSelectFixture,
   maxHeightClass = "h-[90%]",
 }: {
   results: Record<string, TeamResult>;
+  /** Fires when a crest/name inside a row is clicked — opens TeamPopup.
+   *  FixtureRow has supported this since Home's static preview widget
+   *  needed it; the drawer simply never passed it through, so clicking a
+   *  team in here did nothing. */
+  onSelectTeam?: (teamId: string) => void;
   onSelectFixture?: (fixtureId: string) => void;
   maxHeightClass?: string;
 }) {
@@ -102,7 +108,13 @@ export function UpcomingMatchesDrawer({
           className="no-scrollbar min-h-0 flex-1 overflow-y-auto border-t border-color_border1/70 pt-2"
         >
           {shown.map((fixture) => (
-            <FixtureRow key={fixture.id} fixture={fixture} results={results} onSelectFixture={onSelectFixture} />
+            <FixtureRow
+                key={fixture.id}
+                fixture={fixture}
+                results={results}
+                onSelectTeam={onSelectTeam}
+                onSelectFixture={onSelectFixture}
+              />
           ))}
 
           {loadingMore && (

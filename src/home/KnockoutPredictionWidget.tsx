@@ -39,12 +39,12 @@ export function KnockoutPredictionWidget() {
 
   return (
     <div className="shrink-0" style={{ flexBasis: "30%" }}>
-      <Frame className="shrink-0 animate-cotton-rise border-color_border1/35 border-color_accent/30"
+      <Frame className="shrink-0 animate-cotton-rise border-color_border1/35"
         style={{ animationDelay: "240ms" }}>
       <FrameBody className="flex flex-col justify-between gap-3 px-5 py-4">
         {/* Label row */}
         <div className="flex flex-col gap-0.5">
-          <span className="font-mono text-[0.6rem] tracking-[0.14em] text-color_accent uppercase">
+          <span className="font-mono text-[0.6rem] tracking-[0.14em] text-color_textsecondary uppercase">
             Eleme Aşaması
           </span>
           <span className="font-display text-sm font-semibold leading-snug text-color_text">
@@ -86,7 +86,7 @@ export function KnockoutPredictionWidget() {
         {/* CTA */}
         <Link
           to="/knockout-predictions"
-          className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full bg-color_accent px-4 py-2.5 text-xs font-bold text-background shadow-md transition-all duration-150 ease-[var(--ease-cotton)] hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_accent"
+          className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full bg-color_text px-4 py-2.5 text-xs font-bold text-background shadow-md transition-all duration-150 ease-[var(--ease-cotton)] hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_accent"
         >
           Tahminlere git
           <ArrowRight className="size-3.5" />

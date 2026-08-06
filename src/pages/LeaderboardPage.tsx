@@ -289,7 +289,7 @@ export function LeaderboardPage() {
           </Frame>
 
           {/* Hero carousel + upcoming fixtures drawer — identical to league layout */}
-          <LeaderboardHero results={results} onSelectFixture={handleSelectFixture} />
+          <LeaderboardHero results={results} onSelectTeam={handleSelectTeam} onSelectFixture={handleSelectFixture} />
 
           {/* Standings — identical to the league-phase layout */}
           <LeaderboardTable
@@ -315,7 +315,7 @@ export function LeaderboardPage() {
           highlightedTeamIds={highlightedTeamIds}
           onSelectTeam={handleSelectTeam}
         />
-        <LeaderboardHero results={results} onSelectFixture={handleSelectFixture} />
+        <LeaderboardHero results={results} onSelectTeam={handleSelectTeam} onSelectFixture={handleSelectFixture} />
         <LeaderboardTable
           entries={entries}
           players={players}

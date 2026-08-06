@@ -42,6 +42,7 @@ export function LobbyManagementPanel({
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [generatingInvite, setGeneratingInvite] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +85,7 @@ export function LobbyManagementPanel({
     try {
       const remaining = members.filter((m) => m.uid !== myUid);
       await leaveLobby(lobby, myUid, myFirstName, remaining);
+      setLeaveConfirmOpen(false);
       onOpenChange(false);
       onLeft();
     } catch (err) {
@@ -188,7 +190,7 @@ export function LobbyManagementPanel({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" disabled={leaving} onClick={() => void handleLeave()}>
+            <Button type="button" variant="outline" disabled={leaving} onClick={() => setLeaveConfirmOpen(true)}>
               {leaving ? "Ayrılıyor…" : "Özel lobiden ayrıl"}
             </Button>
             {isCreator && (
@@ -196,6 +198,37 @@ export function LobbyManagementPanel({
                 Özel lobiyi sil
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Leaving used to fire straight off the footer button with no
+          confirmation, unlike deleting — and it is just as hard to undo from
+          the leaver's side, since getting back in needs a fresh invite. */}
+      <Dialog open={leaveConfirmOpen} onOpenChange={(next) => !leaving && setLeaveConfirmOpen(next)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Özel lobiden ayrılmak istediğine emin misin?</DialogTitle>
+            <DialogDescription>
+              Geri dönmek için yeni bir davet linkine ihtiyacın olur.
+              {isCreator &&
+                (members.length > 1
+                  ? " Kurucu sen olduğun için lobi, en eski üyeye devredilecek."
+                  : " Son üye sen olduğun için lobi tamamen silinecek.")}
+            </DialogDescription>
+          </DialogHeader>
+          {error && (
+            <p role="alert" className="text-sm text-color_remove">
+              {error}
+            </p>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" disabled={leaving} onClick={() => setLeaveConfirmOpen(false)}>
+              Vazgeç
+            </Button>
+            <Button type="button" variant="destructive" disabled={leaving} onClick={() => void handleLeave()}>
+              {leaving ? "Ayrılıyor…" : "Evet, ayrıl"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
