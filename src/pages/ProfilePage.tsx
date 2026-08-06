@@ -56,9 +56,17 @@ const PAGE_SHELL =
 // heavier, potentially-36-row content) taking the full row height on the
 // right — mirrors the "tall anchor beside narrower stacked cells" rhythm
 // LeaderboardPage/StatsPage already use, just mirrored left/right.
+// Mobile stacks and has to divide a fixed screenful rather than let the three
+// blocks size to their content. Mert's wireframe gives them 3 / 5 / 8 of its
+// 16 content rows (profile / quiz / prediction), which is what the flex
+// ratios on the blocks themselves encode.
 const MAIN_ROW =
-  "relative z-10 grid min-w-0 gap-4 lg:h-full lg:min-h-0 lg:flex-1 lg:grid-cols-[340px_1fr] lg:gap-5 [&>*]:min-h-0 [&>*]:min-w-0";
-const LEFT_COLUMN = "flex min-h-0 flex-1 flex-col gap-3 lg:flex-none lg:gap-5";
+  "relative z-10 flex min-h-0 min-w-0 flex-1 flex-col gap-3 lg:grid lg:h-full lg:gap-5 lg:grid-cols-[340px_1fr] [&>*]:min-h-0 [&>*]:min-w-0";
+// `contents` on mobile: the wrapper exists to group profile+quiz into
+// desktop's left column, but on a phone that grouping would force the pair to
+// share one flex ratio against the prediction. Dissolving it makes all three
+// direct children of MAIN_ROW, so each can take the wireframe's own share.
+const LEFT_COLUMN = "contents lg:flex lg:min-h-0 lg:flex-col lg:gap-5";
 
 const TEAM_CREST_URLS = TEAMS.map((t) => teamCrestSrc(t.id));
 
@@ -366,7 +374,7 @@ export function ProfilePage() {
             question/answer row treatment as ParticipantPopup's own quiz
             widget, so a participant sees their answers rendered identically
             wherever they show up. */}
-        <Frame className="min-h-0 flex-1 animate-cotton-rise" style={{ animationDelay: "60ms" }}>
+        <Frame className="min-h-0 flex-[5] animate-cotton-rise lg:flex-1" style={{ animationDelay: "60ms" }}>
           <FrameHeader tone="navy">
             <FrameTitle className="text-color_text">Anket Cevaplarınız</FrameTitle>
           </FrameHeader>
@@ -424,7 +432,7 @@ export function ProfilePage() {
           PAGEMAP_SPEC.md §5b. The delete-profile control rides alongside it
           as a narrow, unaffiliated column of its own — outside the Frame's
           own box, bottom-anchored, the Frame shrinking to make room. */}
-      <div className="flex min-h-0 min-w-0 flex-1 gap-3">
+      <div className="flex min-h-0 min-w-0 flex-[8] gap-3 lg:flex-1">
       <Frame className="min-h-0 min-w-0 flex-1 animate-cotton-rise" style={{ animationDelay: "120ms" }}>
         <FrameHeader tone="navy">
           {isKnockoutPhaseOrPre ? (
