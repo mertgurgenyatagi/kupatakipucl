@@ -4,7 +4,7 @@ import { Player } from "../profile/usePlayers";
 import { MessageWithId } from "./useMessages";
 
 const mockDeleteMessage = vi.fn();
-const mockFetchAllMessagesForSearch = vi.fn();
+const mockFetchRecentMessagesForSearch = vi.fn();
 
 vi.mock("./deleteMessage", () => ({
   deleteMessage: (...args: unknown[]) => mockDeleteMessage(...args),
@@ -15,7 +15,7 @@ vi.mock("./searchMessages", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./searchMessages")>();
   return {
     ...actual,
-    fetchAllMessagesForSearch: (...args: unknown[]) => mockFetchAllMessagesForSearch(...args),
+    fetchRecentMessagesForSearch: (...args: unknown[]) => mockFetchRecentMessagesForSearch(...args),
   };
 });
 vi.mock("./ChatComposer", () => ({
@@ -35,6 +35,7 @@ vi.mock("./ChatComposer", () => ({
 }));
 
 import { ChatRoom } from "./ChatRoom";
+import { SEARCH_WINDOW } from "./searchMessages";
 
 const players: Player[] = [
   { uid: "me", firstName: "Mert", lastName: "Y.", photoURL: "", createdAt: 0 },
@@ -65,7 +66,7 @@ function renderRoom(overrides: Partial<Parameters<typeof ChatRoom>[0]> = {}) {
 describe("ChatRoom", () => {
   beforeEach(() => {
     mockDeleteMessage.mockReset();
-    mockFetchAllMessagesForSearch.mockReset();
+    mockFetchRecentMessagesForSearch.mockReset();
   });
 
   it("shows an empty state when there are no messages", () => {
@@ -202,7 +203,7 @@ describe("ChatRoom", () => {
     });
 
     it("searches and renders matching results", async () => {
-      mockFetchAllMessagesForSearch.mockResolvedValue([
+      mockFetchRecentMessagesForSearch.mockResolvedValue([
         message({ id: "found", uid: "uid-ada", text: "aranan kelime" }),
         message({ id: "other", uid: "uid-ada", text: "listedeki mesaj" }),
       ]);
@@ -211,64 +212,85 @@ describe("ChatRoom", () => {
       fireEvent.click(screen.getByRole("button", { name: "Sohbette ara" }));
       fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "aranan" } });
 
-      await waitFor(() => expect(mockFetchAllMessagesForSearch).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(mockFetchRecentMessagesForSearch).toHaveBeenCalledTimes(1));
       expect(await screen.findByText("aranan kelime")).toBeInTheDocument();
       expect(screen.queryByText("listedeki mesaj")).not.toBeInTheDocument();
     });
 
     it("shows a no-results message when a search comes back empty", async () => {
-      mockFetchAllMessagesForSearch.mockResolvedValue([]);
+      mockFetchRecentMessagesForSearch.mockResolvedValue([]);
       renderRoom({ messages: [] });
       fireEvent.click(screen.getByRole("button", { name: "Sohbette ara" }));
       fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "yok böyle bir şey" } });
       expect(await screen.findByText("Sonuç bulunamadı.")).toBeInTheDocument();
     });
 
+    // Search is capped at SEARCH_WINDOW messages (scaling-250 design spec §3),
+    // so a miss inside a full window genuinely might exist further back. Saying
+    // nothing there would quietly imply the message never existed.
+    it("says the search only covered recent messages when the window came back full", async () => {
+      const full = Array.from({ length: SEARCH_WINDOW }, (_, i) => ({
+        id: `m${i}`,
+        uid: "u1",
+        text: "alakasız",
+        createdAt: i,
+      }));
+      mockFetchRecentMessagesForSearch.mockResolvedValue(full);
+      renderRoom({ messages: [] });
+      fireEvent.click(screen.getByRole("button", { name: "Sohbette ara" }));
+      fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), {
+        target: { value: "yok böyle bir şey" },
+      });
+      expect(
+        await screen.findByText(`Sonuç bulunamadı. Arama son ${SEARCH_WINDOW} mesajı kapsıyor.`)
+      ).toBeInTheDocument();
+    });
+
     it("does not re-fetch on a second keystroke within the same search session", async () => {
-      mockFetchAllMessagesForSearch.mockResolvedValue([
+      mockFetchRecentMessagesForSearch.mockResolvedValue([
         message({ id: "found", uid: "uid-ada", text: "aranan kelime" }),
       ]);
       renderRoom({ messages: [] });
       fireEvent.click(screen.getByRole("button", { name: "Sohbette ara" }));
 
       fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "aran" } });
-      await waitFor(() => expect(mockFetchAllMessagesForSearch).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(mockFetchRecentMessagesForSearch).toHaveBeenCalledTimes(1));
 
       fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "aranan" } });
       expect(await screen.findByText("aranan kelime")).toBeInTheDocument();
-      expect(mockFetchAllMessagesForSearch).toHaveBeenCalledTimes(1);
+      expect(mockFetchRecentMessagesForSearch).toHaveBeenCalledTimes(1);
     });
 
     it("fetches again if the search panel is closed and reopened", async () => {
-      mockFetchAllMessagesForSearch.mockResolvedValue([]);
+      mockFetchRecentMessagesForSearch.mockResolvedValue([]);
       renderRoom({ messages: [] });
 
       fireEvent.click(screen.getByRole("button", { name: "Sohbette ara" }));
       fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "a" } });
-      await waitFor(() => expect(mockFetchAllMessagesForSearch).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(mockFetchRecentMessagesForSearch).toHaveBeenCalledTimes(1));
 
       fireEvent.click(screen.getByRole("button", { name: "Aramayı kapat" }));
       fireEvent.click(screen.getByRole("button", { name: "Sohbette ara" }));
       fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "b" } });
-      await waitFor(() => expect(mockFetchAllMessagesForSearch).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(mockFetchRecentMessagesForSearch).toHaveBeenCalledTimes(2));
     });
 
     // special-lobby-round-7 Q2: search is confined to the current view —
     // General or one lobby, never mixed.
     it("searches the global collection when no lobby is selected", async () => {
-      mockFetchAllMessagesForSearch.mockResolvedValue([]);
+      mockFetchRecentMessagesForSearch.mockResolvedValue([]);
       renderRoom({ messages: [] });
       fireEvent.click(screen.getByRole("button", { name: "Sohbette ara" }));
       fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "a" } });
-      await waitFor(() => expect(mockFetchAllMessagesForSearch).toHaveBeenCalledWith(null));
+      await waitFor(() => expect(mockFetchRecentMessagesForSearch).toHaveBeenCalledWith(null));
     });
 
     it("scopes the search to the current lobby when one is selected", async () => {
-      mockFetchAllMessagesForSearch.mockResolvedValue([]);
+      mockFetchRecentMessagesForSearch.mockResolvedValue([]);
       renderRoom({ messages: [], lobbyId: "lobby1" });
       fireEvent.click(screen.getByRole("button", { name: "Sohbette ara" }));
       fireEvent.change(screen.getByPlaceholderText("Sohbette ara…"), { target: { value: "a" } });
-      await waitFor(() => expect(mockFetchAllMessagesForSearch).toHaveBeenCalledWith("lobby1"));
+      await waitFor(() => expect(mockFetchRecentMessagesForSearch).toHaveBeenCalledWith("lobby1"));
     });
   });
 

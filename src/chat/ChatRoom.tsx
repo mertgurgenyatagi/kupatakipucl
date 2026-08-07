@@ -5,7 +5,7 @@ import { LobbySystemInfo } from "../lobbies/lobbyTypes";
 import { Player } from "../profile/usePlayers";
 import { buildPlayersByUid } from "../profile/playersByUid";
 import { deleteMessage } from "./deleteMessage";
-import { fetchAllMessagesForSearch, filterMessagesByTerm } from "./searchMessages";
+import { fetchRecentMessagesForSearch, filterMessagesByTerm, SEARCH_WINDOW } from "./searchMessages";
 import { buildChatItems, formatMessageTime, ChatItem } from "./chatGrouping";
 import { splitMentionSegments } from "./chatMentions";
 import { ChatComposer } from "./ChatComposer";
@@ -222,6 +222,9 @@ export function ChatRoom({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<MessageWithId[]>([]);
   const [searching, setSearching] = useState(false);
+  // True when the fetch came back exactly full, i.e. there is older history the
+  // window did not cover — used only to keep the no-results message honest.
+  const [searchWindowFull, setSearchWindowFull] = useState(false);
   const [quoted, setQuoted] = useState<QuotedMessage | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const rowRefs = useRef(new Map<string, HTMLLIElement>());
@@ -296,12 +299,15 @@ export function ChatRoom({
       const cached = allMessagesCacheRef.current;
       const load = cached
         ? Promise.resolve(cached)
-        : fetchAllMessagesForSearch(lobbyId).then((all) => {
+        : fetchRecentMessagesForSearch(lobbyId).then((all) => {
             allMessagesCacheRef.current = all;
             return all;
           });
       load
-        .then((all) => setSearchResults(filterMessagesByTerm(all, trimmed)))
+        .then((all) => {
+          setSearchWindowFull(all.length >= SEARCH_WINDOW);
+          setSearchResults(filterMessagesByTerm(all, trimmed));
+        })
         .catch((err) => console.error("Failed to search messages", err))
         .finally(() => setSearching(false));
     }, SEARCH_DEBOUNCE_MS);
@@ -373,7 +379,11 @@ export function ChatRoom({
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-3 sm:px-6">
           {searching && <p className="text-center text-xs text-color_textsecondary">Aranıyor…</p>}
           {!searching && searchQuery.trim() && searchResults.length === 0 && (
-            <p className="text-center text-xs text-color_textsecondary">Sonuç bulunamadı.</p>
+            <p className="text-center text-xs text-color_textsecondary">
+              {searchWindowFull
+                ? `Sonuç bulunamadı. Arama son ${SEARCH_WINDOW} mesajı kapsıyor.`
+                : "Sonuç bulunamadı."}
+            </p>
           )}
           <ul className="flex flex-col gap-3">
             {searchResults.map((message) => {

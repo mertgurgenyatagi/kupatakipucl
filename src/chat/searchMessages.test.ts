@@ -4,17 +4,19 @@ const mockGetDocs = vi.fn();
 const mockCollection = vi.fn((_db: unknown, ...path: string[]) => ({ path }));
 const mockQuery = vi.fn((ref: unknown) => ref);
 const mockOrderBy = vi.fn((field: string) => ({ field }));
+const mockLimit = vi.fn((n: number) => ({ limit: n }));
 
 vi.mock("firebase/firestore", () => ({
   collection: (...args: unknown[]) => mockCollection(...(args as [unknown, ...string[]])),
   query: (...args: unknown[]) => mockQuery(...(args as [unknown])),
   orderBy: (...args: unknown[]) => mockOrderBy(...(args as [string])),
+  limit: (...args: unknown[]) => mockLimit(...(args as [number])),
   getDocs: (...args: unknown[]) => mockGetDocs(...args),
 }));
 
 vi.mock("../firebase", () => ({ db: {} }));
 
-import { fetchAllMessagesForSearch, searchMessages } from "./searchMessages";
+import { fetchRecentMessagesForSearch, searchMessages, SEARCH_WINDOW } from "./searchMessages";
 
 function docSnap(id: string, data: Record<string, unknown>) {
   return { id, data: () => data };
@@ -24,6 +26,7 @@ describe("searchMessages", () => {
   beforeEach(() => {
     mockGetDocs.mockReset();
     mockCollection.mockClear();
+    mockLimit.mockClear();
   });
 
   it("returns an empty array without querying anything for a blank term", async () => {
@@ -55,13 +58,13 @@ describe("searchMessages", () => {
   // search General, or search one lobby, never mixed".
   it("searches the global collection when no lobby is given", async () => {
     mockGetDocs.mockResolvedValue({ docs: [] });
-    await fetchAllMessagesForSearch();
+    await fetchRecentMessagesForSearch();
     expect(mockCollection).toHaveBeenCalledWith({}, "messages");
   });
 
   it("searches only the given lobby's own messages subcollection", async () => {
     mockGetDocs.mockResolvedValue({ docs: [] });
-    await fetchAllMessagesForSearch("lobby1");
+    await fetchRecentMessagesForSearch("lobby1");
     expect(mockCollection).toHaveBeenCalledWith({}, "lobbies", "lobby1", "messages");
     expect(mockCollection).not.toHaveBeenCalledWith({}, "messages");
   });
@@ -73,5 +76,24 @@ describe("searchMessages", () => {
     const result = await searchMessages("lobi", "lobby1");
     expect(mockCollection).toHaveBeenCalledWith({}, "lobbies", "lobby1", "messages");
     expect(result.map((m) => m.id)).toEqual(["m1"]);
+  });
+
+  // Was unbounded: one search click downloaded every message ever sent, which
+  // at 250 participants over a season is tens of thousands of documents and
+  // grows daily (scaling-250 design spec, 2026-08-07, S3).
+  it("caps the fetch to the most recent SEARCH_WINDOW messages", async () => {
+    mockGetDocs.mockResolvedValue({ docs: [] });
+    await fetchRecentMessagesForSearch();
+    expect(mockLimit).toHaveBeenCalledWith(SEARCH_WINDOW);
+  });
+
+  it("caps a lobby-scoped search the same way", async () => {
+    mockGetDocs.mockResolvedValue({ docs: [] });
+    await fetchRecentMessagesForSearch("lobby1");
+    expect(mockLimit).toHaveBeenCalledWith(SEARCH_WINDOW);
+  });
+
+  it("uses a window of 2000", () => {
+    expect(SEARCH_WINDOW).toBe(2000);
   });
 });
