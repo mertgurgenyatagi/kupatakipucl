@@ -12,9 +12,11 @@ vi.mock("firebase/firestore", () => ({
 vi.mock("../firebase", () => ({ db: {} }));
 
 import { useSurveyResponses } from "./useSurveyResponses";
+import { clearSessionCache } from "../lib/sessionCache";
 
 describe("useSurveyResponses", () => {
   beforeEach(() => {
+    clearSessionCache();
     mockGetDocs.mockReset();
   });
 
@@ -59,5 +61,19 @@ describe("useSurveyResponses", () => {
     expect(result.current.responses).toEqual([]);
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to load survey responses", expect.any(Error));
     consoleErrorSpy.mockRestore();
+  });
+
+  // 250 docs per Stats visit before this (scaling-250 design spec S4).
+  it("serves a second mount from the session cache without refetching", async () => {
+    mockGetDocs.mockResolvedValue({
+      docs: [{ id: "u1", data: () => ({ age: 30, footballKnowledge: 5 }) }],
+    });
+    const first = renderHook(() => useSurveyResponses());
+    await waitFor(() => expect(first.result.current.loading).toBe(false));
+    expect(mockGetDocs).toHaveBeenCalledTimes(1);
+
+    const second = renderHook(() => useSurveyResponses());
+    expect(second.result.current.loading).toBe(false);
+    expect(second.result.current.responses).toHaveLength(1);
   });
 });
