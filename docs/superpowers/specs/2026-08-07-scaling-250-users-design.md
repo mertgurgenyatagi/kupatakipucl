@@ -295,8 +295,45 @@ function logs: recompute wall-clock latency, documents read per invocation, and 
 match result. Then remove the dummies. This is the number that actually answers the mandate;
 emulator latency is indicative only.
 
-`tsc -b` clean, `vite build` clean, and the full existing suite (956 tests / 126 files) green at
-every checkpoint.
+`tsc -b` clean, `vite build` clean, and the full existing suite green at every checkpoint (real
+baseline 960/126, measured — `HANDOVER.md`'s 956/126 predates the ParticipantPopup commit).
+
+### Measured results — production, 2026-08-07
+
+Deployed all three functions to `europe-west8` (region pin confirmed: the scheduler landed there and
+not in `us-central1`, and its Cloud Scheduler job is `ENABLED` on the 5-minute cadence). Seeded
+production to 253 profiles / 252 predictions, measured, then removed exactly `dummy-051..250`.
+
+| Measurement | Before | After |
+| --- | --- | --- |
+| **One 36-doc batch commit** (the dev panel's exact shape) | ~36 recomputes | **3** |
+| Reads for that one match result (541/recompute at 250) | ~19,400 | **~1,600** |
+| 200 prediction writes (the seeding run, i.e. a deadline-day burst) | ~200 recomputes | **2** |
+| Recompute wall-clock at 252 predictions | — | **2,416 ms** (57 ms at 52) |
+| `leaderboardCache/current` at 252 entries | — | **138.7 KiB, 13.5% of the 1 MiB limit** |
+| Function errors, contention, timeouts in the logs | — | **none** |
+
+Three things worth keeping from this run:
+
+**The doc-size projection was essentially exact** — §6 predicted 138.8 KiB / 13.6% at 250 entries
+from a 52-entry sample; the real figure at 252 entries is 138.7 KiB / 13.5%. The estimation method
+can be trusted for the next such projection.
+
+**Production really does run these triggers concurrently**, which the emulator does not. The logs
+show four invocations inside 5 ms (`14:34:39.310–.315`). That is why production collapses a 36-doc
+batch to 3 while the emulator manages 6 — and it is the assumption the `shouldSkipAlreadyCovered`
+guard was added specifically so we would *not* have to rely on.
+
+**The deadline-day case is the dramatic one.** 200 near-simultaneous prediction writes produced
+2 recomputes, a ~100× collapse — and that is precisely the scenario where the old code's
+lost-update race was most likely to silently drop somebody's submission.
+
+**The `.select("firstName", "photoURL")` projection was verified end-to-end:** no `lastName` field
+appears anywhere in the computed cache document.
+
+Cleanup verified back to the exact pre-measurement baseline — `profiles` 53, `publicProfiles` 53,
+`predictions` 52, `surveyResponses` 54, with exactly `dummy-001..050` plus the 3 real accounts, and
+`leaderboardCache/current` self-corrected to 52 entries with zero measurement leftovers.
 
 ---
 
