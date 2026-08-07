@@ -1,6 +1,7 @@
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { randomUUID } = require("node:crypto");
 const {
   DEBOUNCE_MS,
@@ -155,3 +156,28 @@ exports.recomputeLeaderboardOnPrediction = onDocumentWritten("predictions/{uid}"
 exports.recomputeLeaderboardOnResult = onDocumentWritten("results/{teamId}", async () => {
   await requestRecompute();
 });
+
+/**
+ * Recomputes only when the control doc says inputs have moved since the last
+ * successful compute. When idle this is one document read every 5 minutes.
+ *
+ * This exists so that a dropped trigger, a crashed invocation, or any
+ * unforeseen everybody-stood-down interleaving is *self-healing* rather than
+ * permanently wrong. "The leaderboard is quietly wrong" is the worst failure
+ * this app has — it is the entire point of the site — so the debounce is not
+ * trusted on its own.
+ *
+ * The region is pinned deliberately. Firestore triggers infer their region from
+ * the database's location (europe-west8); onSchedule does NOT, and would
+ * otherwise deploy to us-central1 and read cross-region.
+ */
+exports.recomputeLeaderboardSafetyNet = onSchedule(
+  { schedule: "every 5 minutes", region: "europe-west8" },
+  async () => {
+    const snap = await db.doc(CONTROL_DOC).get();
+    if (!snap.exists) return;
+    const control = snap.data();
+    if ((control.requestedAt ?? 0) <= (control.computedThroughRequestedAt ?? 0)) return;
+    await runRecompute();
+  }
+);
