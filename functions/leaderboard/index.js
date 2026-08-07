@@ -1,9 +1,22 @@
 const { initializeApp } = require("firebase-admin/app");
-const { getFirestore } = require("firebase-admin/firestore");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
+const { randomUUID } = require("node:crypto");
+const {
+  DEBOUNCE_MS,
+  shouldProceedAfterDebounce,
+  shouldCommitRecompute,
+} = require("./recomputeGuard");
 
 initializeApp();
 const db = getFirestore();
+
+const CACHE_DOC = "leaderboardCache/current";
+// Lives in leaderboardCache on purpose: that collection is already
+// `read: true, write: false` in firestore.rules, and the Admin SDK bypasses
+// rules — so the control doc needs no rules change at all, and no client can
+// forge it.
+const CONTROL_DOC = "leaderboardCache/control";
 
 // Mirrors src/leaderboard/scoring.ts's computeScore/isPickCorrect exactly —
 // duplicated here rather than imported, since this runs as plain JS
@@ -28,19 +41,23 @@ function computeScore(ranking, results) {
 }
 
 /**
- * Recomputes the whole leaderboard and writes it to a single doc
- * (leaderboardCache/current) that every client just reads live, instead of
- * every visitor downloading the full predictions + profiles collections and
- * redoing this math themselves on every page visit (scaling-audit
- * No. 08/09, 2026-07-31). Triggered on any predictions or results write —
- * recomputing from scratch is cheap at this site's real scale (a few
- * hundred participants, one 36-team ranking each), so there's no need for
- * a more incremental update here.
+ * Reads every input and returns the leaderboard entries. Pure with respect to
+ * Firestore writes — it never stores anything, so the caller owns the decision
+ * about whether its result is still fresh enough to keep.
  */
-async function recomputeLeaderboard() {
+async function computeEntries() {
   const [predictionsSnap, profilesSnap, resultsSnap] = await Promise.all([
     db.collection("predictions").get(),
-    db.collection("profiles").get(),
+    // Projection: the leaderboard renders a first name and a photo, nothing
+    // else. Billed reads are unchanged (a projection does not reduce document
+    // count) and the saving is latency only, but it also keeps surnames out of
+    // a function with no business reading them, consistent with the 2026-08-02
+    // name-privacy split.
+    //
+    // Still reads `profiles`, NOT `publicProfiles`: profiles is the source of
+    // truth, and depending on the mirror here would let a missing
+    // publicProfiles doc silently drop a participant off the leaderboard.
+    db.collection("profiles").select("firstName", "photoURL").get(),
     db.collection("results").get(),
   ]);
 
@@ -65,14 +82,76 @@ async function recomputeLeaderboard() {
     });
   });
   entries.sort((a, b) => b.points - a.points);
+  return entries;
+}
 
-  await db.doc("leaderboardCache/current").set({ entries, computedAt: Date.now() });
+/**
+ * Computes, then stores only if the result is still the freshest one available.
+ *
+ * The transaction is what makes the check-and-write atomic; Firestore is in
+ * PESSIMISTIC concurrency mode, so competing transactions on the control doc
+ * serialize rather than racing. shouldCommitRecompute keeps stored results
+ * monotonic in read freshness, so an older read can never overwrite a newer
+ * one — see recomputeGuard.js for why that, not the debounce, is the property
+ * correctness actually rests on.
+ */
+async function runRecompute() {
+  const readStartedAt = Date.now();
+  const entries = await computeEntries();
+
+  const controlRef = db.doc(CONTROL_DOC);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(controlRef);
+    const control = snap.exists ? snap.data() : null;
+    if (!shouldCommitRecompute(control, readStartedAt)) return;
+
+    const now = Date.now();
+    tx.set(db.doc(CACHE_DOC), { entries, computedAt: now });
+    tx.set(
+      controlRef,
+      {
+        computedAt: now,
+        lastComputeReadStartedAt: readStartedAt,
+        computedThroughRequestedAt: control ? control.requestedAt ?? 0 : 0,
+        computeCount: FieldValue.increment(1),
+      },
+      { merge: true }
+    );
+  });
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Every trigger calls this instead of recomputing directly.
+ *
+ * A single match outcome in the dev panel commits a batch that rewrites all 36
+ * `results` docs (src/devpanel/useDevMatches.ts), and every doc whose value
+ * actually changed fires its own trigger. Before this debounce that meant 5-15
+ * concurrent full recomputes — each re-reading every prediction and profile,
+ * all writing the same document, and able to interleave such that an older read
+ * silently erased a just-submitted prediction from the leaderboard.
+ *
+ * Now they all stamp the control doc, sleep, and all but the newest stand down.
+ */
+async function requestRecompute() {
+  const myToken = randomUUID();
+  const controlRef = db.doc(CONTROL_DOC);
+  await controlRef.set({ requestToken: myToken, requestedAt: Date.now() }, { merge: true });
+
+  await sleep(DEBOUNCE_MS);
+
+  const snap = await controlRef.get();
+  const control = snap.exists ? snap.data() : null;
+  if (!shouldProceedAfterDebounce(control, myToken, Date.now())) return;
+
+  await runRecompute();
 }
 
 exports.recomputeLeaderboardOnPrediction = onDocumentWritten("predictions/{uid}", async () => {
-  await recomputeLeaderboard();
+  await requestRecompute();
 });
 
 exports.recomputeLeaderboardOnResult = onDocumentWritten("results/{teamId}", async () => {
-  await recomputeLeaderboard();
+  await requestRecompute();
 });
