@@ -57,7 +57,7 @@ This whole codebase is young and was built fast: 182 commits, every single one d
 | Icons | `lucide-react` | shadcn's configured icon library |
 | Font | `@fontsource-variable/inter` | The *only* typeface in the entire app |
 | Backend/data | `firebase` v10 — **Auth**, **Firestore**, **Realtime Database**, **Storage** | One project, no emulators, no dev/prod split |
-| Server compute | Firebase Cloud Functions (1 function, Firestore-triggered) + one out-of-band Cloud Run service | See §11 |
+| Server compute | Firebase Cloud Functions (3 functions: 2 Firestore-triggered + 1 scheduled) + one out-of-band Cloud Run service | See §11 |
 | Testing | Vitest 2, jsdom, `@testing-library/react` + `jest-dom` | Real, actively-maintained test suite (§10) |
 | Image processing (build-time only) | `sharp` | Used by two one-off Node scripts, not shipped to the client |
 
@@ -93,7 +93,7 @@ The whole app is a single-page client. There is no server-rendered HTML beyond t
 - `storage` — two paths: `profile-photos/{uid}-{timestamp}` and `forum-images/{uid}-{timestamp}`.
 
 **Server side:**
-- `functions/leaderboard` — a real Firebase Function (Firestore-triggered), precomputes the leaderboard server-side so clients don't redo the scoring math on every visit.
+- `functions/leaderboard` — real Firebase Functions (two Firestore-triggered, one scheduled), precomputes the leaderboard server-side so clients don't redo the scoring math on every visit.
 - `functions/stopbilling` — **not** a Firebase Function at all; a manually-deployed Cloud Run service that acts as a billing killswitch. See §11.
 - No CI/CD exists anywhere in the repo (no `.github/`). Every deploy — hosting (once configured), Firestore/Storage/RTDB rules, the leaderboard function, the Cloud Run service — is a manual, developer-run CLI command.
 
@@ -262,7 +262,9 @@ Each of a participant's 36 picks scores 3 points if their predicted finishing po
 
 **The fixture calendar is real.** `src/devpanel/fixtures.ts` encodes the genuine, complete 2025/26 UEFA Champions League league-phase schedule — 144 fixtures across 8 matchdays, all 36 real clubs (including the real 2025/26 debutants: Kairat Almaty, Pafos, Athletic Club, Union Saint-Gilloise, Qarabağ), real kickoff times converted to Turkish local time. The one deliberate fabrication: every date's *year* is bumped forward by one (2026 standing in for 2025, 2027 for 2026), because the real 2026/27 calendar doesn't exist yet. This same file, together with `devpanel/standings.ts`'s table-computation logic (points/goal-difference/head-to-head-free tiebreaks, with every scoreline synthesized as either 1-0 or 0-0 purely so the columns aren't all zero), powers the entire dev-preview experience — and, per the rank-history gap above, has no counterpart wired up for real production results at all.
 
-**Server-side precompute**: `functions/leaderboard` is a Firebase Function triggered on every write to `predictions/{uid}` or `results/{teamId}`, doing a full (non-incremental) recompute of every participant's score and rank, written to `leaderboardCache/current` — the one document clients actually read, so nobody's browser has to download and re-score every prediction on every visit.
+**Server-side precompute**: `functions/leaderboard` is triggered on every write to `predictions/{uid}` or `results/{teamId}`, doing a full (non-incremental) recompute of every participant's score and rank, written to `leaderboardCache/current` — the one document clients actually read, so nobody's browser has to download and re-score every prediction on every visit.
+
+Those triggers **coalesce** rather than recomputing once per changed document (2026-08-07 scaling pass, §11). A single dev-panel match outcome rewrites all 36 `results` docs in one batch; measured in production at 250 participants, that now costs **3 recomputes rather than ~36**, and a 200-write prediction burst costs 2. The commit is transactional and refuses any write whose read began before the stored result's, so overlapping recomputes cannot lose an update — the old code could silently drop a just-submitted prediction from the leaderboard with nothing scheduled to re-trigger it.
 
 ---
 
@@ -346,7 +348,13 @@ Coverage is broad and current: the large majority of feature modules across `pre
 
 ## 11. Backend, infra &amp; deployment
 
-**`functions/leaderboard`** — a normal Firebase Function (Node 20, `firebase-admin`/`firebase-functions`), the only one wired into `firebase.json`. Two Firestore-write triggers (`predictions/{uid}`, `results/{teamId}`) both call one full-recompute routine that reads all predictions/profiles/results, scores and ranks everyone, and writes the result to `leaderboardCache/current`. Its own header comment flags a real, ongoing maintenance risk: the scoring logic here is a **hand-duplicated copy** of `src/leaderboard/scoring.ts`, not an import — this is a separate JS runtime from the TS client app, so the two must be kept in sync manually.
+**`functions/leaderboard`** — a normal Firebase Function codebase (Node 20, `firebase-admin`/`firebase-functions`), the only one wired into `firebase.json`. **Three** deployed functions, all in `europe-west8`: two Firestore-write triggers (`predictions/{uid}`, `results/{teamId}`) and `recomputeLeaderboardSafetyNet`, a 5-minute scheduled pass. All three route through one full-recompute routine that reads all predictions/profiles/results, scores and ranks everyone, and writes to `leaderboardCache/current`. Its own header comment flags a real, ongoing maintenance risk: the scoring logic here is a **hand-duplicated copy** of `src/leaderboard/scoring.ts`, not an import — this is a separate JS runtime from the TS client app, so the two must be kept in sync manually.
+
+Three things about this codebase are load-bearing and easy to break (all from the 2026-08-07 scaling pass):
+
+- **`leaderboardCache/control`** holds the coalescing state (request token, timestamps, `computeCount`). It sits in `leaderboardCache` deliberately so no `firestore.rules` change is needed — that collection is already `read: true, write: false`, and the Admin SDK bypasses rules.
+- **`recomputeGuard.js` holds the concurrency decisions as pure functions**, unit-tested in the normal suite. `shouldCommitRecompute`'s second guard is what makes stored results monotonic in read freshness; without it the staleness ceiling would reintroduce the lost-update race it exists to prevent.
+- **The scheduled function's region is pinned explicitly.** Firestore triggers infer their region from the database's location; `onSchedule` does not, and would otherwise deploy to `us-central1` and read cross-region. Also: Firebase treats *every* export of this module as a deployable function, so helpers must stay module-private or the deploy fails.
 
 **`functions/stopbilling`** — **not a Firebase Function.** It's a small Cloud Run service (Node, `@google-cloud/functions-framework`) that acts as a billing killswitch: a Cloud Billing budget-alert → Pub/Sub → Eventarc chain invokes it, and if spend exceeds budget it calls the Cloud Billing API to unlink the project's billing account entirely, killing all billing outright. It's deployed by hand (`gcloud run deploy`, region `europe-west8`), lives completely outside `firebase.json` and any CI, and its own README documents a real past incident: using the Cloud Run console's "deploy new revision" UI instead of the CLI once silently reverted it to a placeholder image with no code actually deployed.
 

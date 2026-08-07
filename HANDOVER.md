@@ -6,6 +6,94 @@ This file is meant to be pruned/rewritten as things get resolved or folded into 
 
 **Term: "Xerox pass."** Reusing an existing, already-built page/composition wholesale for a different, not-yet-designed state — purely to replace placeholder text with *something real*, under explicit instruction not to worry about whether it's actually appropriate for that state ("don't overthink it," "we'll go through all of them much later"). Not a design decision, not even a rough one — a stopgap. A page/state marked as Xeroxed (from wherever) should be treated as **unreviewed** for its own specific context until a real pass happens; don't cite its current layout, copy, or behavior as an intentional choice for that state.
 
+## 2026-08-07 — Scaling to 250 participants, branch `scaling-250-users`
+
+Mert's mandate: *"This website must work with 250 people. It's your job now to ensure that. There
+might be 40-50 people online at a time at maximum... im not talking about the safety issues, those
+are to be solved before launch. I'm talking about chat, forum, any sort of request."* Spec at
+`docs/superpowers/specs/2026-08-07-scaling-250-users-design.md`, plan at
+`docs/superpowers/plans/2026-08-07-scaling-250-users.md`. **987 tests / 128 files** (from 960/126),
+`tsc -b` and `vite build` clean, functions deployed and measured in production.
+
+**Cost was never the risk, and that reframed the whole exercise.** Blaze is on; normal browsing at
+250 users projects to roughly $5–10/month, and even the worst pre-fix read storm was about $1.70.
+The risks were **correctness** and **matchday responsiveness**. Worth knowing before anyone reaches
+for a cost-driven redesign that isn't needed.
+
+**A 16-item scaling pass already existed** (2026-07-31) and its fixes are real and holding —
+presence/typing on RTDB, likes denormalised onto the post doc, chat/forum windowed to 50, the
+leaderboard precomputed server-side. Its punch-list doc was never committed (that's the dangling
+"scaling-audit No. X" citations `PROJECT_STATE.md` §396 notes), so the new spec is also the durable
+record that pass never got.
+
+**Two defects that behave perfectly at 53 users and fail specifically at 250:**
+
+1. **The leaderboard recompute fired once per changed document, and had a lost-update race.** One
+   dev-panel match outcome rewrites all 36 `results` docs, each firing its own full recompute of
+   every prediction and profile. Worse, the function read-then-wrote with no concurrency control, so
+   two overlapping invocations could interleave such that **an older read silently erased a
+   just-submitted prediction, with nothing scheduled to re-trigger.** At 250 people submitting near a
+   deadline that stops being theoretical.
+2. **Chat search was the only query in the app unbounded in time** — `searchMessages` fetched the
+   *entire* message collection per click, justified in its own comment as "a friend-group season,
+   not a public product." At 250 people over Sept–May that's ~40,000 docs per click, growing daily.
+   Now capped at the most recent 2,000 (Mert's call), with the empty state saying so when the window
+   was full, so a miss doesn't imply the message never existed.
+
+**The emulator falsified the design, which is the whole reason this branch has an integration
+suite.** The debounce alone collapsed *nothing*: the functions emulator runs Firestore triggers
+strictly one at a time, so 36 docs produced 36 sequential triggers, each finding itself the newest
+and recomputing. Cloud Run does overlap them — production logs show four invocations inside 5ms —
+but **a coalescing scheme that silently degrades to no coalescing under an unlucky concurrency model
+is not one to ship.** So `shouldSkipAlreadyCovered` was added: a trigger whose write was already
+incorporated by a finished recompute stands down immediately, no sleep, no write. Coalescing no
+longer depends on overlap at all.
+
+**Measured in production at 250 participants** (seeded to 253/252, measured, then cleaned back to
+the exact 53/53/52/54 baseline): one 36-doc batch → **3 recomputes instead of ~36** (~1,600 reads
+instead of ~19,400); a 200-write prediction burst → **2 recomputes**, a ~100× collapse, and that is
+exactly where the lost-update race used to bite. Recompute takes 2,416ms at 252 predictions, 57ms at
+52. No errors, contention or timeouts.
+
+**Three lessons worth carrying, beyond this branch:**
+
+- **A test can pass by measuring nothing.** My first settle-detector polled for *stability* and
+  returned "0 recomputes, settled" while every trigger was still asleep in its debounce. It went
+  green against broken code. This is the fifth time this file has logged a variant of "green suite,
+  wrong conclusion" — and the first where the test itself was the liar rather than the environment.
+- **Correct-by-accident reads as correct.** Writing the guard's unit tests first exposed that
+  "never computed yet" only worked because `now - 0` is enormous with real epoch timestamps — a
+  property of the clock's magnitude, not a decision. Made explicit.
+- **Two of my own plan bugs were caught by writing the plan, not by running it:** exporting a plain
+  helper from the functions module would have broken the deploy (Firebase treats every export as a
+  deployable function), and `onSchedule` would have silently landed in `us-central1` because only
+  Firestore triggers infer their region from the database location.
+
+**Also verified along the way:** the spec projected the leaderboard cache at 138.8 KiB / 13.6% of
+the 1 MiB doc limit from a 52-entry sample; the real figure at 252 entries is 138.7 KiB / 13.5%. The
+estimation method can be trusted next time. And `stopbilling` **is** deployed (Cloud Run,
+`europe-west8`) despite not appearing in `firebase.json` or `gcloud functions list`.
+
+**Open follow-ups:**
+- **There is still no hosting target at all** — no `hosting` key in `firebase.json`, no `.github/`,
+  no path from `npm run build` to a live URL. Deliberately out of scope here, but **this is the
+  largest remaining launch blocker**: a site 250 people cannot reach doesn't satisfy the mandate.
+- **The emulator suite needs JDK 21+.** This machine's default `java` is 1.8, which firebase-tools
+  rejects outright; Android Studio's bundled JBR works. Documented in
+  `vitest.integration.config.ts` rather than hardcoded into the npm script, since the path is
+  machine-specific. `npm run test:integration` is **not** part of `npm test` (the `.itest.ts` suffix
+  keeps it out) and takes ~75s.
+- **The Cloud Billing Budget API is not enabled**, so no budget could be verified from the CLI.
+  Given `stopbilling` exists as a killswitch, confirming a budget actually backs it is worth doing —
+  it sits on the safety side of the line Mert drew, so it was flagged, not actioned.
+- **Per-uid field-path writes were specced and deliberately not built** (spec §2, "Rejected
+  alternatives"): making `entries` a uid-keyed map would cut a prediction write to ~38 reads and make
+  the race structurally impossible rather than prevented. The measured numbers say it isn't needed;
+  the analysis is written down for whenever that changes.
+- `usePlayers`' 250-doc live listener was left alone on purpose — correct, cached, and cheap.
+
+---
+
 ## 2026-08-06/07 — Mobile built, branch `mobile` → merged to `main`
 
 Mert filled in the wireframe tool (19 of ~76 cells drawn, committed at
