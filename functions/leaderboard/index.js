@@ -5,6 +5,7 @@ const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { randomUUID } = require("node:crypto");
 const {
   DEBOUNCE_MS,
+  shouldSkipAlreadyCovered,
   shouldProceedAfterDebounce,
   shouldCommitRecompute,
 } = require("./recomputeGuard");
@@ -128,33 +129,53 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  *
  * A single match outcome in the dev panel commits a batch that rewrites all 36
  * `results` docs (src/devpanel/useDevMatches.ts), and every doc whose value
- * actually changed fires its own trigger. Before this debounce that meant 5-15
- * concurrent full recomputes — each re-reading every prediction and profile,
+ * actually changed fires its own trigger. Before this, that meant one full
+ * recompute per changed document — each re-reading every prediction and profile,
  * all writing the same document, and able to interleave such that an older read
  * silently erased a just-submitted prediction from the leaderboard.
  *
- * Now they all stamp the control doc, sleep, and all but the newest stand down.
+ * Two independent mechanisms collapse that, on purpose:
+ *
+ *  1. Already-covered check (no sleep, no write). If a finished recompute read
+ *     the data after this write committed, this trigger has nothing to add.
+ *     This is what holds when triggers run *sequentially* — which is exactly
+ *     what the functions emulator does, and where a debounce alone collapses
+ *     nothing at all.
+ *  2. The debounce. When triggers do overlap, all but the newest stand down
+ *     before doing any work, so a burst costs one recompute rather than one per
+ *     trigger that happened to start before the first finished.
  */
-async function requestRecompute() {
-  const myToken = randomUUID();
+async function requestRecompute(eventTimeMs) {
   const controlRef = db.doc(CONTROL_DOC);
+
+  const before = await controlRef.get();
+  if (shouldSkipAlreadyCovered(before.exists ? before.data() : null, eventTimeMs)) return;
+
+  const myToken = randomUUID();
   await controlRef.set({ requestToken: myToken, requestedAt: Date.now() }, { merge: true });
 
   await sleep(DEBOUNCE_MS);
 
   const snap = await controlRef.get();
   const control = snap.exists ? snap.data() : null;
+  if (shouldSkipAlreadyCovered(control, eventTimeMs)) return;
   if (!shouldProceedAfterDebounce(control, myToken, Date.now())) return;
 
   await runRecompute();
 }
 
-exports.recomputeLeaderboardOnPrediction = onDocumentWritten("predictions/{uid}", async () => {
-  await requestRecompute();
+/** Eventarc delivers the commit time as an RFC3339 string on `event.time`. */
+function eventTimeMs(event) {
+  const parsed = Date.parse(event?.time ?? "");
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+exports.recomputeLeaderboardOnPrediction = onDocumentWritten("predictions/{uid}", async (event) => {
+  await requestRecompute(eventTimeMs(event));
 });
 
-exports.recomputeLeaderboardOnResult = onDocumentWritten("results/{teamId}", async () => {
-  await requestRecompute();
+exports.recomputeLeaderboardOnResult = onDocumentWritten("results/{teamId}", async (event) => {
+  await requestRecompute(eventTimeMs(event));
 });
 
 /**

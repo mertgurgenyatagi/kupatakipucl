@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   DEBOUNCE_MS,
   MAX_STALENESS_MS,
+  COVERED_SKEW_MS,
+  shouldSkipAlreadyCovered,
   shouldProceedAfterDebounce,
   shouldCommitRecompute,
 } from "./recomputeGuard.js";
@@ -10,6 +12,39 @@ describe("recomputeGuard constants", () => {
   it("uses the debounce and ceiling values the design specifies", () => {
     expect(DEBOUNCE_MS).toBe(2000);
     expect(MAX_STALENESS_MS).toBe(30000);
+  });
+});
+
+describe("shouldSkipAlreadyCovered", () => {
+  it("does not skip when nothing has ever been computed", () => {
+    expect(shouldSkipAlreadyCovered(null, 1_000_000)).toBe(false);
+    expect(shouldSkipAlreadyCovered({}, 1_000_000)).toBe(false);
+  });
+
+  // The case this guard exists for: every other document in the same batch
+  // committed before the recompute that has already run, so their triggers have
+  // provably nothing left to contribute.
+  it("skips when a finished compute began after this event was committed", () => {
+    const control = { lastComputeReadStartedAt: 1_000_000 };
+    expect(shouldSkipAlreadyCovered(control, 1_000_000 - COVERED_SKEW_MS - 1)).toBe(true);
+  });
+
+  it("does not skip when the last compute began before this event was committed", () => {
+    const control = { lastComputeReadStartedAt: 1_000_000 };
+    expect(shouldSkipAlreadyCovered(control, 1_000_500)).toBe(false);
+  });
+
+  // Prefers a redundant recompute over a missed one: event times come from
+  // Eventarc and readStartedAt from the function's own clock, so a margin keeps
+  // millisecond skew from silently dropping a real update.
+  it("does not skip inside the clock-skew margin", () => {
+    const control = { lastComputeReadStartedAt: 1_000_000 };
+    expect(shouldSkipAlreadyCovered(control, 1_000_000 - COVERED_SKEW_MS + 1)).toBe(false);
+  });
+
+  it("does not skip when the event time is unknown", () => {
+    const control = { lastComputeReadStartedAt: 1_000_000 };
+    expect(shouldSkipAlreadyCovered(control, undefined)).toBe(false);
   });
 });
 

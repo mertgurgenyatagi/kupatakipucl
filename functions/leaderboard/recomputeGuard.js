@@ -15,7 +15,44 @@ const DEBOUNCE_MS = 2000;
 /** Past this age, a request recomputes even without holding the newest token. */
 const MAX_STALENESS_MS = 30000;
 
+/**
+ * Safety margin when comparing an Eventarc event time against this function's
+ * own `Date.now()`. Prefers a redundant recompute over a missed one.
+ */
+const COVERED_SKEW_MS = 250;
+
 const num = (value) => (typeof value === "number" ? value : 0);
+
+/**
+ * Has a *finished* recompute already incorporated the write that fired this
+ * trigger? If so there is nothing left to do — stand down without even
+ * stamping the control doc.
+ *
+ * This is what makes coalescing work independently of whether triggers happen
+ * to overlap in time, and it was added because the emulator proved the debounce
+ * alone is not enough. The functions emulator runs Firestore triggers strictly
+ * one at a time, so a 36-document batch produced 36 sequential triggers, each
+ * of which found itself holding the newest token and did a full recompute:
+ * 36 changed documents, 36 recomputes, zero collapse.
+ *
+ * Cloud Run would very likely have overlapped them (containerConcurrency 80,
+ * and the debounce sleep is a timer rather than blocking work) — but "very
+ * likely" is not a guarantee, and a coalescing scheme that silently degrades to
+ * no coalescing under an unlucky concurrency model is not one to ship. With this
+ * guard, the first trigger recomputes and every sibling from the same batch
+ * observes that its own change is already covered, whatever the concurrency.
+ *
+ * The comparison is against `lastComputeReadStartedAt`, not `computedAt`: what
+ * matters is when the compute *read* the data, since only a read that began
+ * after this write committed can be guaranteed to have seen it.
+ */
+function shouldSkipAlreadyCovered(control, eventTimeMs) {
+  if (!control) return false;
+  if (typeof eventTimeMs !== "number") return false;
+  const lastRead = num(control.lastComputeReadStartedAt);
+  if (lastRead === 0) return false;
+  return lastRead > eventTimeMs + COVERED_SKEW_MS;
+}
 
 /**
  * After sleeping DEBOUNCE_MS, should this invocation actually do the recompute?
@@ -66,6 +103,8 @@ function shouldCommitRecompute(control, readStartedAt) {
 module.exports = {
   DEBOUNCE_MS,
   MAX_STALENESS_MS,
+  COVERED_SKEW_MS,
+  shouldSkipAlreadyCovered,
   shouldProceedAfterDebounce,
   shouldCommitRecompute,
 };

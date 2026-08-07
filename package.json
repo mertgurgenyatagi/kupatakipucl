@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:integration": "firebase emulators:exec --project kupatakipucl --only firestore,functions \"vitest run --config vitest.integration.config.ts\""
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -38,6 +39,7 @@
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.0",
+    "firebase-admin": "^12.7.0",
     "jsdom": "^25.0.0",
     "sharp": "^0.35.3",
     "typescript": "^5.5.0",
