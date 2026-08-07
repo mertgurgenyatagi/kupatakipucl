@@ -3,14 +3,22 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { KnockoutPrediction } from "./knockoutTypes";
 import { MOCK_ROUND_OF_16 } from "./mockKnockoutData";
+import { getCached, setCached } from "../lib/sessionCache";
 
 export const RO16_TEAM_IDS = new Set(
   MOCK_ROUND_OF_16.flatMap((m) => [m.homeTeamId, m.awayTeamId])
 );
 
+const CACHE_KEY = "allKnockoutPredictions";
+
+/** Every participant's knockout bracket, keyed by uid. Read by TeamPopup and
+ *  MatchupPopup, so before sessionCache (2026-08-07, scaling-250 design spec
+ *  §4) every popup open — and every re-open — paid a fresh full-collection
+ *  fetch that grows to 250 docs. */
 export function useAllKnockoutPredictions() {
-  const [predictions, setPredictions] = useState<Record<string, KnockoutPrediction>>({});
-  const [loading, setLoading] = useState(true);
+  const cached = getCached<Record<string, KnockoutPrediction>>(CACHE_KEY);
+  const [predictions, setPredictions] = useState<Record<string, KnockoutPrediction>>(cached ?? {});
+  const [loading, setLoading] = useState(cached === undefined);
 
   useEffect(() => {
     let ignore = false;
@@ -21,6 +29,7 @@ export function useAllKnockoutPredictions() {
         snapshot.docs.forEach((doc) => {
           map[doc.id] = doc.data() as KnockoutPrediction;
         });
+        setCached(CACHE_KEY, map);
         setPredictions(map);
         setLoading(false);
       })
