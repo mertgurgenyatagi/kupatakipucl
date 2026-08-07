@@ -7,5 +7,9 @@ vite.config.js
 vite.config.d.ts
 .playwright-mcp/
 
+# Firebase emulator debris (npm run test:integration)
+*-debug.log
+.firebase/
+
 # Antigravity binaries
 *.exe
