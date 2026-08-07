@@ -275,6 +275,17 @@ export const ParticipantPopup = memo(function ParticipantPopup({
 
   const isMobile = useIsMobile();
   const isKnockoutPhaseOrPre = phase === "preknockout" || phase === "knockout";
+
+  // Reset to the phase-appropriate default every time a participant is
+  // opened — including switching straight from one participant to another
+  // without closing the popup first, since this component stays mounted
+  // across different participants rather than remounting per click.
+  useEffect(() => {
+    if (ranked) {
+      setActivePredictionTab(isKnockoutPhaseOrPre ? "knockout" : "league");
+    }
+  }, [ranked?.entry.uid, isKnockoutPhaseOrPre]);
+
   const { prediction: knockoutPrediction, loading: knockoutLoading } = useKnockoutPrediction(
     isKnockoutPhaseOrPre && tournamentStarted ? displayedUid : null
   );

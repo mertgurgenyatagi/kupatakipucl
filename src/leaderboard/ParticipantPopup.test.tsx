@@ -323,4 +323,106 @@ describe("ParticipantPopup", () => {
       expect(mockGetDoc).not.toHaveBeenCalled(); // but the survey read is skipped
     });
   });
+
+  describe("knockout-phase prediction tab default", () => {
+    it("defaults to the Eleme Tahmini (knockout) tab when phase is knockout", async () => {
+      render(
+        <ParticipantPopup
+          ranked={{ entry: baseEntry, rank: 3 }}
+          entries={[baseEntry, otherEntry]}
+          players={PLAYERS}
+          results={results}
+          onOpenChange={() => {}}
+          onSelectTeam={() => {}}
+          tournamentStarted={true}
+          phase="knockout"
+        />
+      );
+      // No knockout prediction doc exists for this uid (mockGetDoc defaults
+      // to exists: () => false), so the knockout tab's own empty state is
+      // the tell that the knockout tab, not the league grid, is active.
+      expect(
+        await screen.findByText("Bu katılımcı henüz eleme tahmini yapmamış.")
+      ).toBeInTheDocument();
+      expect(screen.queryByText(TEAMS[0].shortName)).not.toBeInTheDocument();
+    });
+
+    it("defaults to the Eleme Tahmini (knockout) tab when phase is preknockout", async () => {
+      render(
+        <ParticipantPopup
+          ranked={{ entry: baseEntry, rank: 3 }}
+          entries={[baseEntry, otherEntry]}
+          players={PLAYERS}
+          results={results}
+          onOpenChange={() => {}}
+          onSelectTeam={() => {}}
+          tournamentStarted={true}
+          phase="preknockout"
+        />
+      );
+      expect(
+        await screen.findByText("Bu katılımcı henüz eleme tahmini yapmamış.")
+      ).toBeInTheDocument();
+      expect(screen.queryByText(TEAMS[0].shortName)).not.toBeInTheDocument();
+    });
+
+    it("stays on the Lig Tahmini (league) tab when phase is leaguephase", async () => {
+      render(
+        <ParticipantPopup
+          ranked={{ entry: baseEntry, rank: 3 }}
+          entries={[baseEntry, otherEntry]}
+          players={PLAYERS}
+          results={results}
+          onOpenChange={() => {}}
+          onSelectTeam={() => {}}
+          tournamentStarted={true}
+          phase="leaguephase"
+        />
+      );
+      // leaguephase isn't preknockout/knockout, so the popup renders the
+      // classic compact view with no tabs at all — league predictions show
+      // directly.
+      expect(await screen.findByText(TEAMS[0].shortName)).toBeInTheDocument();
+      expect(
+        screen.queryByText("Bu katılımcı henüz eleme tahmini yapmamış.")
+      ).not.toBeInTheDocument();
+    });
+
+    it("re-defaults to the knockout tab when switching to a different participant, even after a manual switch to league", async () => {
+      const { rerender } = render(
+        <ParticipantPopup
+          ranked={{ entry: baseEntry, rank: 3 }}
+          entries={[baseEntry, otherEntry]}
+          players={PLAYERS}
+          results={results}
+          onOpenChange={() => {}}
+          onSelectTeam={() => {}}
+          tournamentStarted={true}
+          phase="knockout"
+        />
+      );
+      await screen.findByText("Bu katılımcı henüz eleme tahmini yapmamış.");
+
+      fireEvent.click(screen.getByRole("button", { name: "Lig Tahmini" }));
+      expect(await screen.findByText(TEAMS[0].shortName)).toBeInTheDocument();
+
+      rerender(
+        <ParticipantPopup
+          ranked={{ entry: otherEntry, rank: 5 }}
+          entries={[baseEntry, otherEntry]}
+          players={PLAYERS}
+          results={results}
+          onOpenChange={() => {}}
+          onSelectTeam={() => {}}
+          tournamentStarted={true}
+          phase="knockout"
+        />
+      );
+
+      expect(
+        await screen.findByText("Bu katılımcı henüz eleme tahmini yapmamış.")
+      ).toBeInTheDocument();
+      expect(screen.queryByText(TEAMS[2].shortName)).not.toBeInTheDocument();
+    });
+  });
 });
