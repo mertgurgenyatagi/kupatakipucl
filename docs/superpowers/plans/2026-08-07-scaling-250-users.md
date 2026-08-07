@@ -240,7 +240,7 @@ Expected: PASS, 11 tests.
 - [ ] **Step 5: Run the full suite to confirm nothing regressed**
 
 Run: `npm test`
-Expected: PASS. Total is now **971 tests / 127 files** (960/126 baseline + 11 tests in 1 new file). If the new file is *not* in the count, vitest is not picking it up — resolve that now rather than later, since Task 4's assertions depend on this module being real.
+Expected: PASS. Total is now **972 tests / 127 files** (960/126 baseline + 12 tests in 1 new file). If the new file is *not* in the count, vitest is not picking it up — resolve that now rather than later, since Task 4's assertions depend on this module being real.
 
 - [ ] **Step 6: Commit**
 
@@ -439,7 +439,7 @@ Expected: it will fail on Admin SDK credentials (`Could not load the default cre
 - [ ] **Step 3: Confirm the app suite is untouched**
 
 Run: `npm test`
-Expected: PASS, still **971 tests / 127 files**. Nothing in `src/` imports this file, so the count must not move.
+Expected: PASS, still **972 tests / 127 files**. Nothing in `src/` imports this file, so the count must not move.
 
 - [ ] **Step 4: Commit**
 
@@ -708,7 +708,7 @@ Expected: PASS, 2 tests. If the emulator cannot bind port 8080 or 5001, stop wha
 - [ ] **Step 6: Confirm the normal suite still ignores these files**
 
 Run: `npm test`
-Expected: PASS, still **971 tests / 127 files**. If the count jumped by 2, the `.itest.ts` suffix is being matched by the default include and needs an explicit exclude in `vite.config.ts`.
+Expected: PASS, still **972 tests / 127 files**. If the count jumped by 2, the `.itest.ts` suffix is being matched by the default include and needs an explicit exclude in `vite.config.ts`.
 
 - [ ] **Step 7: Commit**
 
@@ -945,7 +945,7 @@ Add `SEARCH_WINDOW` to this file's imports from `./searchMessages`.
 - [ ] **Step 7: Verify the whole suite and the build**
 
 Run: `npm test`
-Expected: PASS, **975 tests / 127 files** (971 + 3 in searchMessages + 1 in ChatRoom). No file count change.
+Expected: PASS, **976 tests / 127 files** (972 + 3 in searchMessages + 1 in ChatRoom). No file count change.
 
 Run: `npx tsc -b && npx vite build`
 Expected: both clean. `tsc` is the real check that no stale `fetchAllMessagesForSearch` reference survives anywhere.
@@ -1143,7 +1143,7 @@ Expected: PASS.
 - [ ] **Step 6: Run the full suite**
 
 Run: `npm test`
-Expected: PASS, **977 tests / 127 files**. Watch specifically for failures in `LoggedInHome.test.tsx` and `StatsPage.test.tsx` — a hook that now returns data on its first render instead of after a tick can make a test that asserted on a loading state fail. If one does, the test's assumption is what changed, not the behaviour; fix the test and say so in the commit.
+Expected: PASS, **978 tests / 127 files**. Watch specifically for failures in `LoggedInHome.test.tsx` and `StatsPage.test.tsx` — a hook that now returns data on its first render instead of after a tick can make a test that asserted on a loading state fail. If one does, the test's assumption is what changed, not the behaviour; fix the test and say so in the commit.
 
 - [ ] **Step 7: Commit**
 
@@ -1306,7 +1306,7 @@ Expected: PASS, 4 tests.
 - [ ] **Step 5: Full verification**
 
 Run: `npm test`
-Expected: PASS, **981 tests / 128 files**.
+Expected: PASS, **982 tests / 128 files**.
 
 Run: `npx tsc -b && npx vite build`
 Expected: both clean.
@@ -1435,11 +1435,11 @@ git commit -m "docs: real production measurements at 250 participants"
 | Checkpoint | Command | Expected |
 | --- | --- | --- |
 | Baseline (verified 2026-08-07) | `npm test` | 960 tests / 126 files |
-| After Task 1 | `npm test` | 971 / 127 |
-| After Task 2 | `npm test` | 971 / 127 (unchanged) |
+| After Task 1 | `npm test` | 972 / 127 |
+| After Task 2 | `npm test` | 972 / 127 (unchanged) |
 | After Task 4 | `npm run test:integration` | 2 passed |
-| After Task 5 | `npm test` | 975 / 127 |
-| After Task 6 | `npm test` | 977 / 127 |
-| After Task 7 | `npm test` + `tsc -b` + `vite build` | 981 / 128, both clean |
+| After Task 5 | `npm test` | 976 / 127 |
+| After Task 6 | `npm test` | 978 / 127 |
+| After Task 7 | `npm test` + `tsc -b` + `vite build` | 982 / 128, both clean |
 
 These counts assume no existing test needed adjustment. Task 6 is the one most likely to break that assumption — a hook that now returns data on its first render can fail a test that asserted on a loading state. If a count comes out different, state the real number and the reason in that task's commit; a changed count with a stated reason is fine, an unexplained one is not.
