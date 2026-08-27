@@ -13,6 +13,14 @@ vi.mock("firebase/firestore", () => ({
 
 vi.mock("../firebase", () => ({ db: {} }));
 
+// The cache is only readable once the phase leaves 'notstarted', so the hook
+// asks before it subscribes. Default the tests to a started phase; the
+// 'notstarted' behaviour gets its own cases at the bottom.
+const mockUseTournamentPhase = vi.fn(() => "leaguephase");
+vi.mock("../tournament/useTournamentPhase", () => ({
+  useTournamentPhase: () => mockUseTournamentPhase(),
+}));
+
 import { useLeaderboard } from "./useLeaderboard";
 
 type SnapshotCallback = (snapshot: { exists: () => boolean; data: () => unknown }) => void;
@@ -25,6 +33,7 @@ describe("useLeaderboard", () => {
   beforeEach(() => {
     mockOnSnapshot.mockReset();
     mockUnsubscribe.mockReset();
+    mockUseTournamentPhase.mockReturnValue("leaguephase");
     clearSessionCache();
     mockOnSnapshot.mockImplementation((_docRef: unknown, onNext: SnapshotCallback, onError: ErrorCallback) => {
       capturedOnNext = onNext;
@@ -77,5 +86,38 @@ describe("useLeaderboard", () => {
     const { unmount } = renderHook(() => useLeaderboard());
     unmount();
     expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * Every entry in the cache doc carries a participant's full 36-team
+   * ranking, so it is unreadable until the league phase starts — the same
+   * gate the predictions themselves are behind (firestore.rules,
+   * 2026-08-27). Subscribing during 'notstarted' would guarantee a
+   * permission error on pages that mount this hook in that phase, so the
+   * hook does not subscribe at all.
+   */
+  describe("before the league phase", () => {
+    it("does not subscribe at all", () => {
+      mockUseTournamentPhase.mockReturnValue("notstarted");
+      renderHook(() => useLeaderboard());
+      expect(mockOnSnapshot).not.toHaveBeenCalled();
+    });
+
+    it("settles as an empty, finished leaderboard rather than loading forever", async () => {
+      mockUseTournamentPhase.mockReturnValue("notstarted");
+      const { result } = renderHook(() => useLeaderboard());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      expect(result.current.entries).toEqual([]);
+    });
+
+    it("subscribes once the phase advances", async () => {
+      mockUseTournamentPhase.mockReturnValue("notstarted");
+      const { rerender } = renderHook(() => useLeaderboard());
+      expect(mockOnSnapshot).not.toHaveBeenCalled();
+
+      mockUseTournamentPhase.mockReturnValue("leaguephase");
+      rerender();
+      await waitFor(() => expect(mockOnSnapshot).toHaveBeenCalledTimes(1));
+    });
   });
 });

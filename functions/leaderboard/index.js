@@ -14,11 +14,24 @@ initializeApp();
 const db = getFirestore();
 
 const CACHE_DOC = "leaderboardCache/current";
-// Lives in leaderboardCache on purpose: that collection is already
-// `read: true, write: false` in firestore.rules, and the Admin SDK bypasses
-// rules — so the control doc needs no rules change at all, and no client can
-// forge it.
+// Lives in leaderboardCache on purpose: nothing in that collection is
+// client-writable in firestore.rules, and the Admin SDK bypasses rules — so
+// these need no rules change to write, and no client can forge them.
 const CONTROL_DOC = "leaderboardCache/control";
+
+// Who has submitted a prediction, and nothing else about it.
+//
+// CACHE_DOC embeds every participant's full ranking, so from 2026-08-27 it is
+// only readable once the league phase starts — otherwise it would leak exactly
+// what the predictions rules exist to keep private until the deadline. But the
+// signed-in home page legitimately needs to show who has and has not sent
+// their picks in *during* 'notstarted', so that one fact gets its own
+// publicly-readable document carrying no rankings and no scores.
+//
+// It also replaces a full download of the predictions collection on every
+// visit to home — ~150 KiB at 250 participants, every byte of it a ranking
+// array fetched purely to read the document ids.
+const SUBMITTERS_DOC = "leaderboardCache/submitters";
 
 // Mirrors src/leaderboard/scoring.ts's computeScore/isPickCorrect exactly —
 // duplicated here rather than imported, since this runs as plain JS
@@ -109,6 +122,12 @@ async function runRecompute() {
 
     const now = Date.now();
     tx.set(db.doc(CACHE_DOC), { entries, computedAt: now });
+    // Written in the same transaction as the cache it is derived from, so
+    // the two can never disagree about who has submitted.
+    tx.set(db.doc(SUBMITTERS_DOC), {
+      uids: entries.map((entry) => entry.uid),
+      computedAt: now,
+    });
     tx.set(
       controlRef,
       {

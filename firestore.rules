@@ -2,6 +2,36 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // ---- shared helpers ----------------------------------------------
+    //
+    // The site's three admin accounts, all Mert's (thisisfootballstuff@,
+    // mert.gurgenyatagi@, mert.writing@ — the only accounts in Firebase Auth
+    // as of 2026-08-27). A uid is not a secret: it is already visible on
+    // every profile, forum post and chat message, and knowing one grants
+    // nothing without that account's own Google sign-in. This exists so the
+    // collections that steer the whole site — results, the tournament phase,
+    // dev-panel state — stop being writable by every signed-in participant,
+    // while still leaving Mert able to drive them from the browser rather
+    // than forcing every change through the console or a script.
+    function isAdmin() {
+      return request.auth != null && request.auth.uid in [
+        'oRAfUtCOwyL57WwgciNCddvkmrB3',
+        'YRL0n3BHa4SUJdZQTSx5XtRZCZQ2',
+        'f1r1iHLiBYWv3nSSzUObbxhXtMF3'
+      ];
+    }
+
+    // Whether the league phase has begun. tournamentState/current is set by
+    // hand and does not exist before launch, so a missing document means
+    // 'notstarted' — matching useTournamentPhase.ts, which defaults the same
+    // way. Used to keep participants' predictions private until everyone's
+    // are locked in.
+    function tournamentStarted() {
+      return exists(/databases/$(database)/documents/tournamentState/current)
+        && get(/databases/$(database)/documents/tournamentState/current).data.phase != 'notstarted';
+    }
+    // ------------------------------------------------------------------
+
     // Profiles: name + photo are shown to signed-out visitors too (SPEC §8's
     // logged-out player list) as well as other participants (SPEC §8/§4), so
     // read is public. Only the owner can write their own.
@@ -96,14 +126,25 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
-    // Predictions: read is public (matches the "trust the friend group"
-    // stance already applied to chat/forum in SPEC §6, and SPEC §8's
-    // requirement that predictions become visible to signed-out visitors
-    // too once the tournament starts — the app UI hides others' predictions
-    // until then; this project has no adversarial threat model). Only the
-    // owner writes.
+    // Predictions: private until the league phase begins, public after.
+    //
+    // Read was unconditionally public, on the reasoning that the app UI
+    // hides other people's predictions until the tournament starts anyway.
+    // But the whole point of this game is that nobody sees anyone else's
+    // ranking before the deadline, and a UI that merely declines to render
+    // the data is not hiding it — any participant could read the collection
+    // straight out of the SDK, see all 36 picks of everyone who had already
+    // submitted, and then submit their own accordingly. That is not an
+    // adversarial threat model, it is the one rule the game has.
+    //
+    // So: your own prediction is always readable, and everyone's becomes
+    // readable once the phase leaves 'notstarted' — which is also what lets
+    // the logged-out leaderboard work after the start. Before then a bulk
+    // read of the collection is refused outright, since a query is allowed
+    // only when every document it could return is.
     match /predictions/{uid} {
-      allow read: if true;
+      allow read: if tournamentStarted()
+        || (request.auth != null && request.auth.uid == uid);
       // Field validation added 2026-07-29 (not-started-audit item 04): a
       // prediction is always a full 36-team ranking, never partial.
       allow create, update: if request.auth != null
@@ -120,51 +161,99 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
-    // Team results feed the team table and score computation (SPEC.md §3, §8b),
-    // shown to signed-out visitors too (SPEC §8's logged-out live rankings).
-    // No admin UI (SPEC.md §7b) — normally maintained via direct Firestore
-    // edits. Temporarily opened to any signed-in write pre-launch so the dev
-    // panel (src/devpanel) can push synthetic standings from the browser;
-    // tighten back to `if false` once results automation/admin tooling lands.
+    // Team results feed the team table and score computation, shown to
+    // signed-out visitors too (the logged-out live rankings). Read stays
+    // public.
+    //
+    // Write was open to any signed-in user pre-launch, so the dev panel
+    // could push synthetic standings from the browser, with a note to
+    // "tighten back to `if false` once results automation lands". That
+    // automation has not landed and launch has, so this is now admin-only
+    // instead: with real participants, an open write here means any one of
+    // them can rewrite the standings and therefore everyone's score.
+    // Admin-only rather than `if false` because the dev panel is still the
+    // only way results get entered at all (PROJECT.md §11 problem 14).
     match /results/{teamId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
 
     // Precomputed leaderboard (functions/leaderboard, scaling-audit No.
     // 08/09, 2026-07-31): recomputed by a Cloud Function on every
     // predictions/results write, so clients read one doc instead of the
-    // full predictions + profiles collections on every visit. Public read
-    // (matches predictions/results' own public visibility); no client can
-    // write it at all — only the Cloud Function, running under the Admin
-    // SDK, which bypasses rules entirely.
-    match /leaderboardCache/{docId} {
+    // full predictions + profiles collections on every visit. No client
+    // can write any of it — only the Cloud Function, running under the
+    // Admin SDK, which bypasses rules entirely.
+    //
+    // Split per document 2026-08-27. This was one public-read rule, which
+    // quietly undid the prediction privacy directly above: every entry in
+    // the current doc carries that participant's full 36-team ranking, so
+    // anyone could read the entire field's predictions out of a single
+    // public document without ever touching the predictions collection.
+    // It now follows the same phase gate as predictions themselves.
+    match /leaderboardCache/current {
+      allow read: if tournamentStarted();
+      allow write: if false;
+    }
+
+    // Just the uids of everyone who has submitted — no rankings, no
+    // scores. Home shows who has and has not sent their picks in during
+    // 'notstarted', which is the one thing that legitimately needs to be
+    // public before the league phase. It used to be answered by
+    // downloading the whole predictions collection (~150 KiB a visit at
+    // 250 participants) purely to read the document ids. Maintained by
+    // the same Cloud Function, which already has the list in hand.
+    match /leaderboardCache/submitters {
       allow read: if true;
       allow write: if false;
     }
 
+    // The recompute's concurrency-control document, and anything else
+    // that lands here later. Server-side only; no client has ever read it.
+    match /leaderboardCache/{docId} {
+      allow read, write: if false;
+    }
+
     // Tournament phase (src/tournament/useTournamentPhase.ts): the single
     // manual admin-set value driving notstarted/leaguephase/preknockout/
-    // knockout site-wide (SPEC decision 2026-07-23 — pagemap intake round 1).
-    // Public read (even logged-out visitors need to know the phase to decide
-    // what to show). No admin UI (SPEC.md §7b, same stance as `results`) —
-    // set directly via the Firebase console. Write left open to any signed-in
-    // user for now, same trust-the-friend-group convention as `results`.
+    // knockout site-wide. Public read — even logged-out visitors need the
+    // phase to know what to show.
+    //
+    // Write is admin-only as of 2026-08-27. It was open to any signed-in
+    // user, which meant any participant could push the entire site into a
+    // phase that is not ready — opening the leaderboard before results
+    // exist, or the knockout bracket, which is still built on invented
+    // pairings. This is the single most consequential value in the
+    // database and it now takes an admin to change it.
     match /tournamentState/{docId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
 
     // Dev-only tooling (src/devpanel): simulates tournament phase/date and
     // match outcomes so timing-dependent features can be tested without
-    // waiting on real calendar dates. Pre-launch, no real users yet — same
-    // trust stance as the rest of this file. Remove once results automation
-    // (SPEC.md §7, currently skipped) makes this panel unnecessary.
+    // waiting on real calendar dates. Both were readable and writable by any
+    // signed-in user, on a "pre-launch, no real users yet" stance that no
+    // longer holds.
+    //
+    // devConfig is now admin-only in both directions. useDevConfig.ts
+    // returns early unless import.meta.env.DEV, so a production build never
+    // subscribes to it and nothing user-facing is lost by closing it.
     match /devConfig/{docId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isAdmin();
     }
+
+    // devMatches keeps signed-in *read* deliberately. It is nominally
+    // dev-only, but three production surfaces read it through useDevMatches
+    // — TeamPopup, MatchupPopup and ParticipantPopup, for match history and
+    // the rank-history chart — so closing reads would break them for
+    // everyone (PROJECT.md §11 problem 15 records this contradiction).
+    // Writes are admin-only: deciding a match here recomputes all 36
+    // results docs, so an open write was a second route to rewriting the
+    // standings.
     match /devMatches/{fixtureId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
     }
 
     // Chat messages: logged-in only (matches the "chat" page's own gate in
