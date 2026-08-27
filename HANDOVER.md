@@ -6,8 +6,7 @@ For a fresh session picking this project up cold.
 **[DEPLOY.md](DEPLOY.md)** for how it ships. This file only covers where things
 stand and what to do next.
 
-Written 2026-08-28, at the end of the deployment session. Branch: `launch-prep`,
-pushed. Items 1–7 of the pre-launch list are **done**.
+Written 2026-08-28, following a post-deployment fixes session. Branch: `main`, pushed. All pre-launch checklist items 1–7 are **done**. Additionally, critical adblock-initialization, multi-device presence, and prediction mobile scroll/lag issues were just resolved.
 
 ---
 
@@ -49,7 +48,17 @@ until the league phase begins **2026-09-08**.
 
 ---
 
-## 3. What this session did
+## 3. What this session did (Post-Launch Fixes)
+
+**8a. Adblock initialization block.** Some ad blockers drop requests to `firestore.googleapis.com/.../Listen/channel`, causing `onSnapshot` live listeners to hang infinitely on `loading: true` without errors. We added a 7s timeout fallback (`useLoadingStuck`) that switches to one-shot `getDoc()` / `getDocs()` for core data (`useProfile`, `usePosts`, `useMessages`, `usePlayers`), unblocking initialization.
+
+**8b. Multi-device presence clobbering.** Refactored Realtime Database presence in `usePresenceHeartbeat` to use `push()` connection IDs (`presence/{uid}/{connectionId} = true`). Previously, a second device logging in and out would wipe the user's presence entirely. The rules and hooks now isolate devices.
+
+**8c. Prediction page mobile lag & scrolling.** Fixed severe `@dnd-kit` lag by memoizing `TeamCrest` and swapping `pointerWithin` collision detection for `closestCenter`. Fixed mobile scrolling lockup by adding `touch-pan-y` and switching from `TouchSensor` to `PointerSensor` on mobile so native touch scrolling is not `preventDefault`ed. *(Note: Mert explicitly requested these changes, overriding the previous constraint to not touch the prediction page).*
+
+---
+
+## 3b. What the previous session did
 
 **6. Deployment.** Two workflows: `ci.yml` (every branch — typecheck, unit
 suite, build, plus the emulator integration suite on a JDK 21 runner) and
@@ -126,9 +135,8 @@ Everything under "Later" in PROJECT.md §11 — the knockout phase is months awa
 
 ## 6. Constraints Mert has set
 
-- **Do not touch the league prediction submitting screen.** `TeamRanker` and the
-  `/predictions` flow. He is replacing that interaction deliberately and
-  separately. Untouched this session.
+- **Do not touch the league prediction submitting screen's core interaction.** `TeamRanker` and the
+  `/predictions` flow. He intends to replace the interaction. *(Note: We made performance and scroll fixes to it this session per explicit request, but the design/flow remains unchanged).*
 - **Do not point DNS or make the site publicly reachable** without asking. §1 is
   prepared up to exactly that line and stops.
 - **Knockout is deprioritised.**
