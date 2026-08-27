@@ -69,7 +69,7 @@ Fixed both silent sign-in breakers: `kupatakipucl.com` and `www.` added to
 Firebase Auth's authorized domains (verified by reading the config back), and
 the `og:`/`twitter:` tags repointed off `kupatakipucl.web.app`.
 
-**`.env.production` is committed on purpose.** PROJECT.md claimed `.env.local`
+**`.env` is committed on purpose.** PROJECT.md claimed `.env.local`
 was committed — it is not, so a CI build would have had no Firebase config,
 succeeded, and shipped `apiKey: undefined`. Committing costs nothing: Vite
 inlines every `VITE_*` var into the public bundle, so all six values are already

@@ -56,7 +56,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Vite inlines VITE_* vars at build time. If .env.production were missing
+      # Vite inlines VITE_* vars at build time. If .env were missing
       # or renamed, the build would still succeed and ship `apiKey: undefined`,
       # and the site would die on first load with auth/invalid-api-key. Assert
       # the values actually landed in the bundle instead of finding out in the
@@ -69,7 +69,7 @@ jobs:
           do
             if ! grep -qF "$value" dist/assets/*.js; then
               echo "::error::Firebase config missing from the build: $value"
-              echo "Check that .env.production still exists and defines every VITE_FIREBASE_* key."
+              echo "Check that .env still exists and defines every VITE_FIREBASE_* key."
               exit 1
             fi
           done

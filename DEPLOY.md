@@ -49,7 +49,7 @@ happening, which is why `deploy.yml` asserts it survived the build.
 
 - **`public/CNAME`** contains `kupatakipucl.com`. Vite copies it into `dist/`,
   and Pages reads it to set the custom domain.
-- **`.env.production`** is committed, so a clean checkout builds a working app.
+- **`.env`** is committed, so a clean checkout builds a working app.
   See the comment at the top of that file for why that is safe — in short, Vite
   inlines these values into the public JS bundle anyway.
 - **`index.html`** `og:`/`twitter:` tags point at `https://kupatakipucl.com/`

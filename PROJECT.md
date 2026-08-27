@@ -572,7 +572,7 @@ on a project subpath every crest 404s. `public/CNAME` prevents that, and
 Firebase config is read from Vite env vars (`.env.example` lists the six keys).
 **`.env.local` is *not* committed** — an earlier revision of this document said
 it was, which was wrong and would have produced a CI build shipping
-`apiKey: undefined`. `.env.production` **is** committed, deliberately: Vite
+`apiKey: undefined`. `.env` **is** committed, deliberately: Vite
 inlines every `VITE_*` var into the public JS bundle, so all six values are
 already served to every visitor in `dist/assets/index-*.js`. Hiding them would
 protect nothing. Access is controlled by the security rules in §5 and by Firebase
