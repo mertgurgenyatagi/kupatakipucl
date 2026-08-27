@@ -529,7 +529,25 @@ service cloud.firestore {
         && resource.data.uid == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleted'])
         && request.resource.data.deleted == true;
-      allow delete: if false;
+      // Hard delete, lobby creator only. This exists for exactly one caller:
+      // deleteLobby.ts's cascade. Chat everywhere else stays soft-delete-only
+      // (the update rule above) so a removed message keeps its document and
+      // readers see a placeholder instead of history silently reshuffling.
+      //
+      // It was `if false`, which made the cascade impossible — so every lobby
+      // ever deleted left its entire chat history behind, permanently
+      // unreachable and unowned. Five such lobbies were still in production on
+      // 2026-08-27 holding 8 orphaned messages, while the delete dialog has
+      // always promised "özel lobiyi ve sohbet geçmişini herkes için kalıcı
+      // olarak siler".
+      //
+      // Not an escalation of the creator's power: they can already delete the
+      // whole lobby, which is meant to take every message in it along. Being
+      // able to delete one message is strictly weaker than that. It is gated
+      // on the lobby doc, so it stops working the moment the lobby is gone —
+      // which is why the cascade deletes the lobby doc last.
+      allow delete: if request.auth != null
+        && get(/databases/$(database)/documents/lobbies/$(lobbyId)).data.createdByUid == request.auth.uid;
     }
   }
 }

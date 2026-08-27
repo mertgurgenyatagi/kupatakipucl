@@ -290,3 +290,59 @@ describe("the leaderboard cache", () => {
     expect(snap.data()?.uids).toEqual([ALICE, BOB]);
   });
 });
+
+describe("lobby chat deletion", () => {
+  // `allow delete: if false` on lobby messages meant deleteLobby's cascade was
+  // impossible to write, so every deleted lobby left its whole chat history
+  // behind. Five orphaned lobbies holding 8 messages were still in production
+  // on 2026-08-27. The rule now lets the lobby's creator remove them, which is
+  // strictly weaker than the whole-lobby delete they already had.
+  async function seedLobby() {
+    await seed(`lobbies/lobby1`, {
+      name: "Test Lobi",
+      createdByUid: ALICE,
+      createdAt: 1_700_000_000_000,
+      memberUids: [ALICE, BOB],
+    });
+    await seed(`lobbies/lobby1/members/${ALICE}`, { uid: ALICE, joinedAt: 1, viaInviteId: "i1" });
+    await seed(`lobbies/lobby1/members/${BOB}`, { uid: BOB, joinedAt: 2, viaInviteId: "i1" });
+    await seed(`lobbies/lobby1/messages/m1`, { uid: BOB, text: "selam", createdAt: 1 });
+  }
+
+  it("lets the lobby creator delete a message, so the delete cascade can run", async () => {
+    await seedLobby();
+    const db = env.authenticatedContext(ALICE).firestore();
+    await assertSucceeds(deleteDoc(doc(db, "lobbies", "lobby1", "messages", "m1")));
+  });
+
+  it("refuses a plain member deleting a message, including their own", async () => {
+    await seedLobby();
+    const db = env.authenticatedContext(BOB).firestore();
+    await assertFails(deleteDoc(doc(db, "lobbies", "lobby1", "messages", "m1")));
+  });
+
+  it("refuses a non-member deleting a message", async () => {
+    await seedLobby();
+    const db = env.authenticatedContext("carol-uid").firestore();
+    await assertFails(deleteDoc(doc(db, "lobbies", "lobby1", "messages", "m1")));
+  });
+
+  // The rule reads createdByUid off the lobby doc, so it stops authorizing
+  // anything the moment that doc is gone. This is precisely why deleteLobby
+  // deletes the lobby doc last, and why a half-finished cascade is retryable
+  // rather than permanently stranded.
+  it("stops authorizing message deletes once the lobby doc is gone", async () => {
+    await seedLobby();
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await deleteDoc(doc(ctx.firestore(), "lobbies", "lobby1"));
+    });
+    const db = env.authenticatedContext(ALICE).firestore();
+    await assertFails(deleteDoc(doc(db, "lobbies", "lobby1", "messages", "m1")));
+  });
+
+  it("still refuses a hard delete in the global chat, which stays soft-delete only", async () => {
+    await seed("messages/g1", { uid: ALICE, text: "selam", createdAt: 1 });
+    const db = env.authenticatedContext(ALICE).firestore();
+    await assertFails(deleteDoc(doc(db, "messages", "g1")));
+  });
+});
