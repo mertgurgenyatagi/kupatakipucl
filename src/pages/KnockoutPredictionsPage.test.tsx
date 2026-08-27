@@ -2,6 +2,7 @@ import { render, screen, fireEvent, act } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { KnockoutPredictionsPage } from "./KnockoutPredictionsPage";
+import { PAGE_UNAVAILABLE_MESSAGE } from "@/components/ui/page-unavailable";
 
 vi.mock("motion/react", async () => {
   const actual = await vi.importActual<typeof import("motion/react")>("motion/react");
@@ -85,6 +86,52 @@ describe("KnockoutPredictionsPage", () => {
     mockUseVisibilityState.mockReturnValue("loggedin_preknockout");
     mockUseKnockoutPrediction.mockReturnValue({ prediction: null, loading: false });
     mockSaveKnockoutPrediction.mockReset();
+  });
+
+  /**
+   * The Round of 16 does not exist until the league phase ends, so before
+   * 'preknockout' this page was offering people a draw that had not
+   * happened. It is not linked from the nav, so this was URL-only — but the
+   * document it wrote was real.
+   */
+  it("is unavailable before the knockout rounds are a real thing to predict", () => {
+    for (const state of ["loggedin_notstarted", "loggedin_leaguephase"] as const) {
+      mockUseVisibilityState.mockReturnValue(state);
+      const { unmount } = renderPage();
+      expect(screen.getByText(PAGE_UNAVAILABLE_MESSAGE)).toBeInTheDocument();
+      expect(screen.queryByText(/Sıra eleme tahminlerinde/)).not.toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it("is available once the knockout rounds are set", () => {
+    for (const state of ["loggedin_preknockout", "loggedin_knockout"] as const) {
+      mockUseVisibilityState.mockReturnValue(state);
+      const { unmount } = renderPage();
+      expect(screen.getByText(/Sıra eleme tahminlerinde/)).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  /**
+   * Matches /predictions, which is also a first-submission-only door.
+   * Re-entering with a bracket already saved would have started a fresh
+   * empty one and silently overwritten it on submit.
+   */
+  it("sends you home instead of restarting a bracket you already submitted", () => {
+    mockUseKnockoutPrediction.mockReturnValue({
+      prediction: {
+        quarterFinalists: ["real-madrid", "arsenal", "manchester-city", "barcelona", "slovan-bratislava", "roma", "real-betis", "stuttgart"],
+        semiFinalists: ["real-madrid", "manchester-city", "slovan-bratislava", "real-betis"],
+        finalists: ["real-madrid", "slovan-bratislava"],
+        champion: "real-madrid",
+        submittedAt: 1,
+        updatedAt: 1,
+      },
+      loading: false,
+    });
+    renderPage();
+    expect(screen.getByText("home-page")).toBeInTheDocument();
   });
 
   it("shows skeleton while loading", () => {

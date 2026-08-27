@@ -7,3 +7,8 @@
 export type TournamentPhase = "notstarted" | "leaguephase" | "preknockout" | "knockout";
 
 export const STARTED_PHASES: readonly TournamentPhase[] = ["leaguephase", "preknockout", "knockout"];
+
+// The phases in which a knockout bracket is a real thing to fill in. The
+// Round of 16 does not exist until the league phase finishes, so offering
+// the bracket earlier means offering invented pairings.
+export const KNOCKOUT_PHASES: readonly TournamentPhase[] = ["preknockout", "knockout"];

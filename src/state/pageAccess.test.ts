@@ -34,6 +34,28 @@ describe("isPageAllowed", () => {
     }
   });
 
+  /**
+   * Narrowed 2026-08-27. The bracket renders invented pairings until the
+   * real Round of 16 is drawn, so offering it during 'notstarted' or the
+   * league phase means collecting predictions against a draw that has not
+   * happened.
+   */
+  it("allows knockout predictions only in the knockout phases, and only logged in", () => {
+    expect(isPageAllowed("knockoutPredictions", "loggedin_notstarted")).toBe(false);
+    expect(isPageAllowed("knockoutPredictions", "loggedin_leaguephase")).toBe(false);
+    expect(isPageAllowed("knockoutPredictions", "loggedin_preknockout")).toBe(true);
+    expect(isPageAllowed("knockoutPredictions", "loggedin_knockout")).toBe(true);
+
+    for (const state of [
+      "loggedout_notstarted",
+      "loggedout_leaguephase",
+      "loggedout_preknockout",
+      "loggedout_knockout",
+    ] as const) {
+      expect(isPageAllowed("knockoutPredictions", state)).toBe(false);
+    }
+  });
+
   it("allows profile for every logged-in state and blocks it for every logged-out state", () => {
     for (const state of [
       "loggedin_notstarted",

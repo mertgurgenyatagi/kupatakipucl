@@ -1,5 +1,5 @@
 import { VisibilityState, getVisibilityState } from "./visibilityState";
-import { TournamentPhase, STARTED_PHASES } from "../tournament/tournamentPhase";
+import { TournamentPhase, STARTED_PHASES, KNOCKOUT_PHASES } from "../tournament/tournamentPhase";
 
 export type PageKey = "predictions" | "knockoutPredictions" | "leaderboard" | "forum" | "stats" | "profile";
 
@@ -16,7 +16,14 @@ function statesFor(phases: readonly TournamentPhase[], logins: readonly boolean[
 // firestore.rules' forumPosts create/update rules).
 const PAGE_ACCESS: Record<PageKey, VisibilityState[]> = {
   predictions: statesFor(ALL_PHASES, [true]),
-  knockoutPredictions: statesFor(ALL_PHASES, [true]),
+  // Narrowed 2026-08-27 from every logged-in phase. The Round of 16 is not
+  // known until the league phase ends — the pairings the bracket renders are
+  // invented placeholders (PROJECT.md §11 problem 23) — so before
+  // 'preknockout' this page was inviting people to predict a draw that had
+  // not happened. It is not linked from the nav, so the exposure was
+  // URL-only, but the submitted document was real and would have had to be
+  // thrown away.
+  knockoutPredictions: statesFor(KNOCKOUT_PHASES, [true]),
   leaderboard: statesFor(STARTED_PHASES, [true]),
   forum: [...statesFor(ALL_PHASES, [true]), ...statesFor(STARTED_PHASES, [false])],
   stats: statesFor(STARTED_PHASES, [true]),

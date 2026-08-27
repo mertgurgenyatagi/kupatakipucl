@@ -68,6 +68,15 @@ export function KnockoutPredictionsPage() {
     return <Navigate to="/" replace />;
   }
 
+  // A first-submission-only door, matching /predictions: once a bracket
+  // exists this page has nothing left to offer, and re-entering it would
+  // silently overwrite the existing prediction with a fresh empty one.
+  // Revising a submitted bracket happens on the profile page, behind its
+  // own confirmation.
+  if (prediction) {
+    return <Navigate to="/" replace />;
+  }
+
   async function handleSubmit(data: Omit<KnockoutPrediction, "submittedAt" | "updatedAt">) {
     try {
       setSubmitting(true);
