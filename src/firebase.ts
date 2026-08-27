@@ -3,6 +3,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getDatabase } from "firebase/database";
+import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -15,6 +16,8 @@ const firebaseConfig = {
   // its own URL (not derivable from projectId alone) once the RTDB instance
   // is provisioned.
   databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 export const firebaseApp = initializeApp(firebaseConfig);
@@ -22,3 +25,4 @@ export const auth = getAuth(firebaseApp);
 export const db = getFirestore(firebaseApp);
 export const storage = getStorage(firebaseApp);
 export const rtdb = getDatabase(firebaseApp);
+export const analytics = typeof window !== "undefined" ? getAnalytics(firebaseApp) : null;
