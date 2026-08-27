@@ -151,7 +151,7 @@ describe("ParticipantPopup", () => {
         footballKnowledge: 6,
         messiOrRonaldo: "messi",
         superLigTeam: "Galatasaray",
-        uclTeam: "Arsenal",
+        uclTeam: "arsenal",
         device: "phone",
         submittedAt: 123,
       }),
@@ -172,6 +172,12 @@ describe("ParticipantPopup", () => {
     expect(screen.getByText("Messi.")).toBeInTheDocument();
     expect(screen.getByText("6 / 7.")).toBeInTheDocument();
     expect(screen.getByText("Süper Lig'de tuttuğunuz takım")).toBeInTheDocument();
+    // The stored answer is the id "arsenal" — it has to read as a team name,
+    // and the question must not still invite people to type one.
+    expect(screen.getByText("Arsenal.")).toBeInTheDocument();
+    expect(screen.queryByText("arsenal.")).not.toBeInTheDocument();
+    expect(screen.getByText("Tuttuğunuz bir UCL takımı var mı?")).toBeInTheDocument();
+    expect(screen.queryByText(/varsa yazın/)).not.toBeInTheDocument();
   });
 
   it("distinguishes a real read failure from a participant who simply never took the survey", async () => {
@@ -284,7 +290,7 @@ describe("ParticipantPopup", () => {
           footballKnowledge: 6,
           messiOrRonaldo: "messi",
           superLigTeam: "Galatasaray",
-          uclTeam: "Arsenal",
+          uclTeam: "arsenal",
           device: "phone",
           submittedAt: 123,
         }),

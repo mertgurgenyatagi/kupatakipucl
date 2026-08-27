@@ -212,6 +212,31 @@ describe("ProfilePage", () => {
     expect(screen.getByText("Messi.")).toBeInTheDocument();
   });
 
+  // surveyResponses.uclTeam holds the id the crest picker produced. The page
+  // printed it raw, so a Bayern supporter's own profile read "bayern-munich",
+  // under a question that still said "(varsa yazın)" — copy for a free-text
+  // box that had already been replaced by the picker.
+  it("shows the UCL team as a real name rather than the stored id", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
+    mockUseSurveyResponse.mockReturnValue({
+      response: { ...SURVEY, uclTeam: "bayern-munich" },
+      loading: false,
+      error: false,
+    });
+    await renderPage();
+    expect(screen.getByText("Bayern Munich.")).toBeInTheDocument();
+    expect(screen.queryByText("bayern-munich.")).not.toBeInTheDocument();
+    expect(screen.getByText("Tuttuğunuz bir UCL takımı var mı?")).toBeInTheDocument();
+    expect(screen.queryByText(/varsa yazın/)).not.toBeInTheDocument();
+  });
+
+  it("shows 'Yok' when no UCL team was picked", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
+    mockUseSurveyResponse.mockReturnValue({ response: SURVEY, loading: false, error: false });
+    await renderPage();
+    expect(screen.getByText("Yok.")).toBeInTheDocument();
+  });
+
   it("shows a not-filled-in message when there's no survey response", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
     await renderPage();

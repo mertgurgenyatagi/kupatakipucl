@@ -19,7 +19,7 @@ import { KnockoutBracket } from "../knockout/KnockoutBracket";
 import { MobileKnockoutBracket } from "../knockout/MobileKnockoutBracket";
 import { KnockoutPrediction } from "../knockout/knockoutTypes";
 import { useSurveyResponse } from "../predictions/useSurveyResponse";
-import { MESSI_RONALDO_LABEL, DEVICE_LABEL, ensurePeriod } from "../predictions/surveyLabels";
+import { MESSI_RONALDO_LABEL, DEVICE_LABEL, ensurePeriod, uclTeamLabel } from "../predictions/surveyLabels";
 import { TeamRanker } from "../predictions/TeamRanker";
 import { RankingList } from "../predictions/RankingList";
 import { TEAMS, teamCrestSrc } from "../predictions/teams";
@@ -413,8 +413,8 @@ export function ProfilePage() {
                     },
                     { question: "Süper Lig'de tuttuğunuz takım", answer: survey.superLigTeam },
                     {
-                      question: "Tuttuğunuz bir UCL takımı var mı? (varsa yazın)",
-                      answer: survey.uclTeam ?? "Yok",
+                      question: "Tuttuğunuz bir UCL takımı var mı?",
+                      answer: uclTeamLabel(survey.uclTeam),
                     },
                     {
                       question: "Çoğunlukla hangi cihazı kullanıyorsunuz?",
