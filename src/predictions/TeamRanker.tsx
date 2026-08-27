@@ -5,9 +5,7 @@ import {
   DragStartEvent,
   KeyboardSensor,
   Modifier,
-  MouseSensor,
   PointerSensor,
-  TouchSensor,
   closestCenter,
   useSensor,
   useSensors,
@@ -88,8 +86,9 @@ export function TeamRanker({ teams, initialOrder, onSubmit }: TeamRankerProps) {
   // Desktop keeps PointerSensor exactly as it was — this branches rather
   // than replacing it outright so nothing about the mouse path changes.
   const mobileSensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(PointerSensor, {
+      activationConstraint: { delay: 200, tolerance: 8 },
+    }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
   const desktopSensors = useSensors(
