@@ -21,13 +21,13 @@ export const CONTACT_EMAIL = "mert.gurgenyatagi@gmail.com";
 // (src/home/deadlines.ts). The last entry's date is a rough placeholder
 // (Mert: "not important, dates will be changed anyway") — there's no real
 // knockout-phase-end date fixed yet, unlike the other five.
-export const KEY_DATES: { label: string; date: Date }[] = [
+export const KEY_DATES: { label: string; date: Date; startDate?: Date }[] = [
   { label: "Lig Tahminleri Açılır", date: new Date("2026-08-28T00:00:00+03:00") },
   { label: "Lig Tahminleri Kapanır", date: new Date(TOURNAMENT_START_ISO) },
-  { label: "Lig Aşaması", date: new Date("2027-02-24T00:00:00+03:00") },
+  { label: "Lig Aşaması", date: new Date("2027-02-24T00:00:00+03:00"), startDate: new Date(TOURNAMENT_START_ISO) },
   { label: "Eleme Tahminleri Açılır", date: new Date("2027-02-25T00:00:00+03:00") },
   { label: "Eleme Tahminleri Kapanır", date: new Date("2027-03-09T00:00:00+03:00") },
-  { label: "Eleme Aşaması", date: new Date("2027-06-04T00:00:00+03:00") },
+  { label: "Eleme Aşaması", date: new Date("2027-06-04T00:00:00+03:00"), startDate: new Date("2027-03-09T00:00:00+03:00") },
   { label: "Final", date: new Date("2027-06-05T00:00:00+03:00") },
 ];
 
@@ -36,8 +36,11 @@ const TR_MONTHS_SHORT = [
   "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara",
 ];
 
-export function formatChipDate(d: Date): string {
-  return `${String(d.getDate()).padStart(2, "0")} ${TR_MONTHS_SHORT[d.getMonth()]}`;
+export function formatChipDate(d: Date, start?: Date): string {
+  const endStr = `${String(d.getDate()).padStart(2, "0")} ${TR_MONTHS_SHORT[d.getMonth()]}`;
+  if (!start) return endStr;
+  const startStr = `${String(start.getDate()).padStart(2, "0")} ${TR_MONTHS_SHORT[start.getMonth()]}`;
+  return `${startStr} - ${endStr}`;
 }
 
 export type DateStatus = "past" | "current" | "future";

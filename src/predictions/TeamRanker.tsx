@@ -87,7 +87,7 @@ export function TeamRanker({ teams, initialOrder, onSubmit }: TeamRankerProps) {
   // than replacing it outright so nothing about the mouse path changes.
   const mobileSensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { delay: 200, tolerance: 8 },
+      activationConstraint: { distance: 5 },
     }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );

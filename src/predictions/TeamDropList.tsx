@@ -74,8 +74,6 @@ const ListSlot = memo(function ListSlot({
     <li
       ref={combinedRef}
       style={style}
-      {...(teamId !== null ? attributes : {})}
-      {...(teamId !== null ? listeners : {})}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={onMouseLeave}
       className={cn(
@@ -83,7 +81,7 @@ const ListSlot = memo(function ListSlot({
         "transition-[border-color,background-color,box-shadow,opacity] duration-200 ease-[var(--ease-cotton)]",
         teamId !== null
           ? [
-              "cursor-grab border-color_border1/80 bg-background touch-pan-y",
+              "border-color_border1/80 bg-background",
               "hover:border-color_border1 hover:bg-foreground/[0.03]",
               isDragging && "opacity-0 border-color_accent/40",
             ]
@@ -103,7 +101,15 @@ const ListSlot = memo(function ListSlot({
 
       {teamId !== null && team ? (
         <>
-          <GripVerticalIcon aria-hidden className="size-3.5 shrink-0 text-color_textsecondary/40" />
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            className="flex h-full items-center justify-center pr-1 text-color_textsecondary/40 touch-none cursor-grab active:cursor-grabbing outline-none"
+            aria-label="Sürükle"
+          >
+            <GripVerticalIcon aria-hidden className="size-3.5 shrink-0" />
+          </button>
           <TeamCrest teamId={team.id} className="size-7 shrink-0" />
           <span className="min-w-0 flex-1 truncate font-display text-sm text-color_text">
             {team.name}

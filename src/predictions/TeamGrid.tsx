@@ -72,7 +72,7 @@ const GridCell = memo(function GridCell({ team, isPlaced }: { team: Team; isPlac
                 : "border-color_border1/40 hover:border-color_border1/60",
             ]
           : [
-              "border-color_border1/60 bg-background/80 cursor-grab shadow-sm",
+              "border-color_border1/60 bg-background/80 cursor-grab shadow-sm touch-none",
               isOver
                 ? "border-color_accent/80 bg-foreground/[0.08]"
                 : "hover:border-color_border1 hover:bg-foreground/[0.06]",

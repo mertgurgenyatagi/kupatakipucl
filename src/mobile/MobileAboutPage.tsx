@@ -119,12 +119,12 @@ function VerticalDateTimeline() {
               />
               <span
                 className={cn(
-                  "w-16 shrink-0 font-display text-base font-semibold tnum",
+                  "min-w-[4rem] max-w-[8.5rem] shrink-0 font-display text-[0.95rem] font-semibold tnum leading-tight",
                   isFuture ? "text-color_textsecondary" : "text-color_text",
                   isCurrent && "animate-pulse"
                 )}
               >
-                {formatChipDate(item.date)}
+                {formatChipDate(item.date, item.startDate)}
               </span>
               <span
                 className={cn(

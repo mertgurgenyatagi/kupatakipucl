@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
  * all work unchanged — this swaps the panel's appearance, not its wiring.
  */
 
+import { GripVertical } from "lucide-react";
+
 const PoolRow = memo(function PoolRow({ team, isPlaced }: { team: Team; isPlaced: boolean }) {
   const { setNodeRef: setDropRef, isOver } = useDroppable({ id: `grid:${team.id}` });
   const {
@@ -44,15 +46,10 @@ const PoolRow = memo(function PoolRow({ team, isPlaced }: { team: Team; isPlaced
   return (
     <li
       ref={combinedRef}
-      {...(isPlaced ? {} : attributes)}
-      {...(isPlaced ? {} : listeners)}
       style={style}
       className={cn(
         "flex h-11 items-center gap-2.5 rounded-lg border px-2.5 select-none",
         "transition-[border-color,background-color,opacity] duration-200 ease-[var(--ease-cotton)]",
-        // touch-pan-y allows vertical scrolling (fixing mobile lockup) while
-        // letting TouchSensor's press-and-hold claim the gesture for dragging.
-        !isPlaced && "touch-pan-y",
         isPlaced
           ? "border-dashed border-color_border1/40 bg-foreground/[0.01]"
           : "border-color_border1/60 bg-background/80",
@@ -70,6 +67,15 @@ const PoolRow = memo(function PoolRow({ team, isPlaced }: { team: Team; isPlaced
           <span className="min-w-0 flex-1 truncate font-display text-sm text-color_text">
             {team.name}
           </span>
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            className="flex h-full items-center justify-center px-1.5 -mr-1.5 text-color_textsecondary/40 touch-none cursor-grab active:cursor-grabbing outline-none"
+            aria-label="Sürükle"
+          >
+            <GripVertical className="size-4" />
+          </button>
         </>
       )}
     </li>
