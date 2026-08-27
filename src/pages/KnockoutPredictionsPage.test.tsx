@@ -55,9 +55,9 @@ vi.mock("../knockout/KnockoutStagePicker", () => ({
       <button
         onClick={() =>
           onSubmit({
-            quarterFinalists: ["real-madrid", "arsenal", "manchester-city", "barcelona", "bayer-leverkusen", "juventus", "atalanta", "benfica"],
-            semiFinalists: ["real-madrid", "manchester-city", "bayer-leverkusen", "atalanta"],
-            finalists: ["real-madrid", "bayer-leverkusen"],
+            quarterFinalists: ["real-madrid", "arsenal", "manchester-city", "barcelona", "slovan-bratislava", "roma", "real-betis", "stuttgart"],
+            semiFinalists: ["real-madrid", "manchester-city", "slovan-bratislava", "real-betis"],
+            finalists: ["real-madrid", "slovan-bratislava"],
             champion: "real-madrid",
           })
         }

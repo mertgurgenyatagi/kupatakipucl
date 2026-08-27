@@ -10,7 +10,7 @@ vi.mock("../forum/usePosts", () => ({
 
 vi.mock("../leaderboard/LeagueTableList", () => ({
   LeagueTableList: ({ onSelectTeam }: { onSelectTeam: (id: string) => void }) => (
-    <button onClick={() => onSelectTeam("ajax")}>league-table-list</button>
+    <button onClick={() => onSelectTeam("aek-athens")}>league-table-list</button>
   ),
 }));
 
@@ -125,7 +125,7 @@ describe("HomeLandingLoggedOutStarted", () => {
   it("selecting a team opens TeamPopup and closes ParticipantPopup", () => {
     renderPage();
     fireEvent.click(screen.getByText("league-table-list"));
-    expect(screen.getByText("team-popup:ajax")).toBeInTheDocument();
+    expect(screen.getByText("team-popup:aek-athens")).toBeInTheDocument();
     expect(screen.getByText("participant-popup:closed:false")).toBeInTheDocument();
   });
 

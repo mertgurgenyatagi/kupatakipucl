@@ -1,61 +1,128 @@
-// One-off asset prep: copy the sourced club badge SVGs into public/ under
-// clean, URL-safe filenames (the originals have spaces/parens/commas).
-// Excludes the UEFA Champions League ball mark itself — that's the
-// competition logo, not a club badge.
-import { copyFileSync, mkdirSync, writeFileSync } from "node:fs";
+// Asset prep: copy the sourced club badge SVGs into public/ under filenames
+// that are exactly the team ids in src/predictions/teams.ts, and regenerate
+// src/predictions/clubBadgeSlugs.ts to match.
+//
+// The filename *is* the team id — that is the whole point. Crests used to be
+// hash-assigned from a 29-badge pool to a placeholder team list, so no team
+// showed its own badge; now `teamCrestSrc(id)` is a direct lookup and a badge
+// can only ever be wrong if this map is wrong. `teams.test.ts` asserts the two
+// lists agree, so a team added without a badge fails the suite instead of
+// shipping a broken image.
+//
+// Oversized sources are rasterised rather than shipped as-is. The Real Betis
+// SVG is a 6.5 MB wrapper around two base64 rasters, and the predictions
+// ranker renders all 36 crests at once — that one file was larger than the
+// rest of the site's assets combined. Anything over RASTERISE_OVER_BYTES is
+// rendered to a 256px WebP instead, which is why the generated manifest
+// carries a filename per team rather than assuming ".svg".
+//
+// Usage: node scripts/import-club-badges.mjs
+import { copyFileSync, mkdirSync, writeFileSync, rmSync, statSync, readdirSync } from "node:fs";
+import sharp from "sharp";
 
 const SRC_DIR = "assets/club_badges";
 const OUT_DIR = "public/club-badges";
+const RASTERISE_OVER_BYTES = 200 * 1024;
+const RASTER_PX = 256;
 
+// Source filename in assets/club_badges -> team id in src/predictions/teams.ts.
+// The 2026-27 league-phase field, confirmed by Mert 2026-08-27.
 const MAP = {
-  "Real_Madrid_CF.svg": "real-madrid",
-  "Paris_Saint-Germain_F.C.svg": "psg",
-  "FC_Bayern_München_logo_(2017).svg": "bayern-munich",
-  "Logo_Liverpool_FC_2012.svg": "liverpool",
-  "FC_Internazionale_Milano_2021.svg": "inter-milan",
-  "Manchester_City_FC_badge.svg": "manchester-city",
+  "AEK_Athens_FC_logo.svg": "aek-athens",
   "Arsenal_FC.svg": "arsenal",
-  "FC_Barcelona_(crest).svg": "barcelona",
-  "Atletico_Madrid_Logo_2024.svg": "atletico-madrid",
-  "Borussia_Dortmund_logo.svg": "borussia-dortmund",
-  "AS_Roma_logo_(2017).svg": "as-roma",
-  "Sporting_Clube_de_Portugal_2026.svg": "sporting-cp",
   "Aston_Villa_FC_new_crest.svg": "aston-villa",
-  "FC_Porto.svg": "porto",
-  "Manchester_United_FC_crest.svg": "manchester-united",
+  "Atletico_Madrid_Logo_2024.svg": "atletico-madrid",
+  "FC_Barcelona_(crest).svg": "barcelona",
+  "FC_Bayern_München_logo_(2017).svg": "bayern-munich",
+  "FK_Bodo_Glimt_logo.svg": "bodo-glimt",
+  "Borussia_Dortmund_logo.svg": "borussia-dortmund",
   "Club_Brugge_KV_logo.svg": "club-brugge",
-  "Real_Betis_2022_logo.svg": "real-betis",
-  "PSV_Eindhoven.svg": "psv-eindhoven",
-  "Feyenoord_logo_since_2024.svg": "feyenoord",
-  "Lille_OSC_2018_logo.svg": "lille",
-  "SSC_Napoli_2025_(white_and_azure).svg": "napoli",
-  "RB_Leipzig_2014_logo.svg": "rb-leipzig",
-  "Villarreal_CF_logo-en.svg": "villarreal",
-  "FC_Shakhtar_Donetsk.svg": "shakhtar-donetsk",
-  "Galatasaray_S.K._Logo_2026_5-stars.svg": "galatasaray",
-  "SK_Slavia_Praha_full_logo.svg": "slavia-prague",
-  "VfB_Stuttgart_1893_Logo.svg": "vfb-stuttgart",
   "Calcio_Como_-_logo_(Italy,_2019-).svg": "como",
-  "RC_Lens_logo.svg": "rc-lens",
-  // Deliberately excluded: UEFA_Champions_League_logo_no_text_great.svg
+  "Fenerbahçe.svg": "fenerbahce",
+  "Feyenoord_logo_since_2024.svg": "feyenoord",
+  "Galatasaray_S.K._Logo_2026_5-stars.svg": "galatasaray",
+  "FC_Internazionale_Milano_2021.svg": "inter-milan",
+  "LASK-Logo_2023.svg": "lask",
+  "RC_Lens_logo.svg": "lens",
+  "Lille_OSC_2018_logo.svg": "lille",
+  "Logo_Liverpool_FC_2012.svg": "liverpool",
+  "Manchester_City_FC_badge.svg": "manchester-city",
+  "Manchester_United_FC_crest.svg": "manchester-united",
+  "SSC_Napoli_2025_(white_and_azure).svg": "napoli",
+  "Paris_Saint-Germain_F.C.svg": "paris-saint-germain",
+  "FC_Porto.svg": "porto",
+  "PSV_Eindhoven.svg": "psv-eindhoven",
+  "RB_Leipzig_2014_logo.svg": "rb-leipzig",
+  "Real_Betis_2022_logo.svg": "real-betis",
+  "Real_Madrid_CF.svg": "real-madrid",
+  "AS_Roma_logo_(2017).svg": "roma",
+  "sabah-fk-logo-footylogos.svg": "sabah",
+  "FC_Shakhtar_Donetsk.svg": "shakhtar-donetsk",
+  "SK_Slavia_Praha_full_logo.svg": "slavia-prague",
+  "SK_Slovan_Bratislava_logo.svg": "slovan-bratislava",
+  "Sporting_Clube_de_Portugal_2026.svg": "sporting-cp",
+  "VfB_Stuttgart_1893_Logo.svg": "stuttgart",
+  "Viking_FK_logo_2020.svg": "viking",
+  "Villarreal_CF_logo-en.svg": "villarreal",
 };
 
+// Cleared rather than merged: the previous import wrote four badges under
+// names that are not team ids (`psg`, `as-roma`, `vfb-stuttgart`, `rc-lens`),
+// and leaving them behind would ship dead files no page can request.
+rmSync(OUT_DIR, { recursive: true, force: true });
 mkdirSync(OUT_DIR, { recursive: true });
 
-const slugs = [];
-for (const [file, slug] of Object.entries(MAP)) {
-  copyFileSync(`${SRC_DIR}/${file}`, `${OUT_DIR}/${slug}.svg`);
-  slugs.push(slug);
+const files = {};
+let totalBytes = 0;
+
+for (const [file, id] of Object.entries(MAP)) {
+  const src = `${SRC_DIR}/${file}`;
+  const srcBytes = statSync(src).size;
+
+  if (srcBytes > RASTERISE_OVER_BYTES) {
+    const out = `${id}.webp`;
+    await sharp(src, { density: 300 })
+      .resize(RASTER_PX, RASTER_PX, {
+        fit: "contain",
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      })
+      .webp({ quality: 90 })
+      .toFile(`${OUT_DIR}/${out}`);
+    const outBytes = statSync(`${OUT_DIR}/${out}`).size;
+    totalBytes += outBytes;
+    files[id] = out;
+    console.log(
+      `  ${id}: rasterised ${(srcBytes / 1024).toFixed(0)}KB SVG -> ${(outBytes / 1024).toFixed(0)}KB WebP`,
+    );
+  } else {
+    const out = `${id}.svg`;
+    copyFileSync(src, `${OUT_DIR}/${out}`);
+    totalBytes += srcBytes;
+    files[id] = out;
+  }
 }
 
-const tsOut = `// Generated by scripts/import-club-badges.mjs — the ${slugs.length} sourced club badge
-// SVGs under public/club-badges/, randomly assigned to teams (see
-// teams.ts). Real badges for next season's confirmed UCL clubs, not tied
-// to the current placeholder team list, which will be replaced.
-export const CLUB_BADGE_SLUGS = [
-${slugs.map((s) => `  "${s}",`).join("\n")}
-] as const;
+const ids = Object.keys(files).sort();
+const tsOut = `// Generated by scripts/import-club-badges.mjs — do not edit by hand.
+//
+// Every badge under public/club-badges/ is named for the team id it belongs
+// to, so a crest is a direct lookup rather than the hash-into-a-pool it used
+// to be (which gave no team its own badge). Most are the sourced SVG; a
+// couple were rasterised to WebP because the original was far too large to
+// ship, which is why this is a filename map and not just an extension.
+//
+// teams.test.ts asserts this covers TEAMS exactly, in both directions.
+export const CLUB_BADGE_FILES: Record<string, string> = {
+${ids.map((id) => `  "${id}": "${files[id]}",`).join("\n")}
+};
+
+/** The team ids that have a badge — the keys above, for assertions. */
+export const CLUB_BADGE_SLUGS = Object.keys(CLUB_BADGE_FILES);
 `;
 writeFileSync("src/predictions/clubBadgeSlugs.ts", tsOut);
 
-console.log(`Copied ${slugs.length} badges to ${OUT_DIR}, wrote src/predictions/clubBadgeSlugs.ts`);
+const shipped = readdirSync(OUT_DIR).length;
+console.log(
+  `\nWrote ${shipped} badges to ${OUT_DIR} (${(totalBytes / 1024).toFixed(0)}KB total)` +
+    `, regenerated src/predictions/clubBadgeSlugs.ts`,
+);

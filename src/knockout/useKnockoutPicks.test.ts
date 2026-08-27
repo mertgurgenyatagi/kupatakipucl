@@ -56,13 +56,13 @@ describe("useKnockoutPicks", () => {
   // team that isn't in it.
   it("evicts a team from every later round when it is deselected at R16", () => {
     const { result } = renderHook(() => useKnockoutPicks());
-    act(() => result.current.pickR16(0, "ajax"));
-    act(() => result.current.pickQf(0, "ajax"));
-    act(() => result.current.pickSf(0, "ajax"));
-    act(() => result.current.pickChampion("ajax"));
-    expect(result.current.championPick).toBe("ajax");
+    act(() => result.current.pickR16(0, "aek-athens"));
+    act(() => result.current.pickQf(0, "aek-athens"));
+    act(() => result.current.pickSf(0, "aek-athens"));
+    act(() => result.current.pickChampion("aek-athens"));
+    expect(result.current.championPick).toBe("aek-athens");
 
-    act(() => result.current.pickR16(0, "ajax")); // deselect
+    act(() => result.current.pickR16(0, "aek-athens")); // deselect
 
     expect(result.current.r16Picks[0]).toBeNull();
     expect(result.current.qfPicks[0]).toBeNull();
@@ -72,13 +72,13 @@ describe("useKnockoutPicks", () => {
 
   it("evicts the replaced team when an R16 slot is overwritten", () => {
     const { result } = renderHook(() => useKnockoutPicks());
-    act(() => result.current.pickR16(0, "ajax"));
-    act(() => result.current.pickQf(0, "ajax"));
-    act(() => result.current.pickChampion("ajax"));
+    act(() => result.current.pickR16(0, "aek-athens"));
+    act(() => result.current.pickQf(0, "aek-athens"));
+    act(() => result.current.pickChampion("aek-athens"));
 
-    act(() => result.current.pickR16(0, "benfica")); // the other side wins instead
+    act(() => result.current.pickR16(0, "stuttgart")); // the other side wins instead
 
-    expect(result.current.r16Picks[0]).toBe("benfica");
+    expect(result.current.r16Picks[0]).toBe("stuttgart");
     expect(result.current.qfPicks[0]).toBeNull();
     expect(result.current.championPick).toBeNull();
   });
@@ -87,7 +87,7 @@ describe("useKnockoutPicks", () => {
     const { result } = renderHook(() => useKnockoutPicks());
     act(() => result.current.pickQf(0, "inter-milan"));
     act(() => result.current.pickChampion("inter-milan"));
-    act(() => result.current.pickQf(0, "juventus"));
+    act(() => result.current.pickQf(0, "roma"));
     expect(result.current.championPick).toBeNull();
   });
 
