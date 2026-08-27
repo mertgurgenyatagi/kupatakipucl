@@ -579,11 +579,11 @@ Two workflows, added 2026-08-27:
 on a project subpath every crest 404s. `public/CNAME` prevents that, and
 `deploy.yml` asserts it survived the build.
 
-Firebase config is read from Vite env vars (`.env.example` lists the six keys).
+Firebase config is read from Vite env vars (`.env.example` lists the eight keys).
 **`.env.local` is *not* committed** — an earlier revision of this document said
 it was, which was wrong and would have produced a CI build shipping
 `apiKey: undefined`. `.env` **is** committed, deliberately: Vite
-inlines every `VITE_*` var into the public JS bundle, so all six values are
+inlines every `VITE_*` var into the public JS bundle, so all eight values are
 already served to every visitor in `dist/assets/index-*.js`. Hiding them would
 protect nothing. Access is controlled by the security rules in §5 and by Firebase
 Auth's authorized-domain list, which now reads `localhost`,
@@ -669,7 +669,7 @@ against the code; the disposition column records Mert's decision.
 | 13 | ~~**Deleting a lobby leaves its messages in the database.**~~ **Done 2026-08-27.** Root cause was `allow delete: if false` in the rules, so the cascade was impossible. Rules changed and deployed; `leaveLobby`'s last-member-out branch now runs the same cascade; 8 orphaned messages under 5 phantom lobbies purged from production. | Done |
 | 36 | ~~**Home and Forum can hang blank forever for a signed-in participant running an ad blocker.**~~ **Fixed at the root 2026-08-28**. `onSnapshot`'s real-time channel gets blocked client-side by some ad/privacy blockers as `net::ERR_BLOCKED_BY_CLIENT`. Previously fixed at the symptom via `useLoadingStuck` to show a notice. Now, `useLoadingStuck` correctly triggers an automatic fallback to one-shot `getDoc()` / `getDocs()` reads in `useProfile`, `usePosts`, `useMessages`, and `usePlayers` — hitting a different endpoint that bypasses filter lists, allowing the app to initialize seamlessly (sans live updates). | Done |
 | 37 | ~~**Multiple devices clobber presence state.**~~ **Fixed 2026-08-28**. Because `usePresenceHeartbeat` registered `onDisconnect().remove()` against a simple boolean `presence/{uid} = true`, logging in on two devices caused the later device's close event to nuke the earlier device's presence. Migrated to RTDB connection IDs via `push()` so each session is managed independently. | Done |
-| 38 | ~~**Prediction page impossibly laggy and unscrollable on mobile.**~~ **Fixed 2026-08-28**. The `TouchSensor` blocked native browser scrolling; added `touch-action: pan-y` to draggable items to restore scrollability. Extremely laggy due to unmemoized React trees and expensive `pointerWithin` intersections on 72 nodes; wrapped `TeamCrest` in `React.memo` and changed `@dnd-kit` collision detection to `closestCenter`. | Done |
+| 38 | ~~**Prediction page impossibly laggy and unscrollable on mobile, drags snapping back.**~~ **Fixed 2026-08-28**. The `TouchSensor` previously blocked native browser scrolling. Fixing scrolling by adding `touch-pan-y` caused Safari to aggressively cancel drags ("snap back") when users moved vertically. The final fix was separating the interactions: added a `GripVertical` drag handle with `touch-none` exclusively applied to the grip. Unified the drag sensor to `distance: 5` globally. Users now scroll seamlessly by touching the rows, and drag flawlessly by the handle. Extremely laggy due to unmemoized React trees and expensive `pointerWithin` intersections on 72 nodes; wrapped `TeamCrest` in `React.memo` and changed `@dnd-kit` collision detection to `closestCenter`. | Done |
 
 ### By 2026-09-08 (league phase)
 
@@ -739,9 +739,9 @@ Things still unresolved after the questionnaire.
    test suite pins `Europe/Istanbul` (`test/setup.ts`); the app does not.
    Surfaced by the first CI run, 2026-08-27.
 
-8. **The 2026-08-26 date on the About page timeline** ("Lig Tahminleri Açılır")
+8. ~~**The 2026-08-26 date on the About page timeline** ("Lig Tahminleri Açılır")
    has already passed. Whether the six About dates should be revised for the
-   real schedule is unaddressed.
+   real schedule is unaddressed.~~ **Resolved 2026-08-28**. The timeline was updated to reflect the final 7-step schedule requested by Mert (Aug 28 – Jun 5). "Lig Aşaması" and "Eleme Aşaması" are correctly rendered as date intervals.
 
 9. ~~**Test suite status.**~~ **Verified 2026-08-27**: 131 files / 1025 tests
    pass, `tsc -b` clean, 35 integration tests pass, all green on CI too.

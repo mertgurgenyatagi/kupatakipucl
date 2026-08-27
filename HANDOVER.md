@@ -54,9 +54,13 @@ until the league phase begins **2026-09-08**.
 
 **8b. Multi-device presence clobbering.** Refactored Realtime Database presence in `usePresenceHeartbeat` to use `push()` connection IDs (`presence/{uid}/{connectionId} = true`). Previously, a second device logging in and out would wipe the user's presence entirely. The rules and hooks now isolate devices.
 
-**8c. Prediction page mobile lag & scrolling.** Fixed severe `@dnd-kit` lag by memoizing `TeamCrest` and swapping `pointerWithin` collision detection for `closestCenter`. Fixed mobile scrolling lockup by adding `touch-pan-y` and switching from `TouchSensor` to `PointerSensor` on mobile so native touch scrolling is not `preventDefault`ed. *(Note: Mert explicitly requested these changes, overriding the previous constraint to not touch the prediction page).*
+**8c. Prediction page mobile lag & scrolling.** Fixed severe `@dnd-kit` lag by memoizing `TeamCrest` and swapping `pointerWithin` collision detection for `closestCenter`. Mobile touch dragging was clashing with scrolling, causing drags to cancel/snap back. The definitive fix was separating the two interactions: added a `GripVertical` drag handle to every row on mobile and prediction list slots, attached `touch-none` exclusively to the grip handle, and unified the sensor to use `distance: 5` globally. Now users scroll by touching the row and drag seamlessly by pulling the grip.
 
----
+**8d. Desktop Navigation Centering.** Fixed a subtle CSS flex layout issue where the desktop navigation links were slightly off-center because the logo/brand (left) was wider than the account slot (right).
+
+**8e. Tournament Timeline Updated.** The About page timeline was updated to reflect the final 7-step schedule (Aug 28 – Jun 5), with "Lig Aşaması" and "Eleme Aşaması" correctly formatted as date intervals ("08 Eyl - 24 Şub") via a new `startDate` parameter in `aboutContent.ts`.
+
+**8f. Firebase Analytics.** Initialized Firebase Analytics in `src/firebase.ts` and added the `measurementId` to the env configuration to begin tracking live user visits and device usage.
 
 ## 3b. What the previous session did
 
