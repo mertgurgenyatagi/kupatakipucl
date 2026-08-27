@@ -652,11 +652,11 @@ against the code; the disposition column records Mert's decision.
 | 6 | **`results`, `tournamentState`, `devConfig` and `devMatches` are writable by any signed-in user.** A participant could rewrite the standings or push the whole site into a phase that isn't ready. | Lock down |
 | 7 | **Other people's predictions are world-readable before the league phase.** The UI hides them; the data is directly fetchable. | Should not be visible pre-league-phase |
 | 8 | **Knockout entry point is reachable during `notstarted`.** `/knockout-predictions` is allowed in every logged-in phase and has no already-submitted redirect, so brackets can be submitted against fake pairings. Not linked from the nav, so URL-only. | Hide until preknockout |
-| 9 | **Mobile create-lobby button does nothing.** The dialog lives only in the desktop composition; the mobile tree returns before reaching it. | Fix |
+| 9 | ~~**Mobile create-lobby button does nothing.**~~ **Done 2026-08-27.** Both lobby dialogs are mounted on the mobile branch of `LoggedInHome`. | Done |
 | 10 | **The drag-and-drop ranker is being replaced.** Mert intends to change this interaction; it is the one thing every participant must complete. | Redesign pending |
-| 11 | **Profile shows raw team slugs** ("bayern-munich" not "Bayern Munich") under copy describing a free-text box that no longer exists. | Fix — display real names |
-| 12 | **Lobby management is desktop-only.** Invites, rename, kick, leave and delete have no mobile entry point, so a phone user can join a lobby but never create an invite or leave one. | Problem, needs addressing |
-| 13 | **Deleting a lobby leaves its messages in the database**, though the dialog promises otherwise. | Fix |
+| 11 | ~~**Profile shows raw team slugs.**~~ **Done 2026-08-27.** `uclTeamLabel()` in `surveyLabels.ts`, applied at all three call sites — the profile page *and both branches of `ParticipantPopup`*, which this entry missed. | Done |
+| 12 | **Lobby management was desktop-only.** **Fixed for the `notstarted` home 2026-08-27** — a settings gear in the mobile participants header opens `LobbyManagementPanel`, now a bottom sheet on a phone. **Still open for the started-phase mobile home**, which has no lobby UI of any kind and no participants cell to hang one on; unreachable until 2026-09-08. | Partly done |
+| 13 | ~~**Deleting a lobby leaves its messages in the database.**~~ **Done 2026-08-27.** Root cause was `allow delete: if false` in the rules, so the cascade was impossible. Rules changed and deployed; `leaveLobby`'s last-member-out branch now runs the same cascade; 8 orphaned messages under 5 phantom lobbies purged from production. | Done |
 
 ### By 2026-09-08 (league phase)
 
@@ -720,12 +720,18 @@ Things still unresolved after the questionnaire.
    (§9). If it ever becomes a nuisance, deleting `.github/workflows/` returns the
    project to hand deploys with nothing else to unpick.
 
-7. **The 2026-08-26 date on the About page timeline** ("Lig Tahminleri Açılır")
+7. **Dates render in the viewer's timezone.** Every fixed date is authored at
+   `+03:00`, but the app formats with local `getDate()`/`getMonth()`, so the
+   About timeline reads "25 Ağu" from London and "26 Ağu" from Istanbul. The
+   test suite pins `Europe/Istanbul` (`test/setup.ts`); the app does not.
+   Surfaced by the first CI run, 2026-08-27.
+
+8. **The 2026-08-26 date on the About page timeline** ("Lig Tahminleri Açılır")
    has already passed. Whether the six About dates should be revised for the
    real schedule is unaddressed.
 
-8. **Test suite status.** Reported passing when last checked; not independently
-   verified.
+9. ~~**Test suite status.**~~ **Verified 2026-08-27**: 131 files / 1025 tests
+   pass, `tsc -b` clean, 35 integration tests pass, all green on CI too.
 
 ---
 

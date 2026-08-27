@@ -2,182 +2,163 @@
 
 For a fresh session picking this project up cold.
 
-**Read [PROJECT.md](PROJECT.md) first.** It is the single source of truth for what
-this project is: stack, architecture, data model, security rules, Cloud
-Functions, testing, deploy, and a full sorted list of known problems. This file
-only covers *where things stand right now and what to do next*.
+**Read [PROJECT.md](PROJECT.md) first** for what the project is, and
+**[DEPLOY.md](DEPLOY.md)** for how it ships. This file only covers where things
+stand and what to do next.
 
-Written 2026-08-27, at the end of the pre-launch session. Branch: `launch-prep`.
-Stopped deliberately after item 5; items 6 and 7 are for a fresh session.
+Written 2026-08-28, at the end of the deployment session. Branch: `launch-prep`,
+pushed. Items 1–7 of the pre-launch list are **done**.
 
 ---
 
-## 1. Current state
+## 1. The only thing standing between this and a live site
 
-**The site has still never launched.** It is intended to go live imminently into
-the `notstarted` phase, staying there until the league phase begins
-**2026-09-08**, when sign-up and league predictions both close.
+Two switches, both deliberately left for Mert, because throwing them is what
+puts the site on the internet. Full detail in **DEPLOY.md §3**.
 
-Items 1–5 of the previous handover's pre-launch list are **done and committed**.
-Items 6 and 7 are **not started**. See §3.
+1. Merge `launch-prep` into `main`.
+2. **Settings → Pages → Source: GitHub Actions.**
+3. **Spaceship → kupatakipucl.com → Advanced DNS.** Delete the existing root
+   `A` records — they point at Spaceship's parking page — and add:
 
-### Production, verified after this session's work
+   | Type | Host | Value |
+   |------|------|-------|
+   | A | `@` | `185.199.108.153` |
+   | A | `@` | `185.199.109.153` |
+   | A | `@` | `185.199.110.153` |
+   | A | `@` | `185.199.111.153` |
+   | CNAME | `www` | `mertgurgenyatagi.github.io` |
+
+   All four A records verified live from this machine — each answers
+   `Server: GitHub.com`.
+4. Once GitHub stops warning about DNS, tick **Enforce HTTPS**.
+
+Nothing else is required. `public/CNAME`, the workflows, the authorized domains
+and the `og:` tags are all in place.
+
+---
+
+## 2. Current state
+
+**Still never launched.** Intended to go live into `notstarted` and stay there
+until the league phase begins **2026-09-08**.
 
 | Thing | State |
 |---|---|
-| Firestore | **Empty**, apart from `devConfig/state` (dev-panel-only; production never reads it) |
-| Firebase Auth | 3 accounts, all Mert's. Left in place — signing in again reuses the same uid |
-| Storage | **Empty** |
-| Realtime Database | **Empty** |
-| Security rules | **Deployed** with this session's lockdown |
-| Leaderboard functions | **Deployed** with the `submitters` doc change, all three ACTIVE in `europe-west8` |
+| Firestore | **`devConfig/state` only.** The 5 phantom lobbies and 8 orphaned messages found this session are purged |
+| Firebase Auth | 3 accounts, all Mert's. Authorized domains now include `kupatakipucl.com` and `www.` |
+| Storage / RTDB | Empty |
+| Security rules | **Deployed**, including this session's lobby-message change |
+| Leaderboard functions | Deployed, ACTIVE, `europe-west8`. Untouched this session |
 | `tournamentState` | Absent, so the app correctly defaults to `notstarted` |
-| Frontend hosting | **Still none.** This is item 6 and the biggest remaining gap |
-
-`leaderboardCache/current` and `leaderboardCache/submitters` do not exist yet.
-That is correct: the safety net stands down while the control doc is absent, and
-all three are created by the first real prediction submission.
-
-**Backups** of the pre-cleanup Firestore and Auth contents are on the Desktop as
-`kupatakipucl-prelaunch-backup-2026-08-27.json` and
-`kupatakipucl-auth-backup-2026-08-27.json` — deliberately outside the repo,
-which is public.
+| Frontend hosting | **Prepared, not reachable.** See §1 |
+| CI | **Green** on GitHub Actions — unit + integration both |
+| Tests | 131 files / 1025 unit, 35 integration, `tsc -b` clean |
 
 ---
 
-## 2. What this session did
+## 3. What this session did
 
-Seven commits on `launch-prep`, on top of `a5403f4`. **Not pushed** — the
-branch has an upstream from the previous session, so `git push` is all it
-needs.
+**6. Deployment.** Two workflows: `ci.yml` (every branch — typecheck, unit
+suite, build, plus the emulator integration suite on a JDK 21 runner) and
+`deploy.yml` (pushes to `main` — tests, builds, publishes `dist/` as a Pages
+artifact). Publishing from an artifact rather than a `gh-pages` branch keeps
+build output out of the repo.
 
-**1. Purged production** (`scripts/purge-dev-data.mjs`, kept, dry-run by
-default). 304 documents: 50 dummy participants plus Mert's own 3 test accounts
-(he asked for a clean slate and will sign up again), synthetic results, decided
-devMatches, the stale leaderboard cache, and all test forum/chat content. Plus 7
-orphaned Storage objects and a stale RTDB presence flag.
+Fixed both silent sign-in breakers: `kupatakipucl.com` and `www.` added to
+Firebase Auth's authorized domains (verified by reading the config back), and
+the `og:`/`twitter:` tags repointed off `kupatakipucl.web.app`.
 
-The audit turned up **four collections no document mentioned, all dead**:
-`postLikes` (the pre-2026-07-31 like model), `presence` (Firestore leftovers
-from before presence moved to RTDB), `bracketState` (orphaned R16 pairings with
-no code reference and no rule at all), and three expired `lobbyInvites` pointing
-at lobbies that no longer existed. It also found **two uids belonging to
-already-deleted auth accounts** whose data had been left behind — PROJECT.md §11
-problem 34, visible in production.
+**`.env.production` is committed on purpose.** PROJECT.md claimed `.env.local`
+was committed — it is not, so a CI build would have had no Firebase config,
+succeeded, and shipped `apiKey: undefined`. Committing costs nothing: Vite
+inlines every `VITE_*` var into the public bundle, so all six values are already
+downloaded by every visitor. `deploy.yml` asserts they landed in the bundle
+rather than trusting it.
 
-**2. Swapped in the 2026-27 team list and real crests.** Mert confirmed the 36
-badge SVGs in `assets/club_badges/` *are* the field, which resolves PROJECT.md
-§12 open question 1. Crests are no longer hash-assigned from a 29-badge pool —
-each badge is named for its team id, so `teamCrestSrc` is a direct lookup, and
-`teams.test.ts` now asserts badges and teams cover each other in both
-directions. Real Betis' source SVG was a 6.5 MB wrapper around embedded rasters
-(larger than the rest of the site's assets combined, on the page that draws all
-36 crests at once); it and Porto are rasterised to WebP at import. Whole badge
-set is now 563 KB.
+**7a. Lobby chat survived lobby deletion.** Root cause was in the rules, not the
+client: `allow delete: if false` on lobby messages made the cascade impossible
+to write, while the delete dialog promised the opposite. Two orphan sources, not
+one — `leaveLobby`'s last-member-out branch never called `deleteLobby` at all.
+The lobby doc is now deleted last, so a half-finished cascade is retryable
+instead of stranding the rest. Rules deployed; 5 new emulator tests.
 
-The swap broke 54 tests from one root cause: `devpanel/fixtures.ts` still held
-the departed field and the whole leaderboard reads fixtures from there. The
-calendar was re-pointed through a **bijection** of old ids onto new, which
-preserves every invariant `fixtures.test.ts` asserts for free, and the mapping
-was searched for one producing **no same-country ties**. Same treatment for the
-knockout Round of 16, which also lost its four impossible all-domestic ties and
-gained the guard test it never had.
+**7b. Lobbies on mobile.** `LoggedInHome` returns early for mobile and both
+dialogs lived past that point, so the create button did nothing and there was no
+way into lobby management at all. Both are mounted on the mobile branch now, and
+the panel is a bottom sheet on a phone.
 
-**3. Fixed the signup lockout** — and it is **not** what the old handover
-described. Abandoning signup is harmless. The real trigger is **deleting your
-account**: `deleteProfile` could not remove `surveyResponses` (the rules
-forbade it), so the survey outlived the profile, `ProfileGate` routed the user
-back into `SignupFlow`, and its closing `setDoc` was rejected as an *update* on
-the surviving document. Every deleted account was permanently unable to sign up
-again. Fixed in the rules and by making account deletion remove every document
-keyed by that uid.
+**7c. Raw team slugs.** `uclTeamLabel()`, applied at three call sites — the
+profile page *and both branches of `ParticipantPopup`*, which the previous
+handover missed.
 
-**4. Locked down the rules and made predictions private.** `results`,
-`tournamentState`, `devMatches` and `devConfig` are admin-only to write, against
-an allowlist of Mert's three uids. Predictions are readable only by their owner
-until the phase leaves `notstarted`.
-
-Doing that properly exposed a leak **the docs do not record**: every entry in
-`leaderboardCache/current` carries that participant's full ranking, and the
-collection was public-read — so hiding the predictions collection alone would
-have achieved nothing. It is now behind the same gate. The one thing that
-legitimately needs to be public during `notstarted` (who has submitted) moved
-to a new `leaderboardCache/submitters` doc written by the Cloud Function, which
-also removes a ~150 KiB-per-visit download from the most-visited signed-in page.
-
-Added `integration/firestoreRules.itest.ts` — 28 emulator-backed tests. Every
-rules defect this project has hit was invisible to the rest of the suite.
-
-**5. Hid the knockout bracket** until `preknockout`, via a new
-`KNOCKOUT_PHASES` constant, and gave the page the first-submission-only door
-`/predictions` already had. Neither behaviour was covered by any test —
-`pageAccess.test.ts` never mentioned `knockoutPredictions`, and the page's own
-tests all run in `loggedin_preknockout` — so both changes passed the existing
-suite untouched. Both are tested now.
+**Timezone.** CI's first run failed on two date tests that pass here and fail in
+UTC. Not an app bug — the app formats in the viewer's zone — but the suite
+assumed a Turkish runner. `test/setup.ts` now pins `Europe/Istanbul`.
 
 ---
 
-## 3. What is left — work these in order
+## 4. Documented "facts" that were wrong
 
-### 6. Set up deployment — the biggest remaining gap
-No hosting config, no publish step, no CI. Target is GitHub Pages on
-**`kupatakipucl.com`** (registered 2026-08-27, repo public). `base: "./"` and
-HashRouter are already correct, so no rewrite rules are needed. Three things
-will silently break the site if missed:
+Three sessions running, the docs have contained confident falsehoods. Verify
+against production before relying on anything here.
 
-1. **`kupatakipucl.com` must be added to Firebase Auth's authorized domains** or
-   Google sign-in fails outright. Not yet done.
-2. `index.html`'s `og:url` and `og:image` still point at
-   `https://kupatakipucl.web.app/`, a host that will not be used.
-3. The badge and hero assets are served from absolute `/` paths, which is fine
-   at a domain root but would break on a project subpath.
-
-### 7. Smaller launch-week fixes
-- Mobile create-lobby button does nothing — the dialog lives only in the desktop
-  composition and the mobile tree returns before reaching it.
-- Lobby management is desktop-only: invites, rename, kick, leave and delete have
-  no mobile entry point at all.
-- Profile shows raw team slugs (`bayern-munich`) under copy describing a
-  free-text field that no longer exists. `TEAM_BY_ID` gives the real name.
-- Deleting a lobby leaves its chat messages behind, though the dialog promises
-  otherwise.
-
-**Not now**: everything under "By 2026-09-08" and "Later" in PROJECT.md §11.
+- **`.env.local` is committed** (PROJECT.md §9) — it is not, and building on
+  that would have shipped a dead site.
+- **"Firestore is empty apart from `devConfig/state`"** (previous HANDOVER) —
+  five phantom lobby parents held 8 chat messages. They are invisible to a
+  normal listing; `showMissing=true` is what surfaces them.
+- **"Profile shows raw team slugs"** — true, but it was three surfaces, not one.
 
 ---
 
-## 4. Constraints Mert has set
+## 5. What is left
 
-- **Do not touch the league prediction submitting screen.** He is replacing that
-  interaction and wants to handle it deliberately, separately. This covers
-  `TeamRanker` and the `/predictions` flow.
-- **The knockout phase is deprioritised** — months away.
-- He has given broad autonomy otherwise: make the change, run the tests, commit.
-  Reserve questions for decisions only he can make.
-
----
-
-## 5. Working notes
-
-- **Admin uids are baked into `firestore.rules`** as `isAdmin()`. If Mert ever
-  signs in with a different Google account and needs to drive the dev panel or
-  flip the phase, that list is what to update.
+### Before 2026-09-08
+- **No way to enter real match results.** The dev panel is the only writer of
+  `results`, with synthetic 1-0/0-0 scorelines. This is the biggest functional
+  gap and it has a hard deadline.
 - **The phase flip on 2026-09-08** is still a hand edit to
-  `tournamentState/current`. It is now admin-only, so it must be done as one of
-  those three accounts (or via the console / a gcloud-token script).
-- **Tests**: `npm test` — 129 files, 1008 tests, all passing at time of writing;
-  `tsc -b` clean. Integration needs JDK 21:
+  `tournamentState/current`, now admin-only — so it must be done as one of
+  Mert's three uids or via a gcloud-token script.
+- **Started-phase mobile home has no lobby UI at all.** Not a wiring fix: there
+  is no participants cell to hang the control on, so where it goes is a design
+  decision.
+- PROJECT.md §11 "By 2026-09-08" — Süper Lig "Tutmuyorum" on Stats, the
+  fabricated Stats widgets, the dev-panel dependency in production code.
+
+### Not now
+Everything under "Later" in PROJECT.md §11 — the knockout phase is months away.
+
+---
+
+## 6. Constraints Mert has set
+
+- **Do not touch the league prediction submitting screen.** `TeamRanker` and the
+  `/predictions` flow. He is replacing that interaction deliberately and
+  separately. Untouched this session.
+- **Do not point DNS or make the site publicly reachable** without asking. §1 is
+  prepared up to exactly that line and stops.
+- **Knockout is deprioritised.**
+- Broad autonomy otherwise: make the change, run the tests, commit.
+
+---
+
+## 7. Working notes
+
+- **Tests**: `npm test` (131 files / 1025). Integration needs JDK 21:
   `JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" PATH="$JAVA_HOME/bin:$PATH" npm run test:integration`
-  (30 tests across 2 files).
-- **`@firebase/rules-unit-testing` is pinned to v3** on purpose — current
-  versions peer-depend on firebase 12 and this project is on 10.
+  (35 tests). CI runs both, so a push is now a second opinion.
+- **Verify the production build without publishing anything**: `npm run build &&
+  npm run preview`. `localhost` is an authorized Firebase domain, so this
+  exercises real sign-in against production.
 - **Reading and writing production directly**: every script in `scripts/` uses
-  the Firestore REST API with `gcloud auth print-access-token`. That is
-  IAM-authenticated, so it bypasses security rules — which is how the cleanup
-  deleted `surveyResponses` without loosening anything.
-- **Do not trust code comments about project state.** Many cite documents that
-  no longer exist. The *reasoning* is usually still valuable; the claims about
-  what exists are not.
+  the Firestore REST API with `gcloud auth print-access-token`. IAM-authenticated,
+  so it bypasses security rules.
+- **Admin uids are baked into `firestore.rules`** as `isAdmin()`.
+- **`@firebase/rules-unit-testing` is pinned to v3** on purpose.
+- **Do not trust code comments about project state.** The reasoning is usually
+  still valuable; the claims about what exists are not.
 - **Turkish** is the language of every user-facing string, permanently.
 - **Mert's conventions**: no I-beam cursors ("cursorify"); pages compose from
   `Frame` cells; ruthlessly favour non-busy layouts.
