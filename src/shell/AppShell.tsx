@@ -48,7 +48,7 @@ function DesktopShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-3">
           {/* Nameplate — real weight (§19), no static count in the copy so
               nothing here can drift from the live figures shown in-page. */}
-          <div className="order-1 flex items-center gap-3 mr-auto lg:mr-0">
+          <div className="order-1 flex items-center gap-3 mr-auto lg:mr-0 lg:flex-1">
             <Link
               to="/"
               className="group flex items-center gap-2.5 rounded-sm leading-none no-underline outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-color_text"
@@ -79,7 +79,7 @@ function DesktopShell({ children }: { children: ReactNode }) {
               link is ever hidden behind a menu (§53). */}
           <nav
             aria-label="Ana gezinme"
-            className="no-scrollbar order-3 -mx-1 flex w-full items-center gap-x-1 overflow-x-auto px-1 lg:order-2 lg:mx-0 lg:w-auto lg:flex-1 lg:justify-center lg:overflow-visible lg:px-0"
+            className="no-scrollbar order-3 -mx-1 flex w-full items-center gap-x-1 overflow-x-auto px-1 lg:order-2 lg:mx-0 lg:w-auto lg:flex-none lg:justify-center lg:overflow-visible lg:px-0"
           >
             {links.map((link) => {
               const active =
@@ -112,7 +112,7 @@ function DesktopShell({ children }: { children: ReactNode }) {
           </nav>
 
           {/* Account slot */}
-          <div className="order-2 flex items-center gap-3 lg:order-3 sm:gap-4">
+          <div className="order-2 flex items-center gap-3 lg:order-3 sm:gap-4 lg:flex-1 lg:justify-end">
             {/* Dev-only shortcut to /dev — Mert: "ill remove it way before
                 launch," so it's gated on the DEV build flag rather than
                 anything more permanent. */}
