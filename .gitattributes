@@ -1,0 +1,6 @@
+# GitHub Pages reads public/CNAME literally to decide the custom domain, and
+# this repo is developed on Windows with core.autocrlf on. Git already stores
+# the blob as LF, but without this a checkout would put CRLF in the working
+# copy, and a local `npm run build` would then produce a dist/CNAME whose
+# hostname ends in a stray carriage return.
+CNAME text eol=lf

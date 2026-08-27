@@ -1,0 +1,94 @@
+# Builds the site and publishes it to GitHub Pages at kupatakipucl.com.
+#
+# Publishing happens from the Actions artifact, not from a gh-pages branch, so
+# no build output is ever committed and every deploy is reproducible from a
+# clean checkout.
+#
+# This workflow cannot publish anything until GitHub Pages is enabled on the
+# repository with "GitHub Actions" as its source (Settings → Pages). Until then
+# `actions/configure-pages` fails with a clear error, which is deliberate — the
+# act of enabling Pages is what makes the site publicly reachable, and that is a
+# decision for Mert, alongside pointing the DNS. See DEPLOY.md.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Queue deploys rather than cancelling them: whatever is newest on main must be
+# what ends up live, and a cancelled deploy could leave an older build serving.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - run: npm ci
+
+      # Nothing broken gets published, even if someone pushes straight to main.
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # Vite inlines VITE_* vars at build time. If .env.production were missing
+      # or renamed, the build would still succeed and ship `apiKey: undefined`,
+      # and the site would die on first load with auth/invalid-api-key. Assert
+      # the values actually landed in the bundle instead of finding out in the
+      # browser.
+      - name: Verify the Firebase config was inlined
+        run: |
+          for value in \
+            kupatakipucl.firebaseapp.com \
+            kupatakipucl-default-rtdb.europe-west1.firebasedatabase.app
+          do
+            if ! grep -qF "$value" dist/assets/*.js; then
+              echo "::error::Firebase config missing from the build: $value"
+              echo "Check that .env.production still exists and defines every VITE_FIREBASE_* key."
+              exit 1
+            fi
+          done
+
+      # public/CNAME is what tells Pages to serve the custom domain. Losing it
+      # silently reverts the site to the github.io URL, which is not an
+      # authorized domain in Firebase Auth — so sign-in would break site-wide.
+      - name: Verify the custom domain survived the build
+        run: |
+          if [ "$(cat dist/CNAME 2>/dev/null)" != "kupatakipucl.com" ]; then
+            echo "::error::dist/CNAME is missing or wrong — Pages would drop the custom domain."
+            exit 1
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

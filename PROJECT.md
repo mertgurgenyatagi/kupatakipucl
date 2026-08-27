@@ -18,7 +18,8 @@ says so rather than guessing.
 ## 1. Status
 
 **Not yet launched.** No edition has ever run with real participants. As of
-2026-08-27 the frontend is not deployed anywhere.
+2026-08-27 the frontend is fully prepared to deploy but is not yet reachable:
+GitHub Pages has not been enabled and the domain still points at a parking page.
 
 Mert intends to launch **2026-08-28**, into the `notstarted` phase only, and to
 remain in that phase for roughly ten days until the league phase begins on
@@ -39,34 +40,34 @@ from code:
 
 | Thing | State |
 |---|---|
-| Frontend hosting | **None.** Not deployed. |
+| Frontend hosting | **Prepared, not live.** GitHub Pages via Actions is configured in the repo; Pages itself is not yet enabled and `kupatakipucl.com` still resolves to Spaceship's parking page. See §9 and DEPLOY.md. |
+| Firebase Auth authorized domains | `localhost`, `kupatakipucl.firebaseapp.com`, `kupatakipucl.web.app`, **`kupatakipucl.com`**, **`www.kupatakipucl.com`** — the last two added 2026-08-27. |
 | `tournamentState` collection | **Empty** — no `current` doc, so the app defaults to `notstarted`. This is the desired state for launch. |
 | Leaderboard Cloud Functions | **All three deployed and ACTIVE** in `europe-west8`, since 2026-08-07. |
 | `stopbilling` Cloud Run service | **Deployed**, since 2026-07-20. |
 | Realtime Database | Provisioned, `europe-west1`. |
 | Firestore region | `europe-west8`. |
 
-### Production database contents, verified 2026-08-27
+### Production database contents, re-verified 2026-08-27 (after the purge)
 
-The live database is **not clean**. It holds development seed data:
+The 304 documents of development seed data described in earlier revisions of
+this document are **gone** — `scripts/purge-dev-data.mjs` removed them. What
+remains, read directly from the Firestore REST API:
 
-| Collection | Docs | What they are |
+| Collection | Docs | What it is |
 |---|---|---|
-| `profiles` / `publicProfiles` | 53 / 53 | **50 are seeded dummies** (`dummy-001`…`dummy-050`), 3 are real accounts |
-| `predictions` | 52 | Almost all dummy |
-| `surveyResponses` | 54 | Almost all dummy |
-| `results` | 36 | Synthetic standings from dev-panel testing |
-| `devMatches` | 16 | Matchday 1 fixtures marked as decided |
-| `leaderboardCache` | 2 | `current` (52 entries) + `control`, last computed 2026-08-07 |
-| `forumPosts` | 11 | Test content |
-| `messages` | 18 | Test content |
-| `knockoutPredictions` | 1 | Test content |
-| `devConfig` | 1 | Dev-panel state |
-| `lobbies` | 0 | — |
+| `devConfig` | 1 | `devConfig/state`. Dev-panel only; production never reads it. Harmless. |
+| `lobbies` | **0 documents, 5 phantom parents** | Five deleted lobby documents whose `messages` subcollections survived them, holding **8 orphaned chat messages** between them. Live evidence of §11 problem 13. |
 
-This matters for launch: the participant list, avatar stack and counters on Home
-read `profiles`/`publicProfiles` directly, so a real visitor would currently see
-53 participants, 50 of them fictional. See §11.
+Every other collection is absent, including `tournamentState` (so the app
+correctly defaults to `notstarted`), `results`, and `leaderboardCache`. The
+leaderboard cache docs are created by the first real prediction submission; the
+recompute safety net correctly stands down while the control doc is absent.
+Storage and the Realtime Database are both empty.
+
+The phantom lobby parents do not render anywhere — no lobby document means no
+lobby in the UI — so they are cosmetically invisible, but they are real
+documents accruing real storage and they show the delete path is incomplete.
 
 ---
 
@@ -544,26 +545,44 @@ npm test                 unit suite
 npm run test:integration emulator-backed integration suite
 ```
 
-**Frontend deployment does not exist yet.** `firebase.json` configures
-firestore, storage, database and functions — there is **no `hosting` block** —
-and there is no CI of any kind. Everything is deployed by hand.
+**The frontend deploys to GitHub Pages via GitHub Actions.** See
+**[DEPLOY.md](DEPLOY.md)** for the full runbook; this is the summary.
 
-The intended target is **GitHub Pages** on the domain **`kupatakipucl.com`**
-(registered 2026-08-27 via Spaceship). The repository is public.
+`firebase.json` configures firestore, storage, database and functions and has
+**no `hosting` block** — Firebase Hosting is not used and `kupatakipucl.web.app`
+will never serve this site. The backend (rules, functions, the stopbilling Cloud
+Run service) is still deployed by hand from Mert's machine.
 
-`base: "./"` and HashRouter are already correct for Pages, so no rewrite rules
-are needed. What is missing:
+Two workflows, added 2026-08-27:
 
-1. A build-and-publish step (none exists).
-2. **`kupatakipucl.com` must be added to Firebase Auth's authorized domains** or
-   Google sign-in fails completely. Not yet done.
-3. `index.html`'s `og:url` and `og:image` still point at
-   `https://kupatakipucl.web.app/`, a host that will not be used.
+- `.github/workflows/ci.yml` — every branch and PR: `tsc -b`, the unit suite,
+  and a build. A second job runs the Firestore-emulator integration suite on a
+  JDK 21 runner. Publishes nothing.
+- `.github/workflows/deploy.yml` — pushes to `main` and manual dispatch: tests,
+  builds, asserts the build is sound, and publishes `dist/` as a Pages artifact.
+  Deploying from an artifact rather than a `gh-pages` branch keeps build output
+  out of the repository.
+
+`base: "./"` and HashRouter mean Pages needs no rewrite rules or 404 fallback.
+**Runtime asset paths are root-absolute** (`/club-badges/…`, `/hero/…`,
+`/brand/…`), so the build is correct at a domain root and only at a domain root;
+on a project subpath every crest 404s. `public/CNAME` prevents that, and
+`deploy.yml` asserts it survived the build.
 
 Firebase config is read from Vite env vars (`.env.example` lists the six keys).
-`.env.local` is committed despite being gitignored; the web API key it contains
-is not a secret by design, but the repository being public means the permissive
-rules in §5 are the real exposure.
+**`.env.local` is *not* committed** — an earlier revision of this document said
+it was, which was wrong and would have produced a CI build shipping
+`apiKey: undefined`. `.env.production` **is** committed, deliberately: Vite
+inlines every `VITE_*` var into the public JS bundle, so all six values are
+already served to every visitor in `dist/assets/index-*.js`. Hiding them would
+protect nothing. Access is controlled by the security rules in §5 and by Firebase
+Auth's authorized-domain list, which now reads `localhost`,
+`kupatakipucl.firebaseapp.com`, `kupatakipucl.web.app`, `kupatakipucl.com`,
+`www.kupatakipucl.com` — verified by reading it back from production.
+
+**Not yet live.** Two switches are deliberately left for Mert: enabling Pages in
+the repository settings, and replacing Spaceship's parking-page A records
+(`34.216.117.25`, `54.149.79.189`) with GitHub's. Both are in DEPLOY.md §3.
 
 ### Repository and branches
 
@@ -629,7 +648,7 @@ against the code; the disposition column records Mert's decision.
 | 2 | **Crests do not match teams.** `teamCrestSrc` hashes the team id into a 29-badge list, so no team shows its own badge and 36 teams share 25 badges. 7 new badge SVGs were added to `assets/` on 2026-08-27 but have not been imported into `public/`, and `clubBadgeSlugs.ts` is unchanged. | Fix — real crests, correctly mapped |
 | 3 | **Production database holds 50 dummy participants**, plus synthetic `results`, 16 decided `devMatches`, a stale `leaderboardCache`, and test forum/chat content. Home would show 53 participants, 50 fictional. | Must be cleaned before launch |
 | 4 | **Signup lockout.** Anyone who abandons signup after the last quiz step is permanently locked out: `saveSurveyResponse` is a plain `setDoc`, the rules forbid update, and `ProfileGate` always restarts from step 0. Unrecoverable for that account. | Fix |
-| 5 | **No deployment exists.** No hosting config, no publish step, and `kupatakipucl.com` is not yet in Firebase Auth's authorized domains — sign-in will fail outright without it. `og:` tags point at the wrong host. | Fix |
+| 5 | ~~**No deployment exists.**~~ **Done 2026-08-27.** GitHub Actions builds and publishes to GitHub Pages, `kupatakipucl.com` and `www.` are authorized in Firebase Auth, and the `og:`/`twitter:` tags point at the real host. Two switches remain and are Mert's: enabling Pages, and replacing Spaceship's parking A records. See [DEPLOY.md](DEPLOY.md). | Done |
 | 6 | **`results`, `tournamentState`, `devConfig` and `devMatches` are writable by any signed-in user.** A participant could rewrite the standings or push the whole site into a phase that isn't ready. | Lock down |
 | 7 | **Other people's predictions are world-readable before the league phase.** The UI hides them; the data is directly fetchable. | Should not be visible pre-league-phase |
 | 8 | **Knockout entry point is reachable during `notstarted`.** `/knockout-predictions` is allowed in every logged-in phase and has no already-submitted redirect, so brackets can be submitted against fake pairings. Not linked from the nav, so URL-only. | Hide until preknockout |
@@ -677,11 +696,10 @@ against the code; the disposition column records Mert's decision.
 
 Things still unresolved after the questionnaire.
 
-1. **The exact 36-team list.** Mert supplied 29 teams confirmed by domestic
-   league position. The remaining 7 are *inferred* from badge SVGs added to
-   `assets/club_badges/` on 2026-08-27 — AEK Athens, Fenerbahçe, Bodø/Glimt,
-   LASK, Sabah FK, Slovan Bratislava and Viking FK — which would complete the
-   field. **This inference has not been confirmed.**
+1. ~~**The exact 36-team list.**~~ **Resolved 2026-08-27.** Mert confirmed the
+   36 badge SVGs in `assets/club_badges/` are the field. `teams.ts` holds that
+   list and `teams.test.ts` asserts badges and teams cover each other in both
+   directions.
 
 2. **What replaces the drag-and-drop ranker.** Flagged as changing; the
    replacement interaction is undecided.
@@ -696,8 +714,11 @@ Things still unresolved after the questionnaire.
    was uncertain ("probably just for convenience until the league phase starts
    proper"). The code contradicts itself on this point (#15).
 
-6. **Whether the current build/publish step should be automated.** Mert did not
-   know what CI meant and had no view on it; no decision recorded.
+6. ~~**Whether the current build/publish step should be automated.**~~
+   **Decided 2026-08-27 without him**, at his request — he had no view and did
+   not want to form one. Answer: yes, automated, GitHub Actions, two workflows
+   (§9). If it ever becomes a nuisance, deleting `.github/workflows/` returns the
+   project to hand deploys with nothing else to unpick.
 
 7. **The 2026-08-26 date on the About page timeline** ("Lig Tahminleri Açılır")
    has already passed. Whether the six About dates should be revised for the
