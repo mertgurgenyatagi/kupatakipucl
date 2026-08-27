@@ -17,9 +17,9 @@ says so rather than guessing.
 
 ## 1. Status
 
-**Not yet launched.** No edition has ever run with real participants. As of
-2026-08-27 the frontend is fully prepared to deploy but is not yet reachable:
-GitHub Pages has not been enabled and the domain still points at a parking page.
+**Not yet launched.** No edition has ever run with real participants, though the
+frontend is now live at `https://kupatakipucl.com` as of 2026-08-28 — GitHub
+Pages is enabled and the domain is repointed at it.
 
 Mert intends to launch **2026-08-28**, into the `notstarted` phase only, and to
 remain in that phase for roughly ten days until the league phase begins on
@@ -40,7 +40,7 @@ from code:
 
 | Thing | State |
 |---|---|
-| Frontend hosting | **Prepared, not live.** GitHub Pages via Actions is configured in the repo; Pages itself is not yet enabled and `kupatakipucl.com` still resolves to Spaceship's parking page. See §9 and DEPLOY.md. |
+| Frontend hosting | **Live** at `https://kupatakipucl.com` via GitHub Pages, published from GitHub Actions. See §9 and DEPLOY.md. |
 | Firebase Auth authorized domains | `localhost`, `kupatakipucl.firebaseapp.com`, `kupatakipucl.web.app`, **`kupatakipucl.com`**, **`www.kupatakipucl.com`** — the last two added 2026-08-27. |
 | `tournamentState` collection | **Empty** — no `current` doc, so the app defaults to `notstarted`. This is the desired state for launch. |
 | Leaderboard Cloud Functions | **All three deployed and ACTIVE** in `europe-west8`, since 2026-08-07. |
@@ -580,9 +580,9 @@ Auth's authorized-domain list, which now reads `localhost`,
 `kupatakipucl.firebaseapp.com`, `kupatakipucl.web.app`, `kupatakipucl.com`,
 `www.kupatakipucl.com` — verified by reading it back from production.
 
-**Not yet live.** Two switches are deliberately left for Mert: enabling Pages in
-the repository settings, and replacing Spaceship's parking-page A records
-(`34.216.117.25`, `54.149.79.189`) with GitHub's. Both are in DEPLOY.md §3.
+**Live at `https://kupatakipucl.com`.** Pages is enabled with GitHub Actions as
+its source, and Spaceship's parking-page A records have been replaced with
+GitHub's. DEPLOY.md §3 has the exact steps, in case anything needs redoing.
 
 ### Repository and branches
 
@@ -648,7 +648,7 @@ against the code; the disposition column records Mert's decision.
 | 2 | **Crests do not match teams.** `teamCrestSrc` hashes the team id into a 29-badge list, so no team shows its own badge and 36 teams share 25 badges. 7 new badge SVGs were added to `assets/` on 2026-08-27 but have not been imported into `public/`, and `clubBadgeSlugs.ts` is unchanged. | Fix — real crests, correctly mapped |
 | 3 | **Production database holds 50 dummy participants**, plus synthetic `results`, 16 decided `devMatches`, a stale `leaderboardCache`, and test forum/chat content. Home would show 53 participants, 50 fictional. | Must be cleaned before launch |
 | 4 | **Signup lockout.** Anyone who abandons signup after the last quiz step is permanently locked out: `saveSurveyResponse` is a plain `setDoc`, the rules forbid update, and `ProfileGate` always restarts from step 0. Unrecoverable for that account. | Fix |
-| 5 | ~~**No deployment exists.**~~ **Done 2026-08-27.** GitHub Actions builds and publishes to GitHub Pages, `kupatakipucl.com` and `www.` are authorized in Firebase Auth, and the `og:`/`twitter:` tags point at the real host. Two switches remain and are Mert's: enabling Pages, and replacing Spaceship's parking A records. See [DEPLOY.md](DEPLOY.md). | Done |
+| 5 | ~~**No deployment exists.**~~ **Done, live 2026-08-28.** GitHub Actions builds and publishes to GitHub Pages, `kupatakipucl.com` and `www.` are authorized in Firebase Auth, the `og:`/`twitter:` tags point at the real host, Pages is enabled, and DNS points at GitHub. See [DEPLOY.md](DEPLOY.md). | Done |
 | 6 | **`results`, `tournamentState`, `devConfig` and `devMatches` are writable by any signed-in user.** A participant could rewrite the standings or push the whole site into a phase that isn't ready. | Lock down |
 | 7 | **Other people's predictions are world-readable before the league phase.** The UI hides them; the data is directly fetchable. | Should not be visible pre-league-phase |
 | 8 | **Knockout entry point is reachable during `notstarted`.** `/knockout-predictions` is allowed in every logged-in phase and has no already-submitted redirect, so brackets can be submitted against fake pairings. Not linked from the nav, so URL-only. | Hide until preknockout |

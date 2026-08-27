@@ -11,30 +11,22 @@ pushed. Items 1–7 of the pre-launch list are **done**.
 
 ---
 
-## 1. The only thing standing between this and a live site
+## 1. The site is live (or about to be)
 
-Two switches, both deliberately left for Mert, because throwing them is what
-puts the site on the internet. Full detail in **DEPLOY.md §3**.
+The four steps that only Mert could take — merging to `main`, enabling Pages,
+repointing DNS at GitHub, enforcing HTTPS — were his to throw and he has thrown
+them. Full detail, if something needs re-checking, in **DEPLOY.md §3**.
 
-1. Merge `launch-prep` into `main`.
-2. **Settings → Pages → Source: GitHub Actions.**
-3. **Spaceship → kupatakipucl.com → Advanced DNS.** Delete the existing root
-   `A` records — they point at Spaceship's parking page — and add:
+1. `launch-prep` merged into `main`.
+2. **Settings → Pages → Source: GitHub Actions**, enabled.
+3. **Spaceship → kupatakipucl.com → Advanced DNS**: the old parking-page `A`
+   records replaced with GitHub's four, plus a `www` CNAME to
+   `mertgurgenyatagi.github.io`.
+4. **Enforce HTTPS** ticked once DNS settled.
 
-   | Type | Host | Value |
-   |------|------|-------|
-   | A | `@` | `185.199.108.153` |
-   | A | `@` | `185.199.109.153` |
-   | A | `@` | `185.199.110.153` |
-   | A | `@` | `185.199.111.153` |
-   | CNAME | `www` | `mertgurgenyatagi.github.io` |
-
-   All four A records verified live from this machine — each answers
-   `Server: GitHub.com`.
-4. Once GitHub stops warning about DNS, tick **Enforce HTTPS**.
-
-Nothing else is required. `public/CNAME`, the workflows, the authorized domains
-and the `og:` tags are all in place.
+If `https://kupatakipucl.com` is not actually resolving when you read this,
+DNS propagation can lag the change by up to 24 hours — check GitHub's Pages
+settings page for a stale-DNS warning before assuming something regressed.
 
 ---
 
@@ -51,7 +43,7 @@ until the league phase begins **2026-09-08**.
 | Security rules | **Deployed**, including this session's lobby-message change |
 | Leaderboard functions | Deployed, ACTIVE, `europe-west8`. Untouched this session |
 | `tournamentState` | Absent, so the app correctly defaults to `notstarted` |
-| Frontend hosting | **Prepared, not reachable.** See §1 |
+| Frontend hosting | **Live at `kupatakipucl.com`.** See §1 |
 | CI | **Green** on GitHub Actions — unit + integration both |
 | Tests | 131 files / 1025 unit, 35 integration, `tsc -b` clean |
 
