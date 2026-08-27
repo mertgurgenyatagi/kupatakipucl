@@ -12,6 +12,14 @@ on:
   pull_request:
 
 # A newer push makes the older run irrelevant, so don't pay for it.
+# Every fixed date in this codebase is authored at +03:00 and the app is
+# Turkish-only, so the suite's date assertions are only true on a Turkish
+# clock. Runners are UTC, which failed two unrelated tests on the first run.
+# Set here rather than only in test/setup.ts: an env var is in place before
+# Node starts, where mutating process.env.TZ mid-process is not dependable.
+env:
+  TZ: Europe/Istanbul
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true

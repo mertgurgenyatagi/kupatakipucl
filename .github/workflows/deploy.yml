@@ -23,6 +23,14 @@ permissions:
 
 # Queue deploys rather than cancelling them: whatever is newest on main must be
 # what ends up live, and a cancelled deploy could leave an older build serving.
+# Every fixed date in this codebase is authored at +03:00 and the app is
+# Turkish-only, so the suite's date assertions are only true on a Turkish
+# clock. Runners are UTC, which failed two unrelated tests on the first run.
+# Set here rather than only in test/setup.ts: an env var is in place before
+# Node starts, where mutating process.env.TZ mid-process is not dependable.
+env:
+  TZ: Europe/Istanbul
+
 concurrency:
   group: pages
   cancel-in-progress: false
