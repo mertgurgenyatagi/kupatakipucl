@@ -18,6 +18,8 @@ const mockUseLeaderboard = vi.fn();
 const mockUseResults = vi.fn();
 const mockUseTournamentPhase = vi.fn();
 const mockSignOut = vi.fn();
+const mockDeleteSurveyResponse = vi.fn();
+const mockDeleteKnockoutPrediction = vi.fn();
 // TeamPopup/MatchupPopup both call useDevMatches (getDocs against the real
 // "devMatches" collection) unconditionally on every render, regardless of
 // whether their own dialog is open. Left unmocked, that's a real network
@@ -49,6 +51,7 @@ const mockSaveKnockoutPrediction = vi.fn();
 vi.mock("../knockout/useKnockoutPrediction", () => ({
   useKnockoutPrediction: (uid: string | null) => mockUseKnockoutPrediction(uid),
   saveKnockoutPrediction: (...args: unknown[]) => mockSaveKnockoutPrediction(...args),
+  deleteKnockoutPrediction: (...args: unknown[]) => mockDeleteKnockoutPrediction(...args),
 }));
 
 vi.mock("../profile/useProfile", () => ({
@@ -73,6 +76,7 @@ vi.mock("firebase/auth", async (importOriginal) => {
 
 vi.mock("../predictions/useSurveyResponse", () => ({
   useSurveyResponse: (uid: string | null) => mockUseSurveyResponse(uid),
+  deleteSurveyResponse: (...args: unknown[]) => mockDeleteSurveyResponse(...args),
 }));
 
 vi.mock("../leaderboard/useLeaderboard", () => ({
@@ -373,6 +377,48 @@ describe("ProfilePage", () => {
     expect(mockDeletePrediction).toHaveBeenCalledWith("uid1");
     await waitFor(() => expect(mockSignOut).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByText("home-page")).toBeInTheDocument());
+  });
+
+  /**
+   * Leaving the survey behind was not untidiness, it was a permanent
+   * lockout: ProfileGate routes anyone missing a profile *or* a survey into
+   * SignupFlow, and SignupFlow's final write is a setDoc that Firestore
+   * treats as an update when the document already exists — which the rules
+   * rejected. Deleting your account therefore meant you could never sign up
+   * again. The knockout prediction was simply orphaned.
+   */
+  it("also deletes the survey response and knockout prediction, so signing up again works", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
+    mockDeleteProfile.mockResolvedValue(undefined);
+    mockDeletePrediction.mockResolvedValue(undefined);
+    mockDeleteSurveyResponse.mockResolvedValue(undefined);
+    mockDeleteKnockoutPrediction.mockResolvedValue(undefined);
+    mockSignOut.mockResolvedValue(undefined);
+    await renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Profili sil" }));
+    fireEvent.click(screen.getByText("Evet, sil"));
+
+    await waitFor(() => expect(mockDeleteSurveyResponse).toHaveBeenCalledWith("uid1"));
+    expect(mockDeleteKnockoutPrediction).toHaveBeenCalledWith("uid1");
+    await waitFor(() => expect(mockSignOut).toHaveBeenCalledTimes(1));
+  });
+
+  it("does not sign out if any part of the deletion fails", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
+    mockDeleteProfile.mockResolvedValue(undefined);
+    mockDeletePrediction.mockResolvedValue(undefined);
+    mockDeleteKnockoutPrediction.mockResolvedValue(undefined);
+    mockDeleteSurveyResponse.mockRejectedValue(new Error("permission-denied"));
+    await renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Profili sil" }));
+    fireEvent.click(screen.getByText("Evet, sil"));
+
+    expect(
+      await screen.findByText("Profil silinemedi, tekrar deneyin.")
+    ).toBeInTheDocument();
+    expect(mockSignOut).not.toHaveBeenCalled();
   });
 
   it("shows an error and keeps the dialog open when deletion fails", async () => {

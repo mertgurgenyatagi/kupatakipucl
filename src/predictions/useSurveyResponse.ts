@@ -1,10 +1,22 @@
 import { useEffect, useState } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { deleteDoc, doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { SurveyResponse } from "./surveyTypes";
 
 export async function saveSurveyResponse(uid: string, response: SurveyResponse): Promise<void> {
   await setDoc(doc(db, "surveyResponses", uid), response);
+}
+
+/**
+ * Part of deleting an account, and the reason the rules had to stop
+ * forbidding deletes (firestore.rules, 2026-08-27). While this document
+ * outlived the profile it belonged to, ProfileGate saw "no profile but a
+ * survey", sent the user back through SignupFlow, and SignupFlow's closing
+ * setDoc was rejected as an update — so anyone who deleted their account
+ * could never sign up again.
+ */
+export async function deleteSurveyResponse(uid: string): Promise<void> {
+  await deleteDoc(doc(db, "surveyResponses", uid));
 }
 
 /**

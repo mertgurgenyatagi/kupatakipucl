@@ -8,8 +8,13 @@ import { isPageAllowed } from "../state/pageAccess";
 import { useProfile, updateProfilePhoto, deleteProfile } from "../profile/useProfile";
 import { Profile } from "../profile/profileTypes";
 import { usePrediction, savePrediction, deletePrediction } from "../predictions/usePrediction";
+import { deleteSurveyResponse } from "../predictions/useSurveyResponse";
 import { Prediction } from "../predictions/predictionTypes";
-import { useKnockoutPrediction, saveKnockoutPrediction } from "../knockout/useKnockoutPrediction";
+import {
+  useKnockoutPrediction,
+  saveKnockoutPrediction,
+  deleteKnockoutPrediction,
+} from "../knockout/useKnockoutPrediction";
 import { KnockoutBracket } from "../knockout/KnockoutBracket";
 import { MobileKnockoutBracket } from "../knockout/MobileKnockoutBracket";
 import { KnockoutPrediction } from "../knockout/knockoutTypes";
@@ -234,7 +239,21 @@ export function ProfilePage() {
     setDeleting(true);
     setDeleteError(null);
     try {
-      await Promise.all([deleteProfile(uid, displayedProfile?.photoURL ?? null), deletePrediction(uid)]);
+      // Every document keyed by this uid, not just the profile and the
+      // league prediction. Leaving the survey behind used to lock the
+      // account out of signing up again for good — ProfileGate routes
+      // anyone missing a profile *or* a survey into SignupFlow, whose final
+      // write is a setDoc the rules then rejected as an update on the
+      // surviving document. The knockout prediction was merely orphaned.
+      // Promise.all so a failure anywhere aborts before signOut, leaving a
+      // retryable state rather than a half-deleted account nobody is signed
+      // in to fix.
+      await Promise.all([
+        deleteProfile(uid, displayedProfile?.photoURL ?? null),
+        deletePrediction(uid),
+        deleteSurveyResponse(uid),
+        deleteKnockoutPrediction(uid),
+      ]);
       await signOut(auth);
       setDeleteConfirmOpen(false);
       navigate("/");

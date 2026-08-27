@@ -47,9 +47,26 @@ service cloud.firestore {
     // Survey responses: readable by any signed-in participant (reversed
     // 2026-07-23 from owner-only — the participant popup's quiz-answers
     // widget shows other participants' answers directly, Mert's explicit
-    // call, overriding SPEC.md §4/§8d's earlier "aggregate-only" stance; see
-    // SPEC.md's changelog for the reversal). Still owner-only to create, and
-    // one-time-only (SPEC §5) — no updates or deletes once created.
+    // call, overriding the earlier "aggregate-only" stance). Owner-only to
+    // write.
+    //
+    // Update and delete were "if false" until 2026-08-27, to enforce "the
+    // quiz is answered once and never changed". That rule locked people out
+    // of the entire site permanently. Deleting an account removes profiles/
+    // and publicProfiles/ but could not remove this document, and
+    // ProfileGate sends anyone missing *either* a profile or a survey
+    // through SignupFlow — which ends in a setDoc that Firestore treats as
+    // an update when the document already exists. So a deleted account hit
+    // permission-denied on the final step of signing up again, every time,
+    // with no way back and nothing in the UI explaining why. Production
+    // held exactly one such orphaned survey.
+    //
+    // The one-time property was never a security boundary — the quiz is
+    // reachable only from SignupFlow, which only renders when a profile or
+    // survey is missing — so it stays enforced in the UI, and the rules now
+    // let an owner overwrite or delete their own answers. Update carries
+    // the same field validation as create, so a rewrite is not a way to
+    // smuggle in a malformed document.
     match /surveyResponses/{uid} {
       allow read: if request.auth != null;
       // Field validation added 2026-07-29 (not-started-audit item 04) —
@@ -65,7 +82,18 @@ service cloud.firestore {
         && request.resource.data.messiOrRonaldo in ['messi', 'ronaldo', 'no-opinion']
         && request.resource.data.superLigTeam is string
         && request.resource.data.device in ['phone', 'desktop', 'both'];
-      allow update, delete: if false;
+      allow update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.age is number
+        && request.resource.data.age >= 1
+        && request.resource.data.age <= 120
+        && request.resource.data.footballKnowledge is number
+        && request.resource.data.footballKnowledge >= 1
+        && request.resource.data.footballKnowledge <= 7
+        && request.resource.data.messiOrRonaldo in ['messi', 'ronaldo', 'no-opinion']
+        && request.resource.data.superLigTeam is string
+        && request.resource.data.device in ['phone', 'desktop', 'both'];
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
     // Predictions: read is public (matches the "trust the friend group"
