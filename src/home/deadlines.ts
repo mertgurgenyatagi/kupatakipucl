@@ -8,4 +8,4 @@ export const TOURNAMENT_START_ISO = "2026-09-08T00:00:00+03:00";
 // prediction window closes and picks lock. PLACEHOLDER: 2027-02-11 is
 // approximately when UCL knockout play begins (based on the real 2026/27
 // calendar); swap for the real date once it's confirmed.
-export const KNOCKOUT_PREDICTION_DEADLINE_ISO = "2027-02-11T00:00:00+03:00";
+export const KNOCKOUT_PREDICTION_DEADLINE_ISO = "2027-03-09T00:00:00+03:00";

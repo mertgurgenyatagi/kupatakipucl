@@ -22,12 +22,13 @@ export const CONTACT_EMAIL = "mert.gurgenyatagi@gmail.com";
 // (Mert: "not important, dates will be changed anyway") — there's no real
 // knockout-phase-end date fixed yet, unlike the other five.
 export const KEY_DATES: { label: string; date: Date }[] = [
-  { label: "Lig Tahminleri Açılır", date: new Date("2026-08-26T00:00:00+03:00") },
+  { label: "Lig Tahminleri Açılır", date: new Date("2026-08-28T00:00:00+03:00") },
   { label: "Lig Tahminleri Kapanır", date: new Date(TOURNAMENT_START_ISO) },
-  { label: "Lig Aşaması", date: new Date("2027-01-27T00:00:00+03:00") },
-  { label: "Eleme Tahminleri Açılır", date: new Date("2027-02-26T00:00:00+03:00") },
+  { label: "Lig Aşaması", date: new Date("2027-02-24T00:00:00+03:00") },
+  { label: "Eleme Tahminleri Açılır", date: new Date("2027-02-25T00:00:00+03:00") },
   { label: "Eleme Tahminleri Kapanır", date: new Date("2027-03-09T00:00:00+03:00") },
-  { label: "Eleme Aşaması", date: new Date("2027-05-30T00:00:00+03:00") },
+  { label: "Eleme Aşaması", date: new Date("2027-06-04T00:00:00+03:00") },
+  { label: "Final", date: new Date("2027-06-05T00:00:00+03:00") },
 ];
 
 const TR_MONTHS_SHORT = [

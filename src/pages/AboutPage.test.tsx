@@ -14,15 +14,16 @@ describe("AboutPage", () => {
     expect(screen.getByText(/şampiyon altı puan getirir/)).toBeInTheDocument();
   });
 
-  it("renders all six key-dates timeline nodes with their labels and formatted dates", () => {
+  it("renders all seven key-dates timeline nodes with their labels and formatted dates", () => {
     render(<AboutPage />);
     const expected = [
-      ["Lig Tahminleri Açılır", "26 Ağu"],
+      ["Lig Tahminleri Açılır", "28 Ağu"],
       ["Lig Tahminleri Kapanır", "08 Eyl"],
-      ["Lig Aşaması", "27 Oca"],
-      ["Eleme Tahminleri Açılır", "26 Şub"],
+      ["Lig Aşaması", "24 Şub"],
+      ["Eleme Tahminleri Açılır", "25 Şub"],
       ["Eleme Tahminleri Kapanır", "09 Mar"],
-      ["Eleme Aşaması", "30 May"],
+      ["Eleme Aşaması", "04 Haz"],
+      ["Final", "05 Haz"],
     ];
     for (const [label, date] of expected) {
       expect(screen.getByText(label)).toBeInTheDocument();
