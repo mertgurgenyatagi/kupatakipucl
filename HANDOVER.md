@@ -8,6 +8,7 @@ Functions, testing, deploy, and a full sorted list of known problems. This file
 only covers *where things stand right now and what to do next*.
 
 Written 2026-08-27, at the end of the pre-launch session. Branch: `launch-prep`.
+Stopped deliberately after item 5; items 6 and 7 are for a fresh session.
 
 ---
 
@@ -17,8 +18,8 @@ Written 2026-08-27, at the end of the pre-launch session. Branch: `launch-prep`.
 the `notstarted` phase, staying there until the league phase begins
 **2026-09-08**, when sign-up and league predictions both close.
 
-Items 1–4 of the previous handover's pre-launch list are **done and committed**.
-Items 5–7 are **not started**. See §3.
+Items 1–5 of the previous handover's pre-launch list are **done and committed**.
+Items 6 and 7 are **not started**. See §3.
 
 ### Production, verified after this session's work
 
@@ -46,7 +47,9 @@ which is public.
 
 ## 2. What this session did
 
-Five commits on `launch-prep`, on top of `a5403f4`.
+Seven commits on `launch-prep`, on top of `a5403f4`. **Not pushed** — the
+branch has an upstream from the previous session, so `git push` is all it
+needs.
 
 **1. Purged production** (`scripts/purge-dev-data.mjs`, kept, dry-run by
 default). 304 documents: 50 dummy participants plus Mert's own 3 test accounts
@@ -105,16 +108,16 @@ also removes a ~150 KiB-per-visit download from the most-visited signed-in page.
 Added `integration/firestoreRules.itest.ts` — 28 emulator-backed tests. Every
 rules defect this project has hit was invisible to the rest of the suite.
 
+**5. Hid the knockout bracket** until `preknockout`, via a new
+`KNOCKOUT_PHASES` constant, and gave the page the first-submission-only door
+`/predictions` already had. Neither behaviour was covered by any test —
+`pageAccess.test.ts` never mentioned `knockoutPredictions`, and the page's own
+tests all run in `loggedin_preknockout` — so both changes passed the existing
+suite untouched. Both are tested now.
+
 ---
 
 ## 3. What is left — work these in order
-
-### 5. Hide the knockout entry point until `preknockout`
-`/knockout-predictions` is allowed in every logged-in phase and has no
-already-submitted redirect, so brackets can be submitted against pairings that
-are invented. Not linked from the nav, so this is URL-only exposure. Change
-`src/state/pageAccess.ts`; `AppShell.test.tsx` asserts pageAccess and navLinks
-agree, so it should tell you if you get it wrong.
 
 ### 6. Set up deployment — the biggest remaining gap
 No hosting config, no publish step, no CI. Target is GitHub Pages on
@@ -162,7 +165,7 @@ will silently break the site if missed:
 - **The phase flip on 2026-09-08** is still a hand edit to
   `tournamentState/current`. It is now admin-only, so it must be done as one of
   those three accounts (or via the console / a gcloud-token script).
-- **Tests**: `npm test` — 129 files, 1004 tests, all passing at time of writing;
+- **Tests**: `npm test` — 129 files, 1008 tests, all passing at time of writing;
   `tsc -b` clean. Integration needs JDK 21:
   `JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" PATH="$JAVA_HOME/bin:$PATH" npm run test:integration`
   (30 tests across 2 files).
