@@ -1,3 +1,18 @@
+// Every fixed date in this codebase is authored at +03:00 — KEY_DATES on the
+// About page, TOURNAMENT_START_ISO, the chat-grouping fixtures — because the
+// app is Turkish-only and permanently so. The assertions about them
+// ("26 Ağu", a date boundary at local midnight) are therefore only true for a
+// runner in Turkey, and the suite quietly depended on that: it passed on this
+// machine and failed on GitHub's UTC runners, on two tests that had nothing to
+// do with the change being pushed (2026-08-27, first CI run).
+//
+// Pinned rather than papered over in the two tests, because the dependency is
+// real and general: any future date assertion would inherit the same trap.
+// Note this pins the *tests*, not the app — the app formats dates in whatever
+// zone the browser is in, so a participant reading the About page from London
+// genuinely sees "25 Ağu" where a participant in Istanbul sees "26 Ağu".
+process.env.TZ = "Europe/Istanbul";
+
 import "@testing-library/jest-dom";
 
 if (typeof ResizeObserver === "undefined") {
