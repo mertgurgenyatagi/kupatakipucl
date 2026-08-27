@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 import { Frame, FrameBody } from "@/components/ui/frame";
 import { MobileWelcomeBanner } from "./MobileWelcomeBanner";
 import { ParticipantStatusList } from "../ParticipantStatusList";
@@ -40,6 +40,7 @@ export function MobileHomeNotStartedLoggedIn({
   lobbyMemberUids,
   canCreateLobby,
   onOpenCreateDialog,
+  onOpenLobbyManagement,
 }: {
   me: Player;
   players: Player[];
@@ -57,6 +58,7 @@ export function MobileHomeNotStartedLoggedIn({
   lobbyMemberUids: Set<string> | null;
   canCreateLobby: boolean;
   onOpenCreateDialog: () => void;
+  onOpenLobbyManagement: (lobbyId: string) => void;
 }) {
   // Lobby scope filters the list, exactly as it does on desktop — a lobby of
   // five reads as five people, not fifty-two with five highlighted.
@@ -73,7 +75,21 @@ export function MobileHomeNotStartedLoggedIn({
           <span className="min-w-0 flex-1 truncate font-mono text-[0.62rem] tracking-[0.16em] text-color_textsecondary uppercase">
             {getLobbySwitcherLabel(myLobbies, lobbyId, "Katılımcılar")}
           </span>
-          {canCreateLobby && (
+          {/* One control slot, same either/or as the desktop header: settings
+              for the lobby you're looking at, create when you're on Genel.
+              The gear is new — mobile had no way into lobby management at all,
+              so a phone user could join a lobby and then never invite anyone,
+              rename it, remove anyone, leave it or delete it (2026-08-27). */}
+          {lobbyId ? (
+            <button
+              type="button"
+              onClick={() => onOpenLobbyManagement(lobbyId)}
+              aria-label="Özel lobi ayarları"
+              className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-color_border1 text-color_textsecondary transition-colors duration-150 active:bg-color_hoverfill"
+            >
+              <Settings className="size-3.5" />
+            </button>
+          ) : canCreateLobby ? (
             <button
               type="button"
               onClick={onOpenCreateDialog}
@@ -82,7 +98,7 @@ export function MobileHomeNotStartedLoggedIn({
             >
               <Plus className="size-3.5" />
             </button>
-          )}
+          ) : null}
           <LobbySwitcher options={myLobbies} current={lobbyId} onChange={onChangeLobby} />
         </div>
         <FrameBody className="min-h-0 flex-1">
