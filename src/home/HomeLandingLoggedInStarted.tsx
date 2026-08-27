@@ -10,15 +10,14 @@ import { TeamPopup } from "../leaderboard/TeamPopup";
 import { MatchupPopup } from "../leaderboard/MatchupPopup";
 import { assignRanks } from "../leaderboard/ranking";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import { LobbySwitcher, getLobbySwitcherLabel } from "../lobbies/LobbySwitcher";
 import { LobbyManagementPanel } from "../lobbies/LobbyManagementPanel";
+import { CreateLobbyDialog } from "../lobbies/CreateLobbyDialog";
 import { buildPlayersByUid } from "../profile/playersByUid";
 import type { MyLobby } from "../lobbies/useMyLobbies";
 import type { useLobbyMessages } from "../lobbies/useLobbyMessages";
-import { LobbyMember, LOBBY_NAME_MAX_LENGTH } from "../lobbies/lobbyTypes";
+import { LobbyMember } from "../lobbies/lobbyTypes";
 import type { Player } from "../profile/usePlayers";
 import type { TeamResult } from "../leaderboard/teamResultTypes";
 import type { LeaderboardEntry } from "../leaderboard/leaderboardTypes";
@@ -344,35 +343,12 @@ export function HomeLandingLoggedInStarted({
         />
       )}
 
-      <Dialog open={createDialogOpen} onOpenChange={(open) => !open && onCloseCreateDialog?.()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Yeni Özel Lobi</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const input = (e.target as HTMLFormElement).elements.namedItem("lobbyName") as HTMLInputElement;
-              onCreateLobby?.(input.value);
-            }}
-          >
-            <input
-              name="lobbyName"
-              maxLength={LOBBY_NAME_MAX_LENGTH}
-              placeholder="Özel lobi adı"
-              className="w-full rounded-md border border-color_border1/70 bg-background px-3 py-1.5 text-sm text-color_text outline-none focus:border-color_accent"
-            />
-            {createError && (
-              <p role="alert" className="mt-2 text-sm text-color_remove">
-                {createError}
-              </p>
-            )}
-            <DialogFooter>
-              <Button type="submit">Oluştur</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CreateLobbyDialog
+        open={createDialogOpen}
+        onOpenChange={(next) => !next && onCloseCreateDialog?.()}
+        onCreate={(newName) => onCreateLobby?.(newName)}
+        error={createError}
+      />
     </div>
   );
 }

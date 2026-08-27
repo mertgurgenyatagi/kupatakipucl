@@ -19,6 +19,15 @@ vi.mock("firebase/firestore", () => ({
 
 vi.mock("../firebase", () => ({ db: {} }));
 
+// The last-member-out path delegates to the real delete cascade rather than
+// hand-rolling two deleteDoc calls, so what's asserted here is the delegation.
+// deleteLobby's own chunking, ordering and message cascade are covered in
+// deleteLobby.test.ts.
+const mockDeleteLobby = vi.fn();
+vi.mock("./deleteLobby", () => ({
+  deleteLobby: (...args: unknown[]) => mockDeleteLobby(...args),
+}));
+
 import { leaveLobby } from "./leaveLobby";
 import { LobbyWithId } from "./lobbyTypes";
 
@@ -35,15 +44,21 @@ describe("leaveLobby", () => {
     mockDeleteDoc.mockReset();
     mockUpdateDoc.mockReset();
     mockAddDoc.mockReset();
+    mockDeleteLobby.mockReset();
+    mockDeleteLobby.mockResolvedValue(undefined);
     mockDeleteDoc.mockResolvedValue(undefined);
     mockUpdateDoc.mockResolvedValue(undefined);
     mockAddDoc.mockResolvedValue({ id: "sysmsg1" });
   });
 
-  it("deletes both the member doc and the lobby doc when the creator is the sole remaining member", async () => {
+  // This branch used to delete the member doc and the lobby doc directly, which
+  // left every chat message under the lobby orphaned — the likelier of the two
+  // routes by which five stranded lobbies reached production, since a
+  // one-person test lobby gets left rather than deleted.
+  it("runs the full delete cascade when the creator is the sole remaining member", async () => {
     await leaveLobby(lobby, "creator1", "Ahmet", []);
-    expect(mockDeleteDoc).toHaveBeenCalledWith({ path: ["lobbies", "lobby1", "members", "creator1"] });
-    expect(mockDeleteDoc).toHaveBeenCalledWith({ path: ["lobbies", "lobby1"] });
+    expect(mockDeleteLobby).toHaveBeenCalledWith("lobby1");
+    expect(mockDeleteDoc).not.toHaveBeenCalled();
     expect(mockUpdateDoc).not.toHaveBeenCalled();
     expect(mockAddDoc).not.toHaveBeenCalled();
   });

@@ -1,0 +1,86 @@
+# Runs on every branch. Publishes nothing — deploy.yml is the only workflow that
+# can put anything on the internet.
+#
+# The bar this enforces is the one the project already holds itself to by hand:
+# `tsc -b` clean and the full Vitest suite green (129 files / 1008 tests at the
+# time of writing).
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+# A newer push makes the older run irrelevant, so don't pay for it.
+# Every fixed date in this codebase is authored at +03:00 and the app is
+# Turkish-only, so the suite's date assertions are only true on a Turkish
+# clock. Runners are UTC, which failed two unrelated tests on the first run.
+# Set here rather than only in test/setup.ts: an env var is in place before
+# Node starts, where mutating process.env.TZ mid-process is not dependable.
+env:
+  TZ: Europe/Istanbul
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Typecheck, unit tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Matches the Node this project is developed on. `npm ci` needs the
+          # lockfile (lockfileVersion 3) to be honoured exactly.
+          node-version: "24"
+          cache: npm
+
+      - run: npm ci
+
+      # Separate from the build even though `npm run build` re-runs it: this
+      # way a type error reports as a type error rather than as a build
+      # failure. The second run is a no-op against the tsbuildinfo.
+      - name: Typecheck
+        run: npx tsc -b
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  integration:
+    name: Firestore emulator tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      # firebase-tools refuses to start the Firestore emulator on anything
+      # below JDK 21. Locally that means pointing JAVA_HOME at Android Studio's
+      # bundled JRE; here it is just a setup step.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - run: npm ci
+
+      # The functions emulator executes functions/leaderboard/index.js for real,
+      # so that codebase needs its own dependencies. It has its own lockfile.
+      - name: Install Cloud Function dependencies
+        run: npm ci --prefix functions/leaderboard
+
+      - name: Install firebase-tools
+        run: npm install --global firebase-tools
+
+      # Emulators run entirely offline against a fake project — no credentials.
+      - name: Integration tests
+        run: npm run test:integration

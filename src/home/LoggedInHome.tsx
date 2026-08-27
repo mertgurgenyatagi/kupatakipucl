@@ -20,6 +20,8 @@ import { LOBBY_MAX_OWNED, LOBBY_MAX_JOINED } from "../lobbies/lobbyTypes";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { useMobilePopups } from "../shell/MobilePopupHost";
 import { MobileHomeNotStartedLoggedIn } from "./mobile/MobileHomeNotStartedLoggedIn";
+import { LobbyManagementPanel } from "../lobbies/LobbyManagementPanel";
+import { CreateLobbyDialog } from "../lobbies/CreateLobbyDialog";
 import type { Player } from "../profile/usePlayers";
 
 /**
@@ -170,7 +172,17 @@ export function LoggedInHome({ players }: { players: Player[] }) {
   // mobile layout needs a strict subset of these props (no chat: it lives in
   // the shell drawer now).
   if (isMobile) {
+    // Both dialogs are rendered here, as siblings of the mobile composition.
+    // They used to exist only inside HomeLandingLoggedIn, which this early
+    // return never reaches — so onOpenCreateDialog flipped state that nothing
+    // rendered, and the create button did nothing at all. Looked up
+    // defensively for the same reason the desktop composition does: the
+    // managed lobby can vanish mid-action before the fallback effect above
+    // clears managingLobbyId, and the panel reads lobby.createdByUid
+    // unconditionally.
+    const mobileManagedLobby = myLobbies.find((l) => l.id === managingLobbyId) ?? null;
     return (
+      <>
       <MobileHomeNotStartedLoggedIn
         me={{ uid: user.uid, ...profile }}
         players={players}
@@ -190,7 +202,30 @@ export function LoggedInHome({ players }: { players: Player[] }) {
         }
         canCreateLobby={canCreateLobby}
         onOpenCreateDialog={() => setCreateDialogOpen(true)}
+        onOpenLobbyManagement={setManagingLobbyId}
       />
+
+      {mobileManagedLobby && (
+        <LobbyManagementPanel
+          lobby={mobileManagedLobby}
+          members={katilimcilarLobbyMembers.members}
+          players={players}
+          myUid={user.uid}
+          myFirstName={profile.firstName}
+          open={true}
+          onOpenChange={(open) => !open && setManagingLobbyId(null)}
+          onLeft={() => setManagingLobbyId(null)}
+          onDeleted={() => setManagingLobbyId(null)}
+        />
+      )}
+
+      <CreateLobbyDialog
+        open={createDialogOpen}
+        onOpenChange={(next) => !next && setCreateDialogOpen(false)}
+        onCreate={handleCreateLobby}
+        error={createError}
+      />
+      </>
     );
   }
 

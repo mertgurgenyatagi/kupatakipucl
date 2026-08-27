@@ -7,7 +7,7 @@ const fixture: Fixture = {
   id: "m1",
   matchday: 1,
   order: 1,
-  homeTeamId: "ajax",
+  homeTeamId: "aek-athens",
   awayTeamId: "arsenal",
   kickoffUtc: "2026-09-16T18:45:00.000Z",
 };
@@ -15,7 +15,7 @@ const fixture: Fixture = {
 describe("FixtureRow", () => {
   it("renders both teams' short names", () => {
     render(<FixtureRow fixture={fixture} results={{}} />);
-    expect(screen.getByText("AJA")).toBeInTheDocument();
+    expect(screen.getByText("AEK")).toBeInTheDocument();
     expect(screen.getByText("ARS")).toBeInTheDocument();
   });
 
@@ -29,7 +29,7 @@ describe("FixtureRow", () => {
       <FixtureRow
         fixture={fixture}
         results={{
-          ajax: { position: 3, points: 9, goalDifference: 2, goalsFor: 5, goalsAgainst: 3 },
+          "aek-athens": { position: 3, points: 9, goalDifference: 2, goalsFor: 5, goalsAgainst: 3 },
           arsenal: { position: 1, points: 12, goalDifference: 6, goalsFor: 10, goalsAgainst: 4 },
         }}
       />
@@ -55,7 +55,7 @@ describe("FixtureRow", () => {
 
   it("compact mode still renders both teams' short names and both places", () => {
     render(<FixtureRow fixture={fixture} results={{}} compact />);
-    expect(screen.getByText("AJA")).toBeInTheDocument();
+    expect(screen.getByText("AEK")).toBeInTheDocument();
     expect(screen.getByText("ARS")).toBeInTheDocument();
     expect(screen.getAllByText("-")).toHaveLength(2);
   });
@@ -63,8 +63,8 @@ describe("FixtureRow", () => {
   it("clicking the home team fires onSelectTeam with the home team's id, without bubbling to the row's own no-op handler", () => {
     const onSelectTeam = vi.fn();
     render(<FixtureRow fixture={fixture} results={{}} onSelectTeam={onSelectTeam} />);
-    fireEvent.click(screen.getByText("AJA"));
-    expect(onSelectTeam).toHaveBeenCalledWith("ajax");
+    fireEvent.click(screen.getByText("AEK"));
+    expect(onSelectTeam).toHaveBeenCalledWith("aek-athens");
     expect(onSelectTeam).toHaveBeenCalledTimes(1);
   });
 
@@ -77,6 +77,6 @@ describe("FixtureRow", () => {
 
   it("does not throw when a team is clicked and no onSelectTeam is provided (the drawer's own usage)", () => {
     render(<FixtureRow fixture={fixture} results={{}} />);
-    expect(() => fireEvent.click(screen.getByText("AJA"))).not.toThrow();
+    expect(() => fireEvent.click(screen.getByText("AEK"))).not.toThrow();
   });
 });

@@ -2,6 +2,7 @@ import { arrayRemove, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { LobbyMember, LobbyWithId } from "./lobbyTypes";
 import { sendLobbySystemMessage } from "./sendLobbyMessage";
+import { deleteLobby } from "./deleteLobby";
 
 export async function leaveLobby(
   lobby: LobbyWithId,
@@ -11,9 +12,14 @@ export async function leaveLobby(
 ): Promise<void> {
   const isCreator = lobby.createdByUid === uid;
 
+  // The last member out deletes the lobby, and that has to be the same cascade
+  // the Sil button runs — not a hand-rolled pair of deletes. This branch used
+  // to remove the member doc and the lobby doc directly and leave every chat
+  // message under it orphaned, which is the more likely of the two ways the
+  // five stranded lobbies found in production on 2026-08-27 got there: a
+  // one-person test lobby is left, not deleted.
   if (isCreator && remainingMembers.length === 0) {
-    await deleteDoc(doc(db, "lobbies", lobby.id, "members", uid));
-    await deleteDoc(doc(db, "lobbies", lobby.id));
+    await deleteLobby(lobby.id);
     return;
   }
 

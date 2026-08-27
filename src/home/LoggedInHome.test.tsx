@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { vi, describe, it, expect, beforeEach } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import { LoggedInHome } from "./LoggedInHome";
 import { Player } from "../profile/usePlayers";
 import { PostWithId } from "../forum/postTypes";
@@ -126,6 +126,24 @@ vi.mock("./HomeLandingLoggedIn", () => ({
       </p>
       <p>managing-lobby:{managingLobbyId ?? "none"}</p>
       <button onClick={() => onOpenLobbyManagement("lobby1")}>open-management</button>
+    </div>
+  ),
+}));
+
+vi.mock("./mobile/MobileHomeNotStartedLoggedIn", () => ({
+  MobileHomeNotStartedLoggedIn: ({
+    canCreateLobby,
+    onOpenCreateDialog,
+    onOpenLobbyManagement,
+  }: {
+    canCreateLobby: boolean;
+    onOpenCreateDialog: () => void;
+    onOpenLobbyManagement: (id: string) => void;
+  }) => (
+    <div>
+      <p>mobile-home:{String(canCreateLobby)}</p>
+      <button onClick={onOpenCreateDialog}>mobile-create</button>
+      <button onClick={() => onOpenLobbyManagement("lobby1")}>mobile-manage</button>
     </div>
   ),
 }));
@@ -275,5 +293,62 @@ describe("LoggedInHome", () => {
     });
     render(<LoggedInHome players={players} />);
     expect(screen.getByText("sohbet-lobby:lobbyNew:katilimcilar-lobby:lobbyNew")).toBeInTheDocument();
+  });
+  // LoggedInHome returns early for mobile, and both lobby dialogs lived past
+  // that point inside HomeLandingLoggedIn. So on a phone the create button
+  // flipped state that nothing rendered and visibly did nothing, and there was
+  // no way into lobby management at all (2026-08-27).
+  describe("on mobile", () => {
+    const realMatchMedia = window.matchMedia;
+
+    beforeEach(() => {
+      window.matchMedia = ((query: string) => ({
+        matches: query.includes("max-width: 1023px"),
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      })) as unknown as typeof window.matchMedia;
+    });
+
+    afterEach(() => {
+      window.matchMedia = realMatchMedia;
+    });
+
+    it("renders the mobile composition rather than the desktop one", () => {
+      render(<LoggedInHome players={players} />);
+      expect(screen.getByText("mobile-home:true")).toBeInTheDocument();
+      expect(screen.queryByText(/home-landing-loggedin/)).not.toBeInTheDocument();
+    });
+
+    it("opens the create-lobby dialog when the create button is pressed", () => {
+      render(<LoggedInHome players={players} />);
+      expect(screen.queryByText("Yeni Özel Lobi")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByText("mobile-create"));
+      expect(screen.getByText("Yeni Özel Lobi")).toBeInTheDocument();
+    });
+
+    it("opens the lobby management panel when settings is pressed", () => {
+      mockUseMyLobbies.mockReturnValue({
+        lobbies: [{ id: "lobby1", name: "Fener", createdByUid: "uid1", createdAt: 1, memberUids: ["uid1"], myJoinedAt: 1 }],
+        loading: false,
+      });
+      render(<LoggedInHome players={players} />);
+      expect(screen.queryByText("Özel Lobi Ayarları")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByText("mobile-manage"));
+      expect(screen.getByText("Özel Lobi Ayarları")).toBeInTheDocument();
+    });
+
+    it("does not open the management panel for a lobby that has already vanished", () => {
+      // myLobbies is live; the lobby can be deleted or you can be removed from
+      // it between opening the panel and the fallback effect clearing the id.
+      mockUseMyLobbies.mockReturnValue({ lobbies: [], loading: false });
+      render(<LoggedInHome players={players} />);
+      fireEvent.click(screen.getByText("mobile-manage"));
+      expect(screen.queryByText("Özel Lobi Ayarları")).not.toBeInTheDocument();
+    });
   });
 });

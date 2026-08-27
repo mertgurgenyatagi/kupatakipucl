@@ -2,26 +2,26 @@ import { render, screen, fireEvent, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import { RankingList } from "./RankingList";
 
-const ranking = ["ajax", "arsenal", "atalanta"];
+const ranking = ["aek-athens", "arsenal", "aston-villa"];
 
 describe("RankingList", () => {
   it("renders each team with its rank number", () => {
     render(<RankingList ranking={ranking} />);
-    expect(screen.getByText("Ajax")).toBeInTheDocument();
+    expect(screen.getByText("AEK Athens")).toBeInTheDocument();
     expect(screen.getByText("Arsenal")).toBeInTheDocument();
-    expect(screen.getByText("Atalanta")).toBeInTheDocument();
+    expect(screen.getByText("Aston Villa")).toBeInTheDocument();
     expect(screen.getByText("1")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();
   });
 
   it("shows the average position when given", () => {
-    render(<RankingList ranking={ranking} averagePositions={{ ajax: 4.5 }} />);
+    render(<RankingList ranking={ranking} averagePositions={{ "aek-athens": 4.5 }} />);
     expect(screen.getByText("4.5")).toBeInTheDocument();
   });
 
   it("glows a team that's currently correct", () => {
-    render(<RankingList ranking={ranking} correctness={{ ajax: true, arsenal: false }} />);
-    expect(screen.getByText("Ajax").closest("li")).toHaveClass("border-color_green/50");
+    render(<RankingList ranking={ranking} correctness={{ "aek-athens": true, arsenal: false }} />);
+    expect(screen.getByText("AEK Athens").closest("li")).toHaveClass("border-color_green/50");
     expect(screen.getByText("Arsenal").closest("li")).not.toHaveClass("border-color_green/50");
   });
 
@@ -44,8 +44,8 @@ describe("RankingList", () => {
       const row = screen.getByText("Arsenal").closest("li")!;
       fireEvent.mouseEnter(row);
       act(() => vi.advanceTimersByTime(2000));
-      expect(screen.getByText("Ajax").closest("li")).toHaveClass("bg-foreground/[0.06]", "animate-pulse");
-      expect(screen.getByText("Atalanta").closest("li")).toHaveClass("bg-foreground/[0.06]", "animate-pulse");
+      expect(screen.getByText("AEK Athens").closest("li")).toHaveClass("bg-foreground/[0.06]", "animate-pulse");
+      expect(screen.getByText("Aston Villa").closest("li")).toHaveClass("bg-foreground/[0.06]", "animate-pulse");
       expect(row).toHaveClass("bg-foreground/[0.06]");
       expect(row).not.toHaveClass("animate-pulse");
     });

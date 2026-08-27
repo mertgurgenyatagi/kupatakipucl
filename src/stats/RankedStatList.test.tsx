@@ -23,7 +23,7 @@ describe("RankedStatList", () => {
     render(
       <RankedStatList
         label="Test"
-        rows={[{ key: "ajax", name: "Kaan Aslan", value: "+2.0", teamId: "ajax" }]}
+        rows={[{ key: "aek-athens", name: "Kaan Aslan", value: "+2.0", teamId: "aek-athens" }]}
       />
     );
     expect(screen.queryByText("KA")).not.toBeInTheDocument();

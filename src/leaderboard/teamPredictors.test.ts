@@ -11,8 +11,8 @@ describe("getTeamPredictors", () => {
   it("orders participants by their overall leaderboard standing, not by how bullish their pick was", () => {
     // entries pre-sorted by points descending, as useLeaderboard provides them.
     const entries = [
-      entry("leader", 20, ["arsenal", "ajax"]), // predicts arsenal 1st, but ranked 1st overall
-      entry("laggard", 3, ["ajax", "arsenal"]), // predicts arsenal 2nd, ranked 2nd overall
+      entry("leader", 20, ["arsenal", "aek-athens"]), // predicts arsenal 1st, but ranked 1st overall
+      entry("laggard", 3, ["aek-athens", "arsenal"]), // predicts arsenal 2nd, ranked 2nd overall
     ];
     const predictors = getTeamPredictors("arsenal", entries, {});
     // "leader" is first on the real leaderboard, so first here too —
@@ -21,13 +21,13 @@ describe("getTeamPredictors", () => {
   });
 
   it("still reports each participant's own predicted position as their row value", () => {
-    const entries = [entry("a", 10, ["ajax", "arsenal"])];
+    const entries = [entry("a", 10, ["aek-athens", "arsenal"])];
     const predictors = getTeamPredictors("arsenal", entries, {});
     expect(predictors[0].predictedPosition).toBe(2);
   });
 
   it("omits participants who never ranked the team at all", () => {
-    const entries = [entry("a", 10, ["ajax"]), entry("b", 5, ["arsenal"])];
+    const entries = [entry("a", 10, ["aek-athens"]), entry("b", 5, ["arsenal"])];
     const predictors = getTeamPredictors("arsenal", entries, {});
     expect(predictors.map((p) => p.entry.uid)).toEqual(["b"]);
   });

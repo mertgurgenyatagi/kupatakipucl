@@ -18,6 +18,8 @@ const mockUseLeaderboard = vi.fn();
 const mockUseResults = vi.fn();
 const mockUseTournamentPhase = vi.fn();
 const mockSignOut = vi.fn();
+const mockDeleteSurveyResponse = vi.fn();
+const mockDeleteKnockoutPrediction = vi.fn();
 // TeamPopup/MatchupPopup both call useDevMatches (getDocs against the real
 // "devMatches" collection) unconditionally on every render, regardless of
 // whether their own dialog is open. Left unmocked, that's a real network
@@ -49,6 +51,7 @@ const mockSaveKnockoutPrediction = vi.fn();
 vi.mock("../knockout/useKnockoutPrediction", () => ({
   useKnockoutPrediction: (uid: string | null) => mockUseKnockoutPrediction(uid),
   saveKnockoutPrediction: (...args: unknown[]) => mockSaveKnockoutPrediction(...args),
+  deleteKnockoutPrediction: (...args: unknown[]) => mockDeleteKnockoutPrediction(...args),
 }));
 
 vi.mock("../profile/useProfile", () => ({
@@ -73,6 +76,7 @@ vi.mock("firebase/auth", async (importOriginal) => {
 
 vi.mock("../predictions/useSurveyResponse", () => ({
   useSurveyResponse: (uid: string | null) => mockUseSurveyResponse(uid),
+  deleteSurveyResponse: (...args: unknown[]) => mockDeleteSurveyResponse(...args),
 }));
 
 vi.mock("../leaderboard/useLeaderboard", () => ({
@@ -206,6 +210,31 @@ describe("ProfilePage", () => {
     await renderPage();
     expect(screen.getByText("Fenerbahçe.")).toBeInTheDocument();
     expect(screen.getByText("Messi.")).toBeInTheDocument();
+  });
+
+  // surveyResponses.uclTeam holds the id the crest picker produced. The page
+  // printed it raw, so a Bayern supporter's own profile read "bayern-munich",
+  // under a question that still said "(varsa yazın)" — copy for a free-text
+  // box that had already been replaced by the picker.
+  it("shows the UCL team as a real name rather than the stored id", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
+    mockUseSurveyResponse.mockReturnValue({
+      response: { ...SURVEY, uclTeam: "bayern-munich" },
+      loading: false,
+      error: false,
+    });
+    await renderPage();
+    expect(screen.getByText("Bayern Munich.")).toBeInTheDocument();
+    expect(screen.queryByText("bayern-munich.")).not.toBeInTheDocument();
+    expect(screen.getByText("Tuttuğunuz bir UCL takımı var mı?")).toBeInTheDocument();
+    expect(screen.queryByText(/varsa yazın/)).not.toBeInTheDocument();
+  });
+
+  it("shows 'Yok' when no UCL team was picked", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
+    mockUseSurveyResponse.mockReturnValue({ response: SURVEY, loading: false, error: false });
+    await renderPage();
+    expect(screen.getByText("Yok.")).toBeInTheDocument();
   });
 
   it("shows a not-filled-in message when there's no survey response", async () => {
@@ -373,6 +402,48 @@ describe("ProfilePage", () => {
     expect(mockDeletePrediction).toHaveBeenCalledWith("uid1");
     await waitFor(() => expect(mockSignOut).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByText("home-page")).toBeInTheDocument());
+  });
+
+  /**
+   * Leaving the survey behind was not untidiness, it was a permanent
+   * lockout: ProfileGate routes anyone missing a profile *or* a survey into
+   * SignupFlow, and SignupFlow's final write is a setDoc that Firestore
+   * treats as an update when the document already exists — which the rules
+   * rejected. Deleting your account therefore meant you could never sign up
+   * again. The knockout prediction was simply orphaned.
+   */
+  it("also deletes the survey response and knockout prediction, so signing up again works", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
+    mockDeleteProfile.mockResolvedValue(undefined);
+    mockDeletePrediction.mockResolvedValue(undefined);
+    mockDeleteSurveyResponse.mockResolvedValue(undefined);
+    mockDeleteKnockoutPrediction.mockResolvedValue(undefined);
+    mockSignOut.mockResolvedValue(undefined);
+    await renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Profili sil" }));
+    fireEvent.click(screen.getByText("Evet, sil"));
+
+    await waitFor(() => expect(mockDeleteSurveyResponse).toHaveBeenCalledWith("uid1"));
+    expect(mockDeleteKnockoutPrediction).toHaveBeenCalledWith("uid1");
+    await waitFor(() => expect(mockSignOut).toHaveBeenCalledTimes(1));
+  });
+
+  it("does not sign out if any part of the deletion fails", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_notstarted");
+    mockDeleteProfile.mockResolvedValue(undefined);
+    mockDeletePrediction.mockResolvedValue(undefined);
+    mockDeleteKnockoutPrediction.mockResolvedValue(undefined);
+    mockDeleteSurveyResponse.mockRejectedValue(new Error("permission-denied"));
+    await renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Profili sil" }));
+    fireEvent.click(screen.getByText("Evet, sil"));
+
+    expect(
+      await screen.findByText("Profil silinemedi, tekrar deneyin.")
+    ).toBeInTheDocument();
+    expect(mockSignOut).not.toHaveBeenCalled();
   });
 
   it("shows an error and keeps the dialog open when deletion fails", async () => {

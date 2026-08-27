@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Crown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Player } from "../profile/usePlayers";
@@ -124,8 +125,19 @@ export function LobbyManagementPanel({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
+      {/* A bottom sheet on a phone, the same centred dialog as before on
+          desktop. This panel is the only way to invite, rename, kick, leave or
+          delete, and until 2026-08-27 it was never mounted on mobile at all —
+          a phone user could join a lobby and then never manage or leave it.
+          Sheet, not dialog, for the same reason the four popups are: at 390px
+          a centred card puts its controls where a thumb can't reach.
+          DialogTitle and friends still work inside it because Sheet is itself
+          a DialogPrimitive.Root. */}
+      <ResponsiveDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        mobileClassName="gap-4 px-4 pt-1 pb-[max(1rem,env(safe-area-inset-bottom))]"
+      >
           <DialogHeader>
             <DialogTitle>Özel Lobi Ayarları</DialogTitle>
             <DialogDescription>Kuran: {playersByUid.get(lobby.createdByUid)?.firstName ?? "Bilinmiyor"}</DialogDescription>
@@ -155,7 +167,7 @@ export function LobbyManagementPanel({
               )}
             </div>
 
-            <ul className="flex flex-col gap-2">
+            <ul className="flex max-h-[38dvh] flex-col gap-2 overflow-y-auto overscroll-contain">
               {members.map((member) => {
                 const player = playersByUid.get(member.uid);
                 return (
@@ -199,8 +211,7 @@ export function LobbyManagementPanel({
               </Button>
             )}
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </ResponsiveDialog>
 
       {/* Leaving used to fire straight off the footer button with no
           confirmation, unlike deleting — and it is just as hard to undo from

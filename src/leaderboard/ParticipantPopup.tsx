@@ -12,7 +12,7 @@ import { computeRankHistory, RankCheckpoint } from "./rankHistory";
 import { useDevMatches } from "../devpanel/useDevMatches";
 import { useSurveyResponse } from "../predictions/useSurveyResponse";
 import { TEAM_BY_ID } from "../predictions/teams";
-import { MESSI_RONALDO_LABEL, DEVICE_LABEL, ensurePeriod } from "../predictions/surveyLabels";
+import { MESSI_RONALDO_LABEL, DEVICE_LABEL, ensurePeriod, uclTeamLabel } from "../predictions/surveyLabels";
 import { TeamCrest } from "./TeamCrest";
 import { TEAMS, teamCrestSrc } from "../predictions/teams";
 import { useImagePreload } from "@/lib/useImagePreload";
@@ -591,8 +591,8 @@ export const ParticipantPopup = memo(function ParticipantPopup({
                               answer: survey.superLigTeam,
                             },
                             {
-                              question: "Tuttuğunuz bir UCL takımı var mı? (varsa yazın)",
-                              answer: survey.uclTeam ?? "Yok",
+                              question: "Tuttuğunuz bir UCL takımı var mı?",
+                              answer: uclTeamLabel(survey.uclTeam),
                             },
                             {
                               question: "Çoğunlukla hangi cihazı kullanıyorsunuz?",
@@ -764,8 +764,8 @@ export const ParticipantPopup = memo(function ParticipantPopup({
                               answer: survey.superLigTeam,
                             },
                             {
-                              question: "Tuttuğunuz bir UCL takımı var mı? (varsa yazın)",
-                              answer: survey.uclTeam ?? "Yok",
+                              question: "Tuttuğunuz bir UCL takımı var mı?",
+                              answer: uclTeamLabel(survey.uclTeam),
                             },
                             {
                               question: "Çoğunlukla hangi cihazı kullanıyorsunuz?",
