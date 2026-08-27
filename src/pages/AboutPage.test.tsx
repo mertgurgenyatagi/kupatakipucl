@@ -19,10 +19,10 @@ describe("AboutPage", () => {
     const expected = [
       ["Lig Tahminleri Açılır", "28 Ağu"],
       ["Lig Tahminleri Kapanır", "08 Eyl"],
-      ["Lig Aşaması", "24 Şub"],
+      ["Lig Aşaması", "08 Eyl - 24 Şub"],
       ["Eleme Tahminleri Açılır", "25 Şub"],
       ["Eleme Tahminleri Kapanır", "09 Mar"],
-      ["Eleme Aşaması", "04 Haz"],
+      ["Eleme Aşaması", "09 Mar - 04 Haz"],
       ["Final", "05 Haz"],
     ];
     for (const [label, date] of expected) {

@@ -69,12 +69,12 @@ function DateTimeline() {
               />
               <span
                 className={cn(
-                  "tnum font-display text-lg font-semibold",
+                  "tnum font-display text-[1.1rem] font-semibold whitespace-nowrap",
                   isFuture ? "text-color_textsecondary" : "text-color_text",
                   isCurrent && "animate-pulse"
                 )}
               >
-                {formatChipDate(item.date)}
+                {formatChipDate(item.date, item.startDate)}
               </span>
               <span
                 className={cn(
