@@ -183,6 +183,16 @@ a serious defect.
 - **Image preload gate** (`src/lib/useImagePreload.ts`): pages reveal only once
   their images have settled, so nothing pops in afterwards. Settled URLs are
   remembered process-wide.
+- **Loading-stuck timeout** (`src/lib/useLoadingStuck.ts`, added 2026-08-28):
+  a live `onSnapshot` listener's channel can be silently blocked client-side
+  by an ad/privacy blocker (`net::ERR_BLOCKED_BY_CLIENT` on
+  `Listen/channel` — see §11 problem 36), which never surfaces as a
+  catchable error, so a hook gated on the first snapshot sits in
+  `loading: true` forever. Any new page or hook that blocks its reveal on a
+  live-listener `loading` flag should route that flag through this hook and
+  show `SlowLoadNotice` (`src/components/ui/slow-load-notice.tsx`) once
+  stuck, the way `LoggedInHome`, `LoggedInHomeStarted` and `ForumPage` do —
+  otherwise it inherits the same silent-hang risk.
 
 ---
 
@@ -657,6 +667,9 @@ against the code; the disposition column records Mert's decision.
 | 11 | ~~**Profile shows raw team slugs.**~~ **Done 2026-08-27.** `uclTeamLabel()` in `surveyLabels.ts`, applied at all three call sites — the profile page *and both branches of `ParticipantPopup`*, which this entry missed. | Done |
 | 12 | **Lobby management was desktop-only.** **Fixed for the `notstarted` home 2026-08-27** — a settings gear in the mobile participants header opens `LobbyManagementPanel`, now a bottom sheet on a phone. **Still open for the started-phase mobile home**, which has no lobby UI of any kind and no participants cell to hang one on; unreachable until 2026-09-08. | Partly done |
 | 13 | ~~**Deleting a lobby leaves its messages in the database.**~~ **Done 2026-08-27.** Root cause was `allow delete: if false` in the rules, so the cascade was impossible. Rules changed and deployed; `leaveLobby`'s last-member-out branch now runs the same cascade; 8 orphaned messages under 5 phantom lobbies purged from production. | Done |
+| 36 | ~~**Home and Forum can hang blank forever for a signed-in participant running an ad blocker.**~~ **Fixed at the root 2026-08-28**. `onSnapshot`'s real-time channel gets blocked client-side by some ad/privacy blockers as `net::ERR_BLOCKED_BY_CLIENT`. Previously fixed at the symptom via `useLoadingStuck` to show a notice. Now, `useLoadingStuck` correctly triggers an automatic fallback to one-shot `getDoc()` / `getDocs()` reads in `useProfile`, `usePosts`, `useMessages`, and `usePlayers` — hitting a different endpoint that bypasses filter lists, allowing the app to initialize seamlessly (sans live updates). | Done |
+| 37 | ~~**Multiple devices clobber presence state.**~~ **Fixed 2026-08-28**. Because `usePresenceHeartbeat` registered `onDisconnect().remove()` against a simple boolean `presence/{uid} = true`, logging in on two devices caused the later device's close event to nuke the earlier device's presence. Migrated to RTDB connection IDs via `push()` so each session is managed independently. | Done |
+| 38 | ~~**Prediction page impossibly laggy and unscrollable on mobile.**~~ **Fixed 2026-08-28**. The `TouchSensor` blocked native browser scrolling; added `touch-action: pan-y` to draggable items to restore scrollability. Extremely laggy due to unmemoized React trees and expensive `pointerWithin` intersections on 72 nodes; wrapped `TeamCrest` in `React.memo` and changed `@dnd-kit` collision detection to `closestCenter`. | Done |
 
 ### By 2026-09-08 (league phase)
 

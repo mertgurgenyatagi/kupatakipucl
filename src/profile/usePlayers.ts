@@ -5,6 +5,7 @@ import { db } from "../firebase";
 import { useAuth } from "../auth/AuthProvider";
 import { Profile } from "./profileTypes";
 import { getCached, setCached } from "../lib/sessionCache";
+import { useLoadingStuck } from "../lib/useLoadingStuck";
 
 export interface Player extends Omit<Profile, "lastName"> {
   uid: string;
@@ -79,6 +80,26 @@ export function usePlayers() {
     );
     return unsubscribe;
   }, [source, cacheKey]);
+
+  const stuck = useLoadingStuck(loading, 7000);
+  useEffect(() => {
+    if (stuck && loading) {
+      import("firebase/firestore").then(({ getDocs, collection }) => {
+        getDocs(collection(db, source)).then(snap => {
+          const next = snap.docs.map(docSnap => ({
+            uid: docSnap.id,
+            ...(docSnap.data() as Profile),
+          }));
+          setCached(cacheKey, next);
+          setPlayers(next);
+          setLoading(false);
+        }).catch(err => {
+          console.error("Fallback getDocs failed", err);
+          setLoading(false);
+        });
+      });
+    }
+  }, [stuck, loading, source, cacheKey]);
 
   return { players, loading };
 }

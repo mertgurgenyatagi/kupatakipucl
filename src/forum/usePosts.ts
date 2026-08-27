@@ -4,6 +4,7 @@ import { db } from "../firebase";
 import { ForumPost, PostWithId } from "./postTypes";
 import { getCached, setCached } from "../lib/sessionCache";
 import { PAGE_SIZE, subscribeToRecentMessages, fetchOlderMessages } from "../chat/paginatedMessages";
+import { useLoadingStuck } from "../lib/useLoadingStuck";
 
 const CACHE_KEY = "forumPosts";
 
@@ -93,6 +94,27 @@ export function usePosts() {
       }
     );
   }, [commit, backfillRoots]);
+
+  const stuck = useLoadingStuck(loading, 7000);
+  useEffect(() => {
+    if (stuck && loading) {
+      import("firebase/firestore").then(({ getDocs, query, collection, orderBy, limit }) => {
+        getDocs(query(collection(db, "forumPosts"), orderBy("createdAt", "desc"), limit(PAGE_SIZE)))
+          .then(snap => {
+            const docs = snap.docs.map(d => ({ id: d.id, ...(d.data() as ForumPost) } as PostWithId)).reverse();
+            docs.forEach((post) => byId.current.set(post.id, post));
+            commit();
+            setLoading(false);
+            setHasMore(docs.length >= PAGE_SIZE);
+            backfillRoots();
+          })
+          .catch(err => {
+            console.error("Fallback getDocs failed", err);
+            setLoading(false);
+          });
+      });
+    }
+  }, [stuck, loading, commit, backfillRoots]);
 
   const loadOlder = useCallback(async () => {
     if (hasMore !== true) return;

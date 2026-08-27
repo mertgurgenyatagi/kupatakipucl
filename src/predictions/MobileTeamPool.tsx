@@ -50,9 +50,9 @@ const PoolRow = memo(function PoolRow({ team, isPlaced }: { team: Team; isPlaced
       className={cn(
         "flex h-11 items-center gap-2.5 rounded-lg border px-2.5 select-none",
         "transition-[border-color,background-color,opacity] duration-200 ease-[var(--ease-cotton)]",
-        // touch-none is what lets the TouchSensor's press-and-hold win over
-        // the browser's own scroll gesture once a drag actually starts.
-        !isPlaced && "touch-none",
+        // touch-pan-y allows vertical scrolling (fixing mobile lockup) while
+        // letting TouchSensor's press-and-hold claim the gesture for dragging.
+        !isPlaced && "touch-pan-y",
         isPlaced
           ? "border-dashed border-color_border1/40 bg-foreground/[0.01]"
           : "border-color_border1/60 bg-background/80",

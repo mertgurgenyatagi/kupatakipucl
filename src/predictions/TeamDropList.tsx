@@ -83,7 +83,7 @@ const ListSlot = memo(function ListSlot({
         "transition-[border-color,background-color,box-shadow,opacity] duration-200 ease-[var(--ease-cotton)]",
         teamId !== null
           ? [
-              "cursor-grab border-color_border1/80 bg-background",
+              "cursor-grab border-color_border1/80 bg-background touch-pan-y",
               "hover:border-color_border1 hover:bg-foreground/[0.03]",
               isDragging && "opacity-0 border-color_accent/40",
             ]

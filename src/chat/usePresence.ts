@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { onDisconnect, onValue, ref, remove, set } from "firebase/database";
+import { onDisconnect, onValue, ref, remove, set, push } from "firebase/database";
 import { rtdb } from "../firebase";
 
 // Presence used to be a Firestore collection with a client-side heartbeat
@@ -22,7 +22,9 @@ export function usePresenceHeartbeat(uid: string | null): void {
   useEffect(() => {
     if (!uid) return;
 
-    const myPresenceRef = ref(rtdb, `presence/${uid}`);
+    // Use push() to generate a unique connection ID so multiple devices
+    // don't clobber each other's onDisconnect hooks.
+    const myPresenceRef = push(ref(rtdb, `presence/${uid}`));
     const connectedRef = ref(rtdb, ".info/connected");
 
     const unsubscribe = onValue(connectedRef, (snapshot) => {

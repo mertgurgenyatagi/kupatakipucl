@@ -17,6 +17,8 @@ import { createLobby } from "../lobbies/createLobby";
 import { LOBBY_MAX_OWNED, LOBBY_MAX_JOINED } from "../lobbies/lobbyTypes";
 import { HomeLandingLoggedInStarted } from "./HomeLandingLoggedInStarted";
 import { useIsMobile } from "@/lib/useIsMobile";
+import { useLoadingStuck } from "@/lib/useLoadingStuck";
+import { SlowLoadNotice } from "@/components/ui/slow-load-notice";
 import { useMobilePopups } from "../shell/MobilePopupHost";
 import { MobileHomeStartedLoggedIn } from "./mobile/MobileHomeStartedLoggedIn";
 import type { Player } from "../profile/usePlayers";
@@ -149,9 +151,21 @@ export function LoggedInHomeStarted({ players, results, entries, phase }: Logged
     }
   }
 
-  if (!user || profileLoading || messagesLoading || postsLoading || !profile || !postImagesReady) {
-    return null;
+  const isLoadingData = Boolean(user) && (profileLoading || messagesLoading || postsLoading || !profile || !postImagesReady);
+  const stuck = useLoadingStuck(isLoadingData);
+
+  if (!user) return null;
+  if (isLoadingData) {
+    return stuck ? (
+      <div className="p-4 sm:p-6">
+        <SlowLoadNotice />
+      </div>
+    ) : null;
   }
+  // Unreachable in practice — isLoadingData already covers a null profile —
+  // but TS can't narrow through a boolean variable, only an inline
+  // condition, so this is what keeps `profile` typed non-null below.
+  if (!profile) return null;
 
   // Same fork point and same reasoning as LoggedInHome's — the fetching
   // above is shared, only the layout below differs.

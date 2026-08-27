@@ -20,6 +20,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageUnavailable } from "@/components/ui/page-unavailable";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { useMobilePopups } from "../shell/MobilePopupHost";
+import { useLoadingStuck } from "@/lib/useLoadingStuck";
+import { SlowLoadNotice } from "@/components/ui/slow-load-notice";
 
 function ForumSkeleton() {
   return (
@@ -83,6 +85,9 @@ export function ForumPage() {
     if (!open) setSelectedParticipantUid(null);
   }, []);
 
+  const isLoadingData = !everRevealed && (postsLoading || playersLoading || !initialImagesReady);
+  const stuck = useLoadingStuck(isLoadingData);
+
   async function handleToggleLike(postId: string) {
     if (!user) return;
     const uid = user.uid;
@@ -127,7 +132,15 @@ export function ForumPage() {
     return <PageUnavailable />;
   }
 
-  if (!everRevealed && (postsLoading || playersLoading || !initialImagesReady)) return <ForumSkeleton />;
+  if (isLoadingData) {
+    return stuck ? (
+      <div className="p-4 sm:p-6">
+        <SlowLoadNotice />
+      </div>
+    ) : (
+      <ForumSkeleton />
+    );
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col p-4 sm:p-6 lg:min-h-0 lg:flex-1">

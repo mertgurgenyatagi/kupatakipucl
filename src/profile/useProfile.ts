@@ -5,6 +5,7 @@ import { db, storage } from "../firebase";
 import { Profile } from "./profileTypes";
 import { compressImage, IMMUTABLE_CACHE_CONTROL } from "../lib/compressImage";
 import { getCached, setCached, deleteCached } from "../lib/sessionCache";
+import { useLoadingStuck } from "../lib/useLoadingStuck";
 
 // Profile photos only ever render in small avatar frames — the single
 // largest use anywhere on the site is 56px (Home's greeting avatar), most
@@ -111,6 +112,23 @@ export function useProfile(uid: string | null) {
       setLoading(false);
     });
   }, [uid]);
+
+  const stuck = useLoadingStuck(loading, 7000);
+  useEffect(() => {
+    if (stuck && loading && uid) {
+      import("firebase/firestore").then(({ getDoc, doc }) => {
+        getDoc(doc(db, "profiles", uid)).then((snap) => {
+          const next = snap.exists() ? (snap.data() as Profile) : null;
+          setProfile(next);
+          setLoading(false);
+          if (next) setCached(cacheKey(uid), next);
+        }).catch(err => {
+          console.error("Fallback getDoc failed", err);
+          setLoading(false);
+        });
+      });
+    }
+  }, [stuck, loading, uid]);
 
   return { profile, loading };
 }

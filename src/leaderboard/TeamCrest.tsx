@@ -1,4 +1,4 @@
-import { CSSProperties } from "react";
+import { CSSProperties, memo } from "react";
 import { Shield } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { teamCrestSrc } from "../predictions/teams";
@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
  * can set width/height directly rather than needing a matching Tailwind
  * class to exist ahead of time.
  */
-export function TeamCrest({
+export const TeamCrest = memo(function TeamCrest({
   teamId,
   className,
   style,
@@ -45,4 +45,4 @@ export function TeamCrest({
       </AvatarFallback>
     </Avatar>
   );
-}
+});

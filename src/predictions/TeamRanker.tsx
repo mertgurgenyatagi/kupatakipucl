@@ -8,7 +8,7 @@ import {
   MouseSensor,
   PointerSensor,
   TouchSensor,
-  pointerWithin,
+  closestCenter,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
@@ -211,7 +211,7 @@ export function TeamRanker({ teams, initialOrder, onSubmit }: TeamRankerProps) {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={pointerWithin}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >

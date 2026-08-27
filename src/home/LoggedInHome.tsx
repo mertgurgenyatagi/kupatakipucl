@@ -22,6 +22,8 @@ import { useMobilePopups } from "../shell/MobilePopupHost";
 import { MobileHomeNotStartedLoggedIn } from "./mobile/MobileHomeNotStartedLoggedIn";
 import { LobbyManagementPanel } from "../lobbies/LobbyManagementPanel";
 import { CreateLobbyDialog } from "../lobbies/CreateLobbyDialog";
+import { useLoadingStuck } from "@/lib/useLoadingStuck";
+import { SlowLoadNotice } from "@/components/ui/slow-load-notice";
 import type { Player } from "../profile/usePlayers";
 
 /**
@@ -162,9 +164,22 @@ export function LoggedInHome({ players }: { players: Player[] }) {
     }
   }
 
-  if (!user || profileLoading || submittersLoading || messagesLoading || postsLoading || !profile || !postImagesReady) {
-    return null;
+  const isLoadingData =
+    Boolean(user) && (profileLoading || submittersLoading || messagesLoading || postsLoading || !profile || !postImagesReady);
+  const stuck = useLoadingStuck(isLoadingData);
+
+  if (!user) return null;
+  if (isLoadingData) {
+    return stuck ? (
+      <div className="p-4 sm:p-6">
+        <SlowLoadNotice />
+      </div>
+    ) : null;
   }
+  // Unreachable in practice — isLoadingData already covers a null profile —
+  // but TS can't narrow through a boolean variable, only an inline
+  // condition, so this is what keeps `profile` typed non-null below.
+  if (!profile) return null;
 
   // Mobile forks here rather than in HomePage, so everything above — a
   // hundred-odd lines of listeners, lobby-scope fallbacks and forum action

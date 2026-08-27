@@ -3,8 +3,10 @@
     "presence": {
       ".read": "auth != null",
       "$uid": {
-        ".write": "auth != null && auth.uid === $uid",
-        ".validate": "newData.val() === true"
+        "$connectionId": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.val() === true"
+        }
       }
     },
     "typingStatus": {

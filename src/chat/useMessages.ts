@@ -5,6 +5,7 @@ import { db } from "../firebase";
 import { Message } from "./messageTypes";
 import { getCached, setCached } from "../lib/sessionCache";
 import { PAGE_SIZE, subscribeToRecentMessages, fetchOlderMessages } from "./paginatedMessages";
+import { useLoadingStuck } from "../lib/useLoadingStuck";
 
 export interface MessageWithId extends Message {
   id: string;
@@ -41,6 +42,26 @@ export function useMessages() {
       }
     );
   }, []);
+
+  const stuck = useLoadingStuck(loading, 7000);
+  useEffect(() => {
+    if (stuck && loading) {
+      import("firebase/firestore").then(({ getDocs, query, collection, orderBy, limit }) => {
+        getDocs(query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(PAGE_SIZE)))
+          .then(snap => {
+            const docs = snap.docs.map(d => ({ id: d.id, ...(d.data() as Message) })).reverse();
+            setCached(CACHE_KEY, docs);
+            setLiveMessages(docs);
+            setLoading(false);
+            if (docs.length < PAGE_SIZE) setHasMoreOlder(false);
+          })
+          .catch(err => {
+            console.error("Fallback getDocs failed", err);
+            setLoading(false);
+          });
+      });
+    }
+  }, [stuck, loading]);
 
   const loadOlder = useCallback(async () => {
     const oldest = olderMessages[0] ?? liveMessages[0];
