@@ -11,6 +11,7 @@ const mockUnsubscribe = vi.fn();
 
 vi.mock("firebase/database", () => ({
   ref: (...args: unknown[]) => mockRef(...(args as [unknown, string])),
+  push: (refNode: unknown) => ({ path: `${(refNode as {path: string}).path}/conn123` }),
   onValue: (...args: unknown[]) => mockOnValue(...args),
   set: (...args: unknown[]) => mockSet(...args),
   remove: (...args: unknown[]) => mockRemove(...args),
@@ -56,9 +57,9 @@ describe("usePresenceHeartbeat", () => {
       await Promise.resolve();
     });
 
-    expect(mockOnDisconnect).toHaveBeenCalledWith({ path: "presence/uid1" });
+    expect(mockOnDisconnect).toHaveBeenCalledWith({ path: "presence/uid1/conn123" });
     expect(mockOnDisconnectRemove).toHaveBeenCalledTimes(1);
-    expect(mockSet).toHaveBeenCalledWith({ path: "presence/uid1" }, true);
+    expect(mockSet).toHaveBeenCalledWith({ path: "presence/uid1/conn123" }, true);
   });
 
   it("does not set presence while not yet connected", () => {
@@ -72,7 +73,7 @@ describe("usePresenceHeartbeat", () => {
     const { unmount } = renderHook(() => usePresenceHeartbeat("uid1"));
     unmount();
     expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
-    expect(mockRemove).toHaveBeenCalledWith({ path: "presence/uid1" });
+    expect(mockRemove).toHaveBeenCalledWith({ path: "presence/uid1/conn123" });
   });
 });
 
