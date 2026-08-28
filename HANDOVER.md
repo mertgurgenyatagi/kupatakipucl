@@ -8,9 +8,7 @@ stand and what to do next.
 
 Written 2026-08-28, following a post-deployment fixes session. Branch: `main`, pushed. All pre-launch checklist items 1–7 are **done**. Additionally, critical adblock-initialization, multi-device presence, and prediction mobile scroll/lag issues were just resolved.
 
-**Updated same day, second session, branch `aesthetic-revamp`**: a visual-only reskin — blue palette, ruled grid, Oswald headers. See §3d below.
-
-**Updated same day, third session**: found and fixed a production bug — deleting your own forum post could fail with "Missing or insufficient permissions." Rules fix deployed live; `aesthetic-revamp` merged into `main`. See §3e below.
+**Updated same day.** A visual reskin (blue palette, ruled grid, Oswald headers) was tried on a branch, tested locally, and fully rolled back at Mert's request — nothing from it remains. One real bug found during that testing pass was kept: forum post deletion could fail with a permission error. See §3g.
 
 ---
 
@@ -66,92 +64,7 @@ until the league phase begins **2026-09-08**.
 
 **8f. Firebase Analytics.** Initialized Firebase Analytics in `src/firebase.ts` and added the `measurementId` to the env configuration to begin tracking live user visits and device usage.
 
-## 3d. What this session did (Aesthetic revamp branch)
-
-Mert pointed at a sibling local project, `C:\Users\Mert\Documents\irishtable`
-(a Premier League fork of this codebase, built for a since-cancelled pitch;
-the directory still exists on disk and was used purely as a design reference
-this session, never touched). He liked its layout system as-is but wanted to
-try its purple → blue palette swap, its ruled-grid background, and its Oswald
-header treatment on this app. Work happened on a new branch,
-`aesthetic-revamp`, cut from `main`.
-
-**Palette.** `src/styles/colors.css`: `--color_main` and `--color_secondary`
-moved from the original warm near-black olive (`#14120B` / `#1B1913`) to a
-deep blue (`#020c1d` / `#081326`) — same hue-rotation technique used on
-irishtable's own purple→blue swap (target hue ~217°, saturation and lightness
-held from the source color per surface, so nothing lost contrast). Green
-accent, gold, magenta and every other non-surface color are untouched.
-
-**Grid.** Ported irishtable's ruled-grid background verbatim: new
-`--color_grid` / `--grid_size` tokens, painted onto `body` in
-`src/styles/index.css`. This replaced the old `.ground-radiance` radial glow
-in the same slot (now deleted, along with its `--color_glow` /
-`--color_faintglow` tokens) — and required removing `bg-background` from the
-two shell roots (`AppShell.tsx`, `MobileShell.tsx`) so the opaque shell
-doesn't hide the grid painted on `body` underneath it. Pages with their own
-full-bleed `DustHaze` hero (logged-out Home, About) still paint their own
-backdrop and don't show the grid — left alone, not reworked.
-
-**Headers.** Installed `@fontsource-variable/oswald`; `--font-heading` now
-points at it while `--font-display` / `--font-sans` / `--font-mono` stay on
-Inter. Applied `font-heading` to: `FrameTitle` (the h2 in every page's Frame
-cells — one edit, propagates everywhere), dialog titles (already used a
-`font-heading` class, just retargeted), welcome-banner greetings and their
-countdown/rank/points numerals, and the big centered prompt text on every
-signup step (`WelcomeStep`, `ChoiceStep`, `AgeRollerStep`, etc.) plus
-`PageUnavailable`. Deliberately **not** touched: nav links, buttons, meta/
-eyebrow labels, running body copy — and, per Mert's explicit rollback, the
-logged-out/not-started home hero headline (`HomeLandingLoggedOut.tsx`,
-`MobileHomeNotStartedLoggedOut.tsx` — "36 takım. `<SlotNumber>` katılımcı. 1
-turnuva.") stays on `font-display` (Inter).
-
-**Tried and reverted.** Added an ambient two-stop corner glow on the shell
-`<main>` (`.ground-glow`, blue top-right / faint green bottom-left, layered
-over the grid) and a faint diagonal sheen on the top nav bar and the
-leaderboard's navy `FrameHeader` band (`.band-gradient`). Mert said "nevermind
-the gradients" — fully reverted: both utility classes, their `--color_glow` /
-`--color_glowaccent` tokens, and every call site are gone again.
-
-`tsc -b` clean and all 1030 unit tests pass after every step above, including
-the reverts.
-
-## 3e. What this session did (forum post-delete permission bug)
-
-Mert reported, while manually testing before the `aesthetic-revamp` merge:
-deleting your own forum post could fail with a console error — `ForumPage.tsx`
-`FirebaseError: Missing or insufficient permissions` — alongside an unrelated
-`net::ERR_BLOCKED_BY_CLIENT` on a Firestore `Write/channel` request (an ad
-blocker, the same class of thing §11 problem 36 already deals with for reads).
-
-**Root cause**, confirmed against the Firestore emulator with the real
-`firestore.rules` file rather than by inspection alone: `deletePost.ts`
-cascades a whole thread — the root post plus every reply — in one atomic
-`writeBatch`. `replyIds` is computed client-side from `usePosts()`'s
-currently-loaded post list, which can be stale (most plausibly here: the
-live listener got blocked exactly like the console log shows, fell back to a
-one-shot read per the §11-36 fix, and that snapshot included a reply that no
-longer existed server-side). The old `forumPosts` delete rule read
-`resource.data.uid` unconditionally; deleting a document that doesn't exist
-makes `resource.data` a **null-value evaluation error**, not just `false` —
-and because Firestore evaluates a batch atomically, that one bad operation
-denied the *entire* batch, including the legitimate deletes riding alongside
-it (your own root post, valid replies). Reproduced against the emulator:
-deleting an own-root-post-only, own-root-plus-own-reply, and own-root-plus-
-other-author's-reply cascade all **succeeded**; the same cascade with one
-already-gone reply id mixed in **failed** with exactly this error.
-
-**Fix**: `firestore.rules`, `forumPosts` `allow delete` — added
-`!exists(/databases/$(database)/documents/forumPosts/$(postId))` as a
-short-circuiting first branch, so deleting an already-gone document is a
-harmless no-op instead of a batch-poisoning error. Verified against the
-emulator: all five delete scenarios above now succeed, and a sixth control
-case (a different user trying to delete someone else's unrelated post) is
-still correctly denied — the fix doesn't loosen ownership, only idempotency.
-
-**Deployed**: `firebase deploy --project kupatakipucl --only firestore:rules`
-— live in production, not just committed. `aesthetic-revamp` merged into
-`main` and pushed in the same session, carrying this fix along with it.
+**8g. Forum post-delete permission bug.** Found while manually testing (unrelated to the reskin work above, which is otherwise fully reverted): deleting your own forum post could fail with `FirebaseError: Missing or insufficient permissions`. `deletePost.ts` cascades a whole thread — root post plus every reply — in one atomic `writeBatch`; `replyIds` comes from `usePosts()`'s currently-loaded list, which can be stale (most plausibly here, the live listener hit the §11-36 ad-blocker fallback and served an outdated one-shot snapshot). The old `forumPosts` delete rule read `resource.data.uid` unconditionally, and deleting a document that no longer exists is a **null-value evaluation error**, not just `false` — which denies the *entire* atomic batch, including the legitimate deletes riding alongside it. Confirmed against the Firestore emulator with the real rules file: five legitimate cascade shapes succeeded; the same cascade with one already-gone reply id mixed in failed with exactly this error. Fix: `firestore.rules`, `forumPosts` `allow delete` — added `!exists(...)` as a short-circuiting first branch, so deleting an already-gone doc is a no-op instead of poisoning the batch. Re-verified against the emulator (all cascade shapes pass; a non-owner deleting someone else's post is still correctly denied) and deployed live via `firebase deploy --only firestore:rules`.
 
 ## 3b. What the previous session did
 

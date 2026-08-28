@@ -30,7 +30,7 @@ const staggerGroup: Variants = {
 function CountdownDigit({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className="font-heading text-2xl font-semibold text-color_text tnum">
+      <span className="font-display text-2xl font-semibold text-color_text tnum">
         {String(value).padStart(2, "0")}
       </span>
       <span className="font-mono text-[0.55rem] tracking-[0.18em] text-color_textsecondary uppercase">

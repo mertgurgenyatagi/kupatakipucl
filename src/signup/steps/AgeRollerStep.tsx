@@ -53,7 +53,7 @@ export function AgeRollerStep({ min, max, defaultValue, onConfirm }: AgeRollerSt
 
   return (
     <div className="flex flex-col items-center gap-8">
-      <p className="text-center font-heading text-2xl font-light text-color_text">Kaç yaşındasın?</p>
+      <p className="text-center font-display text-2xl font-light text-color_text">Kaç yaşındasın?</p>
       <div className="flex flex-col items-center gap-1">
         {/* Values increase going down the list (min at top, max at bottom)
             — the up arrow reveals what's above it in that list, i.e. a
@@ -77,7 +77,7 @@ export function AgeRollerStep({ min, max, defaultValue, onConfirm }: AgeRollerSt
                 role="option"
                 aria-selected={v === value}
                 className={cn(
-                  "flex snap-center items-center justify-center font-heading text-3xl tabular-nums transition-opacity duration-150",
+                  "flex snap-center items-center justify-center font-display text-3xl tabular-nums transition-opacity duration-150",
                   v === value ? "text-color_text opacity-100" : "text-color_text/30"
                 )}
                 style={{ height: ITEM_HEIGHT }}

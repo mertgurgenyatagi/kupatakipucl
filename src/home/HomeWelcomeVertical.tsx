@@ -35,7 +35,7 @@ export function HomeWelcomeVertical({ me, rank, points, onOpenCreateDialog }: Ho
 
           <div className="mt-1 flex flex-col items-center">
             <span className="font-display text-sm font-medium text-color_textsecondary">Hoş geldin,</span>
-            <span className="font-heading text-2xl font-extrabold tracking-tight text-color_text sm:text-3xl">{me.firstName}</span>
+            <span className="font-display text-2xl font-extrabold tracking-tight text-color_text sm:text-3xl">{me.firstName}</span>
           </div>
         </div>
 
@@ -57,14 +57,14 @@ export function HomeWelcomeVertical({ me, rank, points, onOpenCreateDialog }: Ho
         <div className="flex w-full flex-col gap-3">
           <div className="flex flex-col items-center rounded-xl bg-background/40 p-2.5 backdrop-blur-xs border border-color_border1/30">
             <span className="font-mono text-[0.65rem] tracking-[0.12em] text-color_textsecondary uppercase">Sıra</span>
-            <span className="font-heading text-2xl font-bold text-color_text tnum">
+            <span className="font-display text-2xl font-bold text-color_text tnum">
               {typeof rank === "number" ? `#${rank}` : rank}
             </span>
           </div>
 
           <div className="flex flex-col items-center rounded-xl bg-background/40 p-2.5 backdrop-blur-xs border border-color_border1/30">
             <span className="font-mono text-[0.65rem] tracking-[0.12em] text-color_textsecondary uppercase">Puan</span>
-            <span className="font-heading text-2xl font-bold text-color_gold tnum">
+            <span className="font-display text-2xl font-bold text-color_gold tnum">
               {points}
             </span>
           </div>

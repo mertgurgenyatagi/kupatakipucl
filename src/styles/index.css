@@ -2,16 +2,10 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "./colors.css";
-/* Inter — every body/UI text on the site (Mert's explicit call, kept).
+/* Inter — one family, every text on the site (Mert's explicit call).
    Replaces Martel Sans. Variable font, one file covers the full weight
-   range (100-900) plus italics, registered as "Inter Variable".
-
-   Oswald — headers only (aesthetic-revamp, ported from the irishtable
-   fork): condensed, page/section titles, dialog titles, greetings and
-   the signup flow's big prompts. Wired through --font-heading below;
-   --font-display/--font-sans/--font-mono stay on Inter. */
+   range (100-900) plus italics, registered as "Inter Variable". */
 @import "@fontsource-variable/inter";
-@import "@fontsource-variable/oswald";
 
 /* This system is single-theme — permanently dark now (reworked to reflect
    cursor.com/home's dark mode), but still just one fixed theme regardless
@@ -25,11 +19,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    /* Two families now (aesthetic-revamp): Oswald for headers only,
-       Inter for everything else — display/sans/mono are unchanged so the
-       large existing body of text still tagged font-display stays Inter. */
+    /* One family, every text on the site (Mert's explicit call) — display,
+       heading, body and the mono/label role all point at the same face. */
     --font-display: 'Inter Variable', sans-serif;
-    --font-heading: 'Oswald Variable', sans-serif;
+    --font-heading: 'Inter Variable', sans-serif;
     --font-sans: 'Inter Variable', sans-serif;
     --font-mono: 'Inter Variable', sans-serif;
 
@@ -171,17 +164,6 @@
     font-optical-sizing: auto;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-
-    /* The ruled grid ground (aesthetic-revamp, ported from irishtable),
-       replacing .ground-radiance in the same slot — a ruled field plus a
-       radial glow read as two competing textures. Fixed attachment so it
-       reads as a field the content sits on, not scrolling decoration. */
-    background-image:
-      linear-gradient(var(--color_grid) 1px, transparent 1px),
-      linear-gradient(90deg, var(--color_grid) 1px, transparent 1px);
-    background-size: var(--grid_size) var(--grid_size);
-    background-position: -1px -1px;
-    background-attachment: fixed;
   }
 
   /* A fixed-viewport app shell, at every width. The document itself never
@@ -220,6 +202,15 @@
      the hardness") — some blur instead of a near-hard edge, lower alpha. */
   .shadow-frame {
     box-shadow: 6px 6px 10px var(--color_shadow);
+  }
+
+  /* The crowd, radiating around (DESIGN-SPEC §34) — an all-but-invisible
+     warmth behind the frames. Chroma stays near-zero so the ground never
+     reads as a nameable cream (§48, the Paper-Mill Rule). */
+  .ground-radiance {
+    background-image:
+      radial-gradient(120% 90% at 82% -10%, var(--color_glow), transparent 60%),
+      radial-gradient(90% 70% at 6% 108%, var(--color_faintglow), transparent 55%);
   }
 
   /* --- Motion: fade-y, floaty, cottony (DESIGN-SPEC §43, §50) -------- */

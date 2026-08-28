@@ -20,7 +20,7 @@ interface HomeWelcomeBannerProps {
 function MiniCountdownDigit({ value, label }: { value: number; label: string }) {
   return (
     <span className="flex items-baseline gap-1.5 whitespace-nowrap">
-      <span className="font-heading text-2xl leading-none font-semibold text-color_text tnum sm:text-3xl">
+      <span className="font-display text-2xl leading-none font-semibold text-color_text tnum sm:text-3xl">
         {String(value).padStart(2, "0")}
       </span>
       <span className="font-mono text-xs tracking-[0.1em] text-color_textsecondary uppercase">{label}</span>
@@ -49,7 +49,7 @@ export function HomeWelcomeBanner({ me, showCta }: HomeWelcomeBannerProps) {
               {initials(me)}
             </AvatarFallback>
           </Avatar>
-          <p className="min-w-0 truncate font-heading text-lg text-color_text sm:text-xl">
+          <p className="min-w-0 truncate font-display text-lg text-color_text sm:text-xl">
             Hoş geldin, <span className="font-bold">{me.firstName}</span>.
           </p>
         </div>

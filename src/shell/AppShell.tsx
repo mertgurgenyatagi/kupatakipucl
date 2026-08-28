@@ -35,15 +35,10 @@ function DesktopShell({ children }: { children: ReactNode }) {
   const { profile } = useProfile(user?.uid ?? null);
 
   return (
-    <div className="flex min-h-dvh cursor-default flex-col lg:h-dvh lg:min-h-0 lg:overflow-hidden">
+    <div className="flex min-h-dvh cursor-default flex-col bg-background lg:h-dvh lg:min-h-0 lg:overflow-hidden">
       {/* Cursorify (DESIGN.md §6): set once here since AppShell wraps every
           page — no I-beam anywhere by default, individual interactive
-          elements opt back into `cursor-pointer` themselves.
-
-          No bg-background on this root (aesthetic-revamp): body paints the
-          ruled grid, and an opaque shell root would hide it in every gap
-          between frames. Pages with their own full-bleed hero (DustHaze)
-          still paint their own backdrop and are unaffected. */}
+          elements opt back into `cursor-pointer` themselves. */}
       {/* --- Top bar: identity, nav, account (all pages) -----------------
           Navy, matching every frame's title band (DESIGN-SPEC §0d — dark
           mode as a whole was tried and discarded; this one change from it,
@@ -156,7 +151,7 @@ function DesktopShell({ children }: { children: ReactNode }) {
       <Toaster closeButton />
 
       {/* --- Content region: routed pages compose their own framed cells -- */}
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col lg:overflow-hidden">
+      <main className="ground-radiance flex min-h-0 min-w-0 flex-1 flex-col lg:overflow-hidden">
         <div
           key={location.pathname}
           className="flex min-h-0 min-w-0 flex-1 flex-col animate-cotton-fade"

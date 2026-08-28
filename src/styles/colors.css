@@ -5,12 +5,6 @@
  * now alias into this file, so shadcn's own vendored components in
  * src/components/ui/ keep working untouched).
  *
- * Aesthetic revamp (branch aesthetic-revamp): the surface hue moved from the
- * original warm near-black olive to a deep blue (hue ~217°, same lightness
- * as before per surface so nothing lost contrast) — same technique used on
- * the irishtable fork's own purple-to-blue swap. Untouched: the green
- * accent, gold, magenta and every other non-surface color.
- *
  * Two exceptions that can't be wired live and have to be kept in sync by
  * hand: the favicon SVG (public/brand/kupatakip-logo-navy.svg — a static
  * file, can't read a CSS var) and the og-image generator
@@ -19,8 +13,8 @@
  */
 :root {
   /* --- Core surface & text --------------------------------------------- */
-  --color_main: #020c1d;       /* page background, popover bg (was: background/press-white/popover) */
-  --color_secondary: #081326;  /* elevated panel surface — every Frame/card, top nav bar (was: navy/card/secondary/muted/sidebar/primary) */
+  --color_main: #14120B;       /* page background, popover bg (was: background/press-white/popover) */
+  --color_secondary: #1B1913;  /* elevated panel surface — every Frame/card, top nav bar (was: navy/card/secondary/muted/sidebar/primary) */
   --color_text: #EDECEC;       /* primary text everywhere (was: ink/navy-ink/accent-foreground/secondary-foreground/primary-foreground) */
   --color_accent: #1F8A65;     /* the site's one brand accent — hover/focus/active states (was: brass, used for interactive/decorative purposes) */
   --color_green: #1F8A65;      /* exact duplicate of color_accent, kept as its own variable on purpose: this one specifically means "this prediction is correct" (leaderboard/team-table hover highlight, the ranker's proximity glow). Currently identical in value to color_accent — free to diverge later without also changing every hover/focus state. */
@@ -31,12 +25,6 @@
   --color_border1: color-mix(in oklch, var(--color_text) 20%, transparent);       /* hairline borders everywhere (was: navy-line/border/input) */
   --color_border2: color-mix(in oklch, var(--color_text) 60%, transparent);       /* focus-visible ring color (was: ring) */
   --color_hoverfill: color-mix(in oklch, var(--color_text) 8%, transparent);      /* shadcn's subtle hover-fill slot (was: accent) */
-
-  /* --- The grid ground --------------------------------------------------
-   * Ported from irishtable: a ruled grid as the page's actual background.
-   * Kept faint on purpose; it should register as texture, not a wireframe. */
-  --color_grid: color-mix(in oklch, var(--color_text) 8%, transparent);
-  --grid_size: 64px;
 
   /* --- One-off colors, now centralized instead of scattered literals ---- */
   --color_blob1: #0d1730;   /* DustHaze — deepest blue blob (logged-out home hero) */
@@ -52,6 +40,8 @@
   --color_hover: #FFFFFF;  /* white hover fill — participant/team popup close-button hover */
   --color_navy: #1C3A5E;   /* favicon color (see file-level comment — the SVG itself can't reference this) */
   --color_shadow: rgba(0, 0, 0, 0.4);              /* every Frame/card's drop shadow (.shadow-frame) */
-  --color_share: #141a24;      /* og-image generator only — gradient's lighter inner stop */
-  --color_sharetext: #747d8b;  /* og-image generator only — small caption line */
+  --color_glow: rgba(27, 25, 19, 0.5);             /* ambient background radial glow, top-right (.ground-radiance) */
+  --color_faintglow: rgba(237, 236, 236, 0.03);    /* ambient background radial glow, bottom-left (.ground-radiance) */
+  --color_share: #241f14;      /* og-image generator only — gradient's lighter inner stop */
+  --color_sharetext: #8B8574;  /* og-image generator only — small caption line */
 }
