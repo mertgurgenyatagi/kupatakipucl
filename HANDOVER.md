@@ -8,7 +8,9 @@ stand and what to do next.
 
 Written 2026-08-28, following a post-deployment fixes session. Branch: `main`, pushed. All pre-launch checklist items 1–7 are **done**. Additionally, critical adblock-initialization, multi-device presence, and prediction mobile scroll/lag issues were just resolved.
 
-**Updated same day, second session, branch `aesthetic-revamp`** (cut from `main`, pushed, **not merged**): a visual-only reskin — blue palette, ruled grid, Oswald headers. See §3d below.
+**Updated same day, second session, branch `aesthetic-revamp`**: a visual-only reskin — blue palette, ruled grid, Oswald headers. See §3d below.
+
+**Updated same day, third session**: found and fixed a production bug — deleting your own forum post could fail with "Missing or insufficient permissions." Rules fix deployed live; `aesthetic-revamp` merged into `main`. See §3e below.
 
 ---
 
@@ -113,6 +115,43 @@ the gradients" — fully reverted: both utility classes, their `--color_glow` /
 
 `tsc -b` clean and all 1030 unit tests pass after every step above, including
 the reverts.
+
+## 3e. What this session did (forum post-delete permission bug)
+
+Mert reported, while manually testing before the `aesthetic-revamp` merge:
+deleting your own forum post could fail with a console error — `ForumPage.tsx`
+`FirebaseError: Missing or insufficient permissions` — alongside an unrelated
+`net::ERR_BLOCKED_BY_CLIENT` on a Firestore `Write/channel` request (an ad
+blocker, the same class of thing §11 problem 36 already deals with for reads).
+
+**Root cause**, confirmed against the Firestore emulator with the real
+`firestore.rules` file rather than by inspection alone: `deletePost.ts`
+cascades a whole thread — the root post plus every reply — in one atomic
+`writeBatch`. `replyIds` is computed client-side from `usePosts()`'s
+currently-loaded post list, which can be stale (most plausibly here: the
+live listener got blocked exactly like the console log shows, fell back to a
+one-shot read per the §11-36 fix, and that snapshot included a reply that no
+longer existed server-side). The old `forumPosts` delete rule read
+`resource.data.uid` unconditionally; deleting a document that doesn't exist
+makes `resource.data` a **null-value evaluation error**, not just `false` —
+and because Firestore evaluates a batch atomically, that one bad operation
+denied the *entire* batch, including the legitimate deletes riding alongside
+it (your own root post, valid replies). Reproduced against the emulator:
+deleting an own-root-post-only, own-root-plus-own-reply, and own-root-plus-
+other-author's-reply cascade all **succeeded**; the same cascade with one
+already-gone reply id mixed in **failed** with exactly this error.
+
+**Fix**: `firestore.rules`, `forumPosts` `allow delete` — added
+`!exists(/databases/$(database)/documents/forumPosts/$(postId))` as a
+short-circuiting first branch, so deleting an already-gone document is a
+harmless no-op instead of a batch-poisoning error. Verified against the
+emulator: all five delete scenarios above now succeed, and a sixth control
+case (a different user trying to delete someone else's unrelated post) is
+still correctly denied — the fix doesn't loosen ownership, only idempotency.
+
+**Deployed**: `firebase deploy --project kupatakipucl --only firestore:rules`
+— live in production, not just committed. `aesthetic-revamp` merged into
+`main` and pushed in the same session, carrying this fix along with it.
 
 ## 3b. What the previous session did
 

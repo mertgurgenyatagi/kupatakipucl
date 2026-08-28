@@ -358,8 +358,18 @@ service cloud.firestore {
           )
         )
       );
+      // The `!exists()` branch first: deletePost.ts cascades a whole thread
+      // in one atomic batch, and the client's replyIds come from its
+      // locally-loaded post list, which can be stale (a live listener that
+      // fell back to a one-shot read after being blocked by an ad blocker,
+      // a reply already deleted moments earlier, a slow snapshot). Deleting
+      // an already-gone document has no `resource` to read — `resource.data`
+      // on it is a null-value evaluation error, not just false, which denies
+      // the *entire* batch including the legitimate deletes alongside it.
+      // Treating "already deleted" as allowed makes the cascade idempotent.
       allow delete: if request.auth != null
-        && (resource.data.uid == request.auth.uid
+        && (!exists(/databases/$(database)/documents/forumPosts/$(postId))
+            || resource.data.uid == request.auth.uid
             || (resource.data.parentId != null
                 && get(/databases/$(database)/documents/forumPosts/$(resource.data.parentId)).data.uid == request.auth.uid));
     }

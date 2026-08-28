@@ -33,14 +33,15 @@ The later phases are explicitly not ready. Knockout in particular is
 unfinished and was deprioritised because it is months away. Section 11 lists
 every known gap, sorted by when it actually starts to matter.
 
-### A second branch: `aesthetic-revamp`
+### The aesthetic revamp
 
-Cut from `main` on 2026-08-28, **not merged**. A visual-only experiment —
-layout and interactions are untouched — that reskins the site from the warm
-near-black palette to a deep blue, adds a faint ruled-grid page background,
-and switches header-level text to Oswald while body copy stays Inter. Full
-detail in HANDOVER.md. Mert has seen it running locally and liked it; whether
-and when it merges to `main` is still his call.
+Done on branch `aesthetic-revamp`, cut from `main` on 2026-08-28 and merged
+back the same day. A visual-only reskin — layout and interactions are
+untouched — that moves the site from the original warm near-black palette to
+a deep blue, adds a faint ruled-grid page background, and switches
+header-level text to Oswald while body copy stays Inter. Full detail in
+HANDOVER.md §3d. Also carried a real bug fix found while testing it before
+the merge — see §11 below and HANDOVER.md §3e.
 
 ### Live infrastructure, verified 2026-08-27
 
@@ -90,11 +91,11 @@ documents accruing real storage and they show the delete path is incomplete.
   built on `@base-ui/react`
 - `@dnd-kit` for the prediction ranker's drag and drop
 - `motion` for animation, `lucide-react` for icons, `sonner` for toasts
-- Inter (`@fontsource-variable/inter`) — one family for every text role on
-  `main`. On the unmerged `aesthetic-revamp` branch, header-level text
-  (`FrameTitle`, dialog titles, welcome-banner greetings and numerals,
-  signup-step prompts) switches to Oswald (`@fontsource-variable/oswald`)
-  via a new `--font-heading` token; body/UI text stays on Inter
+- Inter (`@fontsource-variable/inter`) for body/UI text; Oswald
+  (`@fontsource-variable/oswald`) for header-level text (`FrameTitle`,
+  dialog titles, welcome-banner greetings and numerals, signup-step
+  prompts) via a `--font-heading` token — added in the aesthetic revamp,
+  see §1
 
 **Backend** — Firebase, project `kupatakipucl`
 - Firestore (`europe-west8`) for nearly all data
@@ -683,6 +684,7 @@ against the code; the disposition column records Mert's decision.
 | 36 | ~~**Home and Forum can hang blank forever for a signed-in participant running an ad blocker.**~~ **Fixed at the root 2026-08-28**. `onSnapshot`'s real-time channel gets blocked client-side by some ad/privacy blockers as `net::ERR_BLOCKED_BY_CLIENT`. Previously fixed at the symptom via `useLoadingStuck` to show a notice. Now, `useLoadingStuck` correctly triggers an automatic fallback to one-shot `getDoc()` / `getDocs()` reads in `useProfile`, `usePosts`, `useMessages`, and `usePlayers` — hitting a different endpoint that bypasses filter lists, allowing the app to initialize seamlessly (sans live updates). | Done |
 | 37 | ~~**Multiple devices clobber presence state.**~~ **Fixed 2026-08-28**. Because `usePresenceHeartbeat` registered `onDisconnect().remove()` against a simple boolean `presence/{uid} = true`, logging in on two devices caused the later device's close event to nuke the earlier device's presence. Migrated to RTDB connection IDs via `push()` so each session is managed independently. | Done |
 | 38 | ~~**Prediction page impossibly laggy and unscrollable on mobile, drags snapping back.**~~ **Fixed 2026-08-28**. The `TouchSensor` previously blocked native browser scrolling. Fixing scrolling by adding `touch-pan-y` caused Safari to aggressively cancel drags ("snap back") when users moved vertically. The final fix was separating the interactions: added a `GripVertical` drag handle with `touch-none` exclusively applied to the grip. Unified the drag sensor to `distance: 5` globally. Users now scroll seamlessly by touching the rows, and drag flawlessly by the handle. Extremely laggy due to unmemoized React trees and expensive `pointerWithin` intersections on 72 nodes; wrapped `TeamCrest` in `React.memo` and changed `@dnd-kit` collision detection to `closestCenter`. | Done |
+| 39 | ~~**Deleting your own forum post could fail with "Missing or insufficient permissions."**~~ **Fixed 2026-08-28**. `deletePost.ts` cascades a whole thread in one atomic batch; the rule read `resource.data.uid` unconditionally, and deleting an already-gone document (a stale `replyIds` entry — plausibly from the `usePosts` ad-blocker fallback in problem 36 serving an out-of-date snapshot) is a null-value evaluation error that denies the *entire* batch, not just that one delete. `firestore.rules`' `forumPosts` delete rule now short-circuits on `!exists()` first, so deleting an already-gone doc is a no-op instead of poisoning the batch. Confirmed against the emulator: five legitimate cascade shapes all pass; a non-owner deleting someone else's post is still correctly denied. Deployed live. | Done |
 
 ### By 2026-09-08 (league phase)
 
