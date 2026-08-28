@@ -46,7 +46,7 @@ function SignupCta() {
 function CountdownDigit({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center gap-1.5">
-      <span className="font-display text-3xl font-semibold text-color_text tnum sm:text-4xl">
+      <span className="font-heading text-3xl font-semibold text-color_text tnum sm:text-4xl">
         {String(value).padStart(2, "0")}
       </span>
       <span className="font-mono text-[0.6rem] tracking-[0.22em] text-color_textsecondary uppercase">{label}</span>

@@ -61,13 +61,12 @@ function FrameHeader({
   );
 }
 
-/** Editorial serif title — the Bodoni voice, not a UI label. */
 function FrameTitle({ className, ...props }: React.ComponentProps<"h2">) {
   return (
     <h2
       data-slot="frame-title"
       className={cn(
-        "font-display text-lg leading-none font-semibold tracking-[-0.01em] sm:text-xl",
+        "font-heading text-lg leading-none font-semibold tracking-[-0.01em] sm:text-xl",
         className
       )}
       {...props}

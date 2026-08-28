@@ -32,7 +32,7 @@ export function PhotoStep({ onSelect, initialFile }: PhotoStepProps) {
 
   return (
     <div className="flex flex-col items-center gap-5">
-      <p className="text-center font-display text-2xl font-light text-color_text">Lütfen profil fotoğrafı seç.</p>
+      <p className="text-center font-heading text-2xl font-light text-color_text">Lütfen profil fotoğrafı seç.</p>
       <button
         type="button"
         onClick={() => inputRef.current?.click()}

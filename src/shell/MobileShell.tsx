@@ -63,8 +63,11 @@ export function MobileShell({ children }: { children: ReactNode }) {
           This is what gives every page below a *definite* height to divide,
           which is the thing `min-h-dvh` could not do. Any region that
           genuinely needs to overflow gets its own internal scroll container;
-          the Forum feed is the only one that does. */}
-      <div className="flex h-full cursor-default flex-col overflow-hidden bg-background">
+          the Forum feed is the only one that does.
+
+          No bg-background on this root (aesthetic-revamp, matches AppShell):
+          body paints the ruled grid, which an opaque shell root would hide. */}
+      <div className="flex h-full cursor-default flex-col overflow-hidden">
         {/* Cursorify (DESIGN.md §6): the root cursor reset, same as
             AppShell's — no I-beam anywhere by default, interactive elements
             opt back into a pointer individually. */}

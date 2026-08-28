@@ -48,7 +48,7 @@ function renderWithBold(text: string, boldTerms: string[]): ReactNode {
 export function IntroBeat({ text, boldTerms = [], visual, onContinue }: IntroBeatProps) {
   return (
     <div className="flex flex-col items-center gap-8 px-6">
-      <p className="max-w-lg text-balance text-center font-display text-2xl font-light text-color_text sm:text-3xl">
+      <p className="max-w-lg text-balance text-center font-heading text-2xl font-light text-color_text sm:text-3xl">
         {renderWithBold(text, boldTerms)}
       </p>
       {visual}

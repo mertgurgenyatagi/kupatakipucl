@@ -33,7 +33,7 @@ export function UclTeamStep({ onSelect, initialSelection }: UclTeamStepProps) {
 
   return (
     <div className="flex flex-col items-center gap-5">
-      <p className="max-w-lg text-balance text-center font-display text-2xl font-light text-color_text">
+      <p className="max-w-lg text-balance text-center font-heading text-2xl font-light text-color_text">
         Şampiyonlar Ligi'nde tuttuğun bir takım var mı?
       </p>
       <div className="grid w-fit grid-cols-10 gap-2">

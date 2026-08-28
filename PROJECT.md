@@ -33,6 +33,15 @@ The later phases are explicitly not ready. Knockout in particular is
 unfinished and was deprioritised because it is months away. Section 11 lists
 every known gap, sorted by when it actually starts to matter.
 
+### A second branch: `aesthetic-revamp`
+
+Cut from `main` on 2026-08-28, **not merged**. A visual-only experiment —
+layout and interactions are untouched — that reskins the site from the warm
+near-black palette to a deep blue, adds a faint ruled-grid page background,
+and switches header-level text to Oswald while body copy stays Inter. Full
+detail in HANDOVER.md. Mert has seen it running locally and liked it; whether
+and when it merges to `main` is still his call.
+
 ### Live infrastructure, verified 2026-08-27
 
 Checked directly against the `kupatakipucl` GCP project rather than inferred
@@ -81,7 +90,11 @@ documents accruing real storage and they show the delete path is incomplete.
   built on `@base-ui/react`
 - `@dnd-kit` for the prediction ranker's drag and drop
 - `motion` for animation, `lucide-react` for icons, `sonner` for toasts
-- Inter (`@fontsource-variable/inter`) — one family for every text role
+- Inter (`@fontsource-variable/inter`) — one family for every text role on
+  `main`. On the unmerged `aesthetic-revamp` branch, header-level text
+  (`FrameTitle`, dialog titles, welcome-banner greetings and numerals,
+  signup-step prompts) switches to Oswald (`@fontsource-variable/oswald`)
+  via a new `--font-heading` token; body/UI text stays on Inter
 
 **Backend** — Firebase, project `kupatakipucl`
 - Firestore (`europe-west8`) for nearly all data

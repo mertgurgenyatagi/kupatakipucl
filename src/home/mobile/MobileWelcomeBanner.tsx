@@ -35,7 +35,7 @@ export function MobileWelcomeBanner({ me, showCta }: { me: Player; showCta: bool
               {initials(me)}
             </AvatarFallback>
           </Avatar>
-          <p className="min-w-0 truncate font-display text-lg text-color_text">
+          <p className="min-w-0 truncate font-heading text-lg text-color_text">
             Hoş geldin, <span className="font-bold">{me.firstName}</span>.
           </p>
         </div>
@@ -71,7 +71,7 @@ export function MobileWelcomeBanner({ me, showCta }: { me: Player; showCta: bool
 function MiniDigit({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <span className="font-display text-xl leading-none font-semibold text-color_text tnum">
+      <span className="font-heading text-xl leading-none font-semibold text-color_text tnum">
         {String(value).padStart(2, "0")}
       </span>
       <span className="font-mono text-[0.55rem] tracking-[0.14em] text-color_textsecondary uppercase">

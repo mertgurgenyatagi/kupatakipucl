@@ -26,7 +26,7 @@ export function ChoiceStep({ question, options, onSelect, disabled, initialValue
 
   return (
     <div className="flex flex-col items-center gap-6">
-      <p className="max-w-lg text-balance text-center font-display text-2xl font-light text-color_text">{question}</p>
+      <p className="max-w-lg text-balance text-center font-heading text-2xl font-light text-color_text">{question}</p>
       <div className="flex w-full max-w-lg flex-col gap-2.5">
         {options.map((option) => (
           <button

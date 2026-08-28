@@ -8,6 +8,8 @@ stand and what to do next.
 
 Written 2026-08-28, following a post-deployment fixes session. Branch: `main`, pushed. All pre-launch checklist items 1–7 are **done**. Additionally, critical adblock-initialization, multi-device presence, and prediction mobile scroll/lag issues were just resolved.
 
+**Updated same day, second session, branch `aesthetic-revamp`** (cut from `main`, pushed, **not merged**): a visual-only reskin — blue palette, ruled grid, Oswald headers. See §3d below.
+
 ---
 
 ## 1. The site is live (or about to be)
@@ -61,6 +63,56 @@ until the league phase begins **2026-09-08**.
 **8e. Tournament Timeline Updated.** The About page timeline was updated to reflect the final 7-step schedule (Aug 28 – Jun 5), with "Lig Aşaması" and "Eleme Aşaması" correctly formatted as date intervals ("08 Eyl - 24 Şub") via a new `startDate` parameter in `aboutContent.ts`.
 
 **8f. Firebase Analytics.** Initialized Firebase Analytics in `src/firebase.ts` and added the `measurementId` to the env configuration to begin tracking live user visits and device usage.
+
+## 3d. What this session did (Aesthetic revamp branch)
+
+Mert pointed at a sibling local project, `C:\Users\Mert\Documents\irishtable`
+(a Premier League fork of this codebase, built for a since-cancelled pitch;
+the directory still exists on disk and was used purely as a design reference
+this session, never touched). He liked its layout system as-is but wanted to
+try its purple → blue palette swap, its ruled-grid background, and its Oswald
+header treatment on this app. Work happened on a new branch,
+`aesthetic-revamp`, cut from `main`.
+
+**Palette.** `src/styles/colors.css`: `--color_main` and `--color_secondary`
+moved from the original warm near-black olive (`#14120B` / `#1B1913`) to a
+deep blue (`#020c1d` / `#081326`) — same hue-rotation technique used on
+irishtable's own purple→blue swap (target hue ~217°, saturation and lightness
+held from the source color per surface, so nothing lost contrast). Green
+accent, gold, magenta and every other non-surface color are untouched.
+
+**Grid.** Ported irishtable's ruled-grid background verbatim: new
+`--color_grid` / `--grid_size` tokens, painted onto `body` in
+`src/styles/index.css`. This replaced the old `.ground-radiance` radial glow
+in the same slot (now deleted, along with its `--color_glow` /
+`--color_faintglow` tokens) — and required removing `bg-background` from the
+two shell roots (`AppShell.tsx`, `MobileShell.tsx`) so the opaque shell
+doesn't hide the grid painted on `body` underneath it. Pages with their own
+full-bleed `DustHaze` hero (logged-out Home, About) still paint their own
+backdrop and don't show the grid — left alone, not reworked.
+
+**Headers.** Installed `@fontsource-variable/oswald`; `--font-heading` now
+points at it while `--font-display` / `--font-sans` / `--font-mono` stay on
+Inter. Applied `font-heading` to: `FrameTitle` (the h2 in every page's Frame
+cells — one edit, propagates everywhere), dialog titles (already used a
+`font-heading` class, just retargeted), welcome-banner greetings and their
+countdown/rank/points numerals, and the big centered prompt text on every
+signup step (`WelcomeStep`, `ChoiceStep`, `AgeRollerStep`, etc.) plus
+`PageUnavailable`. Deliberately **not** touched: nav links, buttons, meta/
+eyebrow labels, running body copy — and, per Mert's explicit rollback, the
+logged-out/not-started home hero headline (`HomeLandingLoggedOut.tsx`,
+`MobileHomeNotStartedLoggedOut.tsx` — "36 takım. `<SlotNumber>` katılımcı. 1
+turnuva.") stays on `font-display` (Inter).
+
+**Tried and reverted.** Added an ambient two-stop corner glow on the shell
+`<main>` (`.ground-glow`, blue top-right / faint green bottom-left, layered
+over the grid) and a faint diagonal sheen on the top nav bar and the
+leaderboard's navy `FrameHeader` band (`.band-gradient`). Mert said "nevermind
+the gradients" — fully reverted: both utility classes, their `--color_glow` /
+`--color_glowaccent` tokens, and every call site are gone again.
+
+`tsc -b` clean and all 1030 unit tests pass after every step above, including
+the reverts.
 
 ## 3b. What the previous session did
 

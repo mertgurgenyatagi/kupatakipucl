@@ -21,7 +21,7 @@ export function BounceCheck({ text }: { text: string }) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.18, duration: 0.3, ease: "easeOut" }}
-        className="text-center font-display text-2xl font-light text-color_text"
+        className="text-center font-heading text-2xl font-light text-color_text"
       >
         {text}
       </motion.p>
