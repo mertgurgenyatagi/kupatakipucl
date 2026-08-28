@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { TriangleAlert } from "lucide-react";
 
 interface NameStepProps {
   onSubmit: (firstName: string, lastName: string) => void;
@@ -29,6 +30,12 @@ export function NameStep({ onSubmit, disabled, initialFirstName, initialLastName
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col items-center gap-5">
+      <div className="flex max-w-xs items-start gap-2 rounded-xl border border-color_remove/50 bg-color_remove/10 px-4 py-3 text-left">
+        <TriangleAlert className="mt-0.5 size-4 shrink-0 text-color_remove" aria-hidden />
+        <p className="text-xs font-semibold text-color_remove">
+          Lütfen gerçek ismini kullan, ya da sahte olsun ama "İsim Soyisim" formatında olsun.
+        </p>
+      </div>
       <input
         value={firstName}
         onChange={(e) => setFirstName(e.target.value)}
