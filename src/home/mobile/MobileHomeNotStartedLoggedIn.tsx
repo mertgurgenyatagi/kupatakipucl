@@ -70,7 +70,10 @@ export function MobileHomeNotStartedLoggedIn({
     <div className="flex min-h-0 flex-1 flex-col gap-3 px-3 py-3">
       <MobileWelcomeBanner me={me} showCta={!submitterUids.has(me.uid)} />
 
-      <Frame className="flex min-h-0 flex-1 flex-col animate-cotton-rise">
+      {/* 1.5x the forum preview's height (Mert's explicit call) — flex-[1.5]
+          against the forum frame's flex-1 below, splitting the remaining
+          column space 3:2 instead of evenly. */}
+      <Frame className="flex min-h-0 flex-[1.5] flex-col animate-cotton-rise">
         <div className="flex shrink-0 items-center gap-2 border-b border-color_border1/50 px-4 py-2.5">
           <span className="min-w-0 flex-1 truncate font-mono text-[0.62rem] tracking-[0.16em] text-color_textsecondary uppercase">
             {getLobbySwitcherLabel(myLobbies, lobbyId, "Katılımcılar")}
