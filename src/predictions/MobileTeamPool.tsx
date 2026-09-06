@@ -1,5 +1,4 @@
-import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { Team } from "./teams";
 import { TeamCrest } from "../leaderboard/TeamCrest";
 import { cn } from "@/lib/utils";
@@ -11,73 +10,66 @@ import { cn } from "@/lib/utils";
  * Not a styling preference. `TeamGrid` shows a crest and nothing else, and
  * puts the team's name in a tooltip that appears after 750ms of **hover** —
  * which a touchscreen never produces. On top of that, every crest in this app
- * is deliberately assigned to the wrong club (PROJECT_STATE §9: the artwork
+ * is deliberately assigned to the wrong club (PROJECT.md §11 #2: the artwork
  * is randomly mapped pending a full roster replacement), so the grid on a
  * phone would be 36 unidentifiable badges and no way to tell which is which.
  * A row with the name written on it is the only version of this panel that
  * can actually be used.
  *
- * Drag ids match `TeamGrid`'s exactly (`grid:${team.id}`), so TeamRanker's
- * drag handling, the `grid-return` drop target and the placed/unplaced logic
- * all work unchanged — this swaps the panel's appearance, not its wiring.
+ * Behaves exactly like `TeamGrid` otherwise — tap an available team to pick
+ * it up, tap anywhere else in the panel to send a held team back to the pool.
  */
 
-import { GripVertical } from "lucide-react";
+const PoolRow = memo(function PoolRow({
+  team,
+  isPlaced,
+  isHeld,
+  onTeamClick,
+}: {
+  team: Team;
+  isPlaced: boolean;
+  isHeld: boolean;
+  onTeamClick: (teamId: string) => void;
+}) {
+  const handleClick = useCallback(
+    (event: React.MouseEvent) => {
+      event.stopPropagation();
+      onTeamClick(team.id);
+    },
+    [onTeamClick, team.id]
+  );
 
-const PoolRow = memo(function PoolRow({ team, isPlaced }: { team: Team; isPlaced: boolean }) {
-  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: `grid:${team.id}` });
-  const {
-    attributes,
-    listeners,
-    setNodeRef: setDragRef,
-    transform,
-    isDragging,
-  } = useDraggable({ id: `grid:${team.id}`, disabled: isPlaced });
+  const className = cn(
+    "flex h-11 w-full items-center gap-2.5 rounded-lg border px-2.5 text-left select-none outline-none",
+    "transition-[border-color,background-color,opacity] duration-200 ease-[var(--ease-cotton)]",
+    isPlaced
+      ? "border-dashed border-color_border1/40 bg-foreground/[0.01]"
+      : [
+          "bg-background/80 cursor-pointer",
+          isHeld ? "border-color_accent bg-foreground/[0.08]" : "border-color_border1/60",
+        ]
+  );
 
-  const combinedRef = (node: HTMLElement | null) => {
-    setDropRef(node);
-    setDragRef(node);
-  };
-
-  const style = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
-    : undefined;
+  if (isPlaced) {
+    return (
+      <li>
+        <div className={className}>
+          <span className="font-mono text-[0.65rem] tracking-[0.14em] text-color_textsecondary/50 uppercase">
+            Sıralandı
+          </span>
+        </div>
+      </li>
+    );
+  }
 
   return (
-    <li
-      ref={combinedRef}
-      style={style}
-      className={cn(
-        "flex h-11 items-center gap-2.5 rounded-lg border px-2.5 select-none",
-        "transition-[border-color,background-color,opacity] duration-200 ease-[var(--ease-cotton)]",
-        isPlaced
-          ? "border-dashed border-color_border1/40 bg-foreground/[0.01]"
-          : "border-color_border1/60 bg-background/80",
-        isOver && "border-color_accent/80 bg-foreground/[0.08]",
-        isDragging && "opacity-0"
-      )}
-    >
-      {isPlaced ? (
-        <span className="font-mono text-[0.65rem] tracking-[0.14em] text-color_textsecondary/50 uppercase">
-          Sıralandı
+    <li>
+      <button type="button" onClick={handleClick} className={className}>
+        <TeamCrest teamId={team.id} className="size-7 shrink-0" />
+        <span className="min-w-0 flex-1 truncate font-display text-sm text-color_text">
+          {team.name}
         </span>
-      ) : (
-        <>
-          <TeamCrest teamId={team.id} className="size-7 shrink-0" />
-          <span className="min-w-0 flex-1 truncate font-display text-sm text-color_text">
-            {team.name}
-          </span>
-          <button
-            type="button"
-            {...attributes}
-            {...listeners}
-            className="flex h-full items-center justify-center px-1.5 -mr-1.5 text-color_textsecondary/40 touch-none cursor-grab active:cursor-grabbing outline-none"
-            aria-label="Sürükle"
-          >
-            <GripVertical className="size-4" />
-          </button>
-        </>
-      )}
+      </button>
     </li>
   );
 });
@@ -85,17 +77,27 @@ const PoolRow = memo(function PoolRow({ team, isPlaced }: { team: Team; isPlaced
 export function MobileTeamPool({
   teams,
   placedTeamIds,
+  heldTeamId,
+  onTeamClick,
+  onBackgroundClick,
 }: {
   teams: Team[];
   placedTeamIds: Set<string>;
+  heldTeamId: string | null;
+  onTeamClick: (teamId: string) => void;
+  onBackgroundClick: () => void;
 }) {
-  const { setNodeRef } = useDroppable({ id: "grid-return" });
-
   return (
-    <div ref={setNodeRef} className="p-1">
+    <div className="p-1" data-testid="team-pool" onClick={onBackgroundClick}>
       <ul className="flex flex-col gap-1.5">
         {teams.map((team) => (
-          <PoolRow key={team.id} team={team} isPlaced={placedTeamIds.has(team.id)} />
+          <PoolRow
+            key={team.id}
+            team={team}
+            isPlaced={placedTeamIds.has(team.id)}
+            isHeld={heldTeamId === team.id}
+            onTeamClick={onTeamClick}
+          />
         ))}
       </ul>
     </div>

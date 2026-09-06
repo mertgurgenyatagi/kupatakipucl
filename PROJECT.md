@@ -1,7 +1,7 @@
 # kupatakipucl
 
 A Champions League prediction game for a private group of friends, written in
-Turkish. Before the tournament starts, each participant drags all 36
+Turkish. Before the tournament starts, each participant places all 36
 league-phase teams into their predicted finishing order. Once matches begin,
 everyone's picks are scored against the real table and ranked on a shared
 leaderboard. The site also carries a forum, a global chat with private
@@ -79,7 +79,6 @@ documents accruing real storage and they show the delete path is incomplete.
   already correct for static hosting with no rewrite rules
 - Tailwind CSS 4 via `@tailwindcss/vite`; shadcn components (`base-nova` style)
   built on `@base-ui/react`
-- `@dnd-kit` for the prediction ranker's drag and drop
 - `motion` for animation, `lucide-react` for icons, `sonner` for toasts
 - Inter (`@fontsource-variable/inter`) — one family for every text role
 
@@ -229,10 +228,22 @@ Back-navigation preserves answers and skips bounce screens. The quiz is
 mandatory and one-time: `surveyResponses` forbids update and delete outright.
 
 ### `predictions/`
-The core mechanic. `TeamRanker` is a `@dnd-kit` two-panel drag-and-drop: 36
-numbered slots on the left, a crest grid (desktop) or named list (mobile) on the
-right. Slot-to-slot drags swap; dragging out clears. Submit unlocks only when
-all 36 slots are filled. Hovering a row for 2s reveals the ±2 scoring band.
+The core mechanic. `TeamRanker` is a two-panel **click-to-place** board: 36
+numbered ranks on the left, a crest grid (desktop) or named list (mobile) on the
+right. Click a team to pick it up, click where it goes. Submit unlocks only when
+all 36 ranks are filled. Hovering a row for 2s reveals the ±2 scoring band.
+
+There is no drag and drop, by design — it was removed outright on 2026-09-06
+(§11 #10) after proving unreliable on desktop and awkward on touch. `@dnd-kit`
+is uninstalled; nothing else in the codebase used it.
+
+Every transition lives in **`rankerState.ts`**, a pure reducer with no React and
+no DOM in it — pick up, place, swap, return-to-pool, cancel. Two clicks do
+everything, and holding a team is *selection only*: nothing moves until the
+second click. `TeamSlotList`, `TeamGrid` and `MobileTeamPool` are dumb renderers
+that report clicks. Because it's pure and click-driven, the actual interaction
+is unit-tested for the first time (jsdom cannot simulate a pointer drag, which
+is why the drag version had no behavioural coverage at all).
 
 `/predictions` is a **first-submission-only door** — it redirects home if the
 phase isn't `notstarted` or a prediction already exists. Revision afterwards
@@ -524,7 +535,7 @@ not yet been imported into `public/`**.
 
 - **Unit/component**: `npm test` (Vitest, jsdom, `test/setup.ts` polyfilling
   ResizeObserver, IntersectionObserver, matchMedia, `scrollIntoView`,
-  `createObjectURL` and `Image`). **127 test files** against 204 source files —
+  `createObjectURL` and `Image`). **132 test files** against 208 source files —
   most modules have a sibling test, and the tests are frequently the clearest
   statement of intended behaviour.
 - **Integration**: `npm run test:integration` runs
@@ -663,13 +674,13 @@ against the code; the disposition column records Mert's decision.
 | 7 | **Other people's predictions are world-readable before the league phase.** The UI hides them; the data is directly fetchable. | Should not be visible pre-league-phase |
 | 8 | **Knockout entry point is reachable during `notstarted`.** `/knockout-predictions` is allowed in every logged-in phase and has no already-submitted redirect, so brackets can be submitted against fake pairings. Not linked from the nav, so URL-only. | Hide until preknockout |
 | 9 | ~~**Mobile create-lobby button does nothing.**~~ **Done 2026-08-27.** Both lobby dialogs are mounted on the mobile branch of `LoggedInHome`. | Done |
-| 10 | **The drag-and-drop ranker is being replaced.** Mert intends to change this interaction; it is the one thing every participant must complete. | Redesign pending |
+| 10 | ~~**The drag-and-drop ranker is being replaced.**~~ **Done 2026-09-06.** Replaced outright with a click-to-place board: click a team, click the rank it goes in. Root cause of the old one's unreliability was a drag-overlay modifier applied only to `DragOverlay` and not to `DndContext`, so the visible card and the invisible hit-test rect drifted apart by however far off-centre you grabbed an item; a missing `onDragCancel` also left a stuck ghost card after Escape. Rather than patch the geometry, the interaction was rebuilt as a pure reducer (`rankerState.ts`) and `@dnd-kit` was uninstalled. | Done |
 | 11 | ~~**Profile shows raw team slugs.**~~ **Done 2026-08-27.** `uclTeamLabel()` in `surveyLabels.ts`, applied at all three call sites — the profile page *and both branches of `ParticipantPopup`*, which this entry missed. | Done |
 | 12 | **Lobby management was desktop-only.** **Fixed for the `notstarted` home 2026-08-27** — a settings gear in the mobile participants header opens `LobbyManagementPanel`, now a bottom sheet on a phone. **Still open for the started-phase mobile home**, which has no lobby UI of any kind and no participants cell to hang one on; unreachable until 2026-09-08. | Partly done |
 | 13 | ~~**Deleting a lobby leaves its messages in the database.**~~ **Done 2026-08-27.** Root cause was `allow delete: if false` in the rules, so the cascade was impossible. Rules changed and deployed; `leaveLobby`'s last-member-out branch now runs the same cascade; 8 orphaned messages under 5 phantom lobbies purged from production. | Done |
 | 36 | ~~**Home and Forum can hang blank forever for a signed-in participant running an ad blocker.**~~ **Fixed at the root 2026-08-28**. `onSnapshot`'s real-time channel gets blocked client-side by some ad/privacy blockers as `net::ERR_BLOCKED_BY_CLIENT`. Previously fixed at the symptom via `useLoadingStuck` to show a notice. Now, `useLoadingStuck` correctly triggers an automatic fallback to one-shot `getDoc()` / `getDocs()` reads in `useProfile`, `usePosts`, `useMessages`, and `usePlayers` — hitting a different endpoint that bypasses filter lists, allowing the app to initialize seamlessly (sans live updates). | Done |
 | 37 | ~~**Multiple devices clobber presence state.**~~ **Fixed 2026-08-28**. Because `usePresenceHeartbeat` registered `onDisconnect().remove()` against a simple boolean `presence/{uid} = true`, logging in on two devices caused the later device's close event to nuke the earlier device's presence. Migrated to RTDB connection IDs via `push()` so each session is managed independently. | Done |
-| 38 | ~~**Prediction page impossibly laggy and unscrollable on mobile, drags snapping back.**~~ **Fixed 2026-08-28**. The `TouchSensor` previously blocked native browser scrolling. Fixing scrolling by adding `touch-pan-y` caused Safari to aggressively cancel drags ("snap back") when users moved vertically. The final fix was separating the interactions: added a `GripVertical` drag handle with `touch-none` exclusively applied to the grip. Unified the drag sensor to `distance: 5` globally. Users now scroll seamlessly by touching the rows, and drag flawlessly by the handle. Extremely laggy due to unmemoized React trees and expensive `pointerWithin` intersections on 72 nodes; wrapped `TeamCrest` in `React.memo` and changed `@dnd-kit` collision detection to `closestCenter`. | Done |
+| 38 | ~~**Prediction page impossibly laggy and unscrollable on mobile, drags snapping back.**~~ **Fixed 2026-08-28**. The `TouchSensor` previously blocked native browser scrolling. Fixing scrolling by adding `touch-pan-y` caused Safari to aggressively cancel drags ("snap back") when users moved vertically. The final fix was separating the interactions: added a `GripVertical` drag handle with `touch-none` exclusively applied to the grip. Unified the drag sensor to `distance: 5` globally. Users now scroll seamlessly by touching the rows, and drag flawlessly by the handle. Extremely laggy due to unmemoized React trees and expensive `pointerWithin` intersections on 72 nodes; wrapped `TeamCrest` in `React.memo` and changed `@dnd-kit` collision detection to `closestCenter`. **Moot since 2026-09-06** — dragging is gone entirely (#10), so the grip handles, touch sensors and collision tuning described here no longer exist. The `TeamCrest` memoisation was kept. | Done |
 | 39 | ~~**Deleting your own forum post could fail with "Missing or insufficient permissions."**~~ **Fixed 2026-08-28**. `deletePost.ts` cascades a whole thread in one atomic batch; the rule read `resource.data.uid` unconditionally, and deleting an already-gone document (a stale `replyIds` entry — plausibly from the `usePosts` ad-blocker fallback in problem 36 serving an out-of-date snapshot) is a null-value evaluation error that denies the *entire* batch, not just that one delete. `firestore.rules`' `forumPosts` delete rule now short-circuits on `!exists()` first, so deleting an already-gone doc is a no-op instead of poisoning the batch. Confirmed against the emulator: five legitimate cascade shapes all pass; a non-owner deleting someone else's post is still correctly denied. Deployed live. | Done |
 
 ### By 2026-09-08 (league phase)
@@ -715,8 +726,11 @@ Things still unresolved after the questionnaire.
    list and `teams.test.ts` asserts badges and teams cover each other in both
    directions.
 
-2. **What replaces the drag-and-drop ranker.** Flagged as changing; the
-   replacement interaction is undecided.
+2. ~~**What replaces the drag-and-drop ranker.**~~ **Resolved 2026-09-06.**
+   Click-to-place: click a team, then click the rank it goes in. Holding is
+   selection only; a held team dropped on an occupied rank swaps with it, and
+   clicking the pool returns it. Escape or clicking it again cancels. See §4
+   `predictions/` and `rankerState.ts`.
 
 3. **Whether sign-up genuinely closes on 2026-09-08.** Stated as intended, but
    nothing enforces it, and the phase is set by hand.
@@ -744,8 +758,9 @@ Things still unresolved after the questionnaire.
    has already passed. Whether the six About dates should be revised for the
    real schedule is unaddressed.~~ **Resolved 2026-08-28**. The timeline was updated to reflect the final 7-step schedule requested by Mert (Aug 28 – Jun 5). "Lig Aşaması" and "Eleme Aşaması" are correctly rendered as date intervals.
 
-9. ~~**Test suite status.**~~ **Verified 2026-08-27**: 131 files / 1025 tests
-   pass, `tsc -b` clean, 35 integration tests pass, all green on CI too.
+9. ~~**Test suite status.**~~ **Re-verified 2026-09-06**: 134 files / 1058 tests
+   pass, `tsc -b` clean, production build clean. (Integration suite unchanged
+   and not re-run this session — the ranker rewrite touches no Firestore path.)
 
 ---
 

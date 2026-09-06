@@ -10,6 +10,45 @@ Written 2026-08-28, following a post-deployment fixes session. Branch: `main`, p
 
 **Updated same day.** A visual reskin (blue palette, ruled grid, Oswald headers) was tried on a branch, tested locally, and fully rolled back at Mert's request — nothing from it remains. One real bug found during that testing pass was kept: forum post deletion could fail with a permission error. See §3g.
 
+**Updated 2026-09-06.** The prediction ranker's drag and drop was removed entirely and replaced with a click-to-place interaction. `@dnd-kit` is uninstalled. See §0.
+
+---
+
+## 0. Latest session (2026-09-06): the ranker no longer drags
+
+The prediction ranker was rebuilt from scratch as **click-to-place**, and
+`@dnd-kit` (core, sortable, utilities) was uninstalled — nothing else in the
+codebase imported it.
+
+**Why, since the old one had just been "fixed" twice:** dragging was unreliable
+on desktop in a way that changed depending on where you grabbed an item. The
+root cause was that the drag-overlay's centring modifier was applied only to
+`<DragOverlay>` and not to `<DndContext>`, so the card you could see and the
+invisible rectangle dnd-kit actually hit-tests with drifted apart in proportion
+to how far off-centre you grabbed. A second bug: `onDragCancel` was never wired
+up, so Escape (or an alt-tab, or a window resize) mid-drag left a ghost card
+stuck on screen until reload. Both were fixed, and the interaction was *still*
+awkward — because a fixed-size overlay card anchored to differently-sized source
+elements can never sit naturally under the cursor. So the whole approach was
+dropped rather than patched a fourth time.
+
+**What it is now.** Click a team, then click the rank it goes in. Holding a team
+is selection only — nothing moves until the second click. Held team onto an
+occupied rank swaps the two; onto the pool returns it; Escape or clicking it
+again cancels. Ranks stay fixed at 36 and can hold gaps.
+
+**Shape of the code.** Every transition is in `src/predictions/rankerState.ts`,
+a pure reducer with no React or DOM in it. `TeamSlotList` (was `TeamDropList`),
+`TeamGrid` and `MobileTeamPool` are now dumb renderers that report clicks.
+`dragTypes.ts` and `rankingAssignment.ts` are gone.
+
+**Testing.** The interaction is covered for the first time — jsdom cannot
+simulate a pointer drag, which is why the old version had no behavioural tests
+at all. 21 reducer tests plus 14 component tests. Suite is 134 files / 1058
+tests, `tsc -b` and `npm run build` both clean.
+
+**Not verified in a browser by me** — Mert tests this one manually.
+
 ---
 
 ## 1. The site is live (or about to be)
@@ -46,7 +85,7 @@ until the league phase begins **2026-09-08**.
 | `tournamentState` | Absent, so the app correctly defaults to `notstarted` |
 | Frontend hosting | **Live at `kupatakipucl.com`.** See §1 |
 | CI | **Green** on GitHub Actions — unit + integration both |
-| Tests | 131 files / 1025 unit, 35 integration, `tsc -b` clean |
+| Tests | 134 files / 1058 unit, 35 integration, `tsc -b` clean |
 
 ---
 
