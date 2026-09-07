@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { Menu, MessageSquare } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
@@ -8,6 +8,9 @@ import { useTournamentPhase } from "../tournament/useTournamentPhase";
 import { getVisibilityState } from "../state/visibilityState";
 import { LoginButton } from "../auth/LoginButton";
 import { LogoutButton } from "../auth/LogoutButton";
+import { useFixtures } from "../leaderboard/useFixtures";
+import { hasAnyLiveFixture } from "../leaderboard/liveFixtures";
+import { LiveDot } from "../leaderboard/LiveDot";
 import { NAV_LINKS } from "./navLinks";
 import { MobilePopupHost } from "./MobilePopupHost";
 import { MobileChatDrawer } from "./MobileChatDrawer";
@@ -40,6 +43,8 @@ export function MobileShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const state = getVisibilityState(Boolean(user), phase);
   const { profile } = useProfile(user?.uid ?? null);
+  const { fixtures } = useFixtures();
+  const anyLive = useMemo(() => hasAnyLiveFixture(fixtures), [fixtures]);
 
   const [navOpen, setNavOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -75,9 +80,13 @@ export function MobileShell({ children }: { children: ReactNode }) {
               onClick={() => setNavOpen(true)}
               aria-label="Menüyü aç"
               aria-expanded={navOpen}
-              className="inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-color_border1 text-color_text transition-colors duration-150 ease-[var(--ease-cotton)] active:bg-color_hoverfill outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_text"
+              className="relative inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-color_border1 text-color_text transition-colors duration-150 ease-[var(--ease-cotton)] active:bg-color_hoverfill outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-color_text"
             >
               <Menu className="size-[1.15rem]" />
+              {/* Ambient "something's live" signal, visible without opening
+                  the drawer — the drawer's own Puan Durumu link gets the
+                  same dot once opened (2026-09-07, the live-match feature). */}
+              {anyLive && <LiveDot className="absolute top-1.5 right-1.5 size-1.5" />}
             </button>
 
             {/* Centre slot — the wordmark, or the signed-in viewer's own
@@ -157,6 +166,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
           links={NAV_LINKS[state]}
           currentPath={location.pathname}
           signedIn={signedIn}
+          anyLive={anyLive}
         />
 
         {signedIn && user && (
@@ -173,12 +183,14 @@ function MobileNavDrawer({
   links,
   currentPath,
   signedIn,
+  anyLive,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   links: { path: string; label: string }[];
   currentPath: string;
   signedIn: boolean;
+  anyLive: boolean;
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -213,6 +225,9 @@ function MobileNavDrawer({
                   )}
                 />
                 {link.label}
+                {link.path === "/leaderboard" && anyLive && (
+                  <LiveDot className="ml-1.5 size-1.5" />
+                )}
               </Link>
             );
           })}

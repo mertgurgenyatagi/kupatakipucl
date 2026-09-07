@@ -7,7 +7,7 @@ import {
 } from "react";
 import { ChevronUp, ChevronDown, Loader2 } from "lucide-react";
 import { getUpcomingFixtures } from "./upcomingFixtures";
-import { resolveNow } from "../tournament/now";
+import { useFixtures } from "./useFixtures";
 import { TeamResult } from "./teamResultTypes";
 import { FixtureRow } from "./FixtureRow";
 
@@ -27,9 +27,10 @@ const PANEL_ID = "upcoming-matches-panel";
  * primitive (those animate to *content* height, not an arbitrary
  * percentage of an ancestor).
  *
- * Shows real upcoming fixtures (kickoff still ahead of `now`, see
- * upcomingFixtures.ts) — not devMatches state, so this works identically for
- * a logged-out visitor in production, not just inside the dev panel. Ten are
+ * Shows every not-yet-finished real fixture (see upcomingFixtures.ts,
+ * sourced from useFixtures.ts's football-data.org sync) — not devMatches
+ * state, so this works identically for a logged-out visitor in production,
+ * not just inside the dev panel. Ten are
  * loaded up front, however many tall rows fit in the 90%-height panel show
  * without scrolling, and scrolling to the bottom loads ten more at a time,
  * "Classic" infinite-scroll style, with a brief spinner standing in for a
@@ -54,7 +55,8 @@ export function UpcomingMatchesDrawer({
   onSelectFixture?: (fixtureId: string) => void;
   maxHeightClass?: string;
 }) {
-  const allUpcoming = useMemo(() => getUpcomingFixtures(resolveNow()), []);
+  const { fixtures } = useFixtures();
+  const allUpcoming = useMemo(() => getUpcomingFixtures(fixtures), [fixtures]);
   const [open, setOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT);
   const [loadingMore, setLoadingMore] = useState(false);

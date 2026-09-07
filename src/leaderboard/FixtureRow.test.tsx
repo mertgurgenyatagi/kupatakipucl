@@ -1,15 +1,18 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { FixtureRow } from "./FixtureRow";
-import { Fixture } from "../devpanel/fixtures";
+import { RealFixture } from "./realFixtureTypes";
 
-const fixture: Fixture = {
+const fixture: RealFixture = {
   id: "m1",
   matchday: 1,
   order: 1,
   homeTeamId: "aek-athens",
   awayTeamId: "arsenal",
   kickoffUtc: "2026-09-16T18:45:00.000Z",
+  status: "TIMED",
+  homeGoals: null,
+  awayGoals: null,
 };
 
 describe("FixtureRow", () => {
@@ -78,5 +81,30 @@ describe("FixtureRow", () => {
   it("does not throw when a team is clicked and no onSelectTeam is provided (the drawer's own usage)", () => {
     render(<FixtureRow fixture={fixture} results={{}} />);
     expect(() => fireEvent.click(screen.getByText("AEK"))).not.toThrow();
+  });
+
+  it("shows the kickoff date/time, not a score, when not live", () => {
+    render(<FixtureRow fixture={fixture} results={{}} />);
+    expect(screen.queryByText("0 - 0")).not.toBeInTheDocument();
+  });
+
+  it("shows the live score instead of kickoff time once a match is live", () => {
+    render(
+      <FixtureRow
+        fixture={{ ...fixture, status: "IN_PLAY", homeGoals: 2, awayGoals: 1 }}
+        results={{}}
+      />
+    );
+    expect(screen.getByText("2 - 1")).toBeInTheDocument();
+  });
+
+  it("also treats PAUSED (half-time) as live", () => {
+    render(
+      <FixtureRow
+        fixture={{ ...fixture, status: "PAUSED", homeGoals: 0, awayGoals: 0 }}
+        results={{}}
+      />
+    );
+    expect(screen.getByText("0 - 0")).toBeInTheDocument();
   });
 });

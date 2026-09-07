@@ -2,8 +2,26 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { UpcomingMatchesDrawer } from "./UpcomingMatchesDrawer";
 
-vi.mock("../tournament/now", () => ({
-  resolveNow: () => new Date("2026-08-01T00:00:00.000Z"),
+const fixture = (id: string, order: number, homeTeamId: string, awayTeamId: string) => ({
+  id,
+  matchday: 1,
+  order,
+  homeTeamId,
+  awayTeamId,
+  kickoffUtc: `2026-09-0${order}T16:45:00.000Z`,
+  status: "TIMED",
+  homeGoals: null,
+  awayGoals: null,
+});
+
+vi.mock("./useFixtures", () => ({
+  useFixtures: () => ({
+    fixtures: [
+      fixture("f1", 1, "arsenal", "barcelona"),
+      fixture("f2", 2, "liverpool", "real-madrid"),
+    ],
+    loading: false,
+  }),
 }));
 
 describe("UpcomingMatchesDrawer", () => {

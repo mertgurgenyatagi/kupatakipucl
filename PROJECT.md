@@ -294,9 +294,79 @@ the Round of 16, 9–24 playoff round, 25–36 eliminated.
 **Ranking** (`ranking.ts`): standard competition ranking, ties share a rank and
 the next rank skips. No movement arrows.
 
+**Real fixture data (2026-09-07, fixing #16).** `useFixtures.ts` reads
+`fixtures/{id}` (functions/fixtures' football-data.org sync, §6). `upcomingFixtures.ts`'s
+`getUpcomingFixtures(fixtures)` is now pure and parameterized (fixtures
+passed in, not imported, and no longer takes `now` — see below) and feeds `UpcomingMatchesDrawer`/
+`UpcomingMatchesPreview`/`FixtureRow`, all retyped to `RealFixture`
+(`realFixtureTypes.ts`). `MatchupPopup.tsx` resolves its fixture from
+`useFixtures()` instead of the devpanel mock, and reads that fixture's own
+`homeGoals`/`awayGoals` directly instead of replaying `devMatches` outcomes.
+`rankHistory.ts` (ParticipantPopup's rank-history chart) replays the real
+fixture calendar's actual goals match-by-match, in kickoff order, instead of
+the mock calendar's synthetic 1-0/0-0 scorelines.
+
+The points/goal-difference/tie-break math itself was extracted out of
+`src/devpanel/standings.ts` into `standingsAccumulator.ts`'s
+`computeStandingsFromMatches` — a generic function taking actual goals per
+fixture — so the dev panel's synthetic-outcome path and the real-goals path
+share one implementation instead of two that could drift apart.
+`devpanel/standings.ts`'s own `computeStandings(outcomes)` is now a thin
+adapter (synthetic outcome → synthetic goals → the shared function);
+`standings.test.ts` passes unchanged, proving the extraction didn't alter its
+behavior.
+
+`teamMatchHistory.ts` was deliberately **not** touched — its only consumer is
+the parked `TeamPopup.tsx` (below), so it stays wired to the devpanel mock
+until that popup is revived.
+
+**Live-match feature, 2026-09-07.** Mert's ask, kept deliberately open-ended
+("be creative"). Live detection is entirely derived from data already
+synced — `fixtures/{id}.status` (`IN_PLAY`/`PAUSED` = live) and
+`homeGoals`/`awayGoals` — via `liveFixtures.ts`'s `isFixtureLive`/
+`getLiveTeamIds`/`hasAnyLiveFixture`. `LiveDot.tsx` is the shared breathing
+red dot (respects `prefers-reduced-motion`, same convention as the rest of
+the app's `motion` usage). Four surfaces:
+
+- `FixtureRow.tsx` — red tint, breathing dot, live score in place of kickoff
+  time. Required redefining `upcomingFixtures.ts`'s "upcoming" filter from
+  "kickoff in the future" to "not yet `FINISHED`" — a live match's kickoff is
+  by definition already in the past, so the old filter would have dropped it
+  from the list at the exact moment it became worth showing.
+- The standings tables — `TeamTable.tsx` (tint only) and `LeagueTableList.tsx`
+  (tint plus a `motion` `layout` reposition animation on `results` updates).
+  `TeamTable`'s CSS-Grid-as-table rows are `display:contents` and have no box
+  for `layout` to animate, so that touch only made it into `LeagueTableList`,
+  a real `<ul>`.
+- `MatchupPopup.tsx` — same tint/dot/live-score treatment, splitting
+  `MatchupCenter`'s old two-state (upcoming/decided) score display into three
+  (upcoming/live/finished).
+- A small pulsing dot on the "Puan Durumu" nav link (both shells) plus, on
+  mobile, the hamburger button itself (ambient, visible without opening the
+  drawer) when anything is live anywhere.
+
+`useFixtures.ts` and `useResults.ts` both switched from one-shot `getDocs` to
+live `onSnapshot` listeners — an open tab now sees a live score or a
+reordered table without a refresh, which is just the project's own existing
+rule (§3.4: live listeners for anything that must update in place) applied
+to two reads that hadn't needed it before.
+
+The polling cadence that actually makes this feel live lives in
+`functions/fixtures` — see §6's `pollGate.js` writeup, including the
+shared-control-doc race bug caught and fixed the same session.
+
 Popups: `TeamPopup` (predictors, match history, and a generated squad),
 `ParticipantPopup` (their full 36-row prediction, quiz answers, rank history
 chart), `MatchupPopup` (one fixture, both teams' predictor columns).
+
+**`TeamPopup` is shelved, 2026-09-07.** Every real call site now renders
+`TeamPopupParked.tsx` instead — a big "Bu bölüm şu anda hazır değil." message,
+nothing else. `TeamPopup.tsx` itself is untouched and left in the tree
+deliberately: Mert plans to bring its squad/dossier content to life later via
+his own scraping automation rather than football-data.org (whose Free tier
+has no lineup/squad data anyway), so the full implementation needs to survive
+intact for that. `TeamPopup.test.tsx` still exercises it directly. See §11
+#21.
 
 Several modules here import fixtures and match outcomes from `src/devpanel/` —
 see §11, this is the biggest structural problem in the repo.
@@ -360,12 +430,15 @@ verbatim — the code marks this as unconsidered placeholder reuse, not design.
 placeholder). **Neither gates anything** — both only drive countdown displays.
 
 ### `stats/`
-Signed-in, started phases only. Computes team bias (predicted vs actual
-position), team agreement (population standard deviation of predicted
-positions), and survey distributions across age buckets, football knowledge,
-Messi/Ronaldo and Süper Lig support. Roughly half the page is fabricated: three
-of seven tournament widgets are invented footballers, and the UCL-team chart is
-a hardcoded array even though the real answers exist in `surveyResponses`.
+**Cleared out, 2026-09-07.** Everything this section used to describe — team
+bias, team agreement, survey distributions, the three fabricated tournament
+widgets, the hardcoded UCL-team chart — is deleted outright, not preserved.
+Mert's call: unlike `TeamPopup` (§4 `leaderboard/`), there was nothing here
+worth keeping. `/stats` now always renders `PageUnavailable`, dropped from the
+nav but still reachable by direct URL (`src/shell/navLinks.ts`,
+`src/state/pageAccess.ts`). `RankedStatList.tsx` and `StatsHero.tsx` survive
+in this folder only because `StatWidget.tsx` and `HomeHero.tsx` still use
+them for something unrelated. See §11 #19/#20.
 
 ### `devpanel/`
 Dev-only UI at `/dev`. Sets a phase override, a fake login state, a display
@@ -474,7 +547,9 @@ bypassable. There is no server-side rate limiting; `useSendCooldown` applies a
 
 ## 6. Cloud Functions
 
-Two independent codebases, deployed by different tools.
+Three codebases across two deploy tools: `leaderboard` and `fixtures` are both
+plain Firebase Functions (Firebase CLI), `stopbilling` is a Cloud Run service
+(`gcloud run deploy`).
 
 ### `functions/leaderboard` — Firebase Functions v2, `europe-west8`
 Recomputes the whole leaderboard whenever a prediction or a result changes, and
@@ -507,6 +582,100 @@ The design's stated reasoning: "the leaderboard is quietly wrong" is the worst
 failure this app has, so the debounce is not trusted on its own.
 
 Deploy: `firebase deploy --only functions:leaderboard`
+
+### `functions/fixtures` — Firebase Functions v2, `europe-west8`
+Added 2026-09-07 on the `league-phase-prep` branch, fixing #14 and #16. Two
+`onSchedule("every 2 minutes")` functions, both live and verified against
+production:
+
+- **`syncFootballDataResults`** pulls the live UEFA Champions League
+  league-phase table from [football-data.org](https://www.football-data.org)'s
+  Free tier and overwrites `results/{teamId}` with it — the same collection
+  `src/devpanel/useDevMatches.ts` writes by hand, and the one
+  `functions/leaderboard`'s `onDocumentWritten("results/{teamId}")` already
+  watches, so a sync recomputes the leaderboard automatically with no extra
+  wiring.
+- **`syncFootballDataFixtures`** pulls the full 144-match calendar (past and
+  future) and writes `fixtures/{id}` — `id` is football-data.org's own match
+  id, `order` is assigned by sorting on kickoff time (ties broken by match id)
+  so it's always true chronological order, and `homeGoals`/`awayGoals` are
+  `null` until a match finishes. This is a brand new collection, unrelated to
+  `src/devpanel/fixtures.ts`'s mock calendar — see "The dev panel fallback"
+  below for why the two were kept separate rather than merged.
+
+Both deployed and manually triggered post-deploy to confirm correctness: 36
+`results` docs and 144 `fixtures` docs, all with the right shape, read back
+directly from Firestore.
+
+Provider history: API-Football was the original choice (§ this doc's earlier
+revisions), but its Free plan turned out to hard-block every season outside
+2022–2024 — confirmed live against Mert's key, not a rate limit, a wall.
+Pivoted to football-data.org the same session; its Free tier carries UEFA
+Champions League "free forever," including the live 2026-27 season, confirmed
+against Mert's key with real fixtures and the correct 36-team single-table
+league-phase format (`stage: LEAGUE_STAGE`, `type: TOTAL`) rather than the old
+group-stage shape.
+
+**What Free tier does and doesn't give you:** fixtures, standings, and scores
+(delayed by an unspecified amount) — yes. Lineups, goal scorers, cards, and
+squads — no, on any plan below paid. Mert's call, 2026-09-07: accept the Free
+tier's limits rather than pay for more; "it is what it is." This caps what the
+incoming team-popup and stats-page redesigns (#XX, #YY below) can show —
+neither has been scoped yet (see §11 #19–21), precisely because this had to
+be settled first.
+
+**Polling cadence — live-aware, built 2026-09-07 for the live-match feature.**
+Originally a flat 10-minute interval (round 1: 90/10 matchday/quiet-day
+splits didn't make sense once football-data's Free tier turned out to cap at
+10 requests/**minute**, not per day). Once Mert wanted an actual live-match UI
+feature, that flat interval stopped being good enough — this is where
+`pollGate.js` came in. Both functions now run on a 2-minute schedule, but
+`gatedSync()` (index.js) decides on every tick whether to actually call
+football-data.org:
+
+- **Live window**: any fixture that kicked off within the last 3.5 hours
+  (2.5h estimated match length + 1h grace for late corrections) → poll.
+- **Sparse**: otherwise, only once it's been ≥5 hours since that sync type's
+  own last real sync → poll. Everything else is a cheap no-op (one
+  `getRecentFixtures` query, ≤20 docs).
+
+**Caught and fixed live, 2026-09-07:** the "last synced" state was originally
+one shared control doc (`fixturesSyncControl/state`) read by both functions.
+Manually triggering both close together revealed a race — whichever
+function's gate check ran first would write a fresh timestamp, and the
+other would then see that as "we just synced" and skip its own sync
+entirely, even though results and fixtures are two different football-data.org
+endpoints. Fixed by giving each sync type its own doc
+(`fixturesSyncControl/results`, `fixturesSyncControl/fixtures`) — verified
+live afterward: both wrote independent timestamps on the same tick.
+`pollGate.test.js` covers the decision logic; `syncControl.js` is the
+Firestore-touching part `pollGate.js` deliberately stays free of, kept
+untested directly since it's a thin wrapper.
+
+**Team-id mapping:** football-data.org's numeric team ids have no relationship
+to `src/predictions/teams.ts`'s slugs. `functions/fixtures/teamIdMap.js`
+hand-maps all 36, built against a live standings response on 2026-09-07 and
+covers exactly the 36 teams in `teams.ts` — asserted both directions by
+`teamIdMap.test.js`.
+
+**The dev panel fallback:** kept exactly as-is per Mert's decision, 2026-09-07
+("keep it, but make sure it doesn't mess about with anything") — its manual
+"mark match decided" flow still writes `results` and `devMatches` normally,
+completely untouched. Since results sync writes the same `results` collection
+the dev panel does, anything the dev panel writes there only survives until
+the next successful sync; that's intended for bridging a football-data.org
+outage, not for a correction meant to stick. `devMatches` and
+`src/devpanel/fixtures.ts`'s mock calendar themselves are never written or
+read by anything in `functions/fixtures` — Mert doesn't use the dev panel to
+flip matches in production and didn't want it touched at all, so rather than
+repoint it at real data, every production consumer was repointed at the new
+`fixtures` collection instead (see §4 `leaderboard/`), leaving the dev panel
+fully isolated for local testing.
+
+**Setup:** the football-data.org API token lives in a Firebase Functions v2
+secret (`FOOTBALL_DATA_TOKEN`, set via `firebase functions:secrets:set`).
+`firebase.json`'s `functions` key is an array of two codebases (`leaderboard`,
+`fixtures`). Deploy: `firebase deploy --only functions:fixtures`.
 
 ### `functions/stopbilling` — Cloud Run, `europe-west8`
 A budget killswitch. Subscribed to a Pub/Sub billing-alert topic; when reported
@@ -557,9 +726,13 @@ not yet been imported into `public/`**.
 
 - **Unit/component**: `npm test` (Vitest, jsdom, `test/setup.ts` polyfilling
   ResizeObserver, IntersectionObserver, matchMedia, `scrollIntoView`,
-  `createObjectURL` and `Image`). **132 test files** against 208 source files —
-  most modules have a sibling test, and the tests are frequently the clearest
-  statement of intended behaviour.
+  `createObjectURL` and `Image`). **132 files / 1052 tests, re-verified
+  2026-09-07** after the stats clear-out, TeamPopup shelving, and the
+  football-data.org fixture/results integration — includes
+  `functions/fixtures`'s own test files (Vitest picks up any `*.test.js`
+  outside `src/` too, same as `functions/leaderboard`'s). Most modules have a
+  sibling test, and the tests are frequently the clearest statement of
+  intended behaviour.
 - **Integration**: `npm run test:integration` runs
   `integration/leaderboardRecompute.itest.ts` against the Firestore emulator.
   The `.itest.ts` suffix keeps it out of the default suite. It asserts that a
@@ -657,6 +830,25 @@ That commit also records the deletion of the previous documentation tree
 removed from the working tree before the audit began. **`launch-prep`, cut from
 `main`, is the branch for the pre-launch work in §11.**
 
+**`league-phase-prep` merged into `main`, 2026-09-07** — same day as the
+manual flip to `leaguephase` — carrying everything this document's §4, §6,
+and §11 describe as done that day: the football-data.org pivot and real
+results/fixtures sync (`functions/fixtures`, fixing #14/#16), the shelving of
+`TeamPopup` and the clearing of Stats (#19–21), and the live-match feature
+(real-time tinting/score/reposition across the standings, upcoming-matches
+widgets, and MatchupPopup). `main` had not diverged from this branch's base,
+so the merge was a fast-forward:
+
+```
+git add -A
+git commit         # this session's work — see PROJECT.md §4/§6/§11 for what's in it
+git push origin league-phase-prep
+
+git checkout main
+git merge league-phase-prep
+git push origin main
+```
+
 ---
 
 ## 10. Conventions worth knowing
@@ -714,14 +906,14 @@ Until that branch lands, treat those as "in progress," not unowned.
 
 | # | Problem |
 |---|---|
-| 14 | **No way to enter real match results.** The dev panel is the only writer of `results`, and it writes synthetic 1-0/0-0 scorelines. Intended solution: a live API. **Pending** — Mert named this as the first thing in the incoming `league-phase-prep` branch (2026-09-07). |
-| 15 | **Production code depends on the dev panel.** `TeamPopup`, `MatchupPopup`, `ParticipantPopup`, `rankHistory` and `teamMatchHistory` import fixtures and `devMatches` from `src/devpanel/`, while `upcomingFixtures.ts` avoids that collection precisely because it is "dev-only and auth-gated". These cannot both be right. **Pending** — also named for the incoming `league-phase-prep` branch (2026-09-07). |
-| 16 | **Fixture list is the 2025-26 calendar with years shifted forward.** |
+| 14 | ~~**No way to enter real match results.**~~ **Done, deployed and verified live, 2026-09-07.** `functions/fixtures:syncFootballDataResults` syncs `results/{teamId}` from football-data.org every 10 minutes; see §6. Manually triggered once post-deploy and confirmed end-to-end: all 36 `results` docs written correctly, `functions/leaderboard`'s recompute trigger fired automatically 6 seconds later. |
+| 15 | ~~**Production code depends on the dev panel.**~~ `TeamPopup`, `MatchupPopup`, `ParticipantPopup`, `rankHistory` and `teamMatchHistory` import fixtures and `devMatches` from `src/devpanel/`, while `upcomingFixtures.ts` avoids that collection precisely because it is "dev-only and auth-gated". These cannot both be right. **Done for the live surfaces, 2026-09-07** — `MatchupPopup`, `rankHistory` (ParticipantPopup) and `upcomingFixtures.ts` now all read the real `fixtures` collection (§4, §6) instead. `teamMatchHistory` is untouched by design — its only consumer is the parked `TeamPopup` (#21), so it's dormant, not fixed; both resurface together whenever that popup is revived. |
+| 16 | ~~**Fixture list is the 2025-26 calendar with years shifted forward.**~~ **Done, 2026-09-07.** `functions/fixtures:syncFootballDataFixtures` syncs the real 144-match calendar into `fixtures/{id}` every 10 minutes; see §6. Every live consumer repointed at it (§4). The mock calendar (`src/devpanel/fixtures.ts`) still exists, untouched, feeding only the dev panel and the now-dormant `teamMatchHistory`/`TeamPopup` pair. |
 | 17 | **Rank-history chart may never show real data** — it replays `devMatches`, which only the dev panel writes, and no production history source exists or can exist. |
 | 18 | **No production tooling sets the tournament phase.** `set-dev-config.mjs` writes `devConfig`, which production never reads. The Sept 8 flip is currently a hand edit in the Firebase console. Left as-is by decision — reconfirmed 2026-09-07, unlike #14/#15/#23–26 this one is *not* part of the incoming branch: "a small thing, no tool needed." |
-| 19 | **Süper Lig "no team" answers render wrong on Stats** — signup stores `"Tutmuyorum"`, the abbreviation map only knows `"Yok"`. |
-| 20 | **Half the Stats page is fabricated** — three of seven widgets are invented footballers, and the UCL-team chart is hardcoded even though real answers exist and are simply never aggregated. |
-| 21 | **Team popup squads are randomly generated** from a seeded RNG; every team plays 4-2-3-1. |
+| 19 | ~~**Süper Lig "no team" answers render wrong on Stats**~~ — signup stores `"Tutmuyorum"`, the abbreviation map only knows `"Yok"`. **Moot, 2026-09-07** — the entire Stats page was cleared (§4 `stats/`), this widget no longer exists. |
+| 20 | ~~**Half the Stats page is fabricated**~~ — three of seven widgets are invented footballers, and the UCL-team chart is hardcoded even though real answers exist and are simply never aggregated. **Moot, 2026-09-07** — the whole page was cleared rather than fixed; nothing here survived to redesign. |
+| 21 | **Team popup squads are randomly generated** from a seeded RNG; every team plays 4-2-3-1. **Shelved, 2026-09-07** — `TeamPopup` (where this lives) no longer renders in production at all; see §4 `leaderboard/`. Not fixed, just parked: Mert plans to replace the generated squads with real ones via his own scraping automation later, not football-data.org. |
 | 22 | **Lobby caps unenforced on the started-phase home** — `HomeLandingLoggedInStarted` declares `canCreateLobby` but never reads it. Left as-is by decision. |
 
 ### Later
@@ -770,12 +962,19 @@ Things still unresolved after the questionnaire.
    code enforces the date itself. He's preparing that flip in a separate
    branch, expected within hours of the 2026-09-07 check-in.
 
-4. **How real results will arrive.** "A live API" — no provider, schedule or
-   ingestion path chosen.
+4. ~~**How real results will arrive.**~~ **Resolved 2026-09-07.**
+   football-data.org (pivoted from API-Football mid-session — its Free plan
+   turned out to hard-block every season outside 2022–2024), synced every 10
+   minutes by `functions/fixtures`. See §6.
 
-5. **Whether `devMatches` is meant to be production data.** Mert's own answer
-   was uncertain ("probably just for convenience until the league phase starts
-   proper"). The code contradicts itself on this point (#15).
+5. ~~**Whether `devMatches` is meant to be production data.**~~ **Resolved
+   2026-09-07, by explicit decision rather than by finding an answer:**
+   no — and it never will be. Mert: "I don't really give a shit about dev...
+   I will never use it to flip matches." Rather than migrate it, every
+   production consumer was repointed at the real `fixtures`/`results`
+   collections instead, leaving `devMatches` and the mock calendar purely a
+   local dev/test fixture (§4, §6). The contradiction in #15 is resolved the
+   same way.
 
 6. ~~**Whether the current build/publish step should be automated.**~~
    **Decided 2026-08-27 without him**, at his request — he had no view and did

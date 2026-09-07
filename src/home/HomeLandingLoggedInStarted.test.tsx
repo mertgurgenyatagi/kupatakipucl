@@ -62,7 +62,7 @@ vi.mock("../leaderboard/ParticipantPopup", () => ({
   ),
 }));
 
-vi.mock("../leaderboard/TeamPopup", () => ({
+vi.mock("../leaderboard/TeamPopupParked", () => ({
   TeamPopup: ({
     teamId,
     onSelectFixture,

@@ -1,9 +1,10 @@
 import { memo, useEffect, useMemo, useState } from "react";
 import { XIcon } from "lucide-react";
 import { TEAM_BY_ID } from "../predictions/teams";
-import { FIXTURES, Fixture } from "../devpanel/fixtures";
-import { MatchOutcome } from "../devpanel/standings";
-import { useDevMatches } from "../devpanel/useDevMatches";
+import { RealFixture } from "./realFixtureTypes";
+import { useFixtures } from "./useFixtures";
+import { isFixtureLive } from "./liveFixtures";
+import { LiveDot } from "./LiveDot";
 import { LeaderboardEntry } from "./leaderboardTypes";
 import { Player } from "../profile/usePlayers";
 import { buildPlayersByUid } from "../profile/playersByUid";
@@ -67,13 +68,6 @@ function Placeholder({ message }: { message: string }) {
   );
 }
 
-function goalsForOutcome(outcome: MatchOutcome): { homeGoals: number | null; awayGoals: number | null } {
-  if (outcome === "notplayed") return { homeGoals: null, awayGoals: null };
-  if (outcome === "homewin") return { homeGoals: 1, awayGoals: 0 };
-  if (outcome === "awaywin") return { homeGoals: 0, awayGoals: 1 };
-  return { homeGoals: 0, awayGoals: 0 };
-}
-
 function computeTeamAverage(teamId: string, entries: LeaderboardEntry[]): number | null {
   let sum = 0;
   let count = 0;
@@ -87,9 +81,12 @@ function computeTeamAverage(teamId: string, entries: LeaderboardEntry[]): number
   return count > 0 ? Math.round((sum / count) * 10) / 10 : null;
 }
 
-function MatchupCenter({ fixture, outcome }: { fixture: Fixture; outcome: MatchOutcome }) {
+function MatchupCenter({ fixture }: { fixture: RealFixture }) {
   const kickoff = new Date(fixture.kickoffUtc);
-  if (outcome === "notplayed") {
+  const { homeGoals, awayGoals } = fixture;
+  const live = isFixtureLive(fixture);
+
+  if (homeGoals === null || awayGoals === null) {
     return (
       <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-color_border1/50 bg-foreground/[0.04] px-5 py-2.5 shadow-sm">
         <span className="font-mono text-base sm:text-lg font-bold text-color_text uppercase tracking-wider tnum">
@@ -101,14 +98,26 @@ function MatchupCenter({ fixture, outcome }: { fixture: Fixture; outcome: MatchO
       </div>
     );
   }
-  const { homeGoals, awayGoals } = goalsForOutcome(outcome);
   return (
-    <div className="flex flex-col items-center justify-center gap-1 rounded-2xl border border-color_border1/50 bg-foreground/[0.04] px-6 py-2.5 shadow-sm">
-      <span className="font-mono text-3xl sm:text-4xl font-black tracking-tight text-color_text tnum">
+    <div
+      className={cn(
+        "relative flex flex-col items-center justify-center gap-1 rounded-2xl border px-6 py-2.5 shadow-sm",
+        live
+          ? "border-color_remove/40 bg-color_remove/[0.1]"
+          : "border-color_border1/50 bg-foreground/[0.04]"
+      )}
+    >
+      {live && <LiveDot className="absolute top-1.5 left-1/2 size-2 -translate-x-1/2" />}
+      <span
+        className={cn(
+          "font-mono text-3xl sm:text-4xl font-black tracking-tight tnum",
+          live ? "text-color_remove" : "text-color_text"
+        )}
+      >
         {homeGoals} - {awayGoals}
       </span>
       <span className="font-mono text-xs font-semibold text-color_textsecondary tnum">
-        {DATE_FMT.format(kickoff)}
+        {live ? "CANLI" : DATE_FMT.format(kickoff)}
       </span>
     </div>
   );
@@ -330,12 +339,10 @@ export const MatchupPopup = memo(function MatchupPopup({
     if (fixtureId) setLastFixtureId(fixtureId);
   }, [fixtureId]);
 
+  const { fixtures } = useFixtures();
   const displayedId = fixtureId ?? lastFixtureId;
-  const fixture = displayedId ? (FIXTURES.find((f) => f.id === displayedId) ?? null) : null;
-  const isKnockoutFixture = fixture !== null && !FIXTURES.includes(fixture);
-
-  const { outcomes } = useDevMatches();
-  const outcome: MatchOutcome = fixture ? (outcomes[fixture.id] ?? "notplayed") : "notplayed";
+  const fixture = displayedId ? (fixtures.find((f) => f.id === displayedId) ?? null) : null;
+  const isKnockoutFixture = fixture !== null && !fixtures.includes(fixture);
 
   const home = fixture ? TEAM_BY_ID[fixture.homeTeamId] : null;
   const away = fixture ? TEAM_BY_ID[fixture.awayTeamId] : null;
@@ -361,6 +368,7 @@ export const MatchupPopup = memo(function MatchupPopup({
   const awayResult = away ? results[away.id] : undefined;
 
   const { predictions: knockoutPredictions } = useAllKnockoutPredictions();
+  const live = fixture !== null && isFixtureLive(fixture);
 
   return (
     <ResponsiveDialog
@@ -383,7 +391,12 @@ export const MatchupPopup = memo(function MatchupPopup({
           </Frame>
         )}
         {fixture && home && away && popupImagesReady && (
-          <Frame className="h-[min(88vh,48rem)] max-h-[min(88vh,48rem)] w-full animate-cotton-rise border-color_border1/40 rounded-2xl shadow-2xl flex flex-col min-h-0">
+          <Frame
+            className={cn(
+              "h-[min(88vh,48rem)] max-h-[min(88vh,48rem)] w-full animate-cotton-rise rounded-2xl shadow-2xl flex flex-col min-h-0",
+              live ? "border-color_remove/40" : "border-color_border1/40"
+            )}
+          >
             <FrameHeader tone="navy">
               <FrameTitle className="text-navy-ink">{headerLabel}</FrameTitle>
               <DialogTitle className="sr-only">
@@ -428,7 +441,7 @@ export const MatchupPopup = memo(function MatchupPopup({
 
                 {/* Match Center */}
                 <div className="shrink-0 px-3">
-                  <MatchupCenter fixture={fixture} outcome={outcome} />
+                  <MatchupCenter fixture={fixture} />
                 </div>
 
                 {/* Away Team */}

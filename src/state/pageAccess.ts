@@ -26,6 +26,12 @@ const PAGE_ACCESS: Record<PageKey, VisibilityState[]> = {
   knockoutPredictions: statesFor(KNOCKOUT_PHASES, [true]),
   leaderboard: statesFor(STARTED_PHASES, [true]),
   forum: [...statesFor(ALL_PHASES, [true]), ...statesFor(STARTED_PHASES, [false])],
+  // Dropped from the nav 2026-09-07 (src/shell/navLinks.ts) when Mert shelved
+  // the stats redesign and cleared the page's content — same "allowed here,
+  // just not linked" treatment as knockoutPredictions above. The page itself
+  // renders the same placeholder regardless of state now, so this table only
+  // controls whether a direct /stats visit is possible at all, not what it
+  // shows.
   stats: statesFor(STARTED_PHASES, [true]),
   profile: statesFor(ALL_PHASES, [true]),
 };

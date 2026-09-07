@@ -19,7 +19,11 @@ const STATE_FIXTURES: { state: VisibilityState; user: { uid: string } | null; ph
   { state: "loggedin_knockout", user: { uid: "1" }, phase: "knockout" },
 ];
 
-const GATED_PAGES: PageKey[] = ["leaderboard", "forum", "stats"];
+// knockoutPredictions and stats are deliberately excluded: both are allowed
+// by pageAccess.ts in some states but intentionally not linked from the nav
+// (see pageAccess.ts's comments on each), so asserting nav/pageAccess parity
+// for them would fail by design rather than catch a real bug.
+const GATED_PAGES: PageKey[] = ["leaderboard", "forum"];
 
 vi.mock("../auth/AuthProvider", () => ({
   useAuth: () => mockUseAuth(),
@@ -39,6 +43,11 @@ vi.mock("../auth/LoginButton", () => ({
 
 vi.mock("../auth/LogoutButton", () => ({
   LogoutButton: () => <button>Sign out</button>,
+}));
+
+const mockUseFixtures = vi.fn(() => ({ fixtures: [], loading: false }));
+vi.mock("../leaderboard/useFixtures", () => ({
+  useFixtures: () => mockUseFixtures(),
 }));
 
 function renderShell() {
@@ -95,9 +104,12 @@ describe("AppShell nav gating", () => {
     for (const phase of ["leaguephase", "preknockout", "knockout"] as TournamentPhase[]) {
       mockUseTournamentPhase.mockReturnValue(phase);
       renderShell();
-      for (const label of ["Puan Durumu", "Forum", "İstatistikler", "Hakkında"]) {
+      for (const label of ["Puan Durumu", "Forum", "Hakkında"]) {
         expect(screen.getAllByText(label).length).toBeGreaterThan(0);
       }
+      // Dropped from the nav 2026-09-07 when the stats redesign was shelved
+      // (still reachable at /stats by direct URL — see pageAccess.ts).
+      expect(screen.queryByText("İstatistikler")).not.toBeInTheDocument();
       expect(screen.queryByText("Predictions")).not.toBeInTheDocument();
     }
   });

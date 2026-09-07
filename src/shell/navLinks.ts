@@ -27,11 +27,14 @@ const STARTED_LOGGEDOUT_LINKS: NavLink[] = [
   { path: "/forum", label: "Forum" },
   { path: "/about", label: "Hakkında" },
 ];
+// Stats dropped from nav 2026-09-07 — Mert shelved the redesign and cleared
+// the page's content (PROJECT.md §11 #19/#20). Still reachable at /stats by
+// direct URL (pageAccess.ts's "stats" entry is unchanged), same pattern
+// pageAccess.ts already used for knockoutPredictions: URL-only, not linked.
 const STARTED_LOGGEDIN_LINKS: NavLink[] = [
   { path: "/", label: "Ana Sayfa" },
   { path: "/leaderboard", label: "Puan Durumu" },
   { path: "/forum", label: "Forum" },
-  { path: "/stats", label: "İstatistikler" },
   { path: "/about", label: "Hakkında" },
 ];
 

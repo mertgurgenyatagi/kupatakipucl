@@ -41,6 +41,11 @@ vi.mock("./MobileChatDrawer", () => ({
     open ? <div data-testid="chat-drawer" /> : null,
 }));
 
+const mockUseFixtures = vi.fn(() => ({ fixtures: [], loading: false }));
+vi.mock("../leaderboard/useFixtures", () => ({
+  useFixtures: () => mockUseFixtures(),
+}));
+
 const STATE_FIXTURES: {
   state: VisibilityState;
   user: { uid: string } | null;
@@ -54,7 +59,10 @@ const STATE_FIXTURES: {
   { state: "loggedin_knockout", user: { uid: "1" }, phase: "knockout" },
 ];
 
-const GATED_PAGES: PageKey[] = ["leaderboard", "forum", "stats"];
+// stats excluded: allowed by pageAccess.ts in some states but deliberately
+// not linked from the nav since 2026-09-07 (see pageAccess.ts's comment) —
+// same reasoning AppShell.test.tsx's own GATED_PAGES uses.
+const GATED_PAGES: PageKey[] = ["leaderboard", "forum"];
 const PAGE_LABELS: Record<PageKey, string> = {
   leaderboard: "Puan Durumu",
   forum: "Forum",

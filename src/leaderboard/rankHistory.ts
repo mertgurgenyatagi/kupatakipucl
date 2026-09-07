@@ -1,8 +1,8 @@
-import { FIXTURES } from "../devpanel/fixtures";
-import { computeStandings, MatchOutcome } from "../devpanel/standings";
+import { computeStandingsFromMatches, MatchGoals } from "./standingsAccumulator";
 import { computeScore } from "./scoring";
 import { assignRanks } from "./ranking";
 import { LeaderboardEntry } from "./leaderboardTypes";
+import { RealFixture } from "./realFixtureTypes";
 
 export interface RankCheckpoint {
   /** The fixture whose outcome produced this checkpoint. */
@@ -14,36 +14,35 @@ export interface RankCheckpoint {
   rank: number;
 }
 
-const FIXTURES_BY_ORDER = [...FIXTURES].sort((a, b) => a.order - b.order);
-
 /**
  * Reconstructs a participant's rank after each individually decided match,
- * purely from real recorded outcomes — "increments of matches on the
- * timeline, not real time" (the original brief, PAGE_BRIEFING.txt — read
- * literally: matches, not matchdays). No separate history collection exists
- * (or can exist for real production data — results get hand-edited with no
- * code path to snapshot through, since results automation was explicitly
- * skipped); `outcomes` is whatever's currently in `devMatches`, replayed
- * match-by-match (in fixture order) through the same `computeStandings` the
- * live table itself uses. Stops at the first undecided fixture — the
- * sequential-decide rule in setMatchOutcome guarantees decided fixtures are
- * always a contiguous prefix by `order`, so this never produces a checkpoint
- * out of order.
+ * from the real football-data.org fixture calendar (functions/fixtures,
+ * fixtures/{id}) — real goals, not devpanel's synthetic 1-0/0-0 scorelines.
+ * Real-data equivalent of the dev panel's own history-by-replay approach:
+ * "increments of matches on the timeline, not real time" (the original
+ * brief, PAGE_BRIEFING.txt), reusing the exact same points/tie-break rules
+ * via standingsAccumulator.ts so this can never disagree with the live
+ * results table or the dev-only version.
+ *
+ * `fixtures` is assumed sorted by `order` (useFixtures.ts already sorts it)
+ * and stops at the first fixture without both goals recorded, on the
+ * assumption that finished matches form a contiguous prefix by kickoff time
+ * — true for a normal calendar, and not defended against a postponement
+ * finishing out of order. Revisit if that ever actually happens.
  */
 export function computeRankHistory(
   uid: string,
   entries: LeaderboardEntry[],
-  outcomes: Record<string, MatchOutcome>
+  fixtures: RealFixture[]
 ): RankCheckpoint[] {
   const checkpoints: RankCheckpoint[] = [];
-  const outcomesThrough: Record<string, MatchOutcome> = {};
+  const matchGoalsThrough: Record<string, MatchGoals | undefined> = {};
 
-  for (const fixture of FIXTURES_BY_ORDER) {
-    const outcome = outcomes[fixture.id] ?? "notplayed";
-    if (outcome === "notplayed") break;
-    outcomesThrough[fixture.id] = outcome;
+  for (const fixture of fixtures) {
+    if (fixture.homeGoals === null || fixture.awayGoals === null) break;
+    matchGoalsThrough[fixture.id] = { homeGoals: fixture.homeGoals, awayGoals: fixture.awayGoals };
 
-    const historicalResults = computeStandings(outcomesThrough);
+    const historicalResults = computeStandingsFromMatches(fixtures, matchGoalsThrough);
 
     const scored = entries
       .map((entry) => ({ ...entry, points: computeScore(entry.ranking, historicalResults) }))

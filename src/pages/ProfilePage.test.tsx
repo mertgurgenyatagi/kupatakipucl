@@ -2,8 +2,6 @@ import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { ProfilePage } from "./ProfilePage";
-import { TEAMS } from "../predictions/teams";
-import { FIXTURES } from "../devpanel/fixtures";
 
 const mockUseAuth = vi.fn();
 const mockUseVisibilityState = vi.fn();
@@ -306,7 +304,13 @@ describe("ProfilePage", () => {
     expect(screen.queryByText("Düzenle")).not.toBeInTheDocument();
   });
 
-  it("opens that team's popup when a ranked row is clicked", async () => {
+  // TeamPopup.tsx was shelved 2026-09-07 (PROJECT.md §11) — every real call
+  // site, including this page, now renders TeamPopupParked.tsx instead. The
+  // real dossier's "takım dosyası" content and its match-history-to-
+  // MatchupPopup navigation are unreachable in the shipped app until Mert
+  // revives TeamPopup.tsx, so those two behaviors are no longer tested here.
+  // TeamPopup.test.tsx still covers the preserved implementation directly.
+  it("opens the parked team popup when a ranked row is clicked", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     mockUsePrediction.mockReturnValue({
       prediction: { ranking: ["arsenal"], submittedAt: 1, updatedAt: 1 },
@@ -314,34 +318,7 @@ describe("ProfilePage", () => {
     });
     await renderPage();
     fireEvent.click(screen.getByText("Arsenal"));
-    expect(await screen.findByText(/takım dosyası/)).toBeInTheDocument();
-  });
-
-  it("opens the Matchup Popup when a match row is clicked inside TeamPopup", async () => {
-    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
-    mockUseTournamentPhase.mockReturnValue("leaguephase");
-    const fixture = FIXTURES[0];
-    const homeTeam = TEAMS.find((t) => t.id === fixture.homeTeamId)!;
-    const awayTeam = TEAMS.find((t) => t.id === fixture.awayTeamId)!;
-    mockUsePrediction.mockReturnValue({
-      prediction: { ranking: [fixture.homeTeamId, fixture.awayTeamId], submittedAt: 1, updatedAt: 1 },
-      loading: false,
-    });
-    renderPage();
-
-    fireEvent.click(await screen.findByText(homeTeam.name));
-    // TeamPopup is now open on the home team; its match-history row for
-    // this fixture is the row itself, not the nested opponent-team button.
-    const opponentTeamButton = (await screen.findByText(awayTeam.shortName)).closest("button")!;
-    const row = opponentTeamButton.closest('[role="button"]')!;
-    fireEvent.click(row);
-
-    // Dialog count alone can't tell TeamPopup and MatchupPopup apart (both
-    // would leave exactly one dialog open — TeamPopup's own if the wiring
-    // were broken and the click were a no-op, MatchupPopup's if it worked).
-    // Assert on MatchupPopup's own matchday header text instead, which only
-    // it renders, to prove it's specifically the popup that opened.
-    expect(await screen.findByText(`${fixture.matchday}. HAFTA`)).toBeInTheDocument();
+    expect(await screen.findByText("Bu bölüm şu anda hazır değil.")).toBeInTheDocument();
   });
 
   it("shows the average position everyone predicted for each team, once the tournament has started", async () => {

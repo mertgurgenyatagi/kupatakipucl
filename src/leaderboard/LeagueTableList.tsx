@@ -1,7 +1,12 @@
+import { useMemo } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { TEAMS } from "../predictions/teams";
 import { TeamResult } from "./teamResultTypes";
 import { qualificationBand } from "./qualification";
 import { TeamCrest } from "./TeamCrest";
+import { useFixtures } from "./useFixtures";
+import { getLiveTeamIds } from "./liveFixtures";
+import { LiveDot } from "./LiveDot";
 import { Frame, FrameBody } from "@/components/ui/frame";
 import { cn } from "@/lib/utils";
 
@@ -25,9 +30,19 @@ interface LeagueTableListProps {
  * standings sitting alongside it in the same page) rather than TeamTable's
  * denser rows — see the 2026-08-02 design spec's "large items, as tall as
  * participants" note.
+ *
+ * A team in a live match gets a red-tinted row and a breathing dot in place
+ * of its qualification-band marker (2026-09-07, the live-match feature).
+ * Repositioning when `results` updates animates via `layout` — a real `<li>`
+ * list, unlike TeamTable's CSS-Grid-as-table hack (`display:contents` rows
+ * have no box for `layout` to animate), so this is where that touch was
+ * actually cheap to add.
  */
 export function LeagueTableList({ results, onSelectTeam }: LeagueTableListProps) {
   const hasResults = Object.keys(results).length > 0;
+  const { fixtures } = useFixtures();
+  const liveTeamIds = useMemo(() => getLiveTeamIds(fixtures), [fixtures]);
+  const reduceMotion = useReducedMotion();
 
   const ordered = hasResults
     ? [...TEAMS].sort((a, b) => {
@@ -62,18 +77,28 @@ export function LeagueTableList({ results, onSelectTeam }: LeagueTableListProps)
             {ordered.map((team) => {
               const result = results[team.id];
               const band = result ? qualificationBand(result.position) : null;
+              const live = liveTeamIds.has(team.id);
               return (
-                <li
+                <motion.li
                   key={team.id}
+                  layout={!reduceMotion}
+                  transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
                   onClick={() => onSelectTeam?.(team.id)}
                   className={cn(
                     "flex h-12 cursor-pointer items-center gap-2 border-b border-color_border1/50 px-2 transition-colors duration-150 ease-[var(--ease-cotton)] hover:bg-color_hoverfill",
-                    !result && "opacity-55"
+                    !result && "opacity-55",
+                    live && "bg-color_remove/[0.1]"
                   )}
                 >
                   <span aria-hidden className="flex w-1 shrink-0 justify-center">
-                    {band === "direct" && <span className="h-4 w-1 rounded-r-full bg-color_accent" />}
-                    {band === "playoff" && <span className="h-4 w-1 rounded-r-full bg-color_qualification" />}
+                    {live ? (
+                      <LiveDot className="size-1.5" />
+                    ) : (
+                      <>
+                        {band === "direct" && <span className="h-4 w-1 rounded-r-full bg-color_accent" />}
+                        {band === "playoff" && <span className="h-4 w-1 rounded-r-full bg-color_qualification" />}
+                      </>
+                    )}
                   </span>
                   <span className="w-6 shrink-0 font-mono text-xs tracking-tight text-color_textsecondary tnum">
                     {result ? String(result.position) : "--"}
@@ -100,7 +125,7 @@ export function LeagueTableList({ results, onSelectTeam }: LeagueTableListProps)
                   <span className="w-8 shrink-0 text-right font-mono text-xs font-bold tracking-tight text-color_text tnum">
                     {result?.points ?? "-"}
                   </span>
-                </li>
+                </motion.li>
               );
             })}
           </ul>

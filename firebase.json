@@ -9,10 +9,16 @@
   "database": {
     "rules": "database.rules.json"
   },
-  "functions": {
-    "source": "functions/leaderboard",
-    "codebase": "leaderboard"
-  },
+  "functions": [
+    {
+      "source": "functions/leaderboard",
+      "codebase": "leaderboard"
+    },
+    {
+      "source": "functions/fixtures",
+      "codebase": "fixtures"
+    }
+  ],
   "emulators": {
     "firestore": { "port": 8080 },
     "functions": { "port": 5001 },

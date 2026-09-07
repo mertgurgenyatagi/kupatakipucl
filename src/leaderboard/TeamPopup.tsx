@@ -1,3 +1,10 @@
+// PARKED 2026-09-07: every real call site now renders TeamPopupParked.tsx
+// instead of this component — see that file's header comment. Mert shelved
+// the team-popup redesign to focus on the league phase launch, but wants this
+// implementation kept intact rather than deleted: he plans to bring its
+// squad/dossier data to life later via scraping automation instead of
+// football-data.org (whose Free tier doesn't carry squads/lineups anyway).
+// Do not delete this file or "clean up" its now-unused exports.
 import {
   memo,
   useEffect,
@@ -45,7 +52,7 @@ import { cn } from "@/lib/utils";
 // backstop, not the expected common case.
 const TEAM_CREST_URLS = TEAMS.map((team) => teamCrestSrc(team.id));
 
-interface TeamPopupProps {
+export interface TeamPopupProps {
   /** The clicked team's id, or null when closed. */
   teamId: string | null;
   /** Every participant — needed to work out who predicted this team where,

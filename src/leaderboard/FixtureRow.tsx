@@ -1,8 +1,10 @@
 import { type KeyboardEvent } from "react";
 import { TEAM_BY_ID } from "../predictions/teams";
-import { Fixture } from "../devpanel/fixtures";
+import { RealFixture } from "./realFixtureTypes";
 import { TeamResult } from "./teamResultTypes";
 import { TeamCrest } from "./TeamCrest";
+import { isFixtureLive } from "./liveFixtures";
+import { LiveDot } from "./LiveDot";
 import { cn } from "@/lib/utils";
 
 const DATE_FMT = new Intl.DateTimeFormat("tr-TR", {
@@ -35,7 +37,7 @@ export function FixtureRow({
   onSelectTeam,
   onSelectFixture,
 }: {
-  fixture: Fixture;
+  fixture: RealFixture;
   results: Record<string, TeamResult>;
   /** Home's UpcomingMatchesPreview lays crest+code side by side instead of
    *  stacked (narrower per row), everything else full-sized same as the
@@ -52,6 +54,7 @@ export function FixtureRow({
   const home = TEAM_BY_ID[fixture.homeTeamId];
   const away = TEAM_BY_ID[fixture.awayTeamId];
   const kickoff = new Date(fixture.kickoffUtc);
+  const live = isFixtureLive(fixture);
 
   function handleMatchClick() {
     onSelectFixture?.(fixture.id);
@@ -72,9 +75,13 @@ export function FixtureRow({
         tabIndex={0}
         onClick={handleMatchClick}
         onKeyDown={handleMatchKeyDown}
-        className="grid h-full w-full cursor-pointer items-center gap-1.5 rounded-lg px-2 transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-color_hoverfill focus-visible:bg-color_hoverfill"
+        className={cn(
+          "relative grid h-full w-full cursor-pointer items-center gap-1.5 rounded-lg px-2 transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-color_hoverfill focus-visible:bg-color_hoverfill",
+          live && "bg-color_remove/[0.08] hover:bg-color_remove/[0.14]"
+        )}
         style={{ gridTemplateColumns: ROW_GRID_COLUMNS }}
       >
+        {live && <LiveDot className="absolute top-0.5 left-1/2 size-1.5 -translate-x-1/2" />}
         <span className="font-mono text-xs text-color_textsecondary tnum">{place(results, home.id)}</span>
         <button
           type="button"
@@ -94,8 +101,16 @@ export function FixtureRow({
         </button>
 
         <span className="flex flex-col items-center justify-center leading-tight">
-          <span className="font-mono text-sm text-color_text tnum">{DATE_FMT.format(kickoff)}</span>
-          <span className="font-mono text-sm text-color_textsecondary tnum">{TIME_FMT.format(kickoff)}</span>
+          {live ? (
+            <span className="font-mono text-base font-bold text-color_remove tnum">
+              {fixture.homeGoals} - {fixture.awayGoals}
+            </span>
+          ) : (
+            <>
+              <span className="font-mono text-sm text-color_text tnum">{DATE_FMT.format(kickoff)}</span>
+              <span className="font-mono text-sm text-color_textsecondary tnum">{TIME_FMT.format(kickoff)}</span>
+            </>
+          )}
         </span>
 
         <button

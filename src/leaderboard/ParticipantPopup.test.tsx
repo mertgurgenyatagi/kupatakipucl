@@ -5,12 +5,20 @@ const mockGetDocs = vi.fn();
 const mockGetDoc = vi.fn();
 const mockCollection = vi.fn((_db: unknown, name: string) => ({ name }));
 const mockDoc = vi.fn((_db: unknown, collection: string, id: string) => ({ collection, id }));
+const mockUnsubscribe = vi.fn();
 
 vi.mock("firebase/firestore", () => ({
   collection: (...args: unknown[]) => mockCollection(...(args as [unknown, string])),
   getDocs: (...args: unknown[]) => mockGetDocs(...args),
   doc: (...args: unknown[]) => mockDoc(...(args as [unknown, string, string])),
   getDoc: (...args: unknown[]) => mockGetDoc(...args),
+  // useFixtures.ts uses onSnapshot, not getDocs — reuse whatever mockGetDocs
+  // is configured to resolve with for a given test, so existing
+  // mockGetDocs.mockResolvedValue(...) setups drive both.
+  onSnapshot: (collectionRef: unknown, onNext: (snapshot: unknown) => void) => {
+    mockGetDocs(collectionRef).then(onNext);
+    return mockUnsubscribe;
+  },
 }));
 
 vi.mock("../firebase", () => ({ db: {} }));
@@ -50,7 +58,7 @@ describe("ParticipantPopup", () => {
   beforeEach(() => {
     mockGetDocs.mockReset();
     mockGetDoc.mockReset();
-    mockGetDocs.mockResolvedValue({ docs: [] }); // devMatches: nothing decided by default
+    mockGetDocs.mockResolvedValue({ docs: [] }); // fixtures: none decided by default
     mockGetDoc.mockResolvedValue({ exists: () => false, data: () => undefined }); // no survey by default
   });
 

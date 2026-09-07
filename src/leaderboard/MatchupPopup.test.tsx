@@ -3,23 +3,48 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockGetDocs = vi.fn();
 const mockCollection = vi.fn((_db: unknown, name: string) => ({ name }));
+const mockUnsubscribe = vi.fn();
 
 vi.mock("firebase/firestore", () => ({
   collection: (...args: unknown[]) => mockCollection(...(args as [unknown, string])),
   getDocs: (...args: unknown[]) => mockGetDocs(...args),
+  // useFixtures.ts uses onSnapshot, not getDocs — reuse whatever mockGetDocs
+  // is configured to resolve with for a given test, so existing
+  // mockGetDocs.mockResolvedValue(...) setups drive both.
+  onSnapshot: (collectionRef: unknown, onNext: (snapshot: unknown) => void) => {
+    mockGetDocs(collectionRef).then(onNext);
+    return mockUnsubscribe;
+  },
 }));
 
 vi.mock("../firebase", () => ({ db: {} }));
 
 import { MatchupPopup } from "./MatchupPopup";
-import { FIXTURES } from "../devpanel/fixtures";
-import { TEAM_BY_ID } from "../predictions/teams";
+import { TEAM_BY_ID, TEAMS } from "../predictions/teams";
 import { LeaderboardEntry } from "./leaderboardTypes";
 import { TeamResult } from "./teamResultTypes";
+import { RealFixture } from "./realFixtureTypes";
 
-const FIXTURE = FIXTURES[0];
+const FIXTURE: RealFixture = {
+  id: "575323",
+  matchday: 1,
+  order: 1,
+  homeTeamId: TEAMS[0].id,
+  awayTeamId: TEAMS[1].id,
+  kickoffUtc: "2026-09-08T16:45:00.000Z",
+  status: "TIMED",
+  homeGoals: null,
+  awayGoals: null,
+};
 const HOME = TEAM_BY_ID[FIXTURE.homeTeamId];
 const AWAY = TEAM_BY_ID[FIXTURE.awayTeamId];
+
+/** fixtures/{id} doc shape, as functions/fixtures writes it (no `id` field
+ *  in the document body — that's the doc id itself, see useFixtures.ts). */
+function fixtureDoc(fixture: RealFixture) {
+  const { id, ...fields } = fixture;
+  return { id, data: () => fields };
+}
 
 const entryA: LeaderboardEntry = {
   uid: "uid1",
@@ -47,7 +72,7 @@ const results: Record<string, TeamResult> = {
 describe("MatchupPopup", () => {
   beforeEach(() => {
     mockGetDocs.mockReset();
-    mockGetDocs.mockResolvedValue({ docs: [] }); // devMatches: nothing decided by default
+    mockGetDocs.mockResolvedValue({ docs: [fixtureDoc(FIXTURE)] }); // not yet played by default
   });
 
   it("renders nothing when there is no selected fixture", async () => {
@@ -172,7 +197,7 @@ describe("MatchupPopup", () => {
 
   it("shows the final score instead of kickoff time once the fixture outcome is decided", async () => {
     mockGetDocs.mockResolvedValue({
-      docs: [{ id: FIXTURE.id, data: () => ({ outcome: "homewin" }) }],
+      docs: [fixtureDoc({ ...FIXTURE, status: "FINISHED", homeGoals: 1, awayGoals: 0 })],
     });
     render(
       <MatchupPopup
@@ -190,7 +215,28 @@ describe("MatchupPopup", () => {
     expect(await screen.findByText("1 - 0")).toBeInTheDocument();
   });
 
-  // A fixture resolved via FIXTURES.find(...) — which `fixture` always is,
+  it("shows CANLI and the live score while the fixture is in play, distinct from a finished one", async () => {
+    mockGetDocs.mockResolvedValue({
+      docs: [fixtureDoc({ ...FIXTURE, status: "IN_PLAY", homeGoals: 1, awayGoals: 1 })],
+    });
+    render(
+      <MatchupPopup
+        fixtureId={FIXTURE.id}
+        onOpenChange={() => {}}
+        phase="leaguephase"
+        tournamentStarted={true}
+        entries={[]}
+        players={PLAYERS}
+        results={{}}
+        onSelectTeam={() => {}}
+        onSelectParticipant={() => {}}
+      />
+    );
+    expect(await screen.findByText("1 - 1")).toBeInTheDocument();
+    expect(screen.getByText("CANLI")).toBeInTheDocument();
+  });
+
+  // A fixture resolved via fixtures.find(...) — which `fixture` always is,
   // see MatchupPopup.tsx — is always a real league-phase fixture, no matter
   // what the ambient global `phase` prop currently is (an admin can flip
   // the app-wide phase to "knockout" while historical league fixtures are

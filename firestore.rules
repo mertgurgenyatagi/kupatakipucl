@@ -178,6 +178,27 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Real fixture calendar + per-match scores, synced from football-data.org
+    // by functions/fixtures on a live-aware schedule — aggressively during a
+    // match, sparsely otherwise (2026-09-07, PROJECT.md §11 problem 16 and
+    // the live-match feature). Public read for the same reason as results:
+    // Home's upcoming-matches widgets need to work for a logged-out visitor
+    // too (upcomingFixtures.ts). Admin-only write, same reasoning as results
+    // above — only the Cloud Function (Admin SDK, bypasses this rule) writes
+    // it in practice.
+    match /fixtures/{fixtureId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // functions/fixtures' own poll-cadence bookkeeping (pollGate.js /
+    // syncControl.js) — "when did we last actually call football-data.org".
+    // Purely internal, never read by any client; admin-only both ways, same
+    // as devConfig below.
+    match /fixturesSyncControl/{docId} {
+      allow read, write: if isAdmin();
+    }
+
     // Precomputed leaderboard (functions/leaderboard, scaling-audit No.
     // 08/09, 2026-07-31): recomputed by a Cloud Function on every
     // predictions/results write, so clients read one doc instead of the

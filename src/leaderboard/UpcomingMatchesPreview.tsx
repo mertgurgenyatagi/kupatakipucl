@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { getUpcomingFixtures } from "./upcomingFixtures";
-import { resolveNow } from "../tournament/now";
+import { useFixtures } from "./useFixtures";
 import { TeamResult } from "./teamResultTypes";
 import { FixtureRow } from "./FixtureRow";
 
@@ -23,7 +23,8 @@ export function UpcomingMatchesPreview({
   onSelectTeam?: (teamId: string) => void;
   onSelectFixture?: (fixtureId: string) => void;
 }) {
-  const upcoming = useMemo(() => getUpcomingFixtures(resolveNow()).slice(0, PREVIEW_COUNT), []);
+  const { fixtures } = useFixtures();
+  const upcoming = useMemo(() => getUpcomingFixtures(fixtures).slice(0, PREVIEW_COUNT), [fixtures]);
 
   if (upcoming.length === 0) {
     return (

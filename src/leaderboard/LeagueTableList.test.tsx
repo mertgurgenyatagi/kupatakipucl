@@ -2,6 +2,15 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { LeagueTableList } from "./LeagueTableList";
 import { TEAMS } from "../predictions/teams";
+import { RealFixture } from "./realFixtureTypes";
+
+const mockUseFixtures = vi.fn<() => { fixtures: RealFixture[]; loading: boolean }>(() => ({
+  fixtures: [],
+  loading: false,
+}));
+vi.mock("./useFixtures", () => ({
+  useFixtures: () => mockUseFixtures(),
+}));
 
 describe("LeagueTableList", () => {
   it("renders all 36 teams as single rows with dashes when no results exist", () => {
@@ -48,5 +57,35 @@ describe("LeagueTableList", () => {
     render(<LeagueTableList results={{}} onSelectTeam={onSelectTeam} />);
     fireEvent.click(screen.getByText(TEAMS[0].shortName));
     expect(onSelectTeam).toHaveBeenCalledWith(TEAMS[0].id);
+  });
+
+  it("shows a breathing live dot and red tint instead of the qualification tick for a team in a live match", () => {
+    mockUseFixtures.mockReturnValueOnce({
+      fixtures: [
+        {
+          id: "f1",
+          matchday: 1,
+          order: 1,
+          homeTeamId: TEAMS[0].id,
+          awayTeamId: TEAMS[1].id,
+          kickoffUtc: "2026-09-08T16:45:00Z",
+          status: "IN_PLAY",
+          homeGoals: 1,
+          awayGoals: 0,
+        },
+      ],
+      loading: false,
+    });
+    render(
+      <LeagueTableList
+        results={{
+          [TEAMS[0].id]: { position: 1, points: 3, goalDifference: 1, goalsFor: 1, goalsAgainst: 0 },
+        }}
+      />
+    );
+    const rows = screen.getAllByRole("listitem");
+    expect(rows[0].querySelector(".bg-color_remove")).toBeInTheDocument();
+    expect(rows[0].querySelector(".bg-color_accent")).not.toBeInTheDocument();
+    expect(rows[0].className).toMatch(/color_remove/);
   });
 });

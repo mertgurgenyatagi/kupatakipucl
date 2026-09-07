@@ -1,10 +1,56 @@
 import { describe, it, expect } from "vitest";
 import { computeRankHistory } from "./rankHistory";
-import { FIXTURES } from "../devpanel/fixtures";
-import { computeStandings, MatchOutcome } from "../devpanel/standings";
+import { computeStandingsFromMatches } from "./standingsAccumulator";
 import { LeaderboardEntry } from "./leaderboardTypes";
+import { RealFixture } from "./realFixtureTypes";
+import { TEAMS } from "../predictions/teams";
 
-const FIXTURES_BY_ORDER = [...FIXTURES].sort((a, b) => a.order - b.order);
+/** 3 disjoint fixtures (no team repeats) so each one's outcome is independent
+ *  — mirrors devpanel/standings.test.ts's own disjointFixtures helper. */
+const FIXTURES: RealFixture[] = [
+  {
+    id: "f1",
+    matchday: 1,
+    order: 1,
+    homeTeamId: TEAMS[0].id,
+    awayTeamId: TEAMS[1].id,
+    kickoffUtc: "2026-09-08T16:45:00Z",
+    status: "TIMED",
+    homeGoals: null,
+    awayGoals: null,
+  },
+  {
+    id: "f2",
+    matchday: 1,
+    order: 2,
+    homeTeamId: TEAMS[2].id,
+    awayTeamId: TEAMS[3].id,
+    kickoffUtc: "2026-09-08T19:00:00Z",
+    status: "TIMED",
+    homeGoals: null,
+    awayGoals: null,
+  },
+  {
+    id: "f3",
+    matchday: 2,
+    order: 3,
+    homeTeamId: TEAMS[4].id,
+    awayTeamId: TEAMS[5].id,
+    kickoffUtc: "2026-09-30T16:45:00Z",
+    status: "TIMED",
+    homeGoals: null,
+    awayGoals: null,
+  },
+];
+
+function decided(id: string, homeGoals: number, awayGoals: number): RealFixture {
+  const fixture = FIXTURES.find((f) => f.id === id)!;
+  return { ...fixture, status: "FINISHED", homeGoals, awayGoals };
+}
+
+function withFixture(updated: RealFixture): RealFixture[] {
+  return FIXTURES.map((f) => (f.id === updated.id ? updated : f));
+}
 
 function entry(uid: string, ranking: string[]): LeaderboardEntry {
   return { uid, firstName: uid, photoURL: "", points: 0, ranking };
@@ -13,48 +59,41 @@ function entry(uid: string, ranking: string[]): LeaderboardEntry {
 describe("computeRankHistory", () => {
   it("returns no checkpoints when nothing is decided", () => {
     const entries = [entry("a", []), entry("b", [])];
-    expect(computeRankHistory("a", entries, {})).toEqual([]);
+    expect(computeRankHistory("a", entries, FIXTURES)).toEqual([]);
   });
 
   it("produces one checkpoint once a single match is decided", () => {
-    const outcomes: Record<string, MatchOutcome> = {
-      [FIXTURES_BY_ORDER[0].id]: "homewin",
-    };
+    const fixtures = withFixture(decided("f1", 2, 0));
     const entries = [entry("a", []), entry("b", [])];
-    const history = computeRankHistory("a", entries, outcomes);
+    const history = computeRankHistory("a", entries, fixtures);
     expect(history).toHaveLength(1);
-    expect(history[0].fixtureId).toBe(FIXTURES_BY_ORDER[0].id);
-    expect(history[0].matchday).toBe(FIXTURES_BY_ORDER[0].matchday);
+    expect(history[0].fixtureId).toBe("f1");
+    expect(history[0].matchday).toBe(1);
   });
 
   it("stops at the first undecided match, even if a later one is decided", () => {
-    const outcomes: Record<string, MatchOutcome> = {
-      [FIXTURES_BY_ORDER[2].id]: "homewin",
-    };
+    const fixtures = withFixture(decided("f2", 1, 1));
     const entries = [entry("a", []), entry("b", [])];
-    expect(computeRankHistory("a", entries, outcomes)).toEqual([]);
+    expect(computeRankHistory("a", entries, fixtures)).toEqual([]);
   });
 
   it("produces one checkpoint per decided match, in fixture order", () => {
-    const outcomes: Record<string, MatchOutcome> = {};
-    const first3 = FIXTURES_BY_ORDER.slice(0, 3);
-    first3.forEach((f) => (outcomes[f.id] = "homewin"));
+    let fixtures = withFixture(decided("f1", 1, 0));
+    fixtures = fixtures.map((f) => (f.id === "f2" ? decided("f2", 2, 1) : f));
     const entries = [entry("a", []), entry("b", [])];
-    const history = computeRankHistory("a", entries, outcomes);
-    expect(history.map((c) => c.fixtureId)).toEqual(first3.map((f) => f.id));
+    const history = computeRankHistory("a", entries, fixtures);
+    expect(history.map((c) => c.fixtureId)).toEqual(["f1", "f2"]);
   });
 
   it("ranks a participant who predicted the actual leader after match 1 ahead of one who predicted the actual last-place team", () => {
-    const outcomes: Record<string, MatchOutcome> = {
-      [FIXTURES_BY_ORDER[0].id]: "homewin",
-    };
-    const results = computeStandings(outcomes);
+    const fixtures = withFixture(decided("f1", 3, 0));
+    const results = computeStandingsFromMatches(fixtures, { f1: { homeGoals: 3, awayGoals: 0 } });
     const leaderId = Object.keys(results).find((id) => results[id].position === 1)!;
     const lastId = Object.keys(results).find((id) => results[id].position === 36)!;
 
     const entries = [entry("good", [leaderId]), entry("bad", [lastId])];
-    const goodHistory = computeRankHistory("good", entries, outcomes);
-    const badHistory = computeRankHistory("bad", entries, outcomes);
+    const goodHistory = computeRankHistory("good", entries, fixtures);
+    const badHistory = computeRankHistory("bad", entries, fixtures);
     expect(goodHistory[0].rank).toBeLessThan(badHistory[0].rank);
   });
 });

@@ -1,5 +1,5 @@
 import { Share2 } from "lucide-react";
-import { ReactNode } from "react";
+import { ReactNode, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { useAuth } from "../auth/AuthProvider";
@@ -8,6 +8,9 @@ import { getVisibilityState } from "../state/visibilityState";
 import { useProfile } from "../profile/useProfile";
 import { LoginButton } from "../auth/LoginButton";
 import { LogoutButton } from "../auth/LogoutButton";
+import { useFixtures } from "../leaderboard/useFixtures";
+import { hasAnyLiveFixture } from "../leaderboard/liveFixtures";
+import { LiveDot } from "../leaderboard/LiveDot";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/lib/useIsMobile";
@@ -33,6 +36,8 @@ function DesktopShell({ children }: { children: ReactNode }) {
   const state = getVisibilityState(Boolean(user), phase);
   const links = NAV_LINKS[state];
   const { profile } = useProfile(user?.uid ?? null);
+  const { fixtures } = useFixtures();
+  const anyLive = useMemo(() => hasAnyLiveFixture(fixtures), [fixtures]);
 
   return (
     <div className="flex min-h-dvh cursor-default flex-col bg-background lg:h-dvh lg:min-h-0 lg:overflow-hidden">
@@ -99,6 +104,13 @@ function DesktopShell({ children }: { children: ReactNode }) {
                   )}
                 >
                   {link.label}
+                  {/* Something's live right now — a small ambient signal on
+                      the standings link specifically, since that's where
+                      the live tinting/reposition actually lives (2026-09-07,
+                      the live-match feature). */}
+                  {link.path === "/leaderboard" && anyLive && (
+                    <LiveDot className="absolute top-0.5 right-0.5 size-1.5" />
+                  )}
                   <span
                     aria-hidden
                     className={cn(

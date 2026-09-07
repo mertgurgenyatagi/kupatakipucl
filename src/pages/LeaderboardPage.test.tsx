@@ -41,6 +41,25 @@ vi.mock("../tournament/useTournamentPhase", () => ({
   useTournamentPhase: () => mockUseTournamentPhase(),
 }));
 
+vi.mock("../leaderboard/useFixtures", () => ({
+  useFixtures: () => ({
+    fixtures: [
+      {
+        id: "f1",
+        matchday: 1,
+        order: 1,
+        homeTeamId: "arsenal",
+        awayTeamId: "barcelona",
+        kickoffUtc: "2026-09-08T16:45:00.000Z",
+        status: "TIMED",
+        homeGoals: null,
+        awayGoals: null,
+      },
+    ],
+    loading: false,
+  }),
+}));
+
 const PLAYERS = [{ uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", createdAt: 1 }];
 
 describe("LeaderboardPage", () => {

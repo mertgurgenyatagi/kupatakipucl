@@ -8,7 +8,7 @@ import { RecentPostsPreview, ForumPreviewFooter } from "../forum/RecentPostsPrev
 import { LeaderboardTable } from "../leaderboard/LeaderboardTable";
 import { HomeHero } from "./HomeHero";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
-import { TeamPopup } from "../leaderboard/TeamPopup";
+import { TeamPopup } from "../leaderboard/TeamPopupParked";
 import { MatchupPopup } from "../leaderboard/MatchupPopup";
 import { HomeBentoSkeleton } from "./HomeSkeletons";
 import { useImagePreload } from "@/lib/useImagePreload";

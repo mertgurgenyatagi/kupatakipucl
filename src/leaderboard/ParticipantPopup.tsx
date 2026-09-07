@@ -9,7 +9,7 @@ import { TeamResult } from "./teamResultTypes";
 import { qualificationBand } from "./qualification";
 import { isPickCorrect } from "./scoring";
 import { computeRankHistory, RankCheckpoint } from "./rankHistory";
-import { useDevMatches } from "../devpanel/useDevMatches";
+import { useFixtures } from "./useFixtures";
 import { useSurveyResponse } from "../predictions/useSurveyResponse";
 import { TEAM_BY_ID } from "../predictions/teams";
 import { MESSI_RONALDO_LABEL, DEVICE_LABEL, ensurePeriod, uclTeamLabel } from "../predictions/surveyLabels";
@@ -227,11 +227,12 @@ function RankHistoryChart({
  * seeded dummy participant, for instance) gets its own honest, distinct
  * message instead of looking like a bug.
  *
- * Rank-over-time has no real historical-snapshot data source in production
- * (results get hand-edited with no code path to snapshot through — SPEC.md
- * §7 skipped automation entirely), so it's honestly reconstructed from
- * whatever `devMatches` outcomes exist right now (see rankHistory.ts) rather
- * than invented, memoized (it replays up to 8 matchdays × ~50 participants'
+ * Rank-over-time has no separate historical-snapshot collection (results
+ * automation, added 2026-09-07, syncs the current table, not a per-match
+ * history), so it's honestly reconstructed by replaying the real
+ * football-data.org fixture calendar (functions/fixtures, fixtures/{id} —
+ * see rankHistory.ts) match by match, rather than invented, memoized (it
+ * replays up to 8 matchdays × ~50 participants'
  * scores — real work, and this component re-renders on every leaderboard
  * hover elsewhere on the page since it's always mounted underneath).
  * Wrapped in `memo` for the same reason: without it, hovering a standings
@@ -268,7 +269,7 @@ export const ParticipantPopup = memo(function ParticipantPopup({
     ? { firstName: displayed!.entry.firstName, lastName: playersByUid.get(displayedUid)?.lastName }
     : null;
 
-  const { outcomes } = useDevMatches();
+  const { fixtures } = useFixtures();
   const { response: survey, loading: surveyLoading, error: surveyError } = useSurveyResponse(
     tournamentStarted && viewerLoggedIn ? displayedUid : null
   );
@@ -291,8 +292,8 @@ export const ParticipantPopup = memo(function ParticipantPopup({
   );
 
   const rankHistory = useMemo(
-    () => (tournamentStarted && displayedUid ? computeRankHistory(displayedUid, entries, outcomes) : []),
-    [tournamentStarted, displayedUid, entries, outcomes]
+    () => (tournamentStarted && displayedUid ? computeRankHistory(displayedUid, entries, fixtures) : []),
+    [tournamentStarted, displayedUid, entries, fixtures]
   );
 
   const popupImageUrls = useMemo(

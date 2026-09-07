@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { TEAMS, Team } from "../predictions/teams";
 import { TeamResult } from "./teamResultTypes";
 import { qualificationBand } from "./qualification";
 import { TeamCrest } from "./TeamCrest";
+import { useFixtures } from "./useFixtures";
+import { getLiveTeamIds } from "./liveFixtures";
+import { LiveDot } from "./LiveDot";
 import { Frame, FrameBody } from "@/components/ui/frame";
 import { cn } from "@/lib/utils";
 
@@ -78,6 +81,7 @@ function TeamTableHalf({
   sortKey,
   onSort,
   highlightedTeamIds,
+  liveTeamIds,
   onSelectTeam,
 }: {
   teams: Team[];
@@ -85,6 +89,7 @@ function TeamTableHalf({
   sortKey: SortKey;
   onSort: (key: SortKey) => void;
   highlightedTeamIds?: ReadonlySet<string>;
+  liveTeamIds: ReadonlySet<string>;
   onSelectTeam?: (teamId: string) => void;
 }) {
   return (
@@ -159,10 +164,12 @@ function TeamTableHalf({
           const result = results[team.id];
           const band = result ? qualificationBand(result.position) : null;
           const highlighted = highlightedTeamIds?.has(team.id) ?? false;
+          const live = liveTeamIds.has(team.id);
           const cell = cn(
             "flex items-center border-b border-color_border1/50 py-1 transition-colors duration-150 ease-[var(--ease-cotton)] group-hover:bg-color_hoverfill",
             !result && "opacity-55",
-            highlighted && "bg-color_green/[0.12]"
+            highlighted && "bg-color_green/[0.12]",
+            live && "bg-color_remove/[0.1]"
           );
           const statCell = cn(cell, "justify-end px-1");
           return (
@@ -175,15 +182,18 @@ function TeamTableHalf({
               {/* Sıra — a hard-left/rounded-right oblong to the numeral's
                   left carries the qualification-route signal (green =
                   direct to the Round of 16, orange = playoff round); the
-                  eliminated band (25-36) gets none. */}
+                  eliminated band (25-36) gets none. A live match's own red
+                  dot takes the same slot instead, when it applies. */}
               <div role="cell" className={cn(cell, "gap-1.5 pr-0 pl-3")}>
-                {band === "direct" && (
+                {live ? (
+                  <LiveDot className="size-1.5 shrink-0" />
+                ) : band === "direct" ? (
                   <span aria-hidden className="h-3 w-1 shrink-0 rounded-r-full bg-color_accent" />
-                )}
-                {band === "playoff" && (
+                ) : band === "playoff" ? (
                   <span aria-hidden className="h-3 w-1 shrink-0 rounded-r-full bg-color_qualification" />
+                ) : (
+                  band === "eliminated" && <span aria-hidden className="w-1 shrink-0" />
                 )}
-                {band === "eliminated" && <span aria-hidden className="w-1 shrink-0" />}
                 <span className="font-mono text-xs tracking-tight text-color_textsecondary tnum">
                   {result ? String(result.position) : "--"}
                 </span>
@@ -253,6 +263,8 @@ function TeamTableHalf({
 export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("position");
   const hasResults = Object.keys(results).length > 0;
+  const { fixtures } = useFixtures();
+  const liveTeamIds = useMemo(() => getLiveTeamIds(fixtures), [fixtures]);
 
   // --- Pre-season: no results yet. An honest alphabetical roster, no sort
   //     affordances (there is nothing meaningful to sort yet). -----------
@@ -371,6 +383,7 @@ export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTab
                 sortKey={sortKey}
                 onSort={setSortKey}
                 highlightedTeamIds={highlightedTeamIds}
+                liveTeamIds={liveTeamIds}
                 onSelectTeam={onSelectTeam}
               />
             </div>
@@ -378,6 +391,7 @@ export function TeamTable({ results, highlightedTeamIds, onSelectTeam }: TeamTab
               <TeamTableHalf
                 teams={right}
                 results={results}
+                liveTeamIds={liveTeamIds}
                 sortKey={sortKey}
                 onSort={setSortKey}
                 highlightedTeamIds={highlightedTeamIds}

@@ -1,7 +1,16 @@
 import { render, screen, fireEvent, within } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { TeamTable } from "./TeamTable";
 import { TEAMS } from "../predictions/teams";
+import { RealFixture } from "./realFixtureTypes";
+
+const mockUseFixtures = vi.fn<() => { fixtures: RealFixture[]; loading: boolean }>(() => ({
+  fixtures: [],
+  loading: false,
+}));
+vi.mock("./useFixtures", () => ({
+  useFixtures: () => mockUseFixtures(),
+}));
 
 // The table is split into two 18-row halves (two <table>s), each with its
 // own header row — so "all data rows, in document order" means every row
@@ -103,5 +112,37 @@ describe("TeamTable", () => {
     );
     const rows = bodyRows();
     expect(rows[0]).toHaveTextContent("2"); // matchesPlayed
+  });
+
+  it("tints a team's row when it's in a live match", () => {
+    mockUseFixtures.mockReturnValueOnce({
+      fixtures: [
+        {
+          id: "f1",
+          matchday: 1,
+          order: 1,
+          homeTeamId: TEAMS[0].id,
+          awayTeamId: TEAMS[1].id,
+          kickoffUtc: "2026-09-08T16:45:00Z",
+          status: "IN_PLAY",
+          homeGoals: 1,
+          awayGoals: 0,
+        },
+      ],
+      loading: false,
+    });
+    render(
+      <TeamTable
+        results={{
+          [TEAMS[0].id]: { position: 1, points: 3, goalDifference: 1, goalsFor: 1, goalsAgainst: 0 },
+          [TEAMS[2].id]: { position: 2, points: 0, goalDifference: 0, goalsFor: 0, goalsAgainst: 0 },
+        }}
+      />
+    );
+    const rows = bodyRows();
+    const liveRow = rows.find((r) => within(r).queryByText(TEAMS[0].shortName))!;
+    const quietRow = rows.find((r) => within(r).queryByText(TEAMS[2].shortName))!;
+    expect(liveRow.innerHTML).toMatch(/color_remove/);
+    expect(quietRow.innerHTML).not.toMatch(/color_remove/);
   });
 });
