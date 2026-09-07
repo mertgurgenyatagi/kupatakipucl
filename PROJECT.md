@@ -17,13 +17,14 @@ says so rather than guessing.
 
 ## 1. Status
 
-**Not yet launched.** No edition has ever run with real participants, though the
-frontend is now live at `https://kupatakipucl.com` as of 2026-08-28 — GitHub
-Pages is enabled and the domain is repointed at it.
+**Launched, in the `notstarted` phase.** The site has been live at
+`https://kupatakipucl.com` since 2026-08-28. As of 2026-09-07, **32 real people
+have signed up** — the first edition to ever run with real participants.
 
-Mert intends to launch **2026-08-28**, into the `notstarted` phase only, and to
-remain in that phase for roughly ten days until the league phase begins on
-**2026-09-08**. Sign-up and league predictions both close at that moment.
+Sign-up and league predictions both close when the league phase begins on
+**2026-09-08**. That flip is still a manual one (§11 #18) — Mert confirmed on
+2026-09-07 that he's preparing for it in a separate branch, expected within
+hours of that check-in.
 
 Target audience is friends and friends-of-friends, sized for **up to 250
 participants**. Turkish-only, permanently — there is no i18n layer and none is
@@ -69,6 +70,16 @@ The phantom lobby parents do not render anywhere — no lobby document means no
 lobby in the UI — so they are cosmetically invisible, but they are real
 documents accruing real storage and they show the delete path is incomplete.
 
+### Live participation, checked 2026-09-07
+
+Re-checked directly against production, ten days after launch: **32 real
+signups** (`profiles`, `publicProfiles`, `surveyResponses` all at 32, no
+dummy accounts), of which **17 have actually submitted a league
+prediction** — the other 15 have an account but no picks in yet, with one
+day left before predictions close. Real activity has also started
+elsewhere: 4 `forumPosts`, 9 global chat `messages`, still 0 `lobbies`
+created.
+
 ---
 
 ## 2. Tech stack
@@ -89,6 +100,8 @@ documents accruing real storage and they show the delete path is incomplete.
 - Firebase Auth, Google sign-in via popup, sole provider
 - Cloud Functions v2 (`functions/leaderboard`) + a Cloud Run service
   (`functions/stopbilling`)
+- Firebase Analytics (GA4), enabled 2026-08-28 — Mert's own visitor metrics,
+  nothing downstream depends on it
 
 **Testing** — Vitest + Testing Library + jsdom for unit tests; a separate
 Vitest config driving the Firestore emulator for integration tests.
@@ -220,9 +233,11 @@ still see the real session). `LoginButton` does `signInWithPopup` with Google;
 An 11-step full-screen flow rendered outside `AppShell`:
 
 1. `welcome` (auto-advance 2600ms) · 2. `photo` · 3. `name` → **writes the
-profile** · 4. bounce · 5. age wheel (10–90, default 25) · 6. football knowledge
-(1–7) · 7. Messi/Ronaldo · 8. Süper Lig team · 9. UCL team (36 crests + "Yok")
-· 10. device → **writes the survey** · 11. bounce → done.
+profile**, and warns (without blocking) on a name that doesn't look like a
+normal first/last name, added 2026-08-28 · 4. bounce · 5. age wheel (10–90,
+default 25) · 6. football knowledge (1–7) · 7. Messi/Ronaldo · 8. Süper Lig
+team · 9. UCL team (36 crests + "Yok") · 10. device → **writes the survey**
+· 11. bounce → done.
 
 Back-navigation preserves answers and skips bounce screens. The quiz is
 mandatory and one-time: `surveyResponses` forbids update and delete outright.
@@ -390,6 +405,7 @@ permanently single-theme dark; the `.dark` class exists only so shadcn's own
 | `results/{teamId}` | team id | `position, points, goalDifference, goalsFor, goalsAgainst, matchesPlayed?` |
 | `leaderboardCache/current` | — | `entries[], computedAt` — written only by the Cloud Function |
 | `leaderboardCache/control` | — | concurrency-control doc for the recompute |
+| `leaderboardCache/submitters` | — | the set of uids with a submitted prediction, written by the same Cloud Function transaction — lets `usePredictionSubmitters` answer "who's in" without reading (or being allowed to read) everyone's actual picks. Missing from this table until 2026-09-07; the feature predates this document. |
 | `tournamentState/current` | — | `phase` |
 | `messages/{id}` | auto | `uid, text, createdAt, mentionedUids?, deleted?, quoted*` |
 | `forumPosts/{id}` | auto | `uid, text, imageURL, parentId, createdAt, editedAt, mentionedUids, quoted*, likedByUids` |
@@ -426,8 +442,11 @@ explicitly. Summary:
   logged-out, potentially search-indexed visitors never receive a surname —
   Firestore cannot filter fields out of a read, so it needs a separate
   collection)
-- `predictions`, `knockoutPredictions`, `forumPosts`, `results`,
-  `tournamentState`, `leaderboardCache` — **public read**
+- `knockoutPredictions`, `forumPosts`, `results`, `tournamentState`,
+  `leaderboardCache` — **public read**
+- `predictions` — read requires either the tournament having started or the
+  request being the prediction's own owner (fixed 2026-08-27, see §11 #7).
+  `knockoutPredictions` was left fully public-read — a loose end, see §11 #40
 - `surveyResponses` — signed-in read, owner create, **no update or delete ever**
 - `messages` / lobby messages — signed-in (or member) read, own-uid create,
   update restricted to setting `deleted`, no delete
@@ -440,8 +459,11 @@ explicitly. Summary:
 - `lobbyInvites` — `get` allowed, `list` explicitly denied so invites can't be
   enumerated
 - `leaderboardCache` — nobody can write; only the Admin SDK
-- **`results`, `tournamentState`, `devConfig`, `devMatches` — writable by ANY
-  signed-in user.** Deliberate pre-launch loosening. See §11.
+- **`results`, `tournamentState`, `devConfig`, `devMatches`** — write is
+  restricted to three admin accounts (`isAdmin()`, three hardcoded uids, all
+  Mert's). Fixed 2026-08-27, see §11 #6 — this line used to say these were
+  writable by any signed-in user, which stopped being true the same day this
+  document was first written.
 
 Client-side length caps (360 chars for posts and messages, 15 for names and
 lobby names) are mirrored in the rules, since the client caps are trivially
@@ -661,18 +683,23 @@ removed from the working tree before the audit began. **`launch-prep`, cut from
 Sorted by when each actually starts to matter. Everything here was verified
 against the code; the disposition column records Mert's decision.
 
+**Heads up, 2026-09-07:** Mert is about to start a `league-phase-prep` branch
+and named three things in it up front — real match results (#14), the dev
+panel's grip on production surfaces (#15), and the knockout backlog (#23–26).
+Until that branch lands, treat those as "in progress," not unowned.
+
 ### Before launch
 
 | # | Problem | Disposition |
 |---|---|---|
-| 1 | **Team list is the wrong season.** `teams.ts` still holds the 2025-26 field and was last modified 2026-07-23. The real 2026-27 list was confirmed 2026-08-26 and is not in the project. Predictions submitted against the old list store team ids that will not exist after the swap, and `computeScore` silently skips unmatched ids rather than erroring. | Must swap before any real sign-up |
-| 2 | **Crests do not match teams.** `teamCrestSrc` hashes the team id into a 29-badge list, so no team shows its own badge and 36 teams share 25 badges. 7 new badge SVGs were added to `assets/` on 2026-08-27 but have not been imported into `public/`, and `clubBadgeSlugs.ts` is unchanged. | Fix — real crests, correctly mapped |
-| 3 | **Production database holds 50 dummy participants**, plus synthetic `results`, 16 decided `devMatches`, a stale `leaderboardCache`, and test forum/chat content. Home would show 53 participants, 50 fictional. | Must be cleaned before launch |
-| 4 | **Signup lockout.** Anyone who abandons signup after the last quiz step is permanently locked out: `saveSurveyResponse` is a plain `setDoc`, the rules forbid update, and `ProfileGate` always restarts from step 0. Unrecoverable for that account. | Fix |
+| 1 | ~~**Team list is the wrong season.**~~ **Done, 2026-08-27.** `teams.ts` now holds the confirmed 2026-27 field. This was fixed the same evening this document was first written (`198e1fb`); the table just never got updated to say so. `teams.test.ts` asserts the team list and badge map cover each other. | Done |
+| 2 | ~~**Crests do not match teams.**~~ **Done, 2026-08-27.** `teamCrestSrc` is now a direct id-to-badge lookup, not a hash into a shared pool. All 36 badges (the original 29 plus the 7 added 2026-08-27) are in `public/club-badges/`, each named for the team it belongs to, and `clubBadgeSlugs.ts` was regenerated to match. | Done |
+| 3 | ~~**Production database holds 50 dummy participants**~~ **Done, 2026-08-27.** The dummy data was purged the same day this document was first written (`653da5a`), just after this row was drafted. Re-checked live 2026-09-07: `profiles`, `publicProfiles` and `surveyResponses` all hold exactly 32 documents — the 32 real signups, zero dummy accounts. | Done |
+| 4 | ~~**Signup lockout.**~~ **Done, 2026-08-27 (`c450b49`) — and the original write-up had the wrong trigger.** The quiz step writes the survey immediately, so nobody actually gets stuck mid-signup; the real trigger was *deleting your account* — `surveyResponses` couldn't be deleted, so the old survey outlived the profile, and signing up again ran into the one-time-quiz rule as an "update" on a document that still existed. Fixed at both ends: the rules now let an owner overwrite or delete their own survey response, and account deletion now also removes the survey response and the knockout prediction (see #34). | Done |
 | 5 | ~~**No deployment exists.**~~ **Done, live 2026-08-28.** GitHub Actions builds and publishes to GitHub Pages, `kupatakipucl.com` and `www.` are authorized in Firebase Auth, the `og:`/`twitter:` tags point at the real host, Pages is enabled, and DNS points at GitHub. See [DEPLOY.md](DEPLOY.md). | Done |
-| 6 | **`results`, `tournamentState`, `devConfig` and `devMatches` are writable by any signed-in user.** A participant could rewrite the standings or push the whole site into a phase that isn't ready. | Lock down |
-| 7 | **Other people's predictions are world-readable before the league phase.** The UI hides them; the data is directly fetchable. | Should not be visible pre-league-phase |
-| 8 | **Knockout entry point is reachable during `notstarted`.** `/knockout-predictions` is allowed in every logged-in phase and has no already-submitted redirect, so brackets can be submitted against fake pairings. Not linked from the nav, so URL-only. | Hide until preknockout |
+| 6 | ~~**`results`, `tournamentState`, `devConfig` and `devMatches` are writable by any signed-in user.**~~ **Done, 2026-08-27.** All four are now gated behind `isAdmin()`, checked against three hardcoded accounts — Mert confirmed 2026-09-07 these are his. | Done |
+| 7 | ~~**Other people's predictions are world-readable before the league phase.**~~ **Done, 2026-08-27.** `predictions/{uid}` read now requires either the tournament having started or the request matching the prediction's own uid. `knockoutPredictions` was left fully public-read — see #40, a minor loose end. | Done |
+| 8 | ~~**Knockout entry point is reachable during `notstarted`.**~~ **Done, 2026-08-27.** `/knockout-predictions` is now restricted to the knockout-adjacent phases in `pageAccess.ts`, with a comment noting the page shouldn't invite predictions against a draw that doesn't exist yet. | Done |
 | 9 | ~~**Mobile create-lobby button does nothing.**~~ **Done 2026-08-27.** Both lobby dialogs are mounted on the mobile branch of `LoggedInHome`. | Done |
 | 10 | ~~**The drag-and-drop ranker is being replaced.**~~ **Done 2026-09-06.** Replaced outright with a click-to-place board: click a team, click the rank it goes in. Root cause of the old one's unreliability was a drag-overlay modifier applied only to `DragOverlay` and not to `DndContext`, so the visible card and the invisible hit-test rect drifted apart by however far off-centre you grabbed an item; a missing `onDragCancel` also left a stuck ghost card after Escape. Rather than patch the geometry, the interaction was rebuilt as a pure reducer (`rankerState.ts`) and `@dnd-kit` was uninstalled. | Done |
 | 11 | ~~**Profile shows raw team slugs.**~~ **Done 2026-08-27.** `uclTeamLabel()` in `surveyLabels.ts`, applied at all three call sites — the profile page *and both branches of `ParticipantPopup`*, which this entry missed. | Done |
@@ -687,17 +714,21 @@ against the code; the disposition column records Mert's decision.
 
 | # | Problem |
 |---|---|
-| 14 | **No way to enter real match results.** The dev panel is the only writer of `results`, and it writes synthetic 1-0/0-0 scorelines. Intended solution: a live API. |
-| 15 | **Production code depends on the dev panel.** `TeamPopup`, `MatchupPopup`, `ParticipantPopup`, `rankHistory` and `teamMatchHistory` import fixtures and `devMatches` from `src/devpanel/`, while `upcomingFixtures.ts` avoids that collection precisely because it is "dev-only and auth-gated". These cannot both be right. |
+| 14 | **No way to enter real match results.** The dev panel is the only writer of `results`, and it writes synthetic 1-0/0-0 scorelines. Intended solution: a live API. **Pending** — Mert named this as the first thing in the incoming `league-phase-prep` branch (2026-09-07). |
+| 15 | **Production code depends on the dev panel.** `TeamPopup`, `MatchupPopup`, `ParticipantPopup`, `rankHistory` and `teamMatchHistory` import fixtures and `devMatches` from `src/devpanel/`, while `upcomingFixtures.ts` avoids that collection precisely because it is "dev-only and auth-gated". These cannot both be right. **Pending** — also named for the incoming `league-phase-prep` branch (2026-09-07). |
 | 16 | **Fixture list is the 2025-26 calendar with years shifted forward.** |
 | 17 | **Rank-history chart may never show real data** — it replays `devMatches`, which only the dev panel writes, and no production history source exists or can exist. |
-| 18 | **No production tooling sets the tournament phase.** `set-dev-config.mjs` writes `devConfig`, which production never reads. The Sept 8 flip is currently a hand edit in the Firebase console. Left as-is by decision. |
+| 18 | **No production tooling sets the tournament phase.** `set-dev-config.mjs` writes `devConfig`, which production never reads. The Sept 8 flip is currently a hand edit in the Firebase console. Left as-is by decision — reconfirmed 2026-09-07, unlike #14/#15/#23–26 this one is *not* part of the incoming branch: "a small thing, no tool needed." |
 | 19 | **Süper Lig "no team" answers render wrong on Stats** — signup stores `"Tutmuyorum"`, the abbreviation map only knows `"Yok"`. |
 | 20 | **Half the Stats page is fabricated** — three of seven widgets are invented footballers, and the UCL-team chart is hardcoded even though real answers exist and are simply never aggregated. |
 | 21 | **Team popup squads are randomly generated** from a seeded RNG; every team plays 4-2-3-1. |
 | 22 | **Lobby caps unenforced on the started-phase home** — `HomeLandingLoggedInStarted` declares `canCreateLobby` but never reads it. Left as-is by decision. |
 
 ### Later
+
+Problems 23–26 (the knockout backlog) were also named for the incoming
+`league-phase-prep` branch (2026-09-07) — sooner than the "months away"
+framing above would suggest.
 
 | # | Problem |
 |---|---|
@@ -712,8 +743,9 @@ against the code; the disposition column records Mert's decision.
 | 31 | **Forum mentions are stored but never read** — no highlight, no notifications. |
 | 32 | **Forum search is narrower than it looks** — loaded root posts and author names only. |
 | 33 | **`NearbyStandingsList` can spin forever on a tie at the tail** — its load-more guard compares a rank against a list length, and tied ranks skip numbers. |
-| 34 | **Account deletion is incomplete** — the knockout prediction is left behind (`deleteKnockoutPrediction` exists, is tested, and is never called), and survey answers can never be deleted by anyone under the current rules. |
+| 34 | ~~**Account deletion is incomplete**~~ **Done, 2026-08-27 (`c450b49`).** Deleting an account now runs `deleteProfile`, `deletePrediction`, `deleteSurveyResponse` and `deleteKnockoutPrediction` together in one `Promise.all`, so a partial failure aborts before sign-out instead of leaving an unrecoverable half-deleted account. See #4 — this was fixed in the same commit. |
 | 35 | **Scoring is duplicated** between client and Cloud Function, untested on the server side. Left as-is by decision. |
+| 40 | **`knockoutPredictions` is still world-readable.** Fixing #7 tightened `predictions` but left `knockoutPredictions` fully public-read. Low priority in practice — the entry point itself is hidden until `preknockout` (#8), so there's nothing real to read yet. Unaddressed as of 2026-09-07; Mert didn't weigh in either way when asked. |
 
 ---
 
@@ -732,8 +764,11 @@ Things still unresolved after the questionnaire.
    clicking the pool returns it. Escape or clicking it again cancels. See §4
    `predictions/` and `rankerState.ts`.
 
-3. **Whether sign-up genuinely closes on 2026-09-08.** Stated as intended, but
-   nothing enforces it, and the phase is set by hand.
+3. **Whether sign-up genuinely closes on 2026-09-08.** Re-confirmed 2026-09-07:
+   still exactly as stated. Sign-up and predictions close only when Mert
+   manually flips `tournamentState/current` to `leaguephase` — nothing in the
+   code enforces the date itself. He's preparing that flip in a separate
+   branch, expected within hours of the 2026-09-07 check-in.
 
 4. **How real results will arrive.** "A live API" — no provider, schedule or
    ingestion path chosen.
@@ -748,11 +783,14 @@ Things still unresolved after the questionnaire.
    (§9). If it ever becomes a nuisance, deleting `.github/workflows/` returns the
    project to hand deploys with nothing else to unpick.
 
-7. **Dates render in the viewer's timezone.** Every fixed date is authored at
-   `+03:00`, but the app formats with local `getDate()`/`getMonth()`, so the
-   About timeline reads "25 Ağu" from London and "26 Ağu" from Istanbul. The
-   test suite pins `Europe/Istanbul` (`test/setup.ts`); the app does not.
-   Surfaced by the first CI run, 2026-08-27.
+7. ~~**Dates render in the viewer's timezone.**~~ **Decided 2026-09-07: not
+   worth fixing.** Every fixed date is authored at `+03:00`, but the app
+   formats with local `getDate()`/`getMonth()`, so the About timeline reads
+   "25 Ağu" from London and "26 Ağu" from Istanbul. The test suite pins
+   `Europe/Istanbul` (`test/setup.ts`); the app does not. Surfaced by the
+   first CI run, 2026-08-27. Left unfixed by decision — every real signup so
+   far is in Turkey, so the bug has no actual victims. Worth a second look
+   only if the audience ever extends beyond it.
 
 8. ~~**The 2026-08-26 date on the About page timeline** ("Lig Tahminleri Açılır")
    has already passed. Whether the six About dates should be revised for the
