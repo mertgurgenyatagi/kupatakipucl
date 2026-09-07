@@ -105,6 +105,15 @@ export function MobileHomeNotStartedLoggedOut({ players }: { players: Player[] }
         >
           <LoginButton />
         </motion.div>
+
+        {countdown.done && (
+          <motion.p
+            variants={riseIn}
+            className="text-balance text-center font-display text-sm text-color_gold"
+          >
+            Süre bitti. Tahminler birazdan kapanacak!
+          </motion.p>
+        )}
       </motion.div>
     </section>
   );

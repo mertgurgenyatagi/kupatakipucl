@@ -97,6 +97,11 @@ export function HomeLandingLoggedOut({ players }: HomeLandingLoggedOutProps) {
 
           <motion.div variants={riseIn} className="flex flex-wrap items-center gap-6 pt-2">
             <SignupCta />
+            {countdown.done && (
+              <p className="max-w-xs font-display text-sm text-color_gold">
+                Süre bitti. Tahminler birazdan kapanacak!
+              </p>
+            )}
             {players.length > 0 && (
               <div className="flex items-center gap-3">
                 <AvatarStack players={players} />

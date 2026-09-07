@@ -65,6 +65,12 @@ export function HomeWelcomeBanner({ me, showCta }: HomeWelcomeBannerProps) {
             </Link>
           )}
 
+          {showCta && countdown.done && (
+            <p className="max-w-[16rem] font-display text-sm text-color_gold">
+              Süre bitti. Tahminler birazdan kapanacak!
+            </p>
+          )}
+
           {!countdown.done && (
             <div className="flex items-baseline gap-3.5 whitespace-nowrap">
               <span className="font-mono text-[0.7rem] tracking-[0.12em] text-color_textsecondary uppercase">

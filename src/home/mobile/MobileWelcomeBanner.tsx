@@ -54,6 +54,12 @@ export function MobileWelcomeBanner({ me, showCta }: { me: Player; showCta: bool
           </div>
         )}
 
+        {showCta && countdown.done && (
+          <p className="text-center font-display text-xs text-color_gold">
+            Süre bitti. Tahminler birazdan kapanacak!
+          </p>
+        )}
+
         {showCta && (
           <Link
             to="/predictions"
