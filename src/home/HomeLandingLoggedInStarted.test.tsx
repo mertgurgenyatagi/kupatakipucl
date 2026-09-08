@@ -1,7 +1,14 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { vi, describe, it, expect } from "vitest";
+import { MemoryRouter } from "react-router-dom";
+import { vi, describe, it, expect, beforeEach } from "vitest";
 import { HomeLandingLoggedInStarted } from "./HomeLandingLoggedInStarted";
 import { Player } from "../profile/usePlayers";
+
+const mockUseGracePeriodOpen = vi.fn();
+
+vi.mock("./useGracePeriodOpen", () => ({
+  useGracePeriodOpen: () => mockUseGracePeriodOpen(),
+}));
 
 vi.mock("./HomeWelcomeVertical", () => ({
   HomeWelcomeVertical: ({ me }: { me: { firstName: string } }) => (
@@ -88,7 +95,8 @@ const players: Player[] = [me];
 
 function renderPage(overrides: Partial<Parameters<typeof HomeLandingLoggedInStarted>[0]> = {}) {
   return render(
-    <HomeLandingLoggedInStarted
+    <MemoryRouter>
+      <HomeLandingLoggedInStarted
       me={me}
       players={players}
       results={{}}
@@ -122,11 +130,16 @@ function renderPage(overrides: Partial<Parameters<typeof HomeLandingLoggedInStar
       onLeftManagedLobby={vi.fn()}
       onDeletedManagedLobby={vi.fn()}
       {...overrides}
-    />
+      />
+    </MemoryRouter>
   );
 }
 
 describe("HomeLandingLoggedInStarted", () => {
+  beforeEach(() => {
+    mockUseGracePeriodOpen.mockReturnValue(false);
+  });
+
   it("renders all widgets for leaguephase, without knockout widget", () => {
     renderPage();
     expect(screen.getByText("welcome-vertical:Mert")).toBeInTheDocument();
@@ -169,5 +182,29 @@ describe("HomeLandingLoggedInStarted", () => {
   it("passes the real current phase through to MatchupPopup, e.g. for the knockout reuse", () => {
     renderPage({ phase: "knockout" });
     expect(screen.getByText("matchup-popup:closed:knockout")).toBeInTheDocument();
+  });
+
+  it("shows the grace-period banner during leaguephase, open window, no prediction yet", () => {
+    mockUseGracePeriodOpen.mockReturnValue(true);
+    renderPage({ entries: [] });
+    expect(screen.getByText("Tahmininizi gönderin")).toBeInTheDocument();
+  });
+
+  it("hides the grace-period banner once me has a leaderboard entry (already submitted)", () => {
+    mockUseGracePeriodOpen.mockReturnValue(true);
+    renderPage({ entries: [{ uid: "me", firstName: "Mert", photoURL: "", points: 0, ranking: [] }] });
+    expect(screen.queryByText("Tahmininizi gönderin")).not.toBeInTheDocument();
+  });
+
+  it("hides the grace-period banner outside leaguephase even if the window is open", () => {
+    mockUseGracePeriodOpen.mockReturnValue(true);
+    renderPage({ phase: "preknockout", entries: [] });
+    expect(screen.queryByText("Tahmininizi gönderin")).not.toBeInTheDocument();
+  });
+
+  it("hides the grace-period banner once the window is closed", () => {
+    mockUseGracePeriodOpen.mockReturnValue(false);
+    renderPage({ entries: [] });
+    expect(screen.queryByText("Tahmininizi gönderin")).not.toBeInTheDocument();
   });
 });

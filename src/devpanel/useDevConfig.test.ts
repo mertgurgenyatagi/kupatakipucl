@@ -14,7 +14,13 @@ vi.mock("firebase/firestore", () => ({
 
 vi.mock("../firebase", () => ({ db: {} }));
 
-import { useDevConfig, setPhaseOverride, setCurrentDateOverride, setLoggedInOverride } from "./useDevConfig";
+import {
+  useDevConfig,
+  setPhaseOverride,
+  setCurrentDateOverride,
+  setLoggedInOverride,
+  setGracePeriodOverride,
+} from "./useDevConfig";
 
 type SnapshotCallback = (snapshot: { exists: () => boolean; data: () => unknown }) => void;
 
@@ -31,7 +37,7 @@ describe("useDevConfig", () => {
     });
   });
 
-  it("defaults to phaseOverride=null, currentDateOverride=null, loggedInOverride=null before any doc exists", async () => {
+  it("defaults to phaseOverride=null, currentDateOverride=null, loggedInOverride=null, gracePeriodOverride=null before any doc exists", async () => {
     const { result } = renderHook(() => useDevConfig());
     act(() => {
       capturedOnNext({ exists: () => false, data: () => ({}) });
@@ -41,6 +47,7 @@ describe("useDevConfig", () => {
       phaseOverride: null,
       currentDateOverride: null,
       loggedInOverride: null,
+      gracePeriodOverride: null,
     });
   });
 
@@ -102,5 +109,17 @@ describe("setLoggedInOverride", () => {
     mockSetDoc.mockResolvedValue(undefined);
     await setLoggedInOverride(true);
     expect(mockSetDoc).toHaveBeenCalledWith(expect.anything(), { loggedInOverride: true }, { merge: true });
+  });
+});
+
+describe("setGracePeriodOverride", () => {
+  beforeEach(() => {
+    mockSetDoc.mockReset();
+  });
+
+  it("writes gracePeriodOverride with merge:true", async () => {
+    mockSetDoc.mockResolvedValue(undefined);
+    await setGracePeriodOverride("open");
+    expect(mockSetDoc).toHaveBeenCalledWith(expect.anything(), { gracePeriodOverride: "open" }, { merge: true });
   });
 });

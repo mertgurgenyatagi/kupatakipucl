@@ -11,6 +11,8 @@ import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { TeamPopup } from "../leaderboard/TeamPopup";
 import { MatchupPopup } from "../leaderboard/MatchupPopup";
 import { HomeBentoSkeleton } from "./HomeSkeletons";
+import { GracePeriodBanner } from "./GracePeriodBanner";
+import { useGracePeriodOpen } from "./useGracePeriodOpen";
 import { useImagePreload } from "@/lib/useImagePreload";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
 import type { TeamResult } from "../leaderboard/teamResultTypes";
@@ -52,6 +54,7 @@ function noop() {}
  * is literal). Desktop-only, no responsive breakpoints.
  */
 export function HomeLandingLoggedOutStarted({ results, players, entries, phase }: HomeLandingLoggedOutStartedProps) {
+  const graceOpen = useGracePeriodOpen();
   const { posts, loading: postsLoading } = usePosts();
   const likesByPost = useMemo(() => buildLikesByPost(posts), [posts]);
   const rankedEntries = useMemo(() => assignRanks(entries), [entries]);
@@ -88,6 +91,7 @@ export function HomeLandingLoggedOutStarted({ results, players, entries, phase }
 
   return (
     <div className={PAGE_SHELL}>
+      {phase === "leaguephase" && graceOpen && <GracePeriodBanner variant="loggedout" />}
       <div className={CELL_ROW}>
         <LeagueTableList results={results} onSelectTeam={handleSelectTeam} />
 

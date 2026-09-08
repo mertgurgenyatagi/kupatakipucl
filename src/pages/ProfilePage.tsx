@@ -32,6 +32,7 @@ import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { TeamPopup } from "../leaderboard/TeamPopup";
 import { MatchupPopup } from "../leaderboard/MatchupPopup";
 import { useTournamentPhase } from "../tournament/useTournamentPhase";
+import { useGracePeriodOpen } from "../home/useGracePeriodOpen";
 import { CameraIcon, Trash2 } from "lucide-react";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -127,6 +128,7 @@ export function ProfilePage() {
   const { results } = useResults();
   const { players } = usePlayers();
   const phase = useTournamentPhase();
+  const graceOpen = useGracePeriodOpen();
   const imageUrls = useMemo(
     () => (profile?.photoURL ? [profile.photoURL, ...TEAM_CREST_URLS] : TEAM_CREST_URLS),
     [profile?.photoURL]
@@ -214,6 +216,10 @@ export function ProfilePage() {
   const currentPrediction = savedPrediction ?? prediction;
   const currentKnockoutPrediction = savedKnockoutPrediction ?? knockoutPrediction;
   const predictionLocked = state !== "loggedin_notstarted";
+  // 2026-09-08 grace period: a first-ever submission stays reachable through
+  // PREDICTION_GRACE_END_ISO, 3 days into the league phase — see
+  // PredictionsPage.tsx's own gate, which this mirrors exactly.
+  const canFirstSubmit = state === "loggedin_notstarted" || (state === "loggedin_leaguephase" && graceOpen);
   const isKnockoutPhaseOrPre = state === "loggedin_preknockout" || state === "loggedin_knockout";
   const averagePositions = computeAveragePositions(entries);
   const rankedEntries = assignRanks(entries);
@@ -542,9 +548,11 @@ export function ProfilePage() {
                 <p className="font-display text-sm text-color_textsecondary italic">
                   Henüz bir tahmin göndermediniz.
                 </p>
-                <Link to="/predictions" className={cn(buttonVariants({ variant: "default" }))}>
-                  Tahmininizi gönderin
-                </Link>
+                {canFirstSubmit && (
+                  <Link to="/predictions" className={cn(buttonVariants({ variant: "default" }))}>
+                    Tahmininizi gönderin
+                  </Link>
+                )}
               </div>
             )
           ) : (

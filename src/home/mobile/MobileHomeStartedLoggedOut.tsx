@@ -3,6 +3,8 @@ import { MobileStandingsPair } from "../../mobile/MobileStandingsPair";
 import { LeagueTableList } from "../../leaderboard/LeagueTableList";
 import { MobileKnockoutBracket } from "../../knockout/MobileKnockoutBracket";
 import { useMobilePopups } from "../../shell/MobilePopupHost";
+import { GracePeriodBanner } from "../GracePeriodBanner";
+import { useGracePeriodOpen } from "../useGracePeriodOpen";
 import type { LeaderboardEntry } from "../../leaderboard/leaderboardTypes";
 import type { TeamResult } from "../../leaderboard/teamResultTypes";
 import type { TournamentPhase } from "../../tournament/tournamentPhase";
@@ -35,24 +37,28 @@ export function MobileHomeStartedLoggedOut({
 }) {
   const { openTeam, openParticipant } = useMobilePopups();
   const isKnockout = phase === "knockout";
+  const graceOpen = useGracePeriodOpen();
 
   return (
-    <MobileStandingsPair
-      entries={entries}
-      players={players}
-      tournamentStarted
-      onSelectParticipant={openParticipant}
-      bottomBias={isKnockout}
-    >
-      {isKnockout ? (
-        <Frame className="flex min-h-0 flex-1 flex-col animate-cotton-rise border-color_border1/35">
-          <FrameBody className="min-h-0 flex-1 p-2">
-            <MobileKnockoutBracket readOnly onSelectTeam={openTeam} />
-          </FrameBody>
-        </Frame>
-      ) : (
-        <LeagueTableList results={results} onSelectTeam={openTeam} />
-      )}
-    </MobileStandingsPair>
+    <div className="flex min-h-0 flex-1 flex-col">
+      {phase === "leaguephase" && graceOpen && <GracePeriodBanner variant="loggedout" className="mx-3 mt-3" />}
+      <MobileStandingsPair
+        entries={entries}
+        players={players}
+        tournamentStarted
+        onSelectParticipant={openParticipant}
+        bottomBias={isKnockout}
+      >
+        {isKnockout ? (
+          <Frame className="flex min-h-0 flex-1 flex-col animate-cotton-rise border-color_border1/35">
+            <FrameBody className="min-h-0 flex-1 p-2">
+              <MobileKnockoutBracket readOnly onSelectTeam={openTeam} />
+            </FrameBody>
+          </Frame>
+        ) : (
+          <LeagueTableList results={results} onSelectTeam={openTeam} />
+        )}
+      </MobileStandingsPair>
+    </div>
   );
 }

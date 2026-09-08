@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "../auth/AuthProvider";
 import { useVisibilityState } from "../state/useVisibilityState";
 import { isPageAllowed } from "../state/pageAccess";
+import { useGracePeriodOpen } from "../home/useGracePeriodOpen";
 import { usePrediction, savePrediction } from "../predictions/usePrediction";
 import { useSurveyResponse } from "../predictions/useSurveyResponse";
 import { TeamRanker } from "../predictions/TeamRanker";
@@ -53,9 +54,15 @@ function PredictionsLoadingSkeleton() {
  * /predictions is a one-time door now, not a page you keep coming back to
  * (predictions-page-round-02 §E): first submission only. Revising an
  * existing prediction lives entirely on ProfilePage.tsx's own widget, so
- * reaching this page with a prediction already saved (or once the league
- * phase has locked things regardless) just sends you home — there's nothing
- * left for this page to show.
+ * reaching this page with a prediction already saved just sends you home —
+ * there's nothing left for this page to show.
+ *
+ * 2026-09-08 grace period: a first-ever submission is no longer cut off the
+ * instant the league phase starts — it stays reachable through
+ * `PREDICTION_GRACE_END_ISO` (src/home/deadlines.ts), 3 days later, so
+ * someone who never submitted isn't locked out forever over a missed
+ * deadline. Once that window closes (or the phase moves past leaguephase
+ * entirely), this is a hard lock again, same as before.
  *
  * Shaped like SignupFlow.tsx on purpose: a full-viewport animated sequence
  * (fade beats, then the ranker, then a BounceCheck confirmation) rather than
@@ -69,6 +76,7 @@ export function PredictionsPage() {
   const navigate = useNavigate();
   const { prediction, loading } = usePrediction(user?.uid ?? null);
   const { response: survey } = useSurveyResponse(user?.uid ?? null);
+  const graceOpen = useGracePeriodOpen();
   const [step, setStep] = useState<FlowStep>("intro");
   const [beatIndex, setBeatIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +88,8 @@ export function PredictionsPage() {
 
   if (loading || !imagesReady) return <PredictionsLoadingSkeleton />;
 
-  if (state !== "loggedin_notstarted" || prediction) {
+  const canFirstSubmit = state === "loggedin_notstarted" || (state === "loggedin_leaguephase" && graceOpen);
+  if (!canFirstSubmit || prediction) {
     return <Navigate to="/" replace />;
   }
 

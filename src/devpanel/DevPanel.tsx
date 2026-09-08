@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { FIXTURES } from "./fixtures";
 import { TEAMS } from "../predictions/teams";
-import { useDevConfig, setPhaseOverride, setCurrentDateOverride, setLoggedInOverride } from "./useDevConfig";
+import {
+  useDevConfig,
+  setPhaseOverride,
+  setCurrentDateOverride,
+  setLoggedInOverride,
+  setGracePeriodOverride,
+} from "./useDevConfig";
 import { TournamentPhase } from "../tournament/tournamentPhase";
 import { useDevMatches, setMatchOutcome } from "./useDevMatches";
 import { MatchOutcome } from "./standings";
@@ -106,6 +112,35 @@ export function DevPanel() {
             className={phaseBtn(config.loggedInOverride === null)}
           >
             Otomatik (gerçek oturum)
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-color_border1 bg-card p-4">
+        <h2 className="mb-3 font-mono text-xs tracking-wide text-color_textsecondary uppercase">
+          Tahmin Ek Süresi (3 gün)
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setGracePeriodOverride("open")}
+            disabled={config.gracePeriodOverride === "open"}
+            className={phaseBtn(config.gracePeriodOverride === "open")}
+          >
+            Açık
+          </button>
+          <button
+            onClick={() => setGracePeriodOverride("closed")}
+            disabled={config.gracePeriodOverride === "closed"}
+            className={phaseBtn(config.gracePeriodOverride === "closed")}
+          >
+            Kapalı
+          </button>
+          <button
+            onClick={() => setGracePeriodOverride(null)}
+            disabled={config.gracePeriodOverride === null}
+            className={phaseBtn(config.gracePeriodOverride === null)}
+          >
+            Otomatik (gerçek tarihe göre)
           </button>
         </div>
       </section>

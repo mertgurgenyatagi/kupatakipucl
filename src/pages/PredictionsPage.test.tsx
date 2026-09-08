@@ -30,6 +30,7 @@ const mockUseVisibilityState = vi.fn();
 const mockUsePrediction = vi.fn();
 const mockSavePrediction = vi.fn();
 const mockUseSurveyResponse = vi.fn();
+const mockUseGracePeriodOpen = vi.fn();
 
 vi.mock("../auth/AuthProvider", () => ({
   useAuth: () => mockUseAuth(),
@@ -37,6 +38,10 @@ vi.mock("../auth/AuthProvider", () => ({
 
 vi.mock("../state/useVisibilityState", () => ({
   useVisibilityState: () => mockUseVisibilityState(),
+}));
+
+vi.mock("../home/useGracePeriodOpen", () => ({
+  useGracePeriodOpen: () => mockUseGracePeriodOpen(),
 }));
 
 vi.mock("../predictions/usePrediction", () => ({
@@ -106,6 +111,7 @@ describe("PredictionsPage", () => {
     mockUseAuth.mockReturnValue({ user: { uid: "uid1" } });
     mockSavePrediction.mockReset();
     mockUseSurveyResponse.mockReturnValue({ response: null, loading: false, error: false });
+    mockUseGracePeriodOpen.mockReturnValue(false);
   });
 
   afterEach(() => {
@@ -137,12 +143,34 @@ describe("PredictionsPage", () => {
     expect(screen.getByText("home-page")).toBeInTheDocument();
   });
 
-  it("redirects home once the tournament has started, prediction or not", async () => {
+  it("redirects home once the tournament has started and the grace period is closed, prediction or not", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
+    mockUseGracePeriodOpen.mockReturnValue(false);
     renderPage();
     await flushMicrotasks();
     expect(screen.getByText("home-page")).toBeInTheDocument();
+  });
+
+  it("redirects home during the league phase even with the grace period open, if a prediction already exists", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
+    mockUsePrediction.mockReturnValue({
+      prediction: { ranking: ["arsenal"], submittedAt: 1, updatedAt: 1 },
+      loading: false,
+    });
+    mockUseGracePeriodOpen.mockReturnValue(true);
+    renderPage();
+    await flushMicrotasks();
+    expect(screen.getByText("home-page")).toBeInTheDocument();
+  });
+
+  it("stays reachable during the league phase for a first-ever submission while the grace period is open", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
+    mockUsePrediction.mockReturnValue({ prediction: null, loading: false });
+    mockUseGracePeriodOpen.mockReturnValue(true);
+    renderPage();
+    await flushMicrotasks();
+    expect(screen.getByText(PREDICTION_INTRO_BEATS[0].text)).toBeInTheDocument();
   });
 
   it("starts at the first intro beat", async () => {

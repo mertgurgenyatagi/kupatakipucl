@@ -5,6 +5,7 @@ const mockUseDevConfig = vi.fn();
 const mockSetPhaseOverride = vi.fn();
 const mockSetCurrentDateOverride = vi.fn();
 const mockSetLoggedInOverride = vi.fn();
+const mockSetGracePeriodOverride = vi.fn();
 const mockUseDevMatches = vi.fn();
 const mockSetMatchOutcome = vi.fn();
 
@@ -13,6 +14,7 @@ vi.mock("./useDevConfig", () => ({
   setPhaseOverride: (...args: unknown[]) => mockSetPhaseOverride(...args),
   setCurrentDateOverride: (...args: unknown[]) => mockSetCurrentDateOverride(...args),
   setLoggedInOverride: (...args: unknown[]) => mockSetLoggedInOverride(...args),
+  setGracePeriodOverride: (...args: unknown[]) => mockSetGracePeriodOverride(...args),
 }));
 
 vi.mock("./useDevMatches", () => ({
@@ -28,9 +30,10 @@ describe("DevPanel", () => {
     mockSetPhaseOverride.mockReset();
     mockSetCurrentDateOverride.mockReset();
     mockSetLoggedInOverride.mockReset();
+    mockSetGracePeriodOverride.mockReset();
     mockSetMatchOutcome.mockReset();
     mockUseDevConfig.mockReturnValue({
-      config: { phaseOverride: null, currentDateOverride: null, loggedInOverride: null },
+      config: { phaseOverride: null, currentDateOverride: null, loggedInOverride: null, gracePeriodOverride: null },
       loading: false,
     });
     mockUseDevMatches.mockReturnValue({ outcomes: {}, loading: false, refetch: vi.fn() });
@@ -38,7 +41,7 @@ describe("DevPanel", () => {
 
   it("renders nothing while config or matches are loading", () => {
     mockUseDevConfig.mockReturnValue({
-      config: { phaseOverride: null, currentDateOverride: null, loggedInOverride: null },
+      config: { phaseOverride: null, currentDateOverride: null, loggedInOverride: null, gracePeriodOverride: null },
       loading: true,
     });
     const { container } = render(<DevPanel />);
@@ -49,6 +52,24 @@ describe("DevPanel", () => {
     render(<DevPanel />);
     fireEvent.click(screen.getByText("Giriş yapılmış"));
     expect(mockSetLoggedInOverride).toHaveBeenCalledWith(true);
+  });
+
+  it("calls setGracePeriodOverride('open') / ('closed') for the grace-period buttons", () => {
+    render(<DevPanel />);
+    fireEvent.click(screen.getByText("Açık"));
+    expect(mockSetGracePeriodOverride).toHaveBeenCalledWith("open");
+    fireEvent.click(screen.getByText("Kapalı"));
+    expect(mockSetGracePeriodOverride).toHaveBeenCalledWith("closed");
+  });
+
+  it("calls setGracePeriodOverride(null) for the auto button once an override is active", () => {
+    mockUseDevConfig.mockReturnValue({
+      config: { phaseOverride: null, currentDateOverride: null, loggedInOverride: null, gracePeriodOverride: "open" },
+      loading: false,
+    });
+    render(<DevPanel />);
+    fireEvent.click(screen.getByText("Otomatik (gerçek tarihe göre)"));
+    expect(mockSetGracePeriodOverride).toHaveBeenCalledWith(null);
   });
 
   it("renders all 8 matchdays and 144 total match selects", () => {

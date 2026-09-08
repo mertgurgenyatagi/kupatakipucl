@@ -1,11 +1,17 @@
 import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { HomeLandingLoggedOutStarted } from "./HomeLandingLoggedOutStarted";
 
 const mockUsePosts = vi.fn();
+const mockUseGracePeriodOpen = vi.fn();
 
 vi.mock("../forum/usePosts", () => ({
   usePosts: () => mockUsePosts(),
+}));
+
+vi.mock("./useGracePeriodOpen", () => ({
+  useGracePeriodOpen: () => mockUseGracePeriodOpen(),
 }));
 
 vi.mock("../leaderboard/LeagueTableList", () => ({
@@ -92,13 +98,16 @@ const player = { uid: "player-1", firstName: "Ada", photoURL: "", createdAt: 1 }
 
 function renderPage(overrides: Partial<Parameters<typeof HomeLandingLoggedOutStarted>[0]> = {}) {
   return render(
-    <HomeLandingLoggedOutStarted results={{}} players={[player]} entries={[]} phase="leaguephase" {...overrides} />
+    <MemoryRouter>
+      <HomeLandingLoggedOutStarted results={{}} players={[player]} entries={[]} phase="leaguephase" {...overrides} />
+    </MemoryRouter>
   );
 }
 
 describe("HomeLandingLoggedOutStarted", () => {
   beforeEach(() => {
     mockUsePosts.mockReturnValue({ posts: [], loading: false, refetch: vi.fn(), loadOlder: vi.fn(), hasMore: false });
+    mockUseGracePeriodOpen.mockReturnValue(false);
   });
 
   it("shows the whole-page bento skeleton while posts (and their images) are still loading", () => {
@@ -156,5 +165,23 @@ describe("HomeLandingLoggedOutStarted", () => {
   it("passes the real current phase through to MatchupPopup, e.g. for the knockout reuse", () => {
     renderPage({ phase: "knockout" });
     expect(screen.getByText("matchup-popup:closed:knockout")).toBeInTheDocument();
+  });
+
+  it("shows the grace-period banner during leaguephase while the window is open", () => {
+    mockUseGracePeriodOpen.mockReturnValue(true);
+    renderPage();
+    expect(screen.getByText("Google ile giriş yap")).toBeInTheDocument();
+  });
+
+  it("hides the grace-period banner outside leaguephase even if the window is open", () => {
+    mockUseGracePeriodOpen.mockReturnValue(true);
+    renderPage({ phase: "preknockout" });
+    expect(screen.queryByText("Google ile giriş yap")).not.toBeInTheDocument();
+  });
+
+  it("hides the grace-period banner once the window is closed", () => {
+    mockUseGracePeriodOpen.mockReturnValue(false);
+    renderPage();
+    expect(screen.queryByText("Google ile giriş yap")).not.toBeInTheDocument();
   });
 });

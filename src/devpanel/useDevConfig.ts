@@ -7,12 +7,18 @@ export interface DevConfig {
   phaseOverride: TournamentPhase | null;
   currentDateOverride: string | null;
   loggedInOverride: boolean | null;
+  /** Overrides `isGracePeriodOpen()` (src/home/deadlines.ts) — the 3-day
+   *  post-launch window is wall-clock-based, not phase-based, so previewing
+   *  both states doesn't fall out of phaseOverride the way every other
+   *  phase-gated screen does. See useGracePeriodOpen.ts. */
+  gracePeriodOverride: "open" | "closed" | null;
 }
 
 const DEFAULT_CONFIG: DevConfig = {
   phaseOverride: null,
   currentDateOverride: null,
   loggedInOverride: null,
+  gracePeriodOverride: null,
 };
 
 // Fixed dev-only uid used when loggedInOverride forces a signed-in state.
@@ -54,4 +60,8 @@ export async function setCurrentDateOverride(date: string | null): Promise<void>
 
 export async function setLoggedInOverride(loggedIn: boolean | null): Promise<void> {
   await setDoc(doc(db, "devConfig", "state"), { loggedInOverride: loggedIn }, { merge: true });
+}
+
+export async function setGracePeriodOverride(value: "open" | "closed" | null): Promise<void> {
+  await setDoc(doc(db, "devConfig", "state"), { gracePeriodOverride: value }, { merge: true });
 }

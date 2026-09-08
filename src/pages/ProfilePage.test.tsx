@@ -43,6 +43,12 @@ vi.mock("../tournament/useTournamentPhase", () => ({
   useTournamentPhase: () => mockUseTournamentPhase(),
 }));
 
+const mockUseGracePeriodOpen = vi.fn();
+
+vi.mock("../home/useGracePeriodOpen", () => ({
+  useGracePeriodOpen: () => mockUseGracePeriodOpen(),
+}));
+
 const mockUseKnockoutPrediction = vi.fn();
 const mockSaveKnockoutPrediction = vi.fn();
 
@@ -146,6 +152,7 @@ describe("ProfilePage", () => {
     mockUseLeaderboard.mockReturnValue({ entries: [], loading: false });
     mockUseResults.mockReturnValue({ results: {}, loading: false });
     mockUseTournamentPhase.mockReturnValue("notstarted");
+    mockUseGracePeriodOpen.mockReturnValue(false);
     mockUseDevMatches.mockReturnValue({ outcomes: {}, loading: false, refetch: () => {} });
     mockUpdateProfilePhoto.mockReset();
     mockSavePrediction.mockReset();
@@ -253,6 +260,22 @@ describe("ProfilePage", () => {
     await renderPage();
     const link = screen.getByText("Tahmininizi gönderin");
     expect(link.closest("a")).toHaveAttribute("href", "/predictions");
+  });
+
+  it("still shows the /predictions link during the league phase while the grace period is open", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
+    mockUseGracePeriodOpen.mockReturnValue(true);
+    await renderPage();
+    const link = screen.getByText("Tahmininizi gönderin");
+    expect(link.closest("a")).toHaveAttribute("href", "/predictions");
+  });
+
+  it("hides the /predictions link during the league phase once the grace period has closed", async () => {
+    mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
+    mockUseGracePeriodOpen.mockReturnValue(false);
+    await renderPage();
+    expect(screen.getByText("Henüz bir tahmin göndermediniz.")).toBeInTheDocument();
+    expect(screen.queryByText("Tahmininizi gönderin")).not.toBeInTheDocument();
   });
 
   it("shows the ranking with an edit button when unlocked, and lets you revise it", async () => {

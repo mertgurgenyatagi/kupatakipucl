@@ -1,6 +1,8 @@
 import { Frame, FrameBody } from "@/components/ui/frame";
 import { MobileWelcomeBanner } from "./MobileWelcomeBanner";
 import { KnockoutPredictionWidget } from "../KnockoutPredictionWidget";
+import { GracePeriodBanner } from "../GracePeriodBanner";
+import { useGracePeriodOpen } from "../useGracePeriodOpen";
 import { NearbyStandingsList } from "../../leaderboard/NearbyStandingsList";
 import { RecentPostsPreview } from "../../forum/RecentPostsPreview";
 import type { LeaderboardEntry } from "../../leaderboard/leaderboardTypes";
@@ -51,12 +53,24 @@ export function MobileHomeStartedLoggedIn({
   onSelectParticipant: (uid: string) => void;
   phase: TournamentPhase;
 }) {
+  const graceOpen = useGracePeriodOpen();
+  // The real leaderboard only carries an entry once a prediction exists —
+  // its absence is exactly "me hasn't submitted yet", same signal
+  // HomeLandingLoggedInStarted.tsx's desktop counterpart uses.
+  const hasSubmitted = entries.some((e) => e.uid === me.uid);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 px-3 py-3">
-      {/* showCta is false throughout: /predictions redirects home once the
-          tournament has started, so the league-prediction CTA would be a
-          link to a bounce. Same reasoning as the desktop started page. */}
+      {/* showCta is false throughout: outside the grace window, /predictions
+          redirects home once the tournament has started, so the
+          league-prediction CTA would be a link to a bounce. Same reasoning
+          as the desktop started page. During the grace window, a
+          not-yet-submitted viewer gets GracePeriodBanner instead — its own
+          countdown targets the grace deadline, not this one's
+          TOURNAMENT_START_ISO (already past by then). */}
       <MobileWelcomeBanner me={me} showCta={false} />
+
+      {phase === "leaguephase" && graceOpen && !hasSubmitted && <GracePeriodBanner variant="loggedin" />}
 
       {phase === "preknockout" && <KnockoutPredictionWidget />}
 

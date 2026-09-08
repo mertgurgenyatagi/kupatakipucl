@@ -8,6 +8,8 @@ import { ChatRoom } from "../chat/ChatRoom";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { TeamPopup } from "../leaderboard/TeamPopup";
 import { MatchupPopup } from "../leaderboard/MatchupPopup";
+import { GracePeriodBanner } from "./GracePeriodBanner";
+import { useGracePeriodOpen } from "./useGracePeriodOpen";
 import { assignRanks } from "../leaderboard/ranking";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";
 import { Settings } from "lucide-react";
@@ -111,6 +113,7 @@ export function HomeLandingLoggedInStarted({
   onCreateLobby,
   createError,
 }: HomeLandingLoggedInStartedProps) {
+  const graceOpen = useGracePeriodOpen();
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
   const [selectedFixtureId, setSelectedFixtureId] = useState<string | null>(null);
@@ -163,6 +166,10 @@ export function HomeLandingLoggedInStarted({
 
   return (
     <div className={PAGE_SHELL}>
+      {/* Only for someone who hasn't submitted a prediction yet — myRanked
+          comes from the real leaderboard, which only carries an entry once
+          a prediction exists, so its absence is exactly "no prediction". */}
+      {phase === "leaguephase" && graceOpen && !myRanked && <GracePeriodBanner variant="loggedin" />}
       <div className={CELL_ROW}>
         {/* Col 1: Vertical Welcome Card with Create Lobby Button */}
         <HomeWelcomeVertical
