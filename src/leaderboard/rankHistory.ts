@@ -1,5 +1,6 @@
 import { computeStandingsFromMatches, MatchGoals } from "./standingsAccumulator";
 import { computeScore } from "./scoring";
+import { computeContrarianScores } from "./contrarianScore";
 import { assignRanks } from "./ranking";
 import { LeaderboardEntry } from "./leaderboardTypes";
 import { RealFixture } from "./realFixtureTypes";
@@ -44,10 +45,15 @@ export function computeRankHistory(
     matchGoalsThrough[fixture.id] = { homeGoals: fixture.homeGoals, awayGoals: fixture.awayGoals };
 
     const historicalResults = computeStandingsFromMatches(fixtures, matchGoalsThrough, optaRanking);
+    const contrarianScores = computeContrarianScores(entries, historicalResults);
 
     const scored = entries
-      .map((entry) => ({ ...entry, points: computeScore(entry.ranking, historicalResults) }))
-      .sort((a, b) => b.points - a.points);
+      .map((entry) => ({
+        ...entry,
+        points: computeScore(entry.ranking, historicalResults),
+        contrarianScore: contrarianScores[entry.uid] ?? 0,
+      }))
+      .sort((a, b) => b.points - a.points || b.contrarianScore - a.contrarianScore);
     const ranked = assignRanks(scored);
     const mine = ranked.find((r) => r.entry.uid === uid);
     if (mine) {

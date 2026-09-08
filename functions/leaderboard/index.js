@@ -55,6 +55,42 @@ function computeScore(ranking, results) {
   return score;
 }
 
+// Mirrors src/leaderboard/contrarianScore.ts's computeContrarianScores
+// exactly — duplicated here rather than imported, same convention as
+// computeScore above. A silent tiebreaker only: for each of a participant's
+// correct picks, how far their predicted position sat from the field's
+// average predicted position for that team, summed across every
+// contrarian-correct pick. Never shown in the UI, never touches points —
+// see ranking.ts for where it breaks ties.
+function computeContrarianScores(entries, results) {
+  const sumByTeam = {};
+  const countByTeam = {};
+  entries.forEach((entry) => {
+    entry.ranking.forEach((teamId, index) => {
+      sumByTeam[teamId] = (sumByTeam[teamId] ?? 0) + (index + 1);
+      countByTeam[teamId] = (countByTeam[teamId] ?? 0) + 1;
+    });
+  });
+  const crowdAverage = {};
+  Object.keys(sumByTeam).forEach((teamId) => {
+    crowdAverage[teamId] = sumByTeam[teamId] / countByTeam[teamId];
+  });
+
+  const scores = {};
+  entries.forEach((entry) => {
+    let score = 0;
+    entry.ranking.forEach((teamId, index) => {
+      const result = results[teamId];
+      if (!result) return;
+      const predictedPosition = index + 1;
+      if (!isPickCorrect(predictedPosition, result.position)) return;
+      score += Math.abs(predictedPosition - crowdAverage[teamId]);
+    });
+    scores[entry.uid] = score;
+  });
+  return scores;
+}
+
 /**
  * Reads every input and returns the leaderboard entries. Pure with respect to
  * Firestore writes — it never stores anything, so the caller owns the decision
@@ -96,7 +132,13 @@ async function computeEntries() {
       submittedAt: prediction.submittedAt,
     });
   });
-  entries.sort((a, b) => b.points - a.points);
+
+  const contrarianScores = computeContrarianScores(entries, results);
+  entries.forEach((entry) => {
+    entry.contrarianScore = contrarianScores[entry.uid] ?? 0;
+  });
+
+  entries.sort((a, b) => b.points - a.points || b.contrarianScore - a.contrarianScore);
   return entries;
 }
 
