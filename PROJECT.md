@@ -17,14 +17,28 @@ says so rather than guessing.
 
 ## 1. Status
 
-**Launched, in the `notstarted` phase.** The site has been live at
-`https://kupatakipucl.com` since 2026-08-28. As of 2026-09-07, **32 real people
-have signed up** — the first edition to ever run with real participants.
+**Launched, in the `leaguephase` phase since 2026-09-08.** The site has been
+live at `https://kupatakipucl.com` since 2026-08-28. As of 2026-09-07, **32
+real people have signed up** — the first edition to ever run with real
+participants; more joined during the grace window described below.
 
-Sign-up and league predictions both close when the league phase begins on
-**2026-09-08**. That flip is still a manual one (§11 #18) — Mert confirmed on
-2026-09-07 that he's preparing for it in a separate branch, expected within
-hours of that check-in.
+The phase flip itself is still a manual one (§11 #18): a hand-written
+`tournamentState/current.phase` update, same as ever.
+
+**3-day sign-up/first-prediction grace period, added 2026-09-08.** Chasing
+stragglers to submit a first-ever prediction after the hard lock got old
+enough that Mert asked for a standing fix: first-time sign-up and first-time
+prediction submission both stay open through `PREDICTION_GRACE_END_ISO`
+(`src/home/deadlines.ts`, 3 days after `TOURNAMENT_START_ISO`) instead of
+locking the instant the league phase starts. Editing an *existing*
+prediction is unaffected — `ProfilePage.tsx`'s `predictionLocked` gate
+(`state !== "loggedin_notstarted"`) was already permanent and untouched;
+only `PredictionsPage.tsx`'s one-time-door redirect and the matching
+`ProfilePage.tsx` CTA link were loosened. Four Home variants (desktop +
+mobile, logged-in + logged-out, `leaguephase` only) show a `GracePeriodBanner`
+countdown while the window is open and relevant; a dev-panel override
+(`gracePeriodOverride`) previews both states without a real 3-day wait. See
+`src/home/useGracePeriodOpen.ts`.
 
 Target audience is friends and friends-of-friends, sized for **up to 250
 participants**. Turkish-only, permanently — there is no i18n layer and none is
@@ -43,7 +57,7 @@ from code:
 |---|---|
 | Frontend hosting | **Live** at `https://kupatakipucl.com` via GitHub Pages, published from GitHub Actions. See §9 and DEPLOY.md. |
 | Firebase Auth authorized domains | `localhost`, `kupatakipucl.firebaseapp.com`, `kupatakipucl.web.app`, **`kupatakipucl.com`**, **`www.kupatakipucl.com`** — the last two added 2026-08-27. |
-| `tournamentState` collection | **Empty** — no `current` doc, so the app defaults to `notstarted`. This is the desired state for launch. |
+| `tournamentState` collection | `current.phase` = **`leaguephase`**, hand-set 2026-09-08 (§11 #18). |
 | Leaderboard Cloud Functions | **All three deployed and ACTIVE** in `europe-west8`, since 2026-08-07. |
 | `stopbilling` Cloud Run service | **Deployed**, since 2026-07-20. |
 | Realtime Database | Provisioned, `europe-west1`. |
@@ -596,9 +610,11 @@ Added 2026-09-07 on the `league-phase-prep` branch, fixing #14 and #16. Two
 `onSchedule("every 2 minutes")` functions, both live and verified against
 production:
 
-- **`syncFootballDataResults`** pulls the live UEFA Champions League
-  league-phase table from [football-data.org](https://www.football-data.org)'s
-  Free tier and overwrites `results/{teamId}` with it — the same collection
+- **`syncFootballDataResults`** pulls the real match list from
+  [football-data.org](https://www.football-data.org)'s Free tier and writes
+  `results/{teamId}` from a **self-computed** standings table
+  (`standings.js`), not the API's own `position` field — see "Standings
+  tiebreak rules, 2026-09-08" below. Same collection
   `src/devpanel/useDevMatches.ts` writes by hand, and the one
   `functions/leaderboard`'s `onDocumentWritten("results/{teamId}")` already
   watches, so a sync recomputes the leaderboard automatically with no extra
@@ -632,6 +648,49 @@ why `TeamPopup`'s pitch diagram, ranked squad lists, and manager name (§4
 `leaderboard/`) stay on dummy data even after its 2026-09-08 revival — no
 plan below paid carries that data at all — and why Stats stayed cleared
 rather than redesigned (see §11 #19–21).
+
+**Standings tiebreak rules, 2026-09-08.** `syncResults` used to trust
+football-data.org's own `position` field verbatim
+(`fetchCurrentStandingsTable`/`mapStandingsToResults`, now deleted) — opaque,
+and not guaranteed to implement UEFA's actual Champions League league-phase
+tiebreak order. Mert's call: "make sure our table uses the same rules."
+`syncResults` now fetches the same raw match list `syncFixtures` does and
+computes `results/{teamId}` itself, in strict UEFA order, for teams level on
+points:
+
+1. Goal difference (all 8 league-phase matches)
+2. Total goals scored
+3. Away goals scored (goals scored in away fixtures only)
+4. Total wins
+5. Away wins
+
+**While the league phase is in progress** (before Matchday 8 finishes), a
+tie surviving all five falls back to alphabetical order — UEFA's own rule
+("share an equal ranking"), with one deliberate house exception: if every
+tied team has played **zero** matches, the fallback is `opta-analyst`'s
+predicted order instead (a "more useful initial ordering... rather than
+alphabetical," Mert's words — this is what actually orders the table before
+Matchday 1 kicks off).
+
+**Once Matchday 8 completes**, UEFA adds three more computable criteria —
+opponents' collective points, goal difference, and goals scored ("strength
+of schedule," all three derivable from the same fixture list) — followed by
+disciplinary points and UEFA club coefficient, for which this app has no
+data source. Mert's call: both fall back to `opta-analyst`'s ranking too.
+
+`opta-analyst` is a real `predictions/{uid}` document — a hand-seeded
+"participant" (not a real signup) whose 36-team `ranking` array *is* the
+Opta supercomputer's preseason projected finishing order, read live rather
+than hardcoded, so updating that one document is the only thing ever needed
+to change the fallback order. `functions/fixtures/standings.js` implements
+this (throws if the document is missing or doesn't cover all 36 teams — same
+fail-loud convention as the unmapped-team-id checks elsewhere in this
+codebase); `src/leaderboard/standingsAccumulator.ts` carries an intentional
+line-for-line port for the rank-history chart (`rankHistory.ts`) and the dev
+panel's local simulator (`src/devpanel/standings.ts`), so neither can drift
+from the live rules — the client-side version degrades to alphabetical
+instead of throwing if `opta-analyst`'s prediction is still loading or
+incomplete, since a transient client render must not crash on it.
 
 **Polling cadence — live-aware, built 2026-09-07 for the live-match feature.**
 Originally a flat 10-minute interval (round 1: 90/10 matchday/quiet-day
@@ -735,9 +794,9 @@ not yet been imported into `public/`**.
 
 - **Unit/component**: `npm test` (Vitest, jsdom, `test/setup.ts` polyfilling
   ResizeObserver, IntersectionObserver, matchMedia, `scrollIntoView`,
-  `createObjectURL` and `Image`). **134 files / 1082 tests, re-verified
-  2026-09-08** after the TeamPopup revival (rewired match history, gated
-  squad/manager data) — includes
+  `createObjectURL` and `Image`). **140 files / 1126 tests, re-verified
+  2026-09-08** after the TeamPopup revival, the 3-day grace period, and the
+  self-computed standings tiebreak rework — includes
   `functions/fixtures`'s own test files (Vitest picks up any `*.test.js`
   outside `src/` too, same as `functions/leaderboard`'s). Most modules have a
   sibling test, and the tests are frequently the clearest statement of
@@ -919,7 +978,7 @@ Until that branch lands, treat those as "in progress," not unowned.
 | 15 | ~~**Production code depends on the dev panel.**~~ `TeamPopup`, `MatchupPopup`, `ParticipantPopup`, `rankHistory` and `teamMatchHistory` import fixtures and `devMatches` from `src/devpanel/`, while `upcomingFixtures.ts` avoids that collection precisely because it is "dev-only and auth-gated". These cannot both be right. **Done, 2026-09-08.** `MatchupPopup`, `rankHistory` (ParticipantPopup) and `upcomingFixtures.ts` were done 2026-09-07; `teamMatchHistory` (and `TeamPopup` itself) followed on 2026-09-08 when the popup was revived (#21) — all now read the real `fixtures` collection (§4, §6). Only the dev panel proper (`DevPanel.tsx`) still reads `devMatches`, which is its own intended purpose. |
 | 16 | ~~**Fixture list is the 2025-26 calendar with years shifted forward.**~~ **Done, 2026-09-07.** `functions/fixtures:syncFootballDataFixtures` syncs the real 144-match calendar into `fixtures/{id}` every 10 minutes; see §6. Every live consumer repointed at it (§4), including `teamMatchHistory`/`TeamPopup` as of 2026-09-08 (#15). The mock calendar (`src/devpanel/fixtures.ts`) still exists, untouched, feeding only the dev panel now. |
 | 17 | **Rank-history chart may never show real data** — it replays `devMatches`, which only the dev panel writes, and no production history source exists or can exist. |
-| 18 | **No production tooling sets the tournament phase.** `set-dev-config.mjs` writes `devConfig`, which production never reads. The Sept 8 flip is currently a hand edit in the Firebase console. Left as-is by decision — reconfirmed 2026-09-07, unlike #14/#15/#23–26 this one is *not* part of the incoming branch: "a small thing, no tool needed." |
+| 18 | **No production tooling sets the tournament phase.** `set-dev-config.mjs` writes `devConfig`, which production never reads. **The Sept 8 flip to `leaguephase` was done, 2026-09-08** — a hand edit of `tournamentState/current.phase` via the Firestore REST API, same as ever. Left as-is by decision, still no tooling — reconfirmed 2026-09-07/08, unlike #14/#15/#23–26 this one is *not* worth automating: "a small thing, no tool needed." |
 | 19 | ~~**Süper Lig "no team" answers render wrong on Stats**~~ — signup stores `"Tutmuyorum"`, the abbreviation map only knows `"Yok"`. **Moot, 2026-09-07** — the entire Stats page was cleared (§4 `stats/`), this widget no longer exists. |
 | 20 | ~~**Half the Stats page is fabricated**~~ — three of seven widgets are invented footballers, and the UCL-team chart is hardcoded even though real answers exist and are simply never aggregated. **Moot, 2026-09-07** — the whole page was cleared rather than fixed; nothing here survived to redesign. |
 | 21 | **Team popup squads are randomly generated** from a seeded RNG; every team plays 4-2-3-1. **Gated, 2026-09-08** — `TeamPopup` itself was revived that day (every real call site renders it again, `TeamPopupParked.tsx` is deleted; see §4 `leaderboard/`), but the pitch diagram, the three ranked squad lists, and the manager name still have no real data source, so they render a scoped "Bu bölüm şu anda hazır değil." placeholder behind `TeamPopup.tsx`'s `SQUAD_DATA_AVAILABLE` constant regardless of tournament phase. Not fixed, just gated: Mert plans to replace the generated squads with real ones via his own scraping automation later, not football-data.org. |
