@@ -2,12 +2,8 @@ const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
-const {
-  fetchCurrentStandingsTable,
-  fetchAllMatches,
-  mapStandingsToResults,
-  mapMatchesToFixtures,
-} = require("./footballData");
+const { fetchAllMatches, mapMatchesToFixtures } = require("./footballData");
+const { computeStandingsTable } = require("./standings");
 const { shouldPoll } = require("./pollGate");
 const { getLastSyncedAtMs, recordSynced, getRecentFixtures } = require("./syncControl");
 
@@ -46,12 +42,21 @@ async function gatedSync(key, sync) {
 }
 
 /**
- * Pulls the live Champions League league-phase table from football-data.org
- * and overwrites results/{teamId} to match — the same collection
- * src/devpanel/useDevMatches.ts writes by hand, and the one
- * functions/leaderboard's onDocumentWritten("results/{teamId}") trigger
- * already watches, so a successful sync here recomputes the leaderboard with
- * no further wiring.
+ * Pulls the real fixture calendar from football-data.org and computes
+ * results/{teamId} ourselves (standings.js) rather than trusting that API's
+ * own standings table — Mert, 2026-09-08: "make sure our table uses the same
+ * rules" as UEFA's actual league-phase tiebreak order, which the API's own
+ * `position` field doesn't guarantee. `opta-analyst` is a real
+ * predictions/{uid} document (a hand-seeded "participant" carrying the Opta
+ * supercomputer's preseason projected order, not a real signup) that
+ * standings.js reads as its fallback order for a still-tied opening table
+ * and, once Matchday 8 completes, in place of the disciplinary-points and
+ * UEFA-club-coefficient criteria this app has no data for.
+ *
+ * results/{teamId} is the same collection src/devpanel/useDevMatches.ts
+ * writes by hand, and the one functions/leaderboard's
+ * onDocumentWritten("results/{teamId}") trigger already watches, so a
+ * successful sync here recomputes the leaderboard with no further wiring.
  *
  * Unconditional overwrite, same as the dev panel's own batch write: this is
  * meant to be the single source of truth for results once the league phase
@@ -64,8 +69,17 @@ async function gatedSync(key, sync) {
  * — not built, because nothing has needed it yet.
  */
 async function syncResults() {
-  const table = await fetchCurrentStandingsTable(FOOTBALL_DATA_TOKEN.value());
-  const results = mapStandingsToResults(table);
+  const [matches, optaDoc] = await Promise.all([
+    fetchAllMatches(FOOTBALL_DATA_TOKEN.value()),
+    db.doc("predictions/opta-analyst").get(),
+  ]);
+  const optaRanking = optaDoc.data()?.ranking;
+  if (!Array.isArray(optaRanking)) {
+    throw new Error("predictions/opta-analyst is missing its ranking array");
+  }
+
+  const fixtures = mapMatchesToFixtures(matches);
+  const results = computeStandingsTable(fixtures, optaRanking);
 
   const batch = db.batch();
   Object.entries(results).forEach(([teamId, result]) => {

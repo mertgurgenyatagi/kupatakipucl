@@ -24,10 +24,13 @@ function outcomeToGoals(outcome: MatchOutcome): MatchGoals | undefined {
  * unchanged from before the extraction; standings.test.ts still asserts it
  * directly.
  */
-export function computeStandings(outcomes: Record<string, MatchOutcome>): Record<string, TeamResult> {
+export function computeStandings(
+  outcomes: Record<string, MatchOutcome>,
+  optaRanking: string[] = []
+): Record<string, TeamResult> {
   const matchGoals: Record<string, MatchGoals | undefined> = {};
   FIXTURES.forEach((fixture) => {
     matchGoals[fixture.id] = outcomeToGoals(outcomes[fixture.id] ?? "notplayed");
   });
-  return computeStandingsFromMatches(FIXTURES, matchGoals);
+  return computeStandingsFromMatches(FIXTURES, matchGoals, optaRanking);
 }

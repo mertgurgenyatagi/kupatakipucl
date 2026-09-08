@@ -221,7 +221,14 @@ describe("ParticipantPopup", () => {
     );
     expect(await screen.findByText("Anket cevaplarını görmek için giriş yapmalısınız.")).toBeInTheDocument();
     await waitFor(() => expect(mockGetDocs).toHaveBeenCalled()); // devMatches still loads
-    expect(mockGetDoc).not.toHaveBeenCalled(); // but the survey read is skipped
+    // The survey read specifically is skipped (rank history's own
+    // opta-analyst prediction fetch still fires, since tournamentStarted).
+    // mockGetDoc (unlike mockDoc) is reset every test, so its own call log
+    // is scoped to this test alone.
+    const surveyCalls = mockGetDoc.mock.calls.filter(
+      ([ref]) => (ref as { collection?: string } | undefined)?.collection === "surveyResponses"
+    );
+    expect(surveyCalls).toHaveLength(0);
   });
 
   it("shows a distinct, non-alarming message when the participant has no survey doc at all", async () => {

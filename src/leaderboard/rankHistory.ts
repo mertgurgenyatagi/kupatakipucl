@@ -33,7 +33,8 @@ export interface RankCheckpoint {
 export function computeRankHistory(
   uid: string,
   entries: LeaderboardEntry[],
-  fixtures: RealFixture[]
+  fixtures: RealFixture[],
+  optaRanking: string[] = []
 ): RankCheckpoint[] {
   const checkpoints: RankCheckpoint[] = [];
   const matchGoalsThrough: Record<string, MatchGoals | undefined> = {};
@@ -42,7 +43,7 @@ export function computeRankHistory(
     if (fixture.homeGoals === null || fixture.awayGoals === null) break;
     matchGoalsThrough[fixture.id] = { homeGoals: fixture.homeGoals, awayGoals: fixture.awayGoals };
 
-    const historicalResults = computeStandingsFromMatches(fixtures, matchGoalsThrough);
+    const historicalResults = computeStandingsFromMatches(fixtures, matchGoalsThrough, optaRanking);
 
     const scored = entries
       .map((entry) => ({ ...entry, points: computeScore(entry.ranking, historicalResults) }))

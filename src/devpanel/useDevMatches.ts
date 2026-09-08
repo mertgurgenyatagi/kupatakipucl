@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, doc, getDocs, writeBatch } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
 import { FIXTURES } from "./fixtures";
 import { computeStandings, MatchOutcome } from "./standings";
@@ -59,7 +59,13 @@ export async function setMatchOutcome(
   }
 
   const nextOutcomes = { ...currentOutcomes, [fixtureId]: outcome };
-  const standings = computeStandings(nextOutcomes);
+  // Same fallback source production's syncResults (functions/fixtures)
+  // reads for the real results/{teamId} — a real predictions/{uid} document,
+  // not dev-only data, so this stays consistent with the live tiebreak rules
+  // even in this local-testing path.
+  const optaDoc = await getDoc(doc(db, "predictions", "opta-analyst"));
+  const optaRanking = (optaDoc.data()?.ranking as string[] | undefined) ?? [];
+  const standings = computeStandings(nextOutcomes, optaRanking);
 
   const batch = writeBatch(db);
   batch.set(doc(db, "devMatches", fixtureId), { outcome });

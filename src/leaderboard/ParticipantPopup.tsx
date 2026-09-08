@@ -10,6 +10,7 @@ import { qualificationBand } from "./qualification";
 import { isPickCorrect } from "./scoring";
 import { computeRankHistory, RankCheckpoint } from "./rankHistory";
 import { useFixtures } from "./useFixtures";
+import { usePrediction } from "../predictions/usePrediction";
 import { useSurveyResponse } from "../predictions/useSurveyResponse";
 import { TEAM_BY_ID } from "../predictions/teams";
 import { MESSI_RONALDO_LABEL, DEVICE_LABEL, ensurePeriod, uclTeamLabel } from "../predictions/surveyLabels";
@@ -270,6 +271,13 @@ export const ParticipantPopup = memo(function ParticipantPopup({
     : null;
 
   const { fixtures } = useFixtures();
+  // opta-analyst is a real predictions/{uid} document (a hand-seeded
+  // "participant" carrying the Opta supercomputer's preseason order, not a
+  // real signup) — same tiebreak fallback source rankHistory.ts's own
+  // computeStandingsFromMatches call needs, so this replay never disagrees
+  // with the live table's tiebreak rules (functions/fixtures/standings.js).
+  // Only fetched when rank history is actually computed below.
+  const { prediction: optaPrediction } = usePrediction(tournamentStarted ? "opta-analyst" : null);
   const { response: survey, loading: surveyLoading, error: surveyError } = useSurveyResponse(
     tournamentStarted && viewerLoggedIn ? displayedUid : null
   );
@@ -292,8 +300,11 @@ export const ParticipantPopup = memo(function ParticipantPopup({
   );
 
   const rankHistory = useMemo(
-    () => (tournamentStarted && displayedUid ? computeRankHistory(displayedUid, entries, fixtures) : []),
-    [tournamentStarted, displayedUid, entries, fixtures]
+    () =>
+      tournamentStarted && displayedUid
+        ? computeRankHistory(displayedUid, entries, fixtures, optaPrediction?.ranking ?? [])
+        : [],
+    [tournamentStarted, displayedUid, entries, fixtures, optaPrediction]
   );
 
   const popupImageUrls = useMemo(

@@ -2,6 +2,7 @@ import { renderHook, waitFor, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
 const mockGetDocs = vi.fn();
+const mockGetDoc = vi.fn();
 const mockCollection = vi.fn((_db: unknown, name: string) => ({ name }));
 const mockDoc = vi.fn((_db: unknown, collection: string, id: string) => ({ collection, id }));
 const mockBatchSet = vi.fn();
@@ -11,6 +12,7 @@ const mockWriteBatch = vi.fn((_db: unknown) => ({ set: mockBatchSet, commit: moc
 vi.mock("firebase/firestore", () => ({
   collection: (...args: unknown[]) => mockCollection(...(args as [unknown, string])),
   getDocs: (...args: unknown[]) => mockGetDocs(...args),
+  getDoc: (...args: unknown[]) => mockGetDoc(...args),
   doc: (...args: unknown[]) => mockDoc(...(args as [unknown, string, string])),
   writeBatch: (...args: unknown[]) => mockWriteBatch(...(args as [unknown])),
 }));
@@ -59,6 +61,8 @@ describe("setMatchOutcome", () => {
     mockBatchSet.mockReset();
     mockBatchCommit.mockReset();
     mockBatchCommit.mockResolvedValue(undefined);
+    mockGetDoc.mockReset();
+    mockGetDoc.mockResolvedValue({ data: () => undefined });
   });
 
   it("allows deciding the very first fixture with no prior outcomes", async () => {

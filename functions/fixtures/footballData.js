@@ -7,7 +7,6 @@ const API_BASE = "https://api.football-data.org/v4";
 // No ?season= param: football-data.org resolves this to whatever it currently
 // considers the active season, so this keeps working next year with no
 // redeploy. If that ever needs pinning, add season here explicitly.
-const STANDINGS_URL = `${API_BASE}/competitions/CL/standings`;
 const MATCHES_URL = `${API_BASE}/competitions/CL/matches`;
 
 async function fetchJson(url, apiToken) {
@@ -16,19 +15,6 @@ async function fetchJson(url, apiToken) {
     throw new Error(`football-data.org request to ${url} failed: ${res.status} ${await res.text()}`);
   }
   return res.json();
-}
-
-async function fetchCurrentStandingsTable(apiToken) {
-  const body = await fetchJson(STANDINGS_URL, apiToken);
-  // "TOTAL" is the single league-phase table (36 teams, no groups) — the
-  // format football-data.org uses for the Champions League since the 2024-25
-  // format change. A cup competition still using group-stage standings would
-  // have multiple entries here; the league phase never does.
-  const table = body.standings?.find((s) => s.type === "TOTAL")?.table;
-  if (!table) {
-    throw new Error("football-data.org standings response had no TOTAL table");
-  }
-  return table;
 }
 
 /** Every league-phase match (all 144, past and future) for the current
@@ -40,35 +26,6 @@ async function fetchAllMatches(apiToken) {
     throw new Error("football-data.org matches response had no matches array");
   }
   return body.matches;
-}
-
-/**
- * Pure: turns one standings API response into the same shape
- * src/devpanel/standings.ts writes to results/{teamId}, keyed by this app's
- * team slugs instead of football-data.org's numeric ids.
- *
- * Throws on any team id the map doesn't cover, rather than silently dropping
- * a team from the results collection — a missing team would score every
- * participant's prediction for that slot as impossible to get right, which is
- * worse than a loud failure.
- */
-function mapStandingsToResults(table) {
-  const results = {};
-  table.forEach((row) => {
-    const slug = TEAM_ID_MAP[row.team.id];
-    if (!slug) {
-      throw new Error(`No team-id mapping for football-data.org team ${row.team.id} (${row.team.name})`);
-    }
-    results[slug] = {
-      position: row.position,
-      points: row.points,
-      goalDifference: row.goalDifference,
-      goalsFor: row.goalsFor,
-      goalsAgainst: row.goalsAgainst,
-      matchesPlayed: row.playedGames,
-    };
-  });
-  return results;
 }
 
 /**
@@ -111,10 +68,7 @@ function mapMatchesToFixtures(matches) {
 }
 
 module.exports = {
-  fetchCurrentStandingsTable,
   fetchAllMatches,
-  mapStandingsToResults,
   mapMatchesToFixtures,
-  STANDINGS_URL,
   MATCHES_URL,
 };

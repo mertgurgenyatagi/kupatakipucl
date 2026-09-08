@@ -1,43 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mapStandingsToResults, mapMatchesToFixtures } from "./footballData.js";
-
-const row = (id, overrides = {}) => ({
-  position: 1,
-  points: 0,
-  goalDifference: 0,
-  goalsFor: 0,
-  goalsAgainst: 0,
-  playedGames: 0,
-  team: { id, name: `Team ${id}` },
-  ...overrides,
-});
-
-describe("mapStandingsToResults", () => {
-  it("re-keys by team slug and renames playedGames to matchesPlayed", () => {
-    const results = mapStandingsToResults([
-      row(57, { position: 1, points: 9, goalDifference: 4, goalsFor: 6, goalsAgainst: 2, playedGames: 3 }),
-    ]);
-
-    expect(results).toEqual({
-      arsenal: { position: 1, points: 9, goalDifference: 4, goalsFor: 6, goalsAgainst: 2, matchesPlayed: 3 },
-    });
-  });
-
-  it("throws on an unmapped football-data.org team id rather than dropping it silently", () => {
-    expect(() => mapStandingsToResults([row(999999)])).toThrow(/No team-id mapping/);
-  });
-
-  it("maps all 36 real teams with no collisions", () => {
-    // Same 36 ids fetched live from /v4/competitions/CL/standings on 2026-09-07.
-    const ids = [
-      1899, 57, 58, 78, 81, 5, 5721, 4, 851, 7397, 613, 675, 610, 108, 2016, 546,
-      521, 64, 65, 66, 113, 524, 503, 674, 721, 90, 86, 100, 10233, 1887, 930,
-      7509, 498, 10, 5720, 94,
-    ];
-    const results = mapStandingsToResults(ids.map((id) => row(id)));
-    expect(Object.keys(results)).toHaveLength(36);
-  });
-});
+import { mapMatchesToFixtures } from "./footballData.js";
 
 const match = (overrides = {}) => ({
   id: 1,
