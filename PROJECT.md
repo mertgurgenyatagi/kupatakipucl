@@ -316,9 +316,11 @@ adapter (synthetic outcome → synthetic goals → the shared function);
 `standings.test.ts` passes unchanged, proving the extraction didn't alter its
 behavior.
 
-`teamMatchHistory.ts` was deliberately **not** touched — its only consumer is
-the parked `TeamPopup.tsx` (below), so it stays wired to the devpanel mock
-until that popup is revived.
+`teamMatchHistory.ts` was rewired 2026-09-08, alongside `TeamPopup.tsx`'s
+revival (below) — it now takes `RealFixture[]` (from `useFixtures()`) instead
+of the devpanel mock + `MatchOutcome`, deriving `result`/goals straight from
+`homeGoals`/`awayGoals` (the same null-check `MatchupPopup.tsx` and
+`rankHistory.ts` already use), rather than reading the devpanel mock.
 
 **Live-match feature, 2026-09-07.** Mert's ask, kept deliberately open-ended
 ("be creative"). Live detection is entirely derived from data already
@@ -359,14 +361,20 @@ Popups: `TeamPopup` (predictors, match history, and a generated squad),
 `ParticipantPopup` (their full 36-row prediction, quiz answers, rank history
 chart), `MatchupPopup` (one fixture, both teams' predictor columns).
 
-**`TeamPopup` is shelved, 2026-09-07.** Every real call site now renders
-`TeamPopupParked.tsx` instead — a big "Bu bölüm şu anda hazır değil." message,
-nothing else. `TeamPopup.tsx` itself is untouched and left in the tree
-deliberately: Mert plans to bring its squad/dossier content to life later via
-his own scraping automation rather than football-data.org (whose Free tier
-has no lineup/squad data anyway), so the full implementation needs to survive
-intact for that. `TeamPopup.test.tsx` still exercises it directly. See §11
-#21.
+**`TeamPopup` revived, 2026-09-08.** `TeamPopupParked.tsx` (the "Bu bölüm şu
+anda hazır değil." takeover) is deleted; every real call site renders
+`TeamPopup.tsx` again. Rank/points, average predicted position, "who
+predicted this team", and match history (rewired from the devpanel mock to
+`useFixtures()`'s real football-data.org sync, above) are all real now. The
+pitch diagram, the three ranked squad lists (scorers/assisters/rated), and
+the manager name are still explicit dummy data (`teamDossier.ts`) — no
+player-level data source exists anywhere in this app, and football-data.org's
+Free tier carries none either — so those three widgets and the manager name
+now render their own scoped "Bu bölüm şu anda hazır değil." placeholder,
+gated behind `TeamPopup.tsx`'s `SQUAD_DATA_AVAILABLE` constant, regardless of
+tournament phase. Flip that constant once Mert's own scraping automation
+lands real squad data. `TeamPopup.test.tsx` covers the gating directly. See
+§11 #21.
 
 Several modules here import fixtures and match outcomes from `src/devpanel/` —
 see §11, this is the biggest structural problem in the repo.
@@ -619,10 +627,11 @@ group-stage shape.
 **What Free tier does and doesn't give you:** fixtures, standings, and scores
 (delayed by an unspecified amount) — yes. Lineups, goal scorers, cards, and
 squads — no, on any plan below paid. Mert's call, 2026-09-07: accept the Free
-tier's limits rather than pay for more; "it is what it is." This caps what the
-incoming team-popup and stats-page redesigns (#XX, #YY below) can show —
-neither has been scoped yet (see §11 #19–21), precisely because this had to
-be settled first.
+tier's limits rather than pay for more; "it is what it is." This is exactly
+why `TeamPopup`'s pitch diagram, ranked squad lists, and manager name (§4
+`leaderboard/`) stay on dummy data even after its 2026-09-08 revival — no
+plan below paid carries that data at all — and why Stats stayed cleared
+rather than redesigned (see §11 #19–21).
 
 **Polling cadence — live-aware, built 2026-09-07 for the live-match feature.**
 Originally a flat 10-minute interval (round 1: 90/10 matchday/quiet-day
@@ -726,9 +735,9 @@ not yet been imported into `public/`**.
 
 - **Unit/component**: `npm test` (Vitest, jsdom, `test/setup.ts` polyfilling
   ResizeObserver, IntersectionObserver, matchMedia, `scrollIntoView`,
-  `createObjectURL` and `Image`). **132 files / 1052 tests, re-verified
-  2026-09-07** after the stats clear-out, TeamPopup shelving, and the
-  football-data.org fixture/results integration — includes
+  `createObjectURL` and `Image`). **134 files / 1082 tests, re-verified
+  2026-09-08** after the TeamPopup revival (rewired match history, gated
+  squad/manager data) — includes
   `functions/fixtures`'s own test files (Vitest picks up any `*.test.js`
   outside `src/` too, same as `functions/leaderboard`'s). Most modules have a
   sibling test, and the tests are frequently the clearest statement of
@@ -907,13 +916,13 @@ Until that branch lands, treat those as "in progress," not unowned.
 | # | Problem |
 |---|---|
 | 14 | ~~**No way to enter real match results.**~~ **Done, deployed and verified live, 2026-09-07.** `functions/fixtures:syncFootballDataResults` syncs `results/{teamId}` from football-data.org every 10 minutes; see §6. Manually triggered once post-deploy and confirmed end-to-end: all 36 `results` docs written correctly, `functions/leaderboard`'s recompute trigger fired automatically 6 seconds later. |
-| 15 | ~~**Production code depends on the dev panel.**~~ `TeamPopup`, `MatchupPopup`, `ParticipantPopup`, `rankHistory` and `teamMatchHistory` import fixtures and `devMatches` from `src/devpanel/`, while `upcomingFixtures.ts` avoids that collection precisely because it is "dev-only and auth-gated". These cannot both be right. **Done for the live surfaces, 2026-09-07** — `MatchupPopup`, `rankHistory` (ParticipantPopup) and `upcomingFixtures.ts` now all read the real `fixtures` collection (§4, §6) instead. `teamMatchHistory` is untouched by design — its only consumer is the parked `TeamPopup` (#21), so it's dormant, not fixed; both resurface together whenever that popup is revived. |
-| 16 | ~~**Fixture list is the 2025-26 calendar with years shifted forward.**~~ **Done, 2026-09-07.** `functions/fixtures:syncFootballDataFixtures` syncs the real 144-match calendar into `fixtures/{id}` every 10 minutes; see §6. Every live consumer repointed at it (§4). The mock calendar (`src/devpanel/fixtures.ts`) still exists, untouched, feeding only the dev panel and the now-dormant `teamMatchHistory`/`TeamPopup` pair. |
+| 15 | ~~**Production code depends on the dev panel.**~~ `TeamPopup`, `MatchupPopup`, `ParticipantPopup`, `rankHistory` and `teamMatchHistory` import fixtures and `devMatches` from `src/devpanel/`, while `upcomingFixtures.ts` avoids that collection precisely because it is "dev-only and auth-gated". These cannot both be right. **Done, 2026-09-08.** `MatchupPopup`, `rankHistory` (ParticipantPopup) and `upcomingFixtures.ts` were done 2026-09-07; `teamMatchHistory` (and `TeamPopup` itself) followed on 2026-09-08 when the popup was revived (#21) — all now read the real `fixtures` collection (§4, §6). Only the dev panel proper (`DevPanel.tsx`) still reads `devMatches`, which is its own intended purpose. |
+| 16 | ~~**Fixture list is the 2025-26 calendar with years shifted forward.**~~ **Done, 2026-09-07.** `functions/fixtures:syncFootballDataFixtures` syncs the real 144-match calendar into `fixtures/{id}` every 10 minutes; see §6. Every live consumer repointed at it (§4), including `teamMatchHistory`/`TeamPopup` as of 2026-09-08 (#15). The mock calendar (`src/devpanel/fixtures.ts`) still exists, untouched, feeding only the dev panel now. |
 | 17 | **Rank-history chart may never show real data** — it replays `devMatches`, which only the dev panel writes, and no production history source exists or can exist. |
 | 18 | **No production tooling sets the tournament phase.** `set-dev-config.mjs` writes `devConfig`, which production never reads. The Sept 8 flip is currently a hand edit in the Firebase console. Left as-is by decision — reconfirmed 2026-09-07, unlike #14/#15/#23–26 this one is *not* part of the incoming branch: "a small thing, no tool needed." |
 | 19 | ~~**Süper Lig "no team" answers render wrong on Stats**~~ — signup stores `"Tutmuyorum"`, the abbreviation map only knows `"Yok"`. **Moot, 2026-09-07** — the entire Stats page was cleared (§4 `stats/`), this widget no longer exists. |
 | 20 | ~~**Half the Stats page is fabricated**~~ — three of seven widgets are invented footballers, and the UCL-team chart is hardcoded even though real answers exist and are simply never aggregated. **Moot, 2026-09-07** — the whole page was cleared rather than fixed; nothing here survived to redesign. |
-| 21 | **Team popup squads are randomly generated** from a seeded RNG; every team plays 4-2-3-1. **Shelved, 2026-09-07** — `TeamPopup` (where this lives) no longer renders in production at all; see §4 `leaderboard/`. Not fixed, just parked: Mert plans to replace the generated squads with real ones via his own scraping automation later, not football-data.org. |
+| 21 | **Team popup squads are randomly generated** from a seeded RNG; every team plays 4-2-3-1. **Gated, 2026-09-08** — `TeamPopup` itself was revived that day (every real call site renders it again, `TeamPopupParked.tsx` is deleted; see §4 `leaderboard/`), but the pitch diagram, the three ranked squad lists, and the manager name still have no real data source, so they render a scoped "Bu bölüm şu anda hazır değil." placeholder behind `TeamPopup.tsx`'s `SQUAD_DATA_AVAILABLE` constant regardless of tournament phase. Not fixed, just gated: Mert plans to replace the generated squads with real ones via his own scraping automation later, not football-data.org. |
 | 22 | **Lobby caps unenforced on the started-phase home** — `HomeLandingLoggedInStarted` declares `canCreateLobby` but never reads it. Left as-is by decision. |
 
 ### Later

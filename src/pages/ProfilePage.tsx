@@ -29,7 +29,7 @@ import { usePlayers } from "../profile/usePlayers";
 import { useResults } from "../leaderboard/useResults";
 import { assignRanks } from "../leaderboard/ranking";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
-import { TeamPopup } from "../leaderboard/TeamPopupParked";
+import { TeamPopup } from "../leaderboard/TeamPopup";
 import { MatchupPopup } from "../leaderboard/MatchupPopup";
 import { useTournamentPhase } from "../tournament/useTournamentPhase";
 import { CameraIcon, Trash2 } from "lucide-react";

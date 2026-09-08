@@ -1,5 +1,4 @@
-import { FIXTURES } from "../devpanel/fixtures";
-import { MatchOutcome } from "../devpanel/standings";
+import { RealFixture } from "./realFixtureTypes";
 
 /** Turkish football's own convention for a result letter — Galibiyet /
  *  Beraberlik / Mağlubiyet — already the source of this codebase's O/A/Y
@@ -19,45 +18,38 @@ export interface TeamMatchHistoryEntry {
   result: ResultLetter | null;
   /** This team's own goal tally — always team-first regardless of literal
    *  home/away order, since every row in this popup is "us vs them" from
-   *  the popped-up team's own point of view. Synthetic but real (the same
-   *  numbers already driving the live team table's own goal columns:
-   *  standings.ts — every win is 1-0, every draw is 0-0). null until
-   *  decided. */
+   *  the popped-up team's own point of view. null until decided. */
   teamGoals: number | null;
   opponentGoals: number | null;
 }
 
-function resultLetter(outcome: MatchOutcome, home: boolean): ResultLetter | null {
-  if (outcome === "notplayed") return null;
-  if (outcome === "draw") return "B";
-  const won = (home && outcome === "homewin") || (!home && outcome === "awaywin");
+// Same "not yet decided" test as MatchupPopup.tsx's own MatchupCenter and
+// rankHistory.ts — a fixture is decided once both goal counts are non-null,
+// independent of `status` (which is only used to distinguish live from
+// finished, not decided from undecided).
+function resultLetter(homeGoals: number | null, awayGoals: number | null, home: boolean): ResultLetter | null {
+  if (homeGoals === null || awayGoals === null) return null;
+  if (homeGoals === awayGoals) return "B";
+  const won = (home && homeGoals > awayGoals) || (!home && awayGoals > homeGoals);
   return won ? "G" : "M";
 }
 
-function goalsFor(result: ResultLetter | null): { teamGoals: number | null; opponentGoals: number | null } {
-  if (result === null) return { teamGoals: null, opponentGoals: null };
-  if (result === "G") return { teamGoals: 1, opponentGoals: 0 };
-  if (result === "M") return { teamGoals: 0, opponentGoals: 1 };
-  return { teamGoals: 0, opponentGoals: 0 };
-}
-
 /**
- * Every one of a team's 8 league-phase fixtures (one per matchday), in
- * calendar order — real data throughout, derived from the same `FIXTURES` +
- * `devMatches` outcomes the rest of the leaderboard already reads, not
- * invented. Undecided fixtures carry `result`/goals `null` so the popup can
- * render them as "upcoming" rather than guessing.
+ * Every one of a team's fixtures, in calendar order — real data throughout,
+ * derived from `useFixtures()`'s own `fixtures/{id}` sync (football-data.org),
+ * the same source every other live consumer (FixtureRow, MatchupPopup,
+ * TeamTable) already reads. Undecided fixtures carry `result`/goals `null`
+ * so the popup can render them as "upcoming" rather than guessing.
  */
-export function getTeamMatchHistory(
-  teamId: string,
-  outcomes: Record<string, MatchOutcome>
-): TeamMatchHistoryEntry[] {
-  return FIXTURES.filter((f) => f.homeTeamId === teamId || f.awayTeamId === teamId)
+export function getTeamMatchHistory(teamId: string, fixtures: RealFixture[]): TeamMatchHistoryEntry[] {
+  return fixtures
+    .filter((f) => f.homeTeamId === teamId || f.awayTeamId === teamId)
     .sort((a, b) => a.order - b.order)
     .map((f) => {
       const home = f.homeTeamId === teamId;
-      const outcome = outcomes[f.id] ?? "notplayed";
-      const result = resultLetter(outcome, home);
+      const result = resultLetter(f.homeGoals, f.awayGoals, home);
+      const teamGoals = result === null ? null : home ? f.homeGoals : f.awayGoals;
+      const opponentGoals = result === null ? null : home ? f.awayGoals : f.homeGoals;
       return {
         fixtureId: f.id,
         matchday: f.matchday,
@@ -66,7 +58,8 @@ export function getTeamMatchHistory(
         home,
         kickoffUtc: f.kickoffUtc,
         result,
-        ...goalsFor(result),
+        teamGoals,
+        opponentGoals,
       };
     });
 }

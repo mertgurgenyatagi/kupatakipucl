@@ -6,7 +6,7 @@ import { RecentPostsPreview, ForumPreviewFooter } from "../forum/RecentPostsPrev
 import { NearbyStandingsList } from "../leaderboard/NearbyStandingsList";
 import { ChatRoom } from "../chat/ChatRoom";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
-import { TeamPopup } from "../leaderboard/TeamPopupParked";
+import { TeamPopup } from "../leaderboard/TeamPopup";
 import { MatchupPopup } from "../leaderboard/MatchupPopup";
 import { assignRanks } from "../leaderboard/ranking";
 import { Frame, FrameHeader, FrameTitle, FrameBody } from "@/components/ui/frame";

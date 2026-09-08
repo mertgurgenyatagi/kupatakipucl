@@ -1,10 +1,11 @@
-// PARKED 2026-09-07: every real call site now renders TeamPopupParked.tsx
-// instead of this component — see that file's header comment. Mert shelved
-// the team-popup redesign to focus on the league phase launch, but wants this
-// implementation kept intact rather than deleted: he plans to bring its
-// squad/dossier data to life later via scraping automation instead of
-// football-data.org (whose Free tier doesn't carry squads/lineups anyway).
-// Do not delete this file or "clean up" its now-unused exports.
+// REVIVED 2026-09-08: every real call site renders this component again —
+// TeamPopupParked.tsx is gone. Rank/points, average predicted position,
+// "who predicted this team", and match history are all real now (match
+// history rewired from the devpanel mock to `useFixtures()`'s real
+// football-data.org sync). The pitch diagram, the three ranked squad lists,
+// and the manager name are still dummy data with no real source yet — see
+// `SQUAD_DATA_AVAILABLE` below — and render NotAvailablePlaceholder instead
+// until Mert's own scraping automation lands real squad data.
 import {
   memo,
   useEffect,
@@ -23,7 +24,7 @@ import { TeamResult } from "./teamResultTypes";
 import { getTeamDossier, TeamDossier, DossierPlayer } from "./teamDossier";
 import { getTeamMatchHistory, getNextMatch, getPastMatches, ResultLetter } from "./teamMatchHistory";
 import { getTeamPredictors } from "./teamPredictors";
-import { useDevMatches } from "../devpanel/useDevMatches";
+import { useFixtures } from "./useFixtures";
 import { TeamCrest } from "./TeamCrest";
 import { StatRow } from "./StatWidget";
 import { TeamPopupTuning, DEFAULT_TEAM_POPUP_TUNING } from "./teamPopupTuning";
@@ -146,6 +147,27 @@ function NotViewablePlaceholder() {
     </p>
   );
 }
+
+// Same copy TeamPopupParked.tsx used while this whole popup was shelved —
+// kept as the house phrase for "no data source yet" so it reads as one
+// convention rather than two. Distinct from NOT_VIEWABLE_MESSAGE above,
+// which is about tournament timing, not data availability.
+const NOT_AVAILABLE_MESSAGE = "Bu bölüm şu anda hazır değil.";
+
+function NotAvailablePlaceholder() {
+  return (
+    <p className="flex h-full items-center justify-center px-4 text-center font-display text-sm text-color_textsecondary italic">
+      {NOT_AVAILABLE_MESSAGE}
+    </p>
+  );
+}
+
+// Flip this once Mert's scraping automation lands real squad/manager data
+// (PROJECT.md §11 #21) — football-data.org's Free tier carries none. Until
+// then the pitch diagram, the three ranked squad lists, and the manager
+// name stay gated behind NotAvailablePlaceholder regardless of tournament
+// phase, since the gap is missing data, not timing.
+const SQUAD_DATA_AVAILABLE = false;
 
 const RESULT_LABEL: Record<ResultLetter, string> = {
   G: "Galibiyet",
@@ -571,13 +593,15 @@ function StatList({
  * different source image). No crest click-interaction either (the earlier
  * palette-flash easter egg was cut).
  *
- * Real data: live rank/points, the pitch diagram's *formation shape* is
- * dummy but every fixture in match history and every row in "who predicted
- * this team" is real. The three ranked lists (scorers/assisters/rated) and
- * the starting XI are explicit dummy data — no player-level data source
- * exists anywhere in this app yet (Mert: "there is no existing API for
- * football data wired right now... just do dummy data... use solid
- * colors" — see teamDossier.ts).
+ * Real data: live rank/points, average predicted position, every fixture in
+ * match history (from `useFixtures()`'s real football-data.org sync), and
+ * every row in "who predicted this team" are all real. The pitch diagram,
+ * the three ranked squad lists (scorers/assisters/rated), and the manager
+ * name are still explicit dummy data (teamDossier.ts) — no player-level
+ * data source exists anywhere in this app yet, and football-data.org's Free
+ * tier carries none either. Those three widgets render NotAvailablePlaceholder
+ * instead, gated behind `SQUAD_DATA_AVAILABLE`, until Mert's own scraping
+ * automation lands real squad data (PROJECT.md §11 #21).
  */
 export const TeamPopup = memo(function TeamPopup({
   teamId,
@@ -605,7 +629,7 @@ export const TeamPopup = memo(function TeamPopup({
   }, [teamId]);
 
   const displayedId = teamId ?? lastTeamId;
-  const { outcomes } = useDevMatches();
+  const { fixtures } = useFixtures();
   const { predictions: knockoutPredictions } = useAllKnockoutPredictions();
 
   const isRo16Team = displayedId ? RO16_TEAM_IDS.has(displayedId) : false;
@@ -614,8 +638,8 @@ export const TeamPopup = memo(function TeamPopup({
 
   const dossier = useMemo(() => (displayedId ? getTeamDossier(displayedId) : null), [displayedId]);
   const matchHistory = useMemo(
-    () => (displayedId ? getTeamMatchHistory(displayedId, outcomes) : []),
-    [displayedId, outcomes]
+    () => (displayedId ? getTeamMatchHistory(displayedId, fixtures) : []),
+    [displayedId, fixtures]
   );
   const nextMatch = useMemo(() => getNextMatch(matchHistory), [matchHistory]);
   const pastMatches = useMemo(() => getPastMatches(matchHistory), [matchHistory]);
@@ -708,9 +732,11 @@ export const TeamPopup = memo(function TeamPopup({
                       {team.name} takım dosyası: sıra, puan, muhtemel 11, gol/asist/reyting
                       krallığı, maç geçmişi ve bu takımı tahmin eden katılımcılar.
                     </DialogDescription>
-                    <div className="mt-0.5 flex items-center gap-2">
-                      <p className="truncate font-display text-sm text-color_textsecondary">{dossier.manager}</p>
-                    </div>
+                    {SQUAD_DATA_AVAILABLE && (
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <p className="truncate font-display text-sm text-color_textsecondary">{dossier.manager}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -777,28 +803,40 @@ export const TeamPopup = memo(function TeamPopup({
               >
                 {!isMobile && (
                   <div className={cn(WIDGET_BLOCK, "min-h-0")}>
-                    {tournamentStarted ? <PitchDiagram dossier={dossier} teamId={team.id} t={t} /> : <NotViewablePlaceholder />}
+                    {!SQUAD_DATA_AVAILABLE ? (
+                      <NotAvailablePlaceholder />
+                    ) : tournamentStarted ? (
+                      <PitchDiagram dossier={dossier} teamId={team.id} t={t} />
+                    ) : (
+                      <NotViewablePlaceholder />
+                    )}
                   </div>
                 )}
 
                 {!isMobile && (
                 <div className="flex min-h-0 flex-col gap-3">
                   <div className={cn(WIDGET_BLOCK, "min-h-0 flex-1")}>
-                    {tournamentStarted ? (
+                    {!SQUAD_DATA_AVAILABLE ? (
+                      <NotAvailablePlaceholder />
+                    ) : tournamentStarted ? (
                       <StatList label="GOL" rows={dossier.topScorers} badge={false} t={t} />
                     ) : (
                       <NotViewablePlaceholder />
                     )}
                   </div>
                   <div className={cn(WIDGET_BLOCK, "min-h-0 flex-1")}>
-                    {tournamentStarted ? (
+                    {!SQUAD_DATA_AVAILABLE ? (
+                      <NotAvailablePlaceholder />
+                    ) : tournamentStarted ? (
                       <StatList label="ASİST" rows={dossier.topAssisters} badge={false} t={t} />
                     ) : (
                       <NotViewablePlaceholder />
                     )}
                   </div>
                   <div className={cn(WIDGET_BLOCK, "min-h-0 flex-1")}>
-                    {tournamentStarted ? (
+                    {!SQUAD_DATA_AVAILABLE ? (
+                      <NotAvailablePlaceholder />
+                    ) : tournamentStarted ? (
                       <StatList label="PERFORMANS" rows={dossier.topRated} badge={true} t={t} />
                     ) : (
                       <NotViewablePlaceholder />

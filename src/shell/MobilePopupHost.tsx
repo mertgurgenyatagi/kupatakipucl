@@ -5,7 +5,7 @@ import { useResults } from "../leaderboard/useResults";
 import { useLeaderboard } from "../leaderboard/useLeaderboard";
 import { useTournamentPhase } from "../tournament/useTournamentPhase";
 import { assignRanks } from "../leaderboard/ranking";
-import { TeamPopup } from "../leaderboard/TeamPopupParked";
+import { TeamPopup } from "../leaderboard/TeamPopup";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
 import { MatchupPopup } from "../leaderboard/MatchupPopup";
 

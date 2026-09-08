@@ -304,13 +304,14 @@ describe("ProfilePage", () => {
     expect(screen.queryByText("Düzenle")).not.toBeInTheDocument();
   });
 
-  // TeamPopup.tsx was shelved 2026-09-07 (PROJECT.md §11) — every real call
-  // site, including this page, now renders TeamPopupParked.tsx instead. The
-  // real dossier's "takım dosyası" content and its match-history-to-
-  // MatchupPopup navigation are unreachable in the shipped app until Mert
-  // revives TeamPopup.tsx, so those two behaviors are no longer tested here.
-  // TeamPopup.test.tsx still covers the preserved implementation directly.
-  it("opens the parked team popup when a ranked row is clicked", async () => {
+  // TeamPopup.tsx was revived 2026-09-08 (PROJECT.md §11 #21) — this page
+  // renders the real dossier again, not TeamPopupParked.tsx's takeover
+  // message. Real widgets (rank/points, predictors, match history) now show
+  // real data; the pitch diagram and the three ranked squad lists still have
+  // no data source (no scraper yet) and render as gated placeholders —
+  // TeamPopup.test.tsx covers that gating directly, this just checks the
+  // real popup opens from a ranked row rather than the parked one.
+  it("opens the real team popup when a ranked row is clicked", async () => {
     mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
     mockUsePrediction.mockReturnValue({
       prediction: { ranking: ["arsenal"], submittedAt: 1, updatedAt: 1 },
@@ -318,7 +319,16 @@ describe("ProfilePage", () => {
     });
     await renderPage();
     fireEvent.click(screen.getByText("Arsenal"));
-    expect(await screen.findByText("Bu bölüm şu anda hazır değil.")).toBeInTheDocument();
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    // Team name renders both in the ranked row (still visible behind the
+    // dialog) and in the popup's own DialogTitle.
+    expect((await screen.findAllByText("Arsenal")).length).toBeGreaterThanOrEqual(2);
+    // Real content: nobody in the (empty, by default) entries list predicted
+    // this team.
+    expect(screen.getByText("Bu takımı tahmin eden katılımcı yok.")).toBeInTheDocument();
+    // Squad data (pitch diagram + the three ranked lists) has no real source
+    // yet and stays gated regardless of tournament phase.
+    expect(screen.getAllByText("Bu bölüm şu anda hazır değil.").length).toBeGreaterThanOrEqual(4);
   });
 
   it("shows the average position everyone predicted for each team, once the tournament has started", async () => {

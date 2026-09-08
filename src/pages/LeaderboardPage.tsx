@@ -11,7 +11,7 @@ import { LeaderboardTable } from "../leaderboard/LeaderboardTable";
 import { TeamTable } from "../leaderboard/TeamTable";
 import { LeaderboardHero } from "../leaderboard/LeaderboardHero";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
-import { TeamPopup } from "../leaderboard/TeamPopupParked";
+import { TeamPopup } from "../leaderboard/TeamPopup";
 import { MatchupPopup } from "../leaderboard/MatchupPopup";
 import { KnockoutBracket } from "../knockout/KnockoutBracket";
 import { evaluatePicks } from "../leaderboard/scoring";
