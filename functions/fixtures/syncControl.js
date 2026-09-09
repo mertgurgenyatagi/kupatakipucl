@@ -38,4 +38,16 @@ async function getRecentFixtures(db, nowIso) {
   return snap.docs.map((doc) => doc.data());
 }
 
-module.exports = { getLastSyncedAtMs, recordSynced, getRecentFixtures };
+/** A whole collection as `{ [docId]: data }`, for docDiff.js to compare the
+ *  freshly-computed documents against. The two collections this is used on
+ *  are fixed-size and small (144 fixtures, 36 results). */
+async function readCollectionById(db, collection) {
+  const snap = await db.collection(collection).get();
+  const byId = {};
+  snap.docs.forEach((doc) => {
+    byId[doc.id] = doc.data();
+  });
+  return byId;
+}
+
+module.exports = { getLastSyncedAtMs, recordSynced, getRecentFixtures, readCollectionById };

@@ -5,7 +5,8 @@ const { defineSecret } = require("firebase-functions/params");
 const { fetchAllMatches, mapMatchesToFixtures } = require("./footballData");
 const { computeStandingsTable } = require("./standings");
 const { shouldPoll } = require("./pollGate");
-const { getLastSyncedAtMs, recordSynced, getRecentFixtures } = require("./syncControl");
+const { pickChangedDocs } = require("./docDiff");
+const { getLastSyncedAtMs, recordSynced, getRecentFixtures, readCollectionById } = require("./syncControl");
 
 initializeApp();
 const db = getFirestore();
@@ -58,8 +59,7 @@ async function gatedSync(key, sync) {
  * onDocumentWritten("results/{teamId}") trigger already watches, so a
  * successful sync here recomputes the leaderboard with no further wiring.
  *
- * Unconditional overwrite, same as the dev panel's own batch write: this is
- * meant to be the single source of truth for results once the league phase
+ * This is the single source of truth for results once the league phase
  * starts. The dev panel's manual "mark match decided" flow still works
  * end-to-end (nothing here disables it), but anything it writes only survives
  * until this function's next successful run — by design, a fallback is only
@@ -67,6 +67,13 @@ async function gatedSync(key, sync) {
  * to stick. If a manual correction ever needs to survive past the next sync,
  * that needs its own decision (e.g. a pause flag this function checks first)
  * — not built, because nothing has needed it yet.
+ *
+ * Only genuinely changed documents are written (docDiff.js). This used to
+ * overwrite all 36 unconditionally on every run, which during a live window
+ * meant 36 writes every 2 minutes — and, worse, 36 spurious
+ * onDocumentWritten("results/{teamId}") triggers into functions/leaderboard
+ * each time. Drift still heals: a document that no longer matches what we
+ * compute differs, so it is still rewritten.
  */
 async function syncResults() {
   const [matches, optaDoc] = await Promise.all([
@@ -81,11 +88,20 @@ async function syncResults() {
   const fixtures = mapMatchesToFixtures(matches);
   const results = computeStandingsTable(fixtures, optaRanking);
 
+  const stored = await readCollectionById(db, "results");
+  const changed = pickChangedDocs(stored, results);
+  const changedIds = Object.keys(changed);
+  if (changedIds.length === 0) {
+    console.log("results: no change, nothing written");
+    return;
+  }
+
   const batch = db.batch();
-  Object.entries(results).forEach(([teamId, result]) => {
-    batch.set(db.doc(`results/${teamId}`), result);
+  changedIds.forEach((teamId) => {
+    batch.set(db.doc(`results/${teamId}`), changed[teamId]);
   });
   await batch.commit();
+  console.log(`results: wrote ${changedIds.length} of ${Object.keys(results).length}`);
 }
 
 /**
@@ -123,12 +139,28 @@ async function syncFixtures() {
   const matches = await fetchAllMatches(FOOTBALL_DATA_TOKEN.value());
   const fixtures = mapMatchesToFixtures(matches);
 
+  const next = {};
+  fixtures.forEach(({ id, ...fields }) => {
+    next[id] = fields;
+  });
+
+  // Same reasoning as syncResults above: 144 unconditional writes every 2
+  // minutes during a live window, nearly all no-ops. A quiet poll now writes
+  // nothing; a live one writes the handful of matches whose score moved.
+  const stored = await readCollectionById(db, "fixtures");
+  const changed = pickChangedDocs(stored, next);
+  const changedIds = Object.keys(changed);
+  if (changedIds.length === 0) {
+    console.log("fixtures: no change, nothing written");
+    return;
+  }
+
   const batch = db.batch();
-  fixtures.forEach((fixture) => {
-    const { id, ...fields } = fixture;
-    batch.set(db.doc(`fixtures/${id}`), fields);
+  changedIds.forEach((id) => {
+    batch.set(db.doc(`fixtures/${id}`), changed[id]);
   });
   await batch.commit();
+  console.log(`fixtures: wrote ${changedIds.length} of ${fixtures.length}`);
 }
 
 exports.syncFootballDataFixtures = onSchedule(
