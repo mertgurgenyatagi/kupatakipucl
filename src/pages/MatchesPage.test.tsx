@@ -159,7 +159,24 @@ describe("MatchesPage", () => {
     });
     renderPage();
     await act(async () => {});
-    expect(screen.getByText("2 - 3")).toBeInTheDocument();
+    expect(screen.getByLabelText("Arsenal 2 - 3 Barcelona")).toBeInTheDocument();
+    expect(screen.getByText("Bitti")).toBeInTheDocument();
+  });
+
+  it("writes out full club names, not the three-letter codes the teasers use", async () => {
+    renderPage();
+    await act(async () => {});
+    expect(screen.getByText("Arsenal")).toBeInTheDocument();
+    expect(screen.getByText("Barcelona")).toBeInTheDocument();
+    expect(screen.queryByText("BAR")).not.toBeInTheDocument();
+  });
+
+  it("marks an upcoming match with its kickoff time rather than a score", async () => {
+    renderPage();
+    await act(async () => {});
+    // 16:45 UTC is 19:45 in Istanbul.
+    expect(screen.getAllByText("19:45").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Bitti")).not.toBeInTheDocument();
   });
 
   it("gives a knockout round its own tab, named for the round", async () => {

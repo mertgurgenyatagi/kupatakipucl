@@ -5,16 +5,18 @@ import { LeaderboardEntry } from "./leaderboardTypes";
 import { groupFixturesByDay } from "./fixtureStages";
 import { computeMatchConsensus } from "./matchConsensus";
 import { FixtureRow } from "./FixtureRow";
+import { MatchesRow } from "./MatchesRow";
 
 /**
  * One round's fixtures, split under date headers. A matchday is played across
  * two or three calendar days, so grouping by day is how the list actually
  * reads — the round is already established by the selected tab above it.
  *
- * `entries` is what separates the desktop row from the mobile one: pass it
- * and every row gains the head-to-head consensus bar, omit it and the rows
- * stay lean. Mobile omits it, which is also why the mobile page never mounts
- * the leaderboard listener.
+ * `entries` is what separates desktop from mobile. With it, rows are the
+ * full-width MatchesRow — full club names, a large score, a visible winner —
+ * plus the head-to-head consensus bar it needs those entries for. Without
+ * it, rows are the narrow shared FixtureRow. Mobile omits it, which is also
+ * why the mobile page never mounts the leaderboard listener.
  */
 export function MatchDayList({
   fixtures,
@@ -46,16 +48,26 @@ export function MatchDayList({
           <h3 className="sticky top-0 z-10 bg-card px-3 py-2 font-mono text-[0.6rem] tracking-[0.18em] text-color_textsecondary uppercase">
             {day.label}
           </h3>
-          {day.fixtures.map((fixture) => (
-            <FixtureRow
-              key={fixture.id}
-              fixture={fixture}
-              results={results}
-              consensus={entries ? computeMatchConsensus(fixture.homeTeamId, fixture.awayTeamId, entries) : undefined}
-              onSelectTeam={onSelectTeam}
-              onSelectFixture={onSelectFixture}
-            />
-          ))}
+          {day.fixtures.map((fixture) =>
+            entries ? (
+              <MatchesRow
+                key={fixture.id}
+                fixture={fixture}
+                results={results}
+                consensus={computeMatchConsensus(fixture.homeTeamId, fixture.awayTeamId, entries)}
+                onSelectTeam={onSelectTeam}
+                onSelectFixture={onSelectFixture}
+              />
+            ) : (
+              <FixtureRow
+                key={fixture.id}
+                fixture={fixture}
+                results={results}
+                onSelectTeam={onSelectTeam}
+                onSelectFixture={onSelectFixture}
+              />
+            )
+          )}
         </section>
       ))}
     </div>
