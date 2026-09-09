@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 import { useAuth } from "../auth/AuthProvider";
 import { useVisibilityState } from "../state/useVisibilityState";
 import { isPageAllowed } from "../state/pageAccess";
@@ -9,6 +10,13 @@ import { usePlayers } from "../profile/usePlayers";
 import { useTournamentPhase } from "../tournament/useTournamentPhase";
 import { buildStageTabs, defaultStageKey } from "../leaderboard/fixtureStages";
 import { isPersonalPicksViewer } from "../leaderboard/personalPicks";
+import {
+  computePersonalPickStats,
+  computeCommunityPickStats,
+  computeContrarianStats,
+  computeSelfContradictionStats,
+} from "../leaderboard/personalPickStats";
+import { PersonalPickStatsPanel } from "../leaderboard/PersonalPickStatsPanel";
 import { StageTabs } from "../leaderboard/StageTabs";
 import { MatchDayList } from "../leaderboard/MatchDayList";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
@@ -43,6 +51,12 @@ import { MobileMatchesPage } from "../mobile/MobileMatchesPage";
 
 const PAGE_SHELL =
   "relative mx-auto flex w-full max-w-[900px] min-w-0 flex-col gap-4 p-4 sm:p-6 lg:h-full lg:min-h-0 lg:flex-1 lg:gap-5 lg:p-6";
+
+// Same shell, widened and switched to a row at lg so the two Mert-only stats
+// panels can flank the (still 900px-capped) matches column instead of
+// pushing it off-centre.
+const PAGE_SHELL_WITH_STATS =
+  "relative mx-auto flex w-full max-w-[1500px] min-w-0 flex-col gap-4 p-4 sm:p-6 lg:h-full lg:min-h-0 lg:flex-1 lg:flex-row lg:items-stretch lg:justify-center lg:gap-5 lg:p-6";
 
 function MatchesSkeleton() {
   return (
@@ -90,6 +104,29 @@ function DesktopMatchesPage() {
   const { entries } = useLeaderboard();
   const { players } = usePlayers();
   const showPersonalPicks = isPersonalPicksViewer(user?.email);
+
+  // Mert's own submitted finishing-order ranking, for the "picked a team you
+  // ranked lower" stat — null if he hasn't submitted one (or isn't Mert).
+  const myRanking = entries.find((e) => e.uid === user?.uid)?.ranking ?? null;
+  const personalStats = useMemo(
+    () => (showPersonalPicks ? computePersonalPickStats(fixtures) : null),
+    [showPersonalPicks, fixtures]
+  );
+  const communityStats = useMemo(
+    () => (showPersonalPicks ? computeCommunityPickStats(fixtures, entries) : null),
+    [showPersonalPicks, fixtures, entries]
+  );
+  const contrarianStats = useMemo(
+    () => (showPersonalPicks ? computeContrarianStats(fixtures, entries) : null),
+    [showPersonalPicks, fixtures, entries]
+  );
+  const selfContradictionStats = useMemo(
+    () => (showPersonalPicks ? computeSelfContradictionStats(fixtures, myRanking) : null),
+    [showPersonalPicks, fixtures, myRanking]
+  );
+  const hasStatsPanel = Boolean(
+    showPersonalPicks && personalStats && communityStats && contrarianStats && selfContradictionStats
+  );
 
   const tabs = useMemo(() => buildStageTabs(fixtures), [fixtures]);
   // Null until someone picks a tab, so the default keeps tracking the data —
@@ -148,8 +185,19 @@ function DesktopMatchesPage() {
   }
 
   return (
-    <div className={PAGE_SHELL}>
-      <Frame className="min-h-0 animate-cotton-rise lg:h-full">
+    <div className={hasStatsPanel ? PAGE_SHELL_WITH_STATS : PAGE_SHELL}>
+      {hasStatsPanel && (
+        <PersonalPickStatsPanel
+          side="left"
+          stats={personalStats!}
+          community={communityStats!}
+          contrarian={contrarianStats!}
+          selfContradiction={selfContradictionStats!}
+          className="hidden lg:flex"
+        />
+      )}
+
+      <Frame className={cn("min-h-0 animate-cotton-rise lg:h-full", hasStatsPanel && "lg:w-[900px] lg:shrink-0")}>
         <FrameHeader tone="navy">
           <FrameTitle>Maçlar</FrameTitle>
         </FrameHeader>
@@ -165,6 +213,17 @@ function DesktopMatchesPage() {
           />
         </FrameBody>
       </Frame>
+
+      {hasStatsPanel && (
+        <PersonalPickStatsPanel
+          side="right"
+          stats={personalStats!}
+          community={communityStats!}
+          contrarian={contrarianStats!}
+          selfContradiction={selfContradictionStats!}
+          className="hidden lg:flex"
+        />
+      )}
 
       <ParticipantPopup
         ranked={selectedRanked}

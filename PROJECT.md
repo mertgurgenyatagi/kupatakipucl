@@ -485,6 +485,51 @@ teaser widgets.
   fixed the same day (both `FixtureRow` and the newer `MatchesRow` now use
   a `decided` check — both goals present — independent of `status`).
 
+**Mert's personal picks, added 2026-09-09** — Mert-only, gated purely
+client-side: `personalPicks.ts`'s `isPersonalPicksViewer()` checks
+`auth.currentUser.email === "thisisfootballstuff@gmail.com"` (not a Firestore
+admin check — nothing here is written anywhere, and the underlying fixtures
+are already public reads, so there's nothing to protect beyond hiding the
+widget from everyone else). `PERSONAL_PICKS` is a hardcoded map of his 144
+league-phase match-winner picks (submitted before a ball was kicked), keyed
+`${homeTeamId}:${awayTeamId}` rather than a fixture id — football-data.org
+mints those at sync time, so there was nothing stable to key on ahead of the
+season, but that pair is unique across a whole league phase (each team meets
+8 different opponents, home/away fixed by the draw, never repeated).
+
+- **Row treatment**: a small gold `Star` (lucide) sits on the crest of
+  whichever team he backed — or centred over the score/time slot for a draw
+  pick — on every fixture regardless of whether it's been played, so the
+  same star that marks a future pick stays put once the match is decided.
+  Once decided, the caption under the score (`MatchesRow`'s "Bitti" /
+  `FixtureRow`'s date line) is replaced by `correct`/`wrong` in green/red —
+  in English, deliberately, on Mert's own literal wording, not run through
+  the rest of the app's Turkish-only convention (§1) since this widget is
+  never seen by anyone else. First shipped as a full-row green/red tint;
+  Mert called it "too much" the same day and it was replaced with the
+  star-plus-caption treatment above.
+- **Stats panels** (`personalPickStats.ts` + `PersonalPickStatsPanel.tsx`):
+  two columns flanking the matches column on `/matches`, `lg:` breakpoint
+  only (`DesktopMatchesPage`'s page shell widens from 900px to 1500px and
+  switches to a row only when `showPersonalPicks` is true). Deliberately
+  denser than anything else in the app, on Mert's own explicit request — "as
+  ugly and busy as you want, I just want to see all types of shit" — so it's
+  dense on purpose: accuracy, pending/correct/wrong counts, current and best
+  correct streaks, a home/draw/away hit-rate split, and the most-backed /
+  most-reliable / least-reliable teams he's picked to win. Two stats reach
+  outside his own picks: `computeCommunityPickStats` scores the crowd's
+  *implied* pick (whichever side more participants ranked above the other in
+  their finishing-order prediction, via `matchConsensus.ts` — which is
+  explicit that this isn't really a match prediction, so this repurposes it
+  as a fun benchmark rather than anything rigorous) on the same fixtures Mert
+  picked, and `computeContrarianStats` splits his own hit rate by whether he
+  agreed with that implied pick or went against it. `computeSelfContradictionStats`
+  compares against a different source entirely — Mert's own submitted
+  36-team finishing-order ranking (`predictions/`, looked up as
+  `entries.find(e => e.uid === user.uid)`) — counting picks where he backed a
+  team to beat one he'd predicted would finish *higher* in his own table.
+- Covered by `personalPicks.test.ts` and `personalPickStats.test.ts`.
+
 Several modules here import fixtures and match outcomes from `src/devpanel/` —
 see §11, this is the biggest structural problem in the repo.
 
@@ -945,12 +990,13 @@ not yet been imported into `public/`**.
 
 - **Unit/component**: `npm test` (Vitest, jsdom, `test/setup.ts` polyfilling
   ResizeObserver, IntersectionObserver, matchMedia, `scrollIntoView`,
-  `createObjectURL` and `Image`). **145 files / 1182 tests, re-verified
-  2026-09-09** after the Matches page, its two latent-bug fixes, and the
-  fixtures write-diffing fix — includes `functions/fixtures`'s own test
-  files (Vitest picks up any `*.test.js` outside `src/` too, same as
-  `functions/leaderboard`'s). Most modules have a sibling test, and the
-  tests are frequently the clearest statement of intended behaviour.
+  `createObjectURL` and `Image`). **147 files / 1210 tests, re-verified
+  2026-09-09** after Mert's personal-picks feature (§4) on top of the
+  Matches page, its two latent-bug fixes, and the fixtures write-diffing fix
+  — includes `functions/fixtures`'s own test files (Vitest picks up any
+  `*.test.js` outside `src/` too, same as `functions/leaderboard`'s). Most
+  modules have a sibling test, and the tests are frequently the clearest
+  statement of intended behaviour.
 - **Integration**: `npm run test:integration` runs
   `integration/leaderboardRecompute.itest.ts` against the Firestore emulator.
   The `.itest.ts` suffix keeps it out of the default suite. It asserts that a

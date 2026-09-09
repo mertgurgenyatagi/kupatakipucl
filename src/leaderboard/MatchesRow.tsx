@@ -1,11 +1,12 @@
 import { type KeyboardEvent } from "react";
+import { Star } from "lucide-react";
 import { TEAM_BY_ID } from "../predictions/teams";
 import { RealFixture } from "./realFixtureTypes";
 import { TeamResult } from "./teamResultTypes";
 import { TeamCrest } from "./TeamCrest";
 import { isFixtureLive } from "./liveFixtures";
 import { MatchConsensus } from "./matchConsensus";
-import { PersonalPickResult } from "./personalPicks";
+import { PickOutcome } from "./personalPicks";
 import { LiveDot } from "./LiveDot";
 import { cn } from "@/lib/utils";
 
@@ -95,9 +96,10 @@ export function MatchesRow({
   fixture: RealFixture;
   results: Record<string, TeamResult>;
   consensus?: MatchConsensus | null;
-  /** Mert-only: whether his pre-season pick for this fixture came in.
-   *  Always null for anyone else (MatchDayList never computes it for them). */
-  personalPick?: PersonalPickResult | null;
+  /** Mert-only: his pre-season pick for this fixture, shown on every match —
+   *  past, present or future — not just decided ones. Always null for
+   *  anyone else (MatchDayList never computes it for them). */
+  personalPick?: PickOutcome | null;
   onSelectTeam?: (teamId: string) => void;
   onSelectFixture?: (fixtureId: string) => void;
 }) {
@@ -112,6 +114,11 @@ export function MatchesRow({
 
   const homeWon = decided && fixture.homeGoals! > fixture.awayGoals!;
   const awayWon = decided && fixture.awayGoals! > fixture.homeGoals!;
+
+  // Actual outcome as the same "home"/"away"/"draw" vocabulary as
+  // personalPick, so the two are directly comparable once decided.
+  const actualOutcome: PickOutcome | null = !decided ? null : homeWon ? "home" : awayWon ? "away" : "draw";
+  const pickCorrect = decided && personalPick ? personalPick === actualOutcome : null;
 
   function handleMatchClick() {
     onSelectFixture?.(fixture.id);
@@ -134,9 +141,7 @@ export function MatchesRow({
         onKeyDown={handleMatchKeyDown}
         className={cn(
           "grid h-full w-full cursor-pointer content-center items-center gap-2 rounded-lg px-3 transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-color_hoverfill focus-visible:bg-color_hoverfill",
-          live && "bg-color_remove/[0.08] hover:bg-color_remove/[0.14]",
-          !live && personalPick === "correct" && "bg-color_green/[0.08] hover:bg-color_green/[0.14]",
-          !live && personalPick === "incorrect" && "bg-color_remove/[0.08] hover:bg-color_remove/[0.14]"
+          live && "bg-color_remove/[0.08] hover:bg-color_remove/[0.14]"
         )}
         style={{ gridTemplateColumns: ROW_GRID_COLUMNS }}
       >
@@ -156,10 +161,24 @@ export function MatchesRow({
           >
             {home.name}
           </span>
-          <TeamCrest teamId={home.id} className="size-9 shrink-0" />
+          <span className="relative shrink-0">
+            <TeamCrest teamId={home.id} className="size-9 shrink-0" />
+            {personalPick === "home" && (
+              <Star
+                className="absolute -top-1.5 -right-1.5 size-3.5 fill-color_gold text-color_gold drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]"
+                aria-label="Tahminin"
+              />
+            )}
+          </span>
         </button>
 
-        <span className="flex flex-col items-center justify-center gap-1 leading-none">
+        <span className="relative flex flex-col items-center justify-center gap-1 leading-none">
+          {personalPick === "draw" && (
+            <Star
+              className="absolute -top-3.5 left-1/2 size-3.5 -translate-x-1/2 fill-color_gold text-color_gold drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]"
+              aria-label="Tahminin: berabere"
+            />
+          )}
           {decided ? (
             // Labelled as a whole: the three spans exist only so the winning
             // side can be brighter than the losing one, and read out
@@ -181,6 +200,15 @@ export function MatchesRow({
               <LiveDot className="size-1.5" />
               Canlı
             </span>
+          ) : decided && pickCorrect !== null ? (
+            <span
+              className={cn(
+                "font-mono text-[0.6rem] font-bold tracking-[0.18em] uppercase",
+                pickCorrect ? "text-color_green" : "text-color_remove"
+              )}
+            >
+              {pickCorrect ? "correct" : "wrong"}
+            </span>
           ) : (
             <span className="font-mono text-[0.6rem] tracking-[0.18em] text-color_textsecondary uppercase">
               {decided ? "Bitti" : DATE_FMT.format(kickoff)}
@@ -196,7 +224,15 @@ export function MatchesRow({
           }}
           className="group flex cursor-pointer items-center justify-start gap-3"
         >
-          <TeamCrest teamId={away.id} className="size-9 shrink-0" />
+          <span className="relative shrink-0">
+            <TeamCrest teamId={away.id} className="size-9 shrink-0" />
+            {personalPick === "away" && (
+              <Star
+                className="absolute -top-1.5 -left-1.5 size-3.5 fill-color_gold text-color_gold drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]"
+                aria-label="Tahminin"
+              />
+            )}
+          </span>
           <span
             className={cn("truncate font-display text-base group-hover:underline", outcomeClass(awayWon, homeWon))}
             title={away.name}

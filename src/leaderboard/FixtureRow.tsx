@@ -1,10 +1,11 @@
 import { type KeyboardEvent } from "react";
+import { Star } from "lucide-react";
 import { TEAM_BY_ID } from "../predictions/teams";
 import { RealFixture } from "./realFixtureTypes";
 import { TeamResult } from "./teamResultTypes";
 import { TeamCrest } from "./TeamCrest";
 import { isFixtureLive } from "./liveFixtures";
-import { PersonalPickResult } from "./personalPicks";
+import { PickOutcome } from "./personalPicks";
 import { LiveDot } from "./LiveDot";
 import { cn } from "@/lib/utils";
 
@@ -45,10 +46,11 @@ export function FixtureRow({
    *  stacked (narrower per row), everything else full-sized same as the
    *  drawer's own rows. The drawer itself keeps its default layout. */
   compact?: boolean;
-  /** Mert-only: whether his pre-season pick for this fixture came in. Unset
-   *  for the two teaser widgets (UpcomingMatchesDrawer/Preview), which never
-   *  pass it — only the mobile Matches page (via MatchDayList) does. */
-  personalPick?: PersonalPickResult | null;
+  /** Mert-only: his pre-season pick for this fixture, shown on every match —
+   *  past, present or future — not just decided ones. Unset for the two
+   *  teaser widgets (UpcomingMatchesDrawer/Preview), which never pass it —
+   *  only the mobile Matches page (via MatchDayList) does. */
+  personalPick?: PickOutcome | null;
   /** Fires with a team's id when its crest/name is clicked — opens
    *  TeamPopup. Undefined for the drawer (unchanged, still just stops
    *  propagation with no further effect). */
@@ -69,6 +71,10 @@ export function FixtureRow({
   // Matches page — which lists a whole round, played or not — rendered a
   // finished match as its kickoff time with no result at all (2026-09-09).
   const decided = fixture.homeGoals !== null && fixture.awayGoals !== null;
+  const homeWon = decided && fixture.homeGoals! > fixture.awayGoals!;
+  const awayWon = decided && fixture.awayGoals! > fixture.homeGoals!;
+  const actualOutcome: PickOutcome | null = !decided ? null : homeWon ? "home" : awayWon ? "away" : "draw";
+  const pickCorrect = decided && personalPick ? personalPick === actualOutcome : null;
 
   function handleMatchClick() {
     onSelectFixture?.(fixture.id);
@@ -91,9 +97,7 @@ export function FixtureRow({
         onKeyDown={handleMatchKeyDown}
         className={cn(
           "relative grid h-full w-full cursor-pointer content-center items-center gap-1.5 rounded-lg px-2 transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-color_hoverfill focus-visible:bg-color_hoverfill",
-          live && "bg-color_remove/[0.08] hover:bg-color_remove/[0.14]",
-          !live && personalPick === "correct" && "bg-color_green/[0.08] hover:bg-color_green/[0.14]",
-          !live && personalPick === "incorrect" && "bg-color_remove/[0.08] hover:bg-color_remove/[0.14]"
+          live && "bg-color_remove/[0.08] hover:bg-color_remove/[0.14]"
         )}
         style={{ gridTemplateColumns: ROW_GRID_COLUMNS }}
       >
@@ -110,13 +114,27 @@ export function FixtureRow({
             compact ? "flex-row justify-center gap-2" : "flex-col gap-1"
           )}
         >
-          <TeamCrest teamId={home.id} className="size-7" />
+          <span className="relative">
+            <TeamCrest teamId={home.id} className="size-7" />
+            {personalPick === "home" && (
+              <Star
+                className="absolute -top-1 -right-1 size-2.5 fill-color_gold text-color_gold drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]"
+                aria-label="Tahminin"
+              />
+            )}
+          </span>
           <span className="truncate font-display text-sm font-medium text-color_text group-hover:underline">
             {home.shortName}
           </span>
         </button>
 
-        <span className="flex flex-col items-center justify-center leading-tight">
+        <span className="relative flex flex-col items-center justify-center leading-tight">
+          {personalPick === "draw" && (
+            <Star
+              className="absolute -top-2.5 size-2.5 fill-color_gold text-color_gold drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]"
+              aria-label="Tahminin: berabere"
+            />
+          )}
           {decided ? (
             <>
               <span
@@ -127,9 +145,20 @@ export function FixtureRow({
               >
                 {fixture.homeGoals} - {fixture.awayGoals}
               </span>
-              <span className="font-mono text-xs text-color_textsecondary tnum">
-                {live ? "CANLI" : DATE_FMT.format(kickoff)}
-              </span>
+              {live ? (
+                <span className="font-mono text-xs text-color_textsecondary tnum">CANLI</span>
+              ) : pickCorrect !== null ? (
+                <span
+                  className={cn(
+                    "font-mono text-xs font-bold uppercase",
+                    pickCorrect ? "text-color_green" : "text-color_remove"
+                  )}
+                >
+                  {pickCorrect ? "correct" : "wrong"}
+                </span>
+              ) : (
+                <span className="font-mono text-xs text-color_textsecondary tnum">{DATE_FMT.format(kickoff)}</span>
+              )}
             </>
           ) : (
             <>
@@ -150,7 +179,15 @@ export function FixtureRow({
             compact ? "flex-row justify-center gap-2" : "flex-col gap-1"
           )}
         >
-          <TeamCrest teamId={away.id} className="size-7" />
+          <span className="relative">
+            <TeamCrest teamId={away.id} className="size-7" />
+            {personalPick === "away" && (
+              <Star
+                className="absolute -top-1 -left-1 size-2.5 fill-color_gold text-color_gold drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]"
+                aria-label="Tahminin"
+              />
+            )}
+          </span>
           <span className="truncate font-display text-sm font-medium text-color_text group-hover:underline">
             {away.shortName}
           </span>

@@ -4,7 +4,7 @@ import { TeamResult } from "./teamResultTypes";
 import { LeaderboardEntry } from "./leaderboardTypes";
 import { groupFixturesByDay } from "./fixtureStages";
 import { computeMatchConsensus } from "./matchConsensus";
-import { getPersonalPickResult } from "./personalPicks";
+import { getPersonalPick } from "./personalPicks";
 import { FixtureRow } from "./FixtureRow";
 import { MatchesRow } from "./MatchesRow";
 
@@ -19,10 +19,12 @@ import { MatchesRow } from "./MatchesRow";
  * it, rows are the narrow shared FixtureRow. Mobile omits it, which is also
  * why the mobile page never mounts the leaderboard listener.
  *
- * `showPersonalPicks` tints a decided row by whether Mert's own pre-season
- * pick (personalPicks.ts) came in — visible only to him, on both desktop and
- * mobile, since it's just a lookup against data already on the page rather
- * than anything that needs its own fetch.
+ * `showPersonalPicks` marks Mert's own pre-season pick (personalPicks.ts) on
+ * every row — a star by the backed team (or over the score for a draw pick)
+ * regardless of whether the match has been played, plus a correct/wrong
+ * caption once it has. Visible only to him, on both desktop and mobile,
+ * since it's just a lookup against data already on the page rather than
+ * anything that needs its own fetch.
  */
 export function MatchDayList({
   fixtures,
@@ -57,7 +59,7 @@ export function MatchDayList({
             {day.label}
           </h3>
           {day.fixtures.map((fixture) => {
-            const personalPick = showPersonalPicks ? getPersonalPickResult(fixture) : null;
+            const personalPick = showPersonalPicks ? getPersonalPick(fixture) : null;
             return entries ? (
               <MatchesRow
                 key={fixture.id}

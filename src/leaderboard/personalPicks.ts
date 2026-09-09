@@ -172,6 +172,15 @@ export const PERSONAL_PICKS: Record<string, PickOutcome> = {
   "liverpool:lens": "home",
 };
 
+/** The raw pick, independent of whether the match has been played —
+ *  MatchesRow/FixtureRow use this to show the star on every fixture (past,
+ *  present or future), not just decided ones. null for a fixture with no
+ *  recorded pick (a knockout tie — these picks only cover the league
+ *  phase). */
+export function getPersonalPick(fixture: RealFixture): PickOutcome | null {
+  return PERSONAL_PICKS[pickKey(fixture.homeTeamId, fixture.awayTeamId)] ?? null;
+}
+
 export type PersonalPickResult = "correct" | "incorrect";
 
 /** null when the match isn't decided yet, or has no recorded pick (a
