@@ -44,29 +44,45 @@ Target audience is friends and friends-of-friends, sized for **up to 250
 participants**. Turkish-only, permanently — there is no i18n layer and none is
 planned.
 
-**Billing killswitch fired for real, 2026-09-09 — the first live matchday.**
-`functions/stopbilling` (§6) unlinked the project's billing account at
-03:48 UTC after month-to-date cost crossed the budget (**set to 1** currency
-unit — Mert's deliberate choice, kept deliberately tiny). That took every
-Cloud Function offline — both `functions/fixtures` syncs and all three
-`functions/leaderboard` recomputes — freezing fixtures, results and the
-leaderboard for about 16 hours total, across two outages (a re-link at
-11:49 attempted mid-incident tripped again 2 minutes later, since September's
-cost was already over budget; the freeze actually lifted once Mert raised the
-budget himself and a second re-link held, ~20:00 UTC).
+**Billing killswitch fired for real, 2026-09-09 — the first live matchday.
+Three outages so far, not two — status below is current as of this
+writing, not resolved.** `functions/stopbilling` (§6) unlinked the
+project's billing account at 03:48 UTC after month-to-date cost crossed the
+budget (**set to 1** currency unit — Mert's deliberate choice, kept
+deliberately tiny). That took every Cloud Function offline — both
+`functions/fixtures` syncs and all three `functions/leaderboard` recomputes.
 
-Root cause, diagnosed the same day: not a `stopbilling` bug — it worked
-exactly as designed — but a write storm in `functions/fixtures`. Both syncs
-used to `batch.set()` every document they computed on every run (144 fixtures,
-36 results) regardless of whether anything had changed; during a live window
-(polled every 2 minutes) that was ~41,000 Firestore writes in one match
-evening, 92% of them recorded as `UPDATE_NOOP`, each `results` write
-additionally firing a spurious leaderboard recompute. Fixed same-day by
-`docDiff.js` — see §6 — which should make a routine live-match evening cost
-close to nothing going forward. Mert's standing instruction after this: fix
-the cost, never propose raising the budget as the first move; re-linking
-billing or changing the budget are his decisions to make, not something to do
-proactively.
+1. **03:48 UTC** — first trip. Root cause: a write storm in
+   `functions/fixtures` (below).
+2. **11:49 UTC** — a re-link tripped again 2 minutes later, since
+   September's cost was already over budget. Mert raised the budget himself;
+   a second re-link held.
+3. **20:10 UTC** — tripped a **third** time, six minutes after a live sync
+   had just written Sporting CP's equalizer (cost 1.67 against budget 1).
+   This is the one that surfaced as a user-visible bug report ("Sporting
+   scored a while ago but it hasn't updated") rather than being caught from
+   the ops side first. Root cause this time: the write-diffing fix from
+   outage #1 (below) cut the cost of a tick doing real work, but never
+   touched the schedule's own baseline cadence, which fires 24/7 regardless
+   of match activity — see the cadence-widening writeup under §6's
+   `functions/fixtures`. **As of this writing, billing is still disabled and
+   the cadence fix is written but not deployed** (deploying itself needs
+   billing enabled). Manually running the sync locally to patch today's
+   scores was also attempted and blocked the same way — the football-data.org
+   token lives in Secret Manager, which also requires billing to even query.
+
+Root cause of outage #1, diagnosed the same day: not a `stopbilling` bug —
+it worked exactly as designed — but a write storm in `functions/fixtures`.
+Both syncs used to `batch.set()` every document they computed on every run
+(144 fixtures, 36 results) regardless of whether anything had changed;
+during a live window (polled every 2 minutes) that was ~41,000 Firestore
+writes in one match evening, 92% of them recorded as `UPDATE_NOOP`, each
+`results` write additionally firing a spurious leaderboard recompute. Fixed
+same-day by `docDiff.js` — see §6 — which cut the write bill substantially
+but was not, on its own, sufficient (outage #3 above). Mert's standing
+instruction after this: fix the cost, never propose raising the budget as
+the first move; re-linking billing or changing the budget are his decisions
+to make, not something to do proactively.
 
 The later phases are explicitly not ready. Knockout in particular is
 unfinished and was deprioritised because it is months away. Section 11 lists
@@ -82,9 +98,9 @@ from code:
 | Frontend hosting | **Live** at `https://kupatakipucl.com` via GitHub Pages, published from GitHub Actions. See §9 and DEPLOY.md. |
 | Firebase Auth authorized domains | `localhost`, `kupatakipucl.firebaseapp.com`, `kupatakipucl.web.app`, **`kupatakipucl.com`**, **`www.kupatakipucl.com`** — the last two added 2026-08-27. |
 | `tournamentState` collection | `current.phase` = **`leaguephase`**, hand-set 2026-09-08 (§11 #18). |
-| Leaderboard Cloud Functions | **All three deployed and ACTIVE** in `europe-west8`, since 2026-08-07. Offline 2026-09-09 03:48–~20:00 during the billing incident above; confirmed active again after. |
-| `functions/fixtures` (2 sync functions) | **Deployed and ACTIVE**, `europe-west8`. Redeployed 2026-09-09 with the `stage` field, the `LEAGUE_STAGE` filter, the undrawn-knockout-fixture skip, and write-diffing (§6) — same billing outage as above. |
-| `stopbilling` Cloud Run service | **Deployed**, since 2026-07-20. Fired for real for the first time 2026-09-09 — see above; behaved exactly as designed. |
+| Leaderboard Cloud Functions | Deployed in `europe-west8`, since 2026-08-07. **Offline as of this writing** — billing disabled since 2026-09-09 20:10 UTC, third outage of the day (§1). |
+| `functions/fixtures` (2 sync functions) | Deployed, `europe-west8`, last redeployed 2026-09-09 with the `stage` field, the `LEAGUE_STAGE` filter, the undrawn-knockout-fixture skip, and write-diffing (§6). **Offline as of this writing**, same outage — the cadence-widening fix (§6) is written but not yet deployed, since deploying itself needs billing enabled. |
+| `stopbilling` Cloud Run service | **Deployed**, since 2026-07-20. Fired for real 2026-09-09 — three times in one day (§1); behaved exactly as designed each time. |
 | Realtime Database | Provisioned, `europe-west1`. |
 | Firestore region | `europe-west8`. |
 
@@ -924,6 +940,33 @@ follow-on fixes this made necessary:
   (skipped, `order` stays contiguous around it) — see `isDrawn()` in
   `footballData.js`.
 
+**Polling cadence widened, 2026-09-09 — the budget tripped a second time.**
+At 20:10 UTC, six minutes after a live sync had just written Sporting CP's
+equalizer, `stopbilling` unlinked billing again (month-to-date cost 1.67
+against the budget of 1). Investigated fresh (not assumed a repeat of the
+write-storm §6/§1 had already fixed): both `onSchedule(...)` calls were still
+`"every 2 minutes"` — the write-diffing fix (above) only cuts the cost of a
+tick that decides to do real work; it does nothing about the tick itself,
+which fires on Cloud Scheduler's raw cadence no matter what. That cuts both
+ways: it's the one cost that runs identically on a quiet Tuesday and a
+matchday, *and* it directly throttles how often `pollGate.js`'s expensive
+live-window work itself runs, since `shouldPoll` returns true on every tick
+for the whole live window, not just once.
+
+Widened in two steps on the same pass: first to `"every 5 minutes"`, then to
+`"every 10 minutes"` — real per-SKU billing data was unreachable to confirm
+either number (Secret Manager and the Billing API both require billing to be
+enabled just to query, which was exactly the thing disabled), so 5 minutes
+was a plausible-but-unverified guess and Mert's "this shouldn't happen
+again" was worth more margin than shipping one guess and finding out later.
+10 minutes is what's actually in `index.js` and README.md now — full
+reasoning inline in `index.js`'s comments on each `exports.syncFootballData*`.
+Worth dialing back down once an actual SKU-level cost breakdown is available
+(next time the Billing Console is reachable); this was sized for safety
+margin under uncertainty, not measured. Not yet redeployed as of this
+writing: `firebase deploy --only functions:fixtures` itself needs billing
+enabled, which is exactly what's down (§1).
+
 **Setup:** the football-data.org API token lives in a Firebase Functions v2
 secret (`FOOTBALL_DATA_TOKEN`, set via `firebase functions:secrets:set`).
 `firebase.json`'s `functions` key is an array of two codebases (`leaderboard`,
@@ -935,17 +978,23 @@ cost exceeds budget it **unlinks the billing account** from the project. Needs
 `cloudbilling.googleapis.com` enabled and a dedicated service account with
 `roles/billing.projectManager` + `roles/browser`.
 
-**Fired for real for the first time, 2026-09-09** — see §1 for the full
-incident. Worked exactly as designed: cost crossed the budget (set to 1) and
-it unlinked billing within seconds. The root cause was a write storm
-elsewhere (§6's write-diffing writeup), not a `stopbilling` bug. One
-operational fact this surfaced: **once a given month's cost has exceeded the
-budget, billing cannot be kept re-linked for the rest of that month** — the
-next Pub/Sub budget notification (roughly every 30–40 minutes, observed) sees
-the same already-over month-to-date figure and unlinks it again. A re-link at
-11:49 that day held for exactly 2 minutes. The fix that actually stuck was
-raising the budget itself (Mert's call, not automated — see §1's "fix the
-cost first" framing for why that's the last resort, not the first move).
+**Fired for real for the first time, 2026-09-09 — three times that same day**
+— see §1 for the full incident. Worked exactly as designed each time: cost
+crossed the budget (set to 1) and it unlinked billing within seconds. The
+root cause of the first trip was a write storm elsewhere (§6's write-diffing
+writeup), not a `stopbilling` bug. One operational fact this surfaced:
+**once a given month's cost has exceeded the budget, billing cannot be kept
+re-linked for the rest of that month** — the next Pub/Sub budget
+notification (roughly every 30–40 minutes, observed) sees the same
+already-over month-to-date figure and unlinks it again. A re-link at 11:49
+that day held for exactly 2 minutes; raising the budget himself (Mert's
+call, not automated — see §1's "fix the cost first" framing for why that's
+the last resort, not the first move) bought a longer window, but **not
+durably** — a live sync succeeded at 20:04 and billing tripped again at
+20:10, this time root-caused to the sync schedule's own 24/7 baseline
+cadence rather than the original write storm (§6's `functions/fixtures`
+polling-cadence writeup covers the fix, not yet deployed as of this
+writing since deploying needs billing enabled — the same thing that's down).
 
 Deploy with `gcloud run deploy` from the CLI. Its README warns specifically
 against the Cloud Run console's "Edit & deploy new revision" flow, which has

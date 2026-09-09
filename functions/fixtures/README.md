@@ -38,11 +38,12 @@ against a live `/v4/competitions/CL/standings` response on 2026-09-07.
 `teams.ts`, in both directions — if either list ever changes, the mismatch
 fails loudly there instead of silently dropping a team out of `results`.
 
-## Polling cadence — live-aware, added 2026-09-07
+## Polling cadence — live-aware, added 2026-09-07, widened 2026-09-09
 
-Both functions run on `onSchedule("every 2 minutes")`, but that schedule is
-just the ceiling on how promptly a live window can be noticed — `pollGate.js`
-decides, on every tick, whether to actually call football-data.org:
+Both functions run on `onSchedule("every 10 minutes")` (was 2 minutes), but
+that schedule is just the ceiling on how promptly a live window can be
+noticed — `pollGate.js` decides, on every tick, whether to actually call
+football-data.org:
 
 - **Live window**: any fixture that kicked off within the last 3.5 hours
   (2.5h estimated match length + 1h grace for late corrections) → poll.
@@ -51,14 +52,36 @@ decides, on every tick, whether to actually call football-data.org:
   (`syncControl.js`'s `getRecentFixtures`, ≤20 docs) and nothing else.
 
 This replaces the original flat 10-minute interval. football-data.org's Free
-tier caps at 10 requests/**minute**, so even polling every 2 minutes
-constantly would have been fine budget-wise — the point of gating isn't
-protecting the API cap, it's making the live feature (src/leaderboard/
-FixtureRow.tsx, MatchupPopup.tsx, the standings table) actually feel live
-during a match without polling pointlessly for the other ~99% of the
-season. `pollGate.test.js` covers the decision logic directly; `LIVE_WINDOW_MS`
-and `SPARSE_INTERVAL_MS` are both named constants there if the numbers ever
-need tuning.
+tier caps at 10 requests/**minute**, so polling frequency was never about
+protecting the API cap — the point of gating is making the live feature
+(src/leaderboard/FixtureRow.tsx, MatchupPopup.tsx, the standings table)
+actually feel live during a match without polling pointlessly for the other
+~99% of the season. `pollGate.test.js` covers the decision logic directly;
+`LIVE_WINDOW_MS` and `SPARSE_INTERVAL_MS` are both named constants there if
+the numbers ever need tuning.
+
+**The `onSchedule(...)` cadence itself is a separate cost lever from
+`pollGate.js`, and it was the wrong one left untuned.** `pollGate.js` decides
+whether a given tick does the expensive work, but the tick itself — Cloud
+Scheduler firing, Cloud Run cold-starting an instance — happens on the raw
+schedule no matter what. That cuts both ways: it's the one cost that runs
+identically on a quiet Tuesday and a matchday (idle ticks are cheap
+individually, but there are a lot of them across a month), *and* it directly
+throttles how often the expensive live-window work itself runs, since
+`shouldPoll` returns true on every tick for the whole live window, not just
+once. Widening the schedule cuts both.
+
+Widened 2026-09-09, the day the budget killswitch (PROJECT.md §1/§6) tripped
+a second time just 6 minutes after a live sync succeeded — first to 5
+minutes, then to 10 on the same pass. Without real per-SKU billing data
+(Secret Manager and the Billing API both require billing to be enabled to
+even query, which was exactly the thing disabled), 5 minutes was a
+plausible-but-unverified guess at the fix; going straight to 10 trades a
+guessed cost cut for a bigger, more confident one rather than risking a
+second guess. A 10-minute ceiling on live-score freshness is still fine for
+a friends' group. Worth dialing back down once an actual SKU-level cost
+breakdown is available (next time the Billing Console is reachable) —
+this was sized for safety margin under uncertainty, not measured.
 
 ## The dev panel fallback
 

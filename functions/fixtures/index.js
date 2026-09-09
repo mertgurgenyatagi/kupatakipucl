@@ -108,13 +108,26 @@ async function syncResults() {
  * Region pinned for the same reason as recomputeLeaderboardSafetyNet:
  * onSchedule does not inherit the Firestore database's region.
  *
- * Every 2 minutes, not a fixed 10 — the schedule itself is now just the
- * ceiling on how promptly a live window can be noticed; gatedSync (above)
- * is what actually decides whether football-data.org gets called on any
- * given tick. See pollGate.js.
+ * Every 10 minutes, not 2 — this is the schedule's own baseline cadence, and
+ * it runs at this rate 24/7, all month, regardless of whether anything is
+ * live: gatedSync (above) only gates the *expensive* work (the
+ * football-data.org call + collection diff, and everything downstream of a
+ * real write — the leaderboard recompute cascade included), not the
+ * invocation itself, which fires on Cloud Scheduler's raw cadence no matter
+ * what. Widened 2026-09-09, the same day the budget killswitch (PROJECT.md
+ * §1/§6) tripped a second time just 6 minutes after a live sync — first to 5
+ * minutes, then to 10 on the same pass: without real per-SKU billing data
+ * (unreachable while billing itself is disabled — see §1), 5 minutes was a
+ * plausible-but-unverified guess, and "this shouldn't happen again" is worth
+ * more margin than one guess. 10 minutes directly cuts every tick that
+ * happens during a live window too (pollGate.js's real work, not just the
+ * idle 99%) to a fifth of the original rate — a 10-minute ceiling on
+ * live-score freshness is still fine for a friends' group; dial it back down
+ * once real cost-per-tick data is available (§1's note on checking the
+ * Billing Console for an actual SKU breakdown next time it's reachable).
  */
 exports.syncFootballDataResults = onSchedule(
-  { schedule: "every 2 minutes", region: "europe-west8", secrets: [FOOTBALL_DATA_TOKEN] },
+  { schedule: "every 10 minutes", region: "europe-west8", secrets: [FOOTBALL_DATA_TOKEN] },
   async () => {
     await gatedSync("results", syncResults);
   }
@@ -163,8 +176,11 @@ async function syncFixtures() {
   console.log(`fixtures: wrote ${changedIds.length} of ${fixtures.length}`);
 }
 
+// Same 2026-09-09 cadence widening as syncFootballDataResults above, same
+// reasoning: this schedule runs 24/7 regardless of match activity, so it's
+// the one cost that doesn't scale down on a quiet day.
 exports.syncFootballDataFixtures = onSchedule(
-  { schedule: "every 2 minutes", region: "europe-west8", secrets: [FOOTBALL_DATA_TOKEN] },
+  { schedule: "every 10 minutes", region: "europe-west8", secrets: [FOOTBALL_DATA_TOKEN] },
   async () => {
     await gatedSync("fixtures", syncFixtures);
   }
