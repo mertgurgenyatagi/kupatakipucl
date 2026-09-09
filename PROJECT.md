@@ -44,6 +44,30 @@ Target audience is friends and friends-of-friends, sized for **up to 250
 participants**. Turkish-only, permanently — there is no i18n layer and none is
 planned.
 
+**Billing killswitch fired for real, 2026-09-09 — the first live matchday.**
+`functions/stopbilling` (§6) unlinked the project's billing account at
+03:48 UTC after month-to-date cost crossed the budget (**set to 1** currency
+unit — Mert's deliberate choice, kept deliberately tiny). That took every
+Cloud Function offline — both `functions/fixtures` syncs and all three
+`functions/leaderboard` recomputes — freezing fixtures, results and the
+leaderboard for about 16 hours total, across two outages (a re-link at
+11:49 attempted mid-incident tripped again 2 minutes later, since September's
+cost was already over budget; the freeze actually lifted once Mert raised the
+budget himself and a second re-link held, ~20:00 UTC).
+
+Root cause, diagnosed the same day: not a `stopbilling` bug — it worked
+exactly as designed — but a write storm in `functions/fixtures`. Both syncs
+used to `batch.set()` every document they computed on every run (144 fixtures,
+36 results) regardless of whether anything had changed; during a live window
+(polled every 2 minutes) that was ~41,000 Firestore writes in one match
+evening, 92% of them recorded as `UPDATE_NOOP`, each `results` write
+additionally firing a spurious leaderboard recompute. Fixed same-day by
+`docDiff.js` — see §6 — which should make a routine live-match evening cost
+close to nothing going forward. Mert's standing instruction after this: fix
+the cost, never propose raising the budget as the first move; re-linking
+billing or changing the budget are his decisions to make, not something to do
+proactively.
+
 The later phases are explicitly not ready. Knockout in particular is
 unfinished and was deprioritised because it is months away. Section 11 lists
 every known gap, sorted by when it actually starts to matter.
@@ -58,8 +82,9 @@ from code:
 | Frontend hosting | **Live** at `https://kupatakipucl.com` via GitHub Pages, published from GitHub Actions. See §9 and DEPLOY.md. |
 | Firebase Auth authorized domains | `localhost`, `kupatakipucl.firebaseapp.com`, `kupatakipucl.web.app`, **`kupatakipucl.com`**, **`www.kupatakipucl.com`** — the last two added 2026-08-27. |
 | `tournamentState` collection | `current.phase` = **`leaguephase`**, hand-set 2026-09-08 (§11 #18). |
-| Leaderboard Cloud Functions | **All three deployed and ACTIVE** in `europe-west8`, since 2026-08-07. |
-| `stopbilling` Cloud Run service | **Deployed**, since 2026-07-20. |
+| Leaderboard Cloud Functions | **All three deployed and ACTIVE** in `europe-west8`, since 2026-08-07. Offline 2026-09-09 03:48–~20:00 during the billing incident above; confirmed active again after. |
+| `functions/fixtures` (2 sync functions) | **Deployed and ACTIVE**, `europe-west8`. Redeployed 2026-09-09 with the `stage` field, the `LEAGUE_STAGE` filter, the undrawn-knockout-fixture skip, and write-diffing (§6) — same billing outage as above. |
+| `stopbilling` Cloud Run service | **Deployed**, since 2026-07-20. Fired for real for the first time 2026-09-09 — see above; behaved exactly as designed. |
 | Realtime Database | Provisioned, `europe-west1`. |
 | Firestore region | `europe-west8`. |
 
@@ -153,6 +178,7 @@ Access by page:
 | `/knockout-predictions` | logged in, all phases |
 | `/forum` | logged in all phases; logged out only once started |
 | `/leaderboard` | logged in, started phases only |
+| `/matches` | logged in, started phases only |
 | `/stats` | logged in, started phases only |
 | `/profile` | logged in, all phases |
 | `/join/:inviteId` | logged in (headless, redirects) |
@@ -389,6 +415,75 @@ gated behind `TeamPopup.tsx`'s `SQUAD_DATA_AVAILABLE` constant, regardless of
 tournament phase. Flip that constant once Mert's own scraping automation
 lands real squad data. `TeamPopup.test.tsx` covers the gating directly. See
 §11 #21.
+
+**Maçlar (`/matches`), added 2026-09-09.** A dedicated page for the whole
+fixture calendar, one round at a time — Mert's brief: "shows matches, with
+tabs that denote Matchday 1 ... Quarter Finals, whatever," present in every
+started phase. Signed-in only, same gating as `/leaderboard` (§3.1) — every
+row carries participant prediction data (below), unlike the two existing
+teaser widgets.
+
+- **`fixtureStages.ts`** builds the tab strip and the within-round date
+  grouping entirely from the fixture data on hand, not a hardcoded round
+  list — `buildStageTabs()` produces one tab per league matchday
+  (`"1. Hafta"` … `"8. Hafta"`) then one per knockout round in real
+  chronological order, so a knockout tab appears on its own the day a draw
+  is published, with no code change. `defaultStageKey()` opens on whichever
+  round holds a live match, else the earliest one with anything left to
+  play. `groupFixturesByDay()` splits a round under Istanbul-calendar date
+  headers, since a matchday spans two or three evenings.
+- **`fixtures/{id}` gained a `stage` field**, 2026-09-09 — football-data.org's
+  own stage string (`LEAGUE_STAGE`, `PLAYOFFS`, `LAST_16`, …), carried
+  through by `functions/fixtures` (§6) and read by `isLeagueStage()`
+  (`fixtureStages.ts`, ported for the client). A document synced before this
+  field existed has no value for it and is treated as league-phase — every
+  such document necessarily was one.
+- **Two desktop/mobile-forked rows**, not one component with a mode switch.
+  `MatchesRow.tsx` is desktop-only: full club names (not the 3-letter codes
+  the teasers use), a `text-3xl` score, the winning side visually brighter
+  than the loser, and three distinct visual states (upcoming/live/finished
+  — "Bitti" caption on a finished match). It also carries the head-to-head
+  **consensus bar** (`matchConsensus.ts`'s `computeMatchConsensus` — of
+  everyone who's submitted, how many ranked the home team above the away
+  team), which is the one number on the page that only this app has and the
+  reason the whole page is signed-in only. Mobile keeps the existing
+  `FixtureRow` (3-letter codes, no consensus bar, never mounts
+  `useLeaderboard()`).
+- `MatchDayList.tsx` picks between the two rows based on whether `entries`
+  was passed in; `DesktopMatchesPage`/`MobileMatchesPage` (in
+  `src/pages/MatchesPage.tsx` and `src/mobile/MobileMatchesPage.tsx`) are
+  what decide that.
+- Both existing fixture teasers — the leaderboard hero's
+  `UpcomingMatchesDrawer` and Home's `UpcomingMatchesPreview` — gained an
+  `AllMatchesLink.tsx` ("Tüm maçlar →") into `/matches`, gated on
+  `pageAccess.ts` directly (not a separate auth check) so the link can never
+  point at a page that will just render `PageUnavailable`.
+
+**Two latent bugs surfaced and fixed building this page, 2026-09-09:**
+
+- **§11 #28 (`MatchupPopup`'s knockout branch, now Done).** Its
+  `isKnockoutFixture` check used to read `!fixtures.includes(fixture)` —
+  always false, since `fixture` was found *in* that very array, so the
+  branch was provably dead and a real knockout fixture would have rendered
+  `"null. HAFTA"`. Now keyed on the fixture's own `stage` via
+  `isLeagueStage()`, independent of the app-wide `phase` prop (a league
+  fixture opened from `TeamPopup`'s match history must keep its league
+  header even if an admin has flipped the global phase to `knockout`).
+- **Knockout results silently corrupting the league table.**
+  `computeStandingsTable` (`functions/fixtures/standings.js`) folded every
+  fixture football-data.org returned into the 36-team standings — harmless
+  while only league-phase matches existed, but the first playoff result
+  would have started adding points to a finished league phase with no
+  warning. Now filtered to `stage === LEAGUE_STAGE`, on the server and in
+  `standingsAccumulator.ts`'s client port; `rankHistory.ts`'s replay filters
+  the same way via `getLeagueFixtures()`.
+- **`FixtureRow` couldn't render a finished match.** It only showed a score
+  while `isFixtureLive()` was true — correct for the two teaser widgets,
+  which only ever list upcoming fixtures, but the Matches page lists a
+  whole round including matches already played. Matchday 1's finished
+  results were showing as their kickoff time with no score at all until
+  fixed the same day (both `FixtureRow` and the newer `MatchesRow` now use
+  a `decided` check — both goals present — independent of `status`).
 
 Several modules here import fixtures and match outcomes from `src/devpanel/` —
 see §11, this is the biggest structural problem in the repo.
@@ -740,6 +835,50 @@ repoint it at real data, every production consumer was repointed at the new
 `fixtures` collection instead (see §4 `leaderboard/`), leaving the dev panel
 fully isolated for local testing.
 
+**Write-diffing, 2026-09-09 — fixing the incident described in §1.** Both
+syncs used to `batch.set()` every document they computed on every run,
+unconditionally — all 144 `fixtures` and all 36 `results`, whether or not
+anything had changed. During a live window (polled every 2 minutes) that was
+~41,000 writes across one match evening, 92% of them `UPDATE_NOOP`, and each
+`results` write also fired `functions/leaderboard`'s
+`onDocumentWritten("results/{teamId}")` trigger regardless of whether
+anything worth recomputing had happened. That write volume is what tripped
+`stopbilling`'s budget (set to 1) on 2026-09-09, the first live matchday,
+taking every scheduled function offline for most of the day.
+
+Fixed by `docDiff.js`: both syncs now read the target collection first
+(`syncControl.js`'s `readCollectionById`) and write only the documents that
+differ (`pickChangedDocs`, a shallow field-by-field compare). A quiet poll
+now writes nothing and wakes nothing downstream; a live one writes only the
+handful of fixtures/results whose score actually moved. Drift still heals —
+a document that no longer matches what's computed (e.g. a stale hand-written
+dev-panel correction) differs, so it's still rewritten — `docDiff.test.js`
+covers this directly. Reading 180 documents where the old code wrote 180 is
+roughly a third the price on its own, before counting the recompute triggers
+no longer fired.
+
+**Stage-aware sync, 2026-09-09 — built for the Matches page (§4).**
+`mapMatchesToFixtures` now carries football-data.org's `stage` field through
+onto every fixture document (`LEAGUE_STAGE`, `PLAYOFFS`, `LAST_16`, …;
+`matchday` becomes `null` for knockout fixtures, which have none). Two
+follow-on fixes this made necessary:
+
+- **`computeStandingsTable` now filters to `stage === LEAGUE_STAGE`** before
+  accumulating — previously it folded in every fixture the endpoint
+  returned, so the first playoff result would have started corrupting a
+  finished league-phase table with no warning. See §4's writeup for the full
+  story; `standings.test.js` covers a knockout fixture being ignored
+  outright.
+- **A knockout fixture with no team drawn yet is skipped, not thrown on.**
+  `mapMatchesToFixtures` used to throw on any match with a missing team id,
+  which was correctly fail-loud for a genuine `teamIdMap.js` gap — but the
+  same code path fires for a knockout fixture that's scheduled before its
+  participants are known, which would have taken both scheduled syncs down
+  the moment football-data.org published the playoff draw. Now distinguishes
+  "team id present but unmapped" (still throws) from "no team drawn yet"
+  (skipped, `order` stays contiguous around it) — see `isDrawn()` in
+  `footballData.js`.
+
 **Setup:** the football-data.org API token lives in a Firebase Functions v2
 secret (`FOOTBALL_DATA_TOKEN`, set via `firebase functions:secrets:set`).
 `firebase.json`'s `functions` key is an array of two codebases (`leaderboard`,
@@ -750,6 +889,18 @@ A budget killswitch. Subscribed to a Pub/Sub billing-alert topic; when reported
 cost exceeds budget it **unlinks the billing account** from the project. Needs
 `cloudbilling.googleapis.com` enabled and a dedicated service account with
 `roles/billing.projectManager` + `roles/browser`.
+
+**Fired for real for the first time, 2026-09-09** — see §1 for the full
+incident. Worked exactly as designed: cost crossed the budget (set to 1) and
+it unlinked billing within seconds. The root cause was a write storm
+elsewhere (§6's write-diffing writeup), not a `stopbilling` bug. One
+operational fact this surfaced: **once a given month's cost has exceeded the
+budget, billing cannot be kept re-linked for the rest of that month** — the
+next Pub/Sub budget notification (roughly every 30–40 minutes, observed) sees
+the same already-over month-to-date figure and unlinks it again. A re-link at
+11:49 that day held for exactly 2 minutes. The fix that actually stuck was
+raising the budget itself (Mert's call, not automated — see §1's "fix the
+cost first" framing for why that's the last resort, not the first move).
 
 Deploy with `gcloud run deploy` from the CLI. Its README warns specifically
 against the Cloud Run console's "Edit & deploy new revision" flow, which has
@@ -794,13 +945,12 @@ not yet been imported into `public/`**.
 
 - **Unit/component**: `npm test` (Vitest, jsdom, `test/setup.ts` polyfilling
   ResizeObserver, IntersectionObserver, matchMedia, `scrollIntoView`,
-  `createObjectURL` and `Image`). **140 files / 1126 tests, re-verified
-  2026-09-08** after the TeamPopup revival, the 3-day grace period, and the
-  self-computed standings tiebreak rework — includes
-  `functions/fixtures`'s own test files (Vitest picks up any `*.test.js`
-  outside `src/` too, same as `functions/leaderboard`'s). Most modules have a
-  sibling test, and the tests are frequently the clearest statement of
-  intended behaviour.
+  `createObjectURL` and `Image`). **145 files / 1182 tests, re-verified
+  2026-09-09** after the Matches page, its two latent-bug fixes, and the
+  fixtures write-diffing fix — includes `functions/fixtures`'s own test
+  files (Vitest picks up any `*.test.js` outside `src/` too, same as
+  `functions/leaderboard`'s). Most modules have a sibling test, and the
+  tests are frequently the clearest statement of intended behaviour.
 - **Integration**: `npm run test:integration` runs
   `integration/leaderboardRecompute.itest.ts` against the Firestore emulator.
   The `.itest.ts` suffix keeps it out of the default suite. It asserts that a
@@ -917,6 +1067,10 @@ git merge league-phase-prep
 git push origin main
 ```
 
+**`matches-page` merged into `main`, 2026-09-09** — the Maçlar page (§4), the
+write-diffing fix (§6), and the two latent-bug fixes (§4, §11 #28), all
+committed to that branch and merged the same day they were built.
+
 ---
 
 ## 10. Conventions worth knowing
@@ -997,7 +1151,7 @@ framing above would suggest.
 | 25 | **Knockout deadline is a placeholder** and locks nothing. |
 | 26 | **`KnockoutStagePicker` duplicates the whole pick state machine** that `useKnockoutPicks` was extracted to prevent. |
 | 27 | **Read-only brackets render empty** — no prediction is passed in. |
-| 28 | **`MatchupPopup`'s knockout branch is unreachable** — its condition can never be true, so ~70 lines never render. A test asserts the current behaviour. |
+| 28 | ~~**`MatchupPopup`'s knockout branch is unreachable**~~ **Done, 2026-09-09.** Its `isKnockoutFixture` check read `!fixtures.includes(fixture)` — provably always false, since `fixture` was found *in* that array — so the knockout branch was dead and a real knockout fixture would have rendered `"null. HAFTA"`. Now keyed on the fixture's own `stage` field (added the same day, §4/§6) via `isLeagueStage()`, independent of the app-wide `phase` prop. Fixed incidentally while building the Matches page (§4); not yet exercised against a real knockout fixture since none exist yet. |
 | 29 | **Dead code**: `PlayerList.tsx` (4 passing tests, no importer), `KnockoutPredictionSummary.tsx`, `LobbyInviteWithId`, and `usePosts().refetch` — a no-op threaded through 8 call sites. |
 | 30 | **Tuning objects outlived their tuners** — `statsPageTuning` and `teamPopupTuning` are threaded through 5 components whose tuner UIs no longer exist. |
 | 31 | **Forum mentions are stored but never read** — no highlight, no notifications. |
