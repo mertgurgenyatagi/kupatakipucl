@@ -4,6 +4,7 @@ import { RealFixture } from "./realFixtureTypes";
 import { TeamResult } from "./teamResultTypes";
 import { TeamCrest } from "./TeamCrest";
 import { isFixtureLive } from "./liveFixtures";
+import { PersonalPickResult } from "./personalPicks";
 import { LiveDot } from "./LiveDot";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ export function FixtureRow({
   fixture,
   results,
   compact = false,
+  personalPick,
   onSelectTeam,
   onSelectFixture,
 }: {
@@ -43,6 +45,10 @@ export function FixtureRow({
    *  stacked (narrower per row), everything else full-sized same as the
    *  drawer's own rows. The drawer itself keeps its default layout. */
   compact?: boolean;
+  /** Mert-only: whether his pre-season pick for this fixture came in. Unset
+   *  for the two teaser widgets (UpcomingMatchesDrawer/Preview), which never
+   *  pass it — only the mobile Matches page (via MatchDayList) does. */
+  personalPick?: PersonalPickResult | null;
   /** Fires with a team's id when its crest/name is clicked — opens
    *  TeamPopup. Undefined for the drawer (unchanged, still just stops
    *  propagation with no further effect). */
@@ -85,7 +91,9 @@ export function FixtureRow({
         onKeyDown={handleMatchKeyDown}
         className={cn(
           "relative grid h-full w-full cursor-pointer content-center items-center gap-1.5 rounded-lg px-2 transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-color_hoverfill focus-visible:bg-color_hoverfill",
-          live && "bg-color_remove/[0.08] hover:bg-color_remove/[0.14]"
+          live && "bg-color_remove/[0.08] hover:bg-color_remove/[0.14]",
+          !live && personalPick === "correct" && "bg-color_green/[0.08] hover:bg-color_green/[0.14]",
+          !live && personalPick === "incorrect" && "bg-color_remove/[0.08] hover:bg-color_remove/[0.14]"
         )}
         style={{ gridTemplateColumns: ROW_GRID_COLUMNS }}
       >

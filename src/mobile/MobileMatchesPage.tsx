@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
+import { useAuth } from "../auth/AuthProvider";
 import { useFixtures } from "../leaderboard/useFixtures";
 import { useResults } from "../leaderboard/useResults";
 import { buildStageTabs, defaultStageKey } from "../leaderboard/fixtureStages";
+import { isPersonalPicksViewer } from "../leaderboard/personalPicks";
 import { StageTabs } from "../leaderboard/StageTabs";
 import { MatchDayList } from "../leaderboard/MatchDayList";
 import { useMobilePopups } from "../shell/MobilePopupHost";
@@ -24,9 +26,11 @@ import { Skeleton } from "@/components/ui/skeleton";
  * tab strip is the first thing worth seeing.
  */
 export function MobileMatchesPage() {
+  const { user } = useAuth();
   const { openTeam, openFixture } = useMobilePopups();
   const { fixtures, loading } = useFixtures();
   const { results } = useResults();
+  const showPersonalPicks = isPersonalPicksViewer(user?.email);
 
   const tabs = useMemo(() => buildStageTabs(fixtures), [fixtures]);
   const [pickedKey, setPickedKey] = useState<string | null>(null);
@@ -66,6 +70,7 @@ export function MobileMatchesPage() {
           <MatchDayList
             fixtures={activeTab?.fixtures ?? []}
             results={results}
+            showPersonalPicks={showPersonalPicks}
             onSelectTeam={openTeam}
             onSelectFixture={openFixture}
           />

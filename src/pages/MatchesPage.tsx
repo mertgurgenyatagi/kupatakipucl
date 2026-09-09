@@ -8,6 +8,7 @@ import { useLeaderboard } from "../leaderboard/useLeaderboard";
 import { usePlayers } from "../profile/usePlayers";
 import { useTournamentPhase } from "../tournament/useTournamentPhase";
 import { buildStageTabs, defaultStageKey } from "../leaderboard/fixtureStages";
+import { isPersonalPicksViewer } from "../leaderboard/personalPicks";
 import { StageTabs } from "../leaderboard/StageTabs";
 import { MatchDayList } from "../leaderboard/MatchDayList";
 import { ParticipantPopup } from "../leaderboard/ParticipantPopup";
@@ -88,6 +89,7 @@ function DesktopMatchesPage() {
   const { results } = useResults();
   const { entries } = useLeaderboard();
   const { players } = usePlayers();
+  const showPersonalPicks = isPersonalPicksViewer(user?.email);
 
   const tabs = useMemo(() => buildStageTabs(fixtures), [fixtures]);
   // Null until someone picks a tab, so the default keeps tracking the data —
@@ -157,6 +159,7 @@ function DesktopMatchesPage() {
             fixtures={activeTab?.fixtures ?? []}
             results={results}
             entries={entries}
+            showPersonalPicks={showPersonalPicks}
             onSelectTeam={handleSelectTeam}
             onSelectFixture={handleSelectFixture}
           />

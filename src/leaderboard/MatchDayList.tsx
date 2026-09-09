@@ -4,6 +4,7 @@ import { TeamResult } from "./teamResultTypes";
 import { LeaderboardEntry } from "./leaderboardTypes";
 import { groupFixturesByDay } from "./fixtureStages";
 import { computeMatchConsensus } from "./matchConsensus";
+import { getPersonalPickResult } from "./personalPicks";
 import { FixtureRow } from "./FixtureRow";
 import { MatchesRow } from "./MatchesRow";
 
@@ -17,17 +18,24 @@ import { MatchesRow } from "./MatchesRow";
  * plus the head-to-head consensus bar it needs those entries for. Without
  * it, rows are the narrow shared FixtureRow. Mobile omits it, which is also
  * why the mobile page never mounts the leaderboard listener.
+ *
+ * `showPersonalPicks` tints a decided row by whether Mert's own pre-season
+ * pick (personalPicks.ts) came in — visible only to him, on both desktop and
+ * mobile, since it's just a lookup against data already on the page rather
+ * than anything that needs its own fetch.
  */
 export function MatchDayList({
   fixtures,
   results,
   entries,
+  showPersonalPicks = false,
   onSelectTeam,
   onSelectFixture,
 }: {
   fixtures: RealFixture[];
   results: Record<string, TeamResult>;
   entries?: LeaderboardEntry[];
+  showPersonalPicks?: boolean;
   onSelectTeam?: (teamId: string) => void;
   onSelectFixture?: (fixtureId: string) => void;
 }) {
@@ -48,13 +56,15 @@ export function MatchDayList({
           <h3 className="sticky top-0 z-10 bg-card px-3 py-2 font-mono text-[0.6rem] tracking-[0.18em] text-color_textsecondary uppercase">
             {day.label}
           </h3>
-          {day.fixtures.map((fixture) =>
-            entries ? (
+          {day.fixtures.map((fixture) => {
+            const personalPick = showPersonalPicks ? getPersonalPickResult(fixture) : null;
+            return entries ? (
               <MatchesRow
                 key={fixture.id}
                 fixture={fixture}
                 results={results}
                 consensus={computeMatchConsensus(fixture.homeTeamId, fixture.awayTeamId, entries)}
+                personalPick={personalPick}
                 onSelectTeam={onSelectTeam}
                 onSelectFixture={onSelectFixture}
               />
@@ -63,11 +73,12 @@ export function MatchDayList({
                 key={fixture.id}
                 fixture={fixture}
                 results={results}
+                personalPick={personalPick}
                 onSelectTeam={onSelectTeam}
                 onSelectFixture={onSelectFixture}
               />
-            )
-          )}
+            );
+          })}
         </section>
       ))}
     </div>

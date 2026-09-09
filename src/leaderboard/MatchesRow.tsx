@@ -5,6 +5,7 @@ import { TeamResult } from "./teamResultTypes";
 import { TeamCrest } from "./TeamCrest";
 import { isFixtureLive } from "./liveFixtures";
 import { MatchConsensus } from "./matchConsensus";
+import { PersonalPickResult } from "./personalPicks";
 import { LiveDot } from "./LiveDot";
 import { cn } from "@/lib/utils";
 
@@ -87,12 +88,16 @@ export function MatchesRow({
   fixture,
   results,
   consensus,
+  personalPick,
   onSelectTeam,
   onSelectFixture,
 }: {
   fixture: RealFixture;
   results: Record<string, TeamResult>;
   consensus?: MatchConsensus | null;
+  /** Mert-only: whether his pre-season pick for this fixture came in.
+   *  Always null for anyone else (MatchDayList never computes it for them). */
+  personalPick?: PersonalPickResult | null;
   onSelectTeam?: (teamId: string) => void;
   onSelectFixture?: (fixtureId: string) => void;
 }) {
@@ -129,7 +134,9 @@ export function MatchesRow({
         onKeyDown={handleMatchKeyDown}
         className={cn(
           "grid h-full w-full cursor-pointer content-center items-center gap-2 rounded-lg px-3 transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-color_hoverfill focus-visible:bg-color_hoverfill",
-          live && "bg-color_remove/[0.08] hover:bg-color_remove/[0.14]"
+          live && "bg-color_remove/[0.08] hover:bg-color_remove/[0.14]",
+          !live && personalPick === "correct" && "bg-color_green/[0.08] hover:bg-color_green/[0.14]",
+          !live && personalPick === "incorrect" && "bg-color_remove/[0.08] hover:bg-color_remove/[0.14]"
         )}
         style={{ gridTemplateColumns: ROW_GRID_COLUMNS }}
       >
