@@ -34,6 +34,7 @@ const STARTED_LOGGEDOUT_LINKS: NavLink[] = [
 const STARTED_LOGGEDIN_LINKS: NavLink[] = [
   { path: "/", label: "Ana Sayfa" },
   { path: "/leaderboard", label: "Puan Durumu" },
+  { path: "/matches", label: "Maçlar" },
   { path: "/forum", label: "Forum" },
   { path: "/about", label: "Hakkında" },
 ];

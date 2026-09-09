@@ -4,6 +4,11 @@
 const { TEAM_ID_MAP } = require("./teamIdMap");
 
 const API_BASE = "https://api.football-data.org/v4";
+/** football-data.org's `stage` value for the 36-team single-table phase.
+ *  The knockout stages that follow it (PLAYOFFS, LAST_16, QUARTER_FINALS,
+ *  SEMI_FINALS, FINAL) share this same endpoint, so anything that means
+ *  "the league table" has to say so explicitly — see standings.js. */
+const LEAGUE_STAGE = "LEAGUE_STAGE";
 // No ?season= param: football-data.org resolves this to whatever it currently
 // considers the active season, so this keeps working next year with no
 // redeploy. If that ever needs pinning, add season here explicitly.
@@ -17,15 +22,25 @@ async function fetchJson(url, apiToken) {
   return res.json();
 }
 
-/** Every league-phase match (all 144, past and future) for the current
- *  season — no ?matchday= filter, since both the upcoming-fixtures widgets
- *  and the rank-history replay need the whole calendar at once. */
+/** Every match (all 144 league-phase, plus the knockout rounds once they're
+ *  drawn) for the current season — no ?matchday= or ?stage= filter, since
+ *  both the upcoming-fixtures widgets and the rank-history replay need the
+ *  whole calendar at once. */
 async function fetchAllMatches(apiToken) {
   const body = await fetchJson(MATCHES_URL, apiToken);
   if (!Array.isArray(body.matches)) {
     throw new Error("football-data.org matches response had no matches array");
   }
   return body.matches;
+}
+
+/** A knockout fixture that has been scheduled but not yet drawn comes back
+ *  with no team on one or both sides. That is expected data, not a mapping
+ *  gap, so it's skipped rather than thrown on — the alternative is that the
+ *  first response after a draw is announced takes both scheduled syncs down
+ *  with it, which would stop results updating entirely. */
+function isDrawn(match) {
+  return match.homeTeam?.id != null && match.awayTeam?.id != null;
 }
 
 /**
@@ -37,10 +52,16 @@ async function fetchAllMatches(apiToken) {
  * order, same guarantee src/devpanel/fixtures.ts's hand-authored `order`
  * field provides for the mock calendar.
  *
- * Throws on any unmapped team id, same reasoning as mapStandingsToResults.
+ * `stage` is carried through verbatim (LEAGUE_STAGE, PLAYOFFS, LAST_16, ...)
+ * — the Matches page builds its tabs from it, and standings.js needs it to
+ * keep knockout results out of the league table. `matchday` is null for every
+ * knockout fixture, which is why nothing may assume it's a number.
+ *
+ * Throws on a team id that is present but unmapped — that really is a gap in
+ * teamIdMap.js and should fail loudly.
  */
 function mapMatchesToFixtures(matches) {
-  const sorted = [...matches].sort((a, b) => {
+  const sorted = matches.filter(isDrawn).sort((a, b) => {
     const byDate = new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime();
     return byDate !== 0 ? byDate : a.id - b.id;
   });
@@ -55,7 +76,8 @@ function mapMatchesToFixtures(matches) {
     }
     return {
       id: String(match.id),
-      matchday: match.matchday,
+      matchday: match.matchday ?? null,
+      stage: match.stage ?? null,
       order: index + 1,
       homeTeamId,
       awayTeamId,
@@ -71,4 +93,5 @@ module.exports = {
   fetchAllMatches,
   mapMatchesToFixtures,
   MATCHES_URL,
+  LEAGUE_STAGE,
 };

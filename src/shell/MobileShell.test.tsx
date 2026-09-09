@@ -62,9 +62,10 @@ const STATE_FIXTURES: {
 // stats excluded: allowed by pageAccess.ts in some states but deliberately
 // not linked from the nav since 2026-09-07 (see pageAccess.ts's comment) —
 // same reasoning AppShell.test.tsx's own GATED_PAGES uses.
-const GATED_PAGES: PageKey[] = ["leaderboard", "forum"];
+const GATED_PAGES: PageKey[] = ["leaderboard", "matches", "forum"];
 const PAGE_LABELS: Record<PageKey, string> = {
   leaderboard: "Puan Durumu",
+  matches: "Maçlar",
   forum: "Forum",
   stats: "İstatistikler",
   predictions: "Tahminini Yap",

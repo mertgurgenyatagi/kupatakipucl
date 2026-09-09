@@ -10,6 +10,7 @@ import { getUpcomingFixtures } from "./upcomingFixtures";
 import { useFixtures } from "./useFixtures";
 import { TeamResult } from "./teamResultTypes";
 import { FixtureRow } from "./FixtureRow";
+import { AllMatchesLink } from "./AllMatchesLink";
 
 const INITIAL_COUNT = 10;
 const BATCH_SIZE = 10;
@@ -125,6 +126,9 @@ export function UpcomingMatchesDrawer({
             </div>
           )}
         </div>
+        {/* Outside the scroll region, so it stays reachable however far down
+            the infinite-scroll list someone has gone. */}
+        <AllMatchesLink className="border-t border-color_border1/70" />
       </div>
     </div>
   );

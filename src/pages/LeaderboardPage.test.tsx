@@ -1,5 +1,6 @@
 // src/pages/LeaderboardPage.test.tsx
 import { render, screen, fireEvent, act } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { LeaderboardPage } from "./LeaderboardPage";
 import { TEAMS } from "../predictions/teams";
@@ -62,6 +63,16 @@ vi.mock("../leaderboard/useFixtures", () => ({
 
 const PLAYERS = [{ uid: "uid1", firstName: "Ada", lastName: "Lovelace", photoURL: "a.png", createdAt: 1 }];
 
+// Router needed since the hero's fixtures drawer carries a link to /matches
+// (AllMatchesLink.tsx).
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <LeaderboardPage />
+    </MemoryRouter>
+  );
+}
+
 describe("LeaderboardPage", () => {
   beforeEach(() => {
     mockUseVisibilityState.mockReturnValue("loggedin_leaguephase");
@@ -73,20 +84,20 @@ describe("LeaderboardPage", () => {
   it("shows the blocked message when the page isn't allowed for this state", () => {
     mockUseVisibilityState.mockReturnValue("loggedout_notstarted");
     mockUseLeaderboard.mockReturnValue({ entries: [], loading: false });
-    render(<LeaderboardPage />);
+    renderPage();
     expect(screen.getByText("Bu bölüm şu anda kullanılamıyor.")).toBeInTheDocument();
   });
 
   it("shows the blocked message for a logged-out visitor even once the tournament has started", () => {
     mockUseVisibilityState.mockReturnValue("loggedout_leaguephase");
     mockUseLeaderboard.mockReturnValue({ entries: [], loading: false });
-    render(<LeaderboardPage />);
+    renderPage();
     expect(screen.getByText("Bu bölüm şu anda kullanılamıyor.")).toBeInTheDocument();
   });
 
   it("shows a skeleton placeholder while the leaderboard is loading", () => {
     mockUseLeaderboard.mockReturnValue({ entries: [], loading: true });
-    render(<LeaderboardPage />);
+    renderPage();
     expect(screen.getByTestId("leaderboard-skeleton")).toBeInTheDocument();
   });
 
@@ -95,7 +106,7 @@ describe("LeaderboardPage", () => {
       entries: [{ uid: "uid1", firstName: "Ada", photoURL: "a.png", points: 42, ranking: [] }],
       loading: false,
     });
-    render(<LeaderboardPage />);
+    renderPage();
     // The page's own gate additionally preloads every team crest + player
     // avatar before revealing — always a microtask past mount, even with
     // test/setup.ts's instant Image mock (Promise.all(...).then(...) is
@@ -110,7 +121,7 @@ describe("LeaderboardPage", () => {
       entries: [{ uid: "uid1", firstName: "Ada", photoURL: "a.png", points: 9, ranking: [] }],
       loading: false,
     });
-    render(<LeaderboardPage />);
+    renderPage();
     await act(async () => {});
     // The team table (no frame header of its own anymore, just its rows) and
     // the hero carousel that replaced the stat widgets in this column.
@@ -121,7 +132,7 @@ describe("LeaderboardPage", () => {
   it("opens the Matchup Popup when a fixture row in the hero drawer is clicked", async () => {
     mockUseTournamentPhase.mockReturnValue("leaguephase");
     mockUseLeaderboard.mockReturnValue({ entries: [], loading: false });
-    render(<LeaderboardPage />);
+    renderPage();
     await act(async () => {});
     fireEvent.click(screen.getByRole("button", { name: "Yaklaşan maçları göster" }));
     const buttons = screen.getAllByRole("button");
@@ -136,7 +147,7 @@ describe("LeaderboardPage", () => {
       entries: [{ uid: "uid1", firstName: "Ada", photoURL: "a.png", points: 36, ranking: [] }],
       loading: false,
     });
-    render(<LeaderboardPage />);
+    renderPage();
     await act(async () => {});
     expect(screen.getByTestId("knockout-bracket-stub")).toBeInTheDocument();
   });
@@ -148,7 +159,7 @@ describe("LeaderboardPage", () => {
       entries: [{ uid: "uid1", firstName: "Ada", photoURL: "a.png", points: 36, ranking: [] }],
       loading: false,
     });
-    render(<LeaderboardPage />);
+    renderPage();
     await act(async () => {});
     // TeamTable's "AV" (Averaj) column header is unique to that component and
     // is absent in both the bracket and the hero carousel / fixtures drawer.

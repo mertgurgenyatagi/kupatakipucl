@@ -8,6 +8,7 @@ import { AboutPage } from "./pages/AboutPage";
 import { PredictionsPage } from "./pages/PredictionsPage";
 import { KnockoutPredictionsPage } from "./pages/KnockoutPredictionsPage";
 import { LeaderboardPage } from "./pages/LeaderboardPage";
+import { MatchesPage } from "./pages/MatchesPage";
 import { ForumPage } from "./pages/ForumPage";
 import { StatsPage } from "./pages/StatsPage";
 import { ProfilePage } from "./pages/ProfilePage";
@@ -27,6 +28,7 @@ export function App() {
                 <Route path="/predictions" element={<PredictionsPage />} />
                 <Route path="/knockout-predictions" element={<KnockoutPredictionsPage />} />
                 <Route path="/leaderboard" element={<LeaderboardPage />} />
+                <Route path="/matches" element={<MatchesPage />} />
                 <Route path="/forum" element={<ForumPage />} />
                 <Route path="/stats" element={<StatsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />

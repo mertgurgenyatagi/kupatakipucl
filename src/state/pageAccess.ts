@@ -1,7 +1,14 @@
 import { VisibilityState, getVisibilityState } from "./visibilityState";
 import { TournamentPhase, STARTED_PHASES, KNOCKOUT_PHASES } from "../tournament/tournamentPhase";
 
-export type PageKey = "predictions" | "knockoutPredictions" | "leaderboard" | "forum" | "stats" | "profile";
+export type PageKey =
+  | "predictions"
+  | "knockoutPredictions"
+  | "leaderboard"
+  | "matches"
+  | "forum"
+  | "stats"
+  | "profile";
 
 const ALL_PHASES: readonly TournamentPhase[] = ["notstarted", ...STARTED_PHASES];
 
@@ -25,6 +32,11 @@ const PAGE_ACCESS: Record<PageKey, VisibilityState[]> = {
   // thrown away.
   knockoutPredictions: statesFor(KNOCKOUT_PHASES, [true]),
   leaderboard: statesFor(STARTED_PHASES, [true]),
+  // Signed-in only, same as the leaderboard, even though fixtures and scores
+  // are public football data: every row carries the head-to-head consensus
+  // bar, which is participant prediction data. Absent before the tournament
+  // starts — there is nothing to show and no calendar to tab through.
+  matches: statesFor(STARTED_PHASES, [true]),
   forum: [...statesFor(ALL_PHASES, [true]), ...statesFor(STARTED_PHASES, [false])],
   // Dropped from the nav 2026-09-07 (src/shell/navLinks.ts) when Mert shelved
   // the stats redesign and cleared the page's content — same "allowed here,

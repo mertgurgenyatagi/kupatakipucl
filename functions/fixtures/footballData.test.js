@@ -4,6 +4,7 @@ import { mapMatchesToFixtures } from "./footballData.js";
 const match = (overrides = {}) => ({
   id: 1,
   matchday: 1,
+  stage: "LEAGUE_STAGE",
   utcDate: "2026-09-08T16:45:00Z",
   status: "TIMED",
   homeTeam: { id: 57 },
@@ -20,6 +21,7 @@ describe("mapMatchesToFixtures", () => {
     expect(fixture).toEqual({
       id: "42",
       matchday: 1,
+      stage: "LEAGUE_STAGE",
       order: 1,
       homeTeamId: "arsenal",
       awayTeamId: "aston-villa",
@@ -46,5 +48,21 @@ describe("mapMatchesToFixtures", () => {
 
   it("throws on an unmapped football-data.org team id rather than dropping it silently", () => {
     expect(() => mapMatchesToFixtures([match({ homeTeam: { id: 999999 } })])).toThrow(/No team-id mapping/);
+  });
+
+  it("carries a knockout stage through with a null matchday", () => {
+    const [fixture] = mapMatchesToFixtures([match({ stage: "QUARTER_FINALS", matchday: null })]);
+    expect(fixture.stage).toBe("QUARTER_FINALS");
+    expect(fixture.matchday).toBeNull();
+  });
+
+  it("skips an undrawn knockout fixture instead of throwing, and keeps `order` contiguous", () => {
+    const fixtures = mapMatchesToFixtures([
+      match({ id: 1, utcDate: "2027-03-10T20:00:00Z" }),
+      match({ id: 2, stage: "LAST_16", matchday: null, homeTeam: {}, awayTeam: {}, utcDate: "2027-03-11T20:00:00Z" }),
+      match({ id: 3, utcDate: "2027-03-12T20:00:00Z" }),
+    ]);
+    expect(fixtures.map((f) => f.id)).toEqual(["1", "3"]);
+    expect(fixtures.map((f) => f.order)).toEqual([1, 2]);
   });
 });

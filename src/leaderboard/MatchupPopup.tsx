@@ -4,6 +4,7 @@ import { TEAM_BY_ID } from "../predictions/teams";
 import { RealFixture } from "./realFixtureTypes";
 import { useFixtures } from "./useFixtures";
 import { isFixtureLive } from "./liveFixtures";
+import { isLeagueStage } from "./fixtureStages";
 import { LiveDot } from "./LiveDot";
 import { LeaderboardEntry } from "./leaderboardTypes";
 import { Player } from "../profile/usePlayers";
@@ -342,7 +343,15 @@ export const MatchupPopup = memo(function MatchupPopup({
   const { fixtures } = useFixtures();
   const displayedId = fixtureId ?? lastFixtureId;
   const fixture = displayedId ? (fixtures.find((f) => f.id === displayedId) ?? null) : null;
-  const isKnockoutFixture = fixture !== null && !fixtures.includes(fixture);
+  // Keyed on the fixture's own stage, not the app-wide `phase` prop: a
+  // league fixture opened from TeamPopup's match history must keep its
+  // league header even after an admin flips the phase to "knockout". Until
+  // fixtures carried a real `stage` (2026-09-09) this read
+  // `!fixtures.includes(fixture)`, which could never be true because
+  // `fixture` was found in that very array — the branch below was dead
+  // (PROJECT.md §11 #28) and a knockout fixture would have rendered
+  // "null. HAFTA".
+  const isKnockoutFixture = fixture !== null && !isLeagueStage(fixture);
 
   const home = fixture ? TEAM_BY_ID[fixture.homeTeamId] : null;
   const away = fixture ? TEAM_BY_ID[fixture.awayTeamId] : null;

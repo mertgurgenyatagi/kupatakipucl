@@ -9,7 +9,6 @@ export type ResultLetter = "G" | "B" | "M";
 
 export interface TeamMatchHistoryEntry {
   fixtureId: string;
-  matchday: number;
   order: number;
   opponentId: string;
   home: boolean;
@@ -52,7 +51,6 @@ export function getTeamMatchHistory(teamId: string, fixtures: RealFixture[]): Te
       const opponentGoals = result === null ? null : home ? f.awayGoals : f.homeGoals;
       return {
         fixtureId: f.id,
-        matchday: f.matchday,
         order: f.order,
         opponentId: home ? f.awayTeamId : f.homeTeamId,
         home,

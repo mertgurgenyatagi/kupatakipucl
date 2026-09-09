@@ -23,7 +23,7 @@ const STATE_FIXTURES: { state: VisibilityState; user: { uid: string } | null; ph
 // by pageAccess.ts in some states but intentionally not linked from the nav
 // (see pageAccess.ts's comments on each), so asserting nav/pageAccess parity
 // for them would fail by design rather than catch a real bug.
-const GATED_PAGES: PageKey[] = ["leaderboard", "forum"];
+const GATED_PAGES: PageKey[] = ["leaderboard", "matches", "forum"];
 
 vi.mock("../auth/AuthProvider", () => ({
   useAuth: () => mockUseAuth(),
@@ -104,7 +104,7 @@ describe("AppShell nav gating", () => {
     for (const phase of ["leaguephase", "preknockout", "knockout"] as TournamentPhase[]) {
       mockUseTournamentPhase.mockReturnValue(phase);
       renderShell();
-      for (const label of ["Puan Durumu", "Forum", "Hakkında"]) {
+      for (const label of ["Puan Durumu", "Maçlar", "Forum", "Hakkında"]) {
         expect(screen.getAllByText(label).length).toBeGreaterThan(0);
       }
       // Dropped from the nav 2026-09-07 when the stats redesign was shelved

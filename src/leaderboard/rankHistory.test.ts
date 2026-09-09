@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { computeRankHistory } from "./rankHistory";
 import { computeStandingsFromMatches } from "./standingsAccumulator";
+import { getLeagueFixtures } from "./fixtureStages";
 import { LeaderboardEntry } from "./leaderboardTypes";
 import { RealFixture } from "./realFixtureTypes";
 import { TEAMS } from "../predictions/teams";
@@ -87,7 +88,7 @@ describe("computeRankHistory", () => {
 
   it("ranks a participant who predicted the actual leader after match 1 ahead of one who predicted the actual last-place team", () => {
     const fixtures = withFixture(decided("f1", 3, 0));
-    const results = computeStandingsFromMatches(fixtures, { f1: { homeGoals: 3, awayGoals: 0 } });
+    const results = computeStandingsFromMatches(getLeagueFixtures(fixtures), { f1: { homeGoals: 3, awayGoals: 0 } });
     const leaderId = Object.keys(results).find((id) => results[id].position === 1)!;
     const lastId = Object.keys(results).find((id) => results[id].position === 36)!;
 
@@ -95,5 +96,24 @@ describe("computeRankHistory", () => {
     const goodHistory = computeRankHistory("good", entries, fixtures);
     const badHistory = computeRankHistory("bad", entries, fixtures);
     expect(goodHistory[0].rank).toBeLessThan(badHistory[0].rank);
+  });
+
+  it("ignores knockout fixtures — this chart replays the league table only", () => {
+    const knockout: RealFixture = {
+      id: "qf1",
+      matchday: null,
+      stage: "QUARTER_FINALS",
+      order: 4,
+      homeTeamId: TEAMS[0].id,
+      awayTeamId: TEAMS[1].id,
+      kickoffUtc: "2027-04-07T19:00:00Z",
+      status: "FINISHED",
+      homeGoals: 4,
+      awayGoals: 0,
+    };
+    const fixtures = [...withFixture(decided("f1", 1, 0)), knockout];
+    const entries = [entry("a", []), entry("b", [])];
+    const history = computeRankHistory("a", entries, fixtures);
+    expect(history.map((c) => c.fixtureId)).toEqual(["f1"]);
   });
 });

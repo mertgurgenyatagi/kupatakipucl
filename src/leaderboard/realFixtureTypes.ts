@@ -4,7 +4,18 @@
  *  football-data.org's own match id. */
 export interface RealFixture {
   id: string;
-  matchday: number;
+  /** Null for every knockout fixture — football-data.org only numbers
+   *  matchdays within the league phase, so nothing may assume this is a
+   *  number without first narrowing on `stage` (see fixtureStages.ts's
+   *  getLeagueFixtures). */
+  matchday: number | null;
+  /** football-data.org's own stage string — "LEAGUE_STAGE", "PLAYOFFS",
+   *  "LAST_16", "QUARTER_FINALS", "SEMI_FINALS", "FINAL". Optional because a
+   *  document synced before this field existed (2026-09-09) genuinely has no
+   *  value for it until the next sync overwrites it — same reasoning as
+   *  LeaderboardEntry.submittedAt. Absent is read as league-phase, which is
+   *  what every such document was. */
+  stage?: string | null;
   /** Sequential chronological order across the whole competition — assigned
    *  by functions/fixtures at sync time, needed so rankHistory.ts can replay
    *  decided matches in true kickoff order. */

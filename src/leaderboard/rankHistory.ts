@@ -4,6 +4,7 @@ import { computeContrarianScores } from "./contrarianScore";
 import { assignRanks } from "./ranking";
 import { LeaderboardEntry } from "./leaderboardTypes";
 import { RealFixture } from "./realFixtureTypes";
+import { getLeagueFixtures } from "./fixtureStages";
 
 export interface RankCheckpoint {
   /** The fixture whose outcome produced this checkpoint. */
@@ -30,13 +31,17 @@ export interface RankCheckpoint {
  * assumption that finished matches form a contiguous prefix by kickoff time
  * — true for a normal calendar, and not defended against a postponement
  * finishing out of order. Revisit if that ever actually happens.
+ *
+ * Knockout fixtures are dropped before any of that: this chart is a replay of
+ * the 36-team league table, which the knockout rounds do not affect.
  */
 export function computeRankHistory(
   uid: string,
   entries: LeaderboardEntry[],
-  fixtures: RealFixture[],
+  allFixtures: RealFixture[],
   optaRanking: string[] = []
 ): RankCheckpoint[] {
+  const fixtures = getLeagueFixtures(allFixtures);
   const checkpoints: RankCheckpoint[] = [];
   const matchGoalsThrough: Record<string, MatchGoals | undefined> = {};
 

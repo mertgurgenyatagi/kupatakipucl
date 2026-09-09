@@ -22,6 +22,8 @@
 // points, then UEFA club coefficient. This app has no data source for the
 // last two, so both are replaced by the same Opta order — Mert's explicit
 // call: "just use the Opta Analyst's rankings" for that case too.
+const { LEAGUE_STAGE } = require("./footballData");
+
 const FINAL_MATCHDAY = 8;
 
 /** `opta-analyst` is a real `predictions/{uid}` document (a custom
@@ -122,12 +124,19 @@ function computeOpponentStats(fixtures, baseStats, allTeamIds) {
 
 /**
  * Pure: `fixtures` is the same shape mapMatchesToFixtures produces (or
- * RealFixture client-side) — the full 144-match calendar, decided or not.
+ * RealFixture client-side) — the whole season's calendar, decided or not.
  * `optaRanking` is `opta-analyst`'s own 36-id `ranking` array, best to
  * worst. Returns `{ [teamId]: TeamResult }`, ready to write to
  * results/{teamId} as-is.
+ *
+ * Only LEAGUE_STAGE fixtures count. football-data.org serves the knockout
+ * rounds from the same endpoint, so without this filter the first playoff
+ * result would start adding points to a league table that had already
+ * finished — silently, which is the worst failure this app has (see
+ * functions/leaderboard's own note on the same principle).
  */
-function computeStandingsTable(fixtures, optaRanking) {
+function computeStandingsTable(allFixtures, optaRanking) {
+  const fixtures = allFixtures.filter((f) => f.stage === LEAGUE_STAGE);
   const allTeamIds = Array.from(new Set(fixtures.flatMap((f) => [f.homeTeamId, f.awayTeamId]))).sort();
   const optaRank = buildOptaRank(optaRanking, allTeamIds);
   const baseStats = computeBaseStats(fixtures, allTeamIds);

@@ -5,6 +5,7 @@ function fixture(overrides = {}) {
   return {
     id: "f1",
     matchday: 1,
+    stage: "LEAGUE_STAGE",
     order: 1,
     homeTeamId: "a",
     awayTeamId: "b",
@@ -149,6 +150,28 @@ describe("computeStandingsTable", () => {
   it("throws when the Opta ranking doesn't cover every team in the fixture list", () => {
     const fixtures = [fixture({ id: "f1", homeTeamId: "a", awayTeamId: "b" })];
     expect(() => computeStandingsTable(fixtures, ["a"])).toThrow(/missing team/);
+  });
+
+  it("ignores knockout fixtures entirely — they never touch the league table", () => {
+    const fixtures = [
+      fixture({ id: "lg", homeTeamId: "a", awayTeamId: "b", homeGoals: 1, awayGoals: 0 }),
+      fixture({
+        id: "ko",
+        stage: "QUARTER_FINALS",
+        matchday: null,
+        homeTeamId: "b",
+        awayTeamId: "a",
+        homeGoals: 5,
+        awayGoals: 0,
+      }),
+    ];
+    const results = computeStandingsTable(fixtures, ["a", "b"]);
+    // Without the LEAGUE_STAGE filter b's 5-0 would put it top on goal difference.
+    expect(results.a.position).toBe(1);
+    expect(results.a.points).toBe(3);
+    expect(results.b.points).toBe(0);
+    expect(results.a.matchesPlayed).toBe(1);
+    expect(results.b.matchesPlayed).toBe(1);
   });
 
   it("only counts decided fixtures toward matchesPlayed", () => {

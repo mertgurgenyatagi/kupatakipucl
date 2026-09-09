@@ -4,6 +4,7 @@ import { RealFixture } from "./realFixtureTypes";
 import { TeamResult } from "./teamResultTypes";
 import { TeamCrest } from "./TeamCrest";
 import { isFixtureLive } from "./liveFixtures";
+import { MatchConsensus } from "./matchConsensus";
 import { LiveDot } from "./LiveDot";
 import { cn } from "@/lib/utils";
 
@@ -30,10 +31,40 @@ function place(results: Record<string, TeamResult>, teamId: string): string {
   return position ? String(position) : "-";
 }
 
+/**
+ * The desktop Matches page's one addition to a row: how the group split on
+ * these two teams when they ranked all 36 (matchConsensus.ts). A hairline
+ * bar, a count at each end, and nothing else — the rest of the prediction
+ * detail is a click away in MatchupPopup.
+ */
+function ConsensusBar({ home, away }: { home: number; away: number }) {
+  const total = home + away;
+  const homeShare = (home / total) * 100;
+
+  return (
+    // Narrow and centred under the score rather than spanning the row: the
+    // flanking league positions are already numbers at both edges, and a
+    // full-width bar put a second pair out there to be confused with them.
+    // Sitting under the score also says what it is about — the pairing.
+    <div
+      className="col-span-full mx-auto mt-1.5 flex w-40 items-center gap-2"
+      title="Sıralamada üstte görenler"
+      aria-label={`Sıralamada üstte görenler: ${home} - ${away}`}
+    >
+      <span className="w-4 shrink-0 text-right font-mono text-[0.6rem] text-color_textsecondary tnum">{home}</span>
+      <span className="flex h-[3px] min-w-0 flex-1 overflow-hidden rounded-full bg-color_border1">
+        <span className="h-full rounded-full bg-color_accent/70" style={{ width: `${homeShare}%` }} />
+      </span>
+      <span className="w-4 shrink-0 font-mono text-[0.6rem] text-color_textsecondary tnum">{away}</span>
+    </div>
+  );
+}
+
 export function FixtureRow({
   fixture,
   results,
   compact = false,
+  consensus,
   onSelectTeam,
   onSelectFixture,
 }: {
@@ -43,6 +74,10 @@ export function FixtureRow({
    *  stacked (narrower per row), everything else full-sized same as the
    *  drawer's own rows. The drawer itself keeps its default layout. */
   compact?: boolean;
+  /** Desktop Matches page only — adds the head-to-head consensus bar under
+   *  the score. Omitted everywhere else, including mobile, which keeps the
+   *  lean row and never pays for the leaderboard read it needs. */
+  consensus?: MatchConsensus | null;
   /** Fires with a team's id when its crest/name is clicked — opens
    *  TeamPopup. Undefined for the drawer (unchanged, still just stops
    *  propagation with no further effect). */
@@ -67,7 +102,7 @@ export function FixtureRow({
   }
 
   return (
-    <div className={compact ? "h-[4.5rem] px-2" : "h-24 px-2"}>
+    <div className={cn("px-2", compact ? "h-[4.5rem]" : consensus ? "h-28" : "h-24")}>
       {/* A div, not a <button> — a real <button> can't contain the
           home/away crest+name buttons below (invalid nesting). */}
       <div
@@ -76,7 +111,7 @@ export function FixtureRow({
         onClick={handleMatchClick}
         onKeyDown={handleMatchKeyDown}
         className={cn(
-          "relative grid h-full w-full cursor-pointer items-center gap-1.5 rounded-lg px-2 transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-color_hoverfill focus-visible:bg-color_hoverfill",
+          "relative grid h-full w-full cursor-pointer content-center items-center gap-1.5 rounded-lg px-2 transition-colors duration-150 ease-[var(--ease-cotton)] outline-none hover:bg-color_hoverfill focus-visible:bg-color_hoverfill",
           live && "bg-color_remove/[0.08] hover:bg-color_remove/[0.14]"
         )}
         style={{ gridTemplateColumns: ROW_GRID_COLUMNS }}
@@ -130,6 +165,7 @@ export function FixtureRow({
           </span>
         </button>
         <span className="font-mono text-xs text-color_textsecondary tnum">{place(results, away.id)}</span>
+        {consensus && <ConsensusBar home={consensus.home} away={consensus.away} />}
       </div>
     </div>
   );
