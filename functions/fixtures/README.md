@@ -1,18 +1,25 @@
 # fixtures
 
-Two scheduled Cloud Functions that sync the real UEFA Champions League
-league-phase table and fixture calendar from
-[football-data.org](https://www.football-data.org):
+Four Cloud Functions that sync the real UEFA Champions League league-phase
+table and fixture calendar from
+[football-data.org](https://www.football-data.org). Two of them do the
+actual syncing; the other two exist purely to decide *when* that syncing
+runs — see "Live scheduling" below for why that's a whole section of its
+own.
 
-- **`syncFootballDataResults`** → `results/{teamId}`, replacing the dev
-  panel's synthetic 1-0/0-0 scorelines as the production source of truth
-  once the league phase starts (2026-09-08). Writes the exact same
-  collection `src/devpanel/useDevMatches.ts` writes by hand, so
+- **`resultsPollTick`** (calls `syncResults()`) → `results/{teamId}`,
+  replacing the dev panel's synthetic 1-0/0-0 scorelines as the production
+  source of truth once the league phase starts (2026-09-08). Writes the
+  exact same collection `src/devpanel/useDevMatches.ts` writes by hand, so
   `functions/leaderboard`'s existing `onDocumentWritten("results/{teamId}")`
   trigger picks up every sync automatically — no other wiring needed.
-- **`syncFootballDataFixtures`** → `fixtures/{id}` — the full 144-match
-  calendar (past and future), `id` being football-data.org's own match id.
-  A brand new collection, unrelated to `src/devpanel/fixtures.ts`.
+- **`fixturesPollTick`** (calls `syncFixtures()`) → `fixtures/{id}` — the
+  full 144-match calendar (past and future), `id` being football-data.org's
+  own match id. A brand new collection, unrelated to
+  `src/devpanel/fixtures.ts`.
+- **`planKickoffTasks`** and **`handleFixtureArrival`** don't sync anything
+  themselves — they schedule *when* the two functions above run. See "Live
+  scheduling" below.
 
 ## Setup
 
@@ -38,50 +45,81 @@ against a live `/v4/competitions/CL/standings` response on 2026-09-07.
 `teams.ts`, in both directions — if either list ever changes, the mismatch
 fails loudly there instead of silently dropping a team out of `results`.
 
-## Polling cadence — live-aware, added 2026-09-07, widened 2026-09-09
+## Live scheduling — task-based, added 2026-09-07, rearchitected 2026-09-10
 
-Both functions run on `onSchedule("every 10 minutes")` (was 2 minutes), but
-that schedule is just the ceiling on how promptly a live window can be
-noticed — `pollGate.js` decides, on every tick, whether to actually call
-football-data.org:
+**History first, because the current design only makes sense in light of
+what didn't work.** This started 2026-09-07 as `pollGate.js` gating a flat
+`onSchedule("every 2 minutes")`: poll aggressively in a live window, sparsely
+otherwise. On 2026-09-09 the budget killswitch (PROJECT.md §1) tripped
+three times in one day. The first trip was a write storm (fixed by
+docDiff.js, above); the third trip, 6 minutes after a live sync had just
+succeeded, traced to the schedule itself — `pollGate.js` only ever decided
+whether a *tick* did real work, not whether the tick happened. Cloud
+Scheduler fired on its raw cadence 24/7, all month, cold-starting a Cloud
+Run instance every single time regardless of match activity. Widening that
+interval (2 → 10 minutes, same day) was a stopgap: it shrank the idle cost,
+it didn't remove it.
 
-- **Live window**: any fixture that kicked off within the last 3.5 hours
-  (2.5h estimated match length + 1h grace for late corrections) → poll.
-- **Sparse**: otherwise, only if it's been ≥5 hours since the last real
-  sync → poll. Everything in between is a no-op — one cheap Firestore query
-  (`syncControl.js`'s `getRecentFixtures`, ≤20 docs) and nothing else.
+**The actual fix, 2026-09-10, removes the recurring idle schedule
+entirely.** Instead of a job that wakes up every N minutes forever and asks
+"is anything live," each fixture gets exactly one precisely-timed wake-up
+call shortly before its own kickoff, which then self-perpetuates a tight
+poll loop for as long as something is actually live and stops itself the
+moment nothing is. Between kickoffs, nothing is scheduled at all — zero
+recurring cost, not just a smaller one.
 
-This replaces the original flat 10-minute interval. football-data.org's Free
-tier caps at 10 requests/**minute**, so polling frequency was never about
-protecting the API cap — the point of gating is making the live feature
-(src/leaderboard/FixtureRow.tsx, MatchupPopup.tsx, the standings table)
-actually feel live during a match without polling pointlessly for the other
-~99% of the season. `pollGate.test.js` covers the decision logic directly;
-`LIVE_WINDOW_MS` and `SPARSE_INTERVAL_MS` are both named constants there if
-the numbers ever need tuning.
+Four pieces, all in `index.js`:
 
-**The `onSchedule(...)` cadence itself is a separate cost lever from
-`pollGate.js`, and it was the wrong one left untuned.** `pollGate.js` decides
-whether a given tick does the expensive work, but the tick itself — Cloud
-Scheduler firing, Cloud Run cold-starting an instance — happens on the raw
-schedule no matter what. That cuts both ways: it's the one cost that runs
-identically on a quiet Tuesday and a matchday (idle ticks are cheap
-individually, but there are a lot of them across a month), *and* it directly
-throttles how often the expensive live-window work itself runs, since
-`shouldPoll` returns true on every tick for the whole live window, not just
-once. Widening the schedule cuts both.
+- **`planKickoffTasks`** (`onSchedule("every 6 hours")`) — the only
+  recurring schedule left. Looks at fixtures kicking off in the next 12
+  hours (`kickoffPlanner.js`'s `PLANNER_LOOKAHEAD_MS`, comfortably 2x its
+  own 6-hour interval so no kickoff can fall in the gap between two runs)
+  and enqueues a Cloud Task for each — `ARRIVAL_LEAD_MS` (10 minutes)
+  ahead of kickoff, not meant to be precise to the minute. A deterministic
+  task id per fixture (`arrival-${fixtureId}`) makes re-running this
+  harmless: an already-scheduled fixture just gets a "task already exists"
+  rejection, caught and ignored. Also self-heals a dropped arrival task
+  (Cloud Tasks delivery isn't 100% guaranteed) by checking `pollGate.js`
+  directly, the same role `recomputeLeaderboardSafetyNet` plays for the
+  leaderboard.
+- **`handleFixtureArrival`** — fires once per fixture, at the time
+  `planKickoffTasks` scheduled. Tries to start both poll chains
+  (`ensureChainRunning` in `index.js`); each is a no-op if that chain is
+  already running, which is the normal case whenever several fixtures kick
+  off close together — a whole matchday's worth of arrivals only ever
+  starts one chain of each kind. `syncControl.js`'s `claimChainStart` is a
+  Firestore transaction that makes this race-safe even if two arrivals fire
+  within the same second.
+- **`fixturesPollTick`** / **`resultsPollTick`** — one tick each: sync
+  (`syncFixtures()`/`syncResults()`), then check `pollGate.js`'s
+  `isWithinLiveWindow` against a fresh `getRecentFixtures` read. Still live
+  → enqueue the next tick 2 minutes out (`LIVE_TICK_INTERVAL_SECONDS`, back
+  down from the 10-minute stopgap — safe to keep tight now that idle time
+  costs nothing). Not live any more → `markChainStopped`. Kept as two fully
+  independent chains, control docs, and functions — same reasoning
+  `syncFixtures`'s own history already established: a bug in one still
+  can't take the other down.
 
-Widened 2026-09-09, the day the budget killswitch (PROJECT.md §1/§6) tripped
-a second time just 6 minutes after a live sync succeeded — first to 5
-minutes, then to 10 on the same pass. Without real per-SKU billing data
-(Secret Manager and the Billing API both require billing to be enabled to
-even query, which was exactly the thing disabled), 5 minutes was a
-plausible-but-unverified guess at the fix; going straight to 10 trades a
-guessed cost cut for a bigger, more confident one rather than risking a
-second guess. A 10-minute ceiling on live-score freshness is still fine for
-a friends' group. Worth dialing back down once an actual SKU-level cost
-breakdown is available (next time the Billing Console is reachable) —
-this was sized for safety margin under uncertainty, not measured.
+`kickoffPlanner.js` holds the pure "which fixtures need an arrival task"
+logic (unit-tested, `kickoffPlanner.test.js`); `pollGate.js` holds the pure
+"is anything live right now" logic used by both the tick's continue/stop
+decision and the planner's self-heal check (`pollGate.test.js`). Everything
+that touches Cloud Tasks or a Firestore transaction lives in `index.js`
+and `syncControl.js` and is deliberately thin — kept simple enough to
+review by inspection, since **this has not been integration-tested against
+a live matchday**: billing was disabled while this was built (PROJECT.md
+§1), which blocks both a real `firebase deploy` and the Secret Manager
+access `syncFixtures`/`syncResults` need to actually call football-data.org.
+It has been checked to load cleanly under `firebase emulators:start --only
+functions` (all four functions register, their Cloud Tasks queues
+auto-create) — that's structural validation, not a proof the chain logic
+is bug-free under real task delivery. Worth watching closely the first time
+it runs live.
+
+football-data.org's Free tier caps at 10 requests/**minute**, so none of
+this — then or now — was ever about protecting the API cap; it's entirely
+about not paying Google to ask "is anything live" every couple of minutes,
+all month, regardless of the answer.
 
 ## The dev panel fallback
 

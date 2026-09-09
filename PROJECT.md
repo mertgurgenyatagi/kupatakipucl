@@ -64,12 +64,16 @@ deliberately tiny). That took every Cloud Function offline — both
    the ops side first. Root cause this time: the write-diffing fix from
    outage #1 (below) cut the cost of a tick doing real work, but never
    touched the schedule's own baseline cadence, which fires 24/7 regardless
-   of match activity — see the cadence-widening writeup under §6's
-   `functions/fixtures`. **As of this writing, billing is still disabled and
-   the cadence fix is written but not deployed** (deploying itself needs
-   billing enabled). Manually running the sync locally to patch today's
-   scores was also attempted and blocked the same way — the football-data.org
-   token lives in Secret Manager, which also requires billing to even query.
+   of match activity. First response was a stopgap (widen the interval);
+   the actual fix, deployed the next day, replaces the recurring schedule
+   entirely with a Cloud Tasks-based design — see §6's `functions/fixtures`
+   "Live scheduling" writeup. **As of this writing, billing is still
+   disabled and the fix is written but not deployed** (deploying itself
+   needs billing enabled, and it hasn't run against a real matchday yet —
+   see §6 for what has and hasn't been verified). Manually running the sync
+   locally to patch today's scores was also attempted and blocked the same
+   way — the football-data.org token lives in Secret Manager, which also
+   requires billing to even query.
 
 Root cause of outage #1, diagnosed the same day: not a `stopbilling` bug —
 it worked exactly as designed — but a write storm in `functions/fixtures`.
@@ -99,7 +103,7 @@ from code:
 | Firebase Auth authorized domains | `localhost`, `kupatakipucl.firebaseapp.com`, `kupatakipucl.web.app`, **`kupatakipucl.com`**, **`www.kupatakipucl.com`** — the last two added 2026-08-27. |
 | `tournamentState` collection | `current.phase` = **`leaguephase`**, hand-set 2026-09-08 (§11 #18). |
 | Leaderboard Cloud Functions | Deployed in `europe-west8`, since 2026-08-07. **Offline as of this writing** — billing disabled since 2026-09-09 20:10 UTC, third outage of the day (§1). |
-| `functions/fixtures` (2 sync functions) | Deployed, `europe-west8`, last redeployed 2026-09-09 with the `stage` field, the `LEAGUE_STAGE` filter, the undrawn-knockout-fixture skip, and write-diffing (§6). **Offline as of this writing**, same outage — the cadence-widening fix (§6) is written but not yet deployed, since deploying itself needs billing enabled. |
+| `functions/fixtures` (now 4 functions, was 2) | Deployed, `europe-west8`, last redeployed 2026-09-09 with the `stage` field, the `LEAGUE_STAGE` filter, the undrawn-knockout-fixture skip, and write-diffing (§6). **Offline as of this writing**, same outage — the 2026-09-10 Cloud Tasks rearchitecture (§6) is written but not yet deployed or run against a real matchday, since deploying itself needs billing enabled. |
 | `stopbilling` Cloud Run service | **Deployed**, since 2026-07-20. Fired for real 2026-09-09 — three times in one day (§1); behaved exactly as designed each time. |
 | Realtime Database | Provisioned, `europe-west1`. |
 | Firestore region | `europe-west8`. |
@@ -940,32 +944,45 @@ follow-on fixes this made necessary:
   (skipped, `order` stays contiguous around it) — see `isDrawn()` in
   `footballData.js`.
 
-**Polling cadence widened, 2026-09-09 — the budget tripped a second time.**
-At 20:10 UTC, six minutes after a live sync had just written Sporting CP's
-equalizer, `stopbilling` unlinked billing again (month-to-date cost 1.67
-against the budget of 1). Investigated fresh (not assumed a repeat of the
-write-storm §6/§1 had already fixed): both `onSchedule(...)` calls were still
-`"every 2 minutes"` — the write-diffing fix (above) only cuts the cost of a
-tick that decides to do real work; it does nothing about the tick itself,
-which fires on Cloud Scheduler's raw cadence no matter what. That cuts both
-ways: it's the one cost that runs identically on a quiet Tuesday and a
-matchday, *and* it directly throttles how often `pollGate.js`'s expensive
-live-window work itself runs, since `shouldPoll` returns true on every tick
-for the whole live window, not just once.
+**Live scheduling rearchitected to task-based, 2026-09-10 — the budget
+tripped a second and third time on 2026-09-09.** At 20:10 UTC, six minutes
+after a live sync had just written Sporting CP's equalizer, `stopbilling`
+unlinked billing again (month-to-date cost 1.67 against the budget of 1).
+Investigated fresh (not assumed a repeat of the write-storm §1 had already
+fixed): both sync functions still ran on a flat `onSchedule("every 2
+minutes")` — the write-diffing fix (above) only cuts the cost of a tick that
+decides to do real work; it does nothing about the tick itself, which fired
+on Cloud Scheduler's raw cadence 24/7, all month, regardless of match
+activity. First response was a stopgap — widened the interval to 10 minutes
+— but a wider flat interval is still a flat interval: smaller idle cost, not
+zero.
 
-Widened in two steps on the same pass: first to `"every 5 minutes"`, then to
-`"every 10 minutes"` — real per-SKU billing data was unreachable to confirm
-either number (Secret Manager and the Billing API both require billing to be
-enabled just to query, which was exactly the thing disabled), so 5 minutes
-was a plausible-but-unverified guess and Mert's "this shouldn't happen
-again" was worth more margin than shipping one guess and finding out later.
-10 minutes is what's actually in `index.js` and README.md now — full
-reasoning inline in `index.js`'s comments on each `exports.syncFootballData*`.
-Worth dialing back down once an actual SKU-level cost breakdown is available
-(next time the Billing Console is reachable); this was sized for safety
-margin under uncertainty, not measured. Not yet redeployed as of this
-writing: `firebase deploy --only functions:fixtures` itself needs billing
-enabled, which is exactly what's down (§1).
+The actual fix removes the recurring idle schedule entirely. Four functions
+replace the old two: `planKickoffTasks` (`onSchedule("every 6 hours")`, the
+only thing left running on a recurring schedule) reads the fixture calendar
+and, for each upcoming kickoff, schedules a Cloud Task (`handleFixtureArrival`)
+to fire shortly before it. That arrival task starts a tight, self-perpetuating
+poll loop (`fixturesPollTick`/`resultsPollTick`, each re-enqueueing itself
+every 2 minutes via Cloud Tasks) that runs only for as long as something is
+actually live, then stops itself. Between kickoffs, nothing is scheduled at
+all — not a smaller recurring cost, none. Live-score freshness is back down
+to the original 2-minute cadence too, since the cost that forced the
+10-minute stopgap (idle-time ticking) no longer exists. Full design
+writeup in `functions/fixtures/README.md`'s "Live scheduling" section;
+pure decision logic in the new `kickoffPlanner.js` (unit-tested) alongside
+the existing `pollGate.js` (trimmed — the fixed-interval gating it used to
+do, `shouldPoll`/`SPARSE_INTERVAL_MS`, is gone, superseded rather than kept
+alongside the new approach).
+
+**Not integration-tested against a live matchday as of this writing** —
+billing has been disabled throughout, blocking both a real `firebase
+deploy` and the Secret Manager access the sync functions need to call
+football-data.org at all. Checked as far as reachable without either:
+`firebase emulators:start --only functions` loads all four functions
+cleanly and auto-creates their Cloud Tasks queues, which confirms the
+wiring is structurally valid, not that the chain logic is bug-free under
+real task delivery, concurrent kickoffs, or a dropped task. Worth watching
+closely the first time it runs against a real matchday.
 
 **Setup:** the football-data.org API token lives in a Firebase Functions v2
 secret (`FOOTBALL_DATA_TOKEN`, set via `firebase functions:secrets:set`).
@@ -993,8 +1010,10 @@ the last resort, not the first move) bought a longer window, but **not
 durably** — a live sync succeeded at 20:04 and billing tripped again at
 20:10, this time root-caused to the sync schedule's own 24/7 baseline
 cadence rather than the original write storm (§6's `functions/fixtures`
-polling-cadence writeup covers the fix, not yet deployed as of this
-writing since deploying needs billing enabled — the same thing that's down).
+"Live scheduling" writeup covers the fix — a Cloud Tasks rearchitecture, not
+just a wider interval — not yet deployed or run against a real matchday as
+of this writing, since deploying needs billing enabled, the same thing
+that's down).
 
 Deploy with `gcloud run deploy` from the CLI. Its README warns specifically
 against the Cloud Run console's "Edit & deploy new revision" flow, which has
@@ -1039,10 +1058,13 @@ not yet been imported into `public/`**.
 
 - **Unit/component**: `npm test` (Vitest, jsdom, `test/setup.ts` polyfilling
   ResizeObserver, IntersectionObserver, matchMedia, `scrollIntoView`,
-  `createObjectURL` and `Image`). **147 files / 1210 tests, re-verified
-  2026-09-09** after Mert's personal-picks feature (§4) on top of the
-  Matches page, its two latent-bug fixes, and the fixtures write-diffing fix
-  — includes `functions/fixtures`'s own test files (Vitest picks up any
+  `createObjectURL` and `Image`). **148 files / 1212 tests, re-verified
+  2026-09-10** after functions/fixtures' Cloud Tasks rearchitecture (§6) —
+  `pollGate.test.js` trimmed (the fixed-interval gating it covered is gone)
+  and `kickoffPlanner.test.js` added net two tests — on top of Mert's
+  personal-picks feature (§4), the Matches page, its two latent-bug fixes,
+  and the fixtures write-diffing fix — includes `functions/fixtures`'s own
+  test files (Vitest picks up any
   `*.test.js` outside `src/` too, same as `functions/leaderboard`'s). Most
   modules have a sibling test, and the tests are frequently the clearest
   statement of intended behaviour.

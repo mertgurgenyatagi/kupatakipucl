@@ -1,45 +1,46 @@
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
+const { getFunctions } = require("firebase-admin/functions");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { onTaskDispatched } = require("firebase-functions/v2/tasks");
 const { defineSecret } = require("firebase-functions/params");
 const { fetchAllMatches, mapMatchesToFixtures } = require("./footballData");
 const { computeStandingsTable } = require("./standings");
-const { shouldPoll } = require("./pollGate");
+const { isWithinLiveWindow } = require("./pollGate");
+const { fixturesNeedingArrival, ARRIVAL_LEAD_MS, PLANNER_LOOKAHEAD_MS } = require("./kickoffPlanner");
 const { pickChangedDocs } = require("./docDiff");
-const { getLastSyncedAtMs, recordSynced, getRecentFixtures, readCollectionById } = require("./syncControl");
+const {
+  claimChainStart,
+  markChainStopped,
+  getRecentFixtures,
+  getUpcomingFixtures,
+  readCollectionById,
+} = require("./syncControl");
 
 initializeApp();
 const db = getFirestore();
 
+const REGION = "europe-west8";
 const FOOTBALL_DATA_TOKEN = defineSecret("FOOTBALL_DATA_TOKEN");
 
 /**
- * Runs both scheduled syncs' shared cost-control decision (pollGate.js):
- * poll aggressively while a match is live (plus an hour of grace after),
- * extremely sparsely otherwise. Added 2026-09-07 for the live-match feature
- * — real-time score/position updates need tight polling during a match, but
- * that's wasted the other 99% of the time.
- *
- * Both sync functions call this independently (each does its own cheap
- * `getRecentFixtures` query) rather than merging into one function, so a bug
- * in one sync still can't take the other down with it — same reasoning
- * syncFixtures' own comment already gives for keeping the two separate.
- *
- * `key` gives each caller its OWN `lastSyncedAtMs` (syncControl.js) — they
- * used to share one, which meant whichever ran its gate check first each
- * tick would "spend" the sync for both, leaving the other stale. Caught
- * live 2026-09-07.
+ * Seconds between ticks while a poll chain is actively running — the "how
+ * live does live feel" knob. 2 minutes, same as this app's original design.
+ * Safe to keep tight now that idle time between kickoffs costs nothing at
+ * all (the whole point of the 2026-09-10 task-based rearchitecture, below)
+ * — under the old flat-schedule design this same number was also the idle
+ * cost, which is what forced it to be widened to 10 minutes on 2026-09-09
+ * as a stopgap.
  */
-async function gatedSync(key, sync) {
-  const nowMs = Date.now();
-  const [recentFixtures, lastSyncedAtMs] = await Promise.all([
-    getRecentFixtures(db, new Date(nowMs).toISOString()),
-    getLastSyncedAtMs(db, key),
-  ]);
-  if (!shouldPoll(nowMs, recentFixtures, lastSyncedAtMs)) return;
+const LIVE_TICK_INTERVAL_SECONDS = 120;
 
-  await sync();
-  await recordSynced(db, key, nowMs);
+/**
+ * Firebase Admin's task-queue client needs a region-qualified function name
+ * for anything not in the default us-central1 — same reason every
+ * onSchedule/Firestore trigger in this codebase pins europe-west8.
+ */
+function taskQueue(functionName) {
+  return getFunctions().taskQueue(`locations/${REGION}/functions/${functionName}`);
 }
 
 /**
@@ -105,35 +106,6 @@ async function syncResults() {
 }
 
 /**
- * Region pinned for the same reason as recomputeLeaderboardSafetyNet:
- * onSchedule does not inherit the Firestore database's region.
- *
- * Every 10 minutes, not 2 — this is the schedule's own baseline cadence, and
- * it runs at this rate 24/7, all month, regardless of whether anything is
- * live: gatedSync (above) only gates the *expensive* work (the
- * football-data.org call + collection diff, and everything downstream of a
- * real write — the leaderboard recompute cascade included), not the
- * invocation itself, which fires on Cloud Scheduler's raw cadence no matter
- * what. Widened 2026-09-09, the same day the budget killswitch (PROJECT.md
- * §1/§6) tripped a second time just 6 minutes after a live sync — first to 5
- * minutes, then to 10 on the same pass: without real per-SKU billing data
- * (unreachable while billing itself is disabled — see §1), 5 minutes was a
- * plausible-but-unverified guess, and "this shouldn't happen again" is worth
- * more margin than one guess. 10 minutes directly cuts every tick that
- * happens during a live window too (pollGate.js's real work, not just the
- * idle 99%) to a fifth of the original rate — a 10-minute ceiling on
- * live-score freshness is still fine for a friends' group; dial it back down
- * once real cost-per-tick data is available (§1's note on checking the
- * Billing Console for an actual SKU breakdown next time it's reachable).
- */
-exports.syncFootballDataResults = onSchedule(
-  { schedule: "every 10 minutes", region: "europe-west8", secrets: [FOOTBALL_DATA_TOKEN] },
-  async () => {
-    await gatedSync("results", syncResults);
-  }
-);
-
-/**
  * Same idea as syncResults, but for the real fixture calendar + per-match
  * scores instead of the standings table — writes fixtures/{id}, a brand new
  * collection that has nothing to do with src/devpanel/fixtures.ts or
@@ -143,10 +115,6 @@ exports.syncFootballDataResults = onSchedule(
  * (upcomingFixtures.ts, rankHistory.ts, MatchupPopup.tsx) were repointed at
  * this new collection instead, leaving the dev panel's own mock calendar and
  * devMatches completely untouched for local testing.
- *
- * A separate scheduled function from syncResults, not folded into it, so a
- * bug in one sync (e.g. a future football-data.org response shape change)
- * can't take the other down with it.
  */
 async function syncFixtures() {
   const matches = await fetchAllMatches(FOOTBALL_DATA_TOKEN.value());
@@ -157,9 +125,6 @@ async function syncFixtures() {
     next[id] = fields;
   });
 
-  // Same reasoning as syncResults above: 144 unconditional writes every 2
-  // minutes during a live window, nearly all no-ops. A quiet poll now writes
-  // nothing; a live one writes the handful of matches whose score moved.
   const stored = await readCollectionById(db, "fixtures");
   const changed = pickChangedDocs(stored, next);
   const changedIds = Object.keys(changed);
@@ -176,12 +141,125 @@ async function syncFixtures() {
   console.log(`fixtures: wrote ${changedIds.length} of ${fixtures.length}`);
 }
 
-// Same 2026-09-09 cadence widening as syncFootballDataResults above, same
-// reasoning: this schedule runs 24/7 regardless of match activity, so it's
-// the one cost that doesn't scale down on a quiet day.
-exports.syncFootballDataFixtures = onSchedule(
-  { schedule: "every 10 minutes", region: "europe-west8", secrets: [FOOTBALL_DATA_TOKEN] },
-  async () => {
-    await gatedSync("fixtures", syncFixtures);
+/**
+ * Starts a poll chain for `chainKey` ("fixtures" or "results") if one isn't
+ * already running, by enqueueing its first tick. Called from both
+ * handleFixtureArrival (the normal path, below) and planKickoffTasks (the
+ * self-heal path for a dropped arrival task) — same claim-and-start logic
+ * either way, so there is exactly one place a chain can start from.
+ * claimChainStart (syncControl.js) is what makes this safe to call
+ * concurrently: only the caller that actually flips the chain on enqueues
+ * anything, everyone else is a no-op.
+ */
+async function ensureChainRunning(chainKey, tickFunctionName) {
+  const won = await claimChainStart(db, chainKey);
+  if (!won) return;
+  await taskQueue(tickFunctionName).enqueue({});
+}
+
+/** fixturesPollTick/resultsPollTick share this: sync, then decide whether
+ *  to keep the chain going. A fresh getRecentFixtures read every tick —
+ *  not anything carried in the task payload — is what decides that, so a
+ *  fixture's kickoff time changing mid-chain (a postponement) is reflected
+ *  immediately rather than needing its own handling. */
+async function continueOrStopChain(chainKey, tickFunctionName) {
+  const nowMs = Date.now();
+  const recentFixtures = await getRecentFixtures(db, new Date(nowMs).toISOString());
+  if (isWithinLiveWindow(nowMs, recentFixtures)) {
+    await taskQueue(tickFunctionName).enqueue({}, { scheduleDelaySeconds: LIVE_TICK_INTERVAL_SECONDS });
+    return;
   }
-);
+  await markChainStopped(db, chainKey);
+}
+
+/**
+ * Fires once per fixture, ARRIVAL_LEAD_MS (kickoffPlanner.js) before its
+ * kickoff — scheduled by planKickoffTasks below, never called any other
+ * way. Tries to start both poll chains independently; each is a no-op if
+ * that chain is already running, which is the normal case whenever several
+ * fixtures kick off close together (a whole matchday's worth of arrivals
+ * only actually starts one chain of each kind).
+ */
+exports.handleFixtureArrival = onTaskDispatched({ region: REGION }, async () => {
+  await Promise.all([
+    ensureChainRunning("fixtures", "fixturesPollTick"),
+    ensureChainRunning("results", "resultsPollTick"),
+  ]);
+});
+
+/**
+ * One tick of the fixtures poll chain: sync, then decide whether to keep
+ * going. Self-perpetuating rather than externally scheduled — each tick
+ * enqueues the next one LIVE_TICK_INTERVAL_SECONDS out for as long as
+ * pollGate.js still says something's live, and stops (markChainStopped)
+ * the moment it doesn't. This — not a recurring onSchedule — is what
+ * replaced the flat "every N minutes, 24/7" cadence that was the actual
+ * cost driver behind the 2026-09-09 budget killswitch (PROJECT.md §1/§6):
+ * between kickoffs, nothing is scheduled at all.
+ */
+exports.fixturesPollTick = onTaskDispatched({ region: REGION, secrets: [FOOTBALL_DATA_TOKEN] }, async () => {
+  await syncFixtures();
+  await continueOrStopChain("fixtures", "fixturesPollTick");
+});
+
+/** Same idea as fixturesPollTick, for results — a fully independent chain
+ *  and control doc, same reasoning as the two sync functions always having
+ *  been kept separate: a bug in one still can't take the other down. */
+exports.resultsPollTick = onTaskDispatched({ region: REGION, secrets: [FOOTBALL_DATA_TOKEN] }, async () => {
+  await syncResults();
+  await continueOrStopChain("results", "resultsPollTick");
+});
+
+/**
+ * Coarse planner, region-pinned for the same reason as
+ * recomputeLeaderboardSafetyNet: onSchedule does not inherit the Firestore
+ * database's region. Runs every 6 hours — comfortably inside
+ * kickoffPlanner.js's 12-hour PLANNER_LOOKAHEAD_MS, so no fixture's kickoff
+ * can fall in the gap between two runs — and does two things:
+ *
+ *  1. Schedules an arrival task (handleFixtureArrival) for every fixture
+ *     kicking off in the next 12 hours, ARRIVAL_LEAD_MS ahead of its own
+ *     kickoff. A deterministic per-fixture task id (`arrival-${id}`) makes
+ *     re-running this safe — a fixture that already has one scheduled just
+ *     gets a "task already exists" rejection, caught and ignored below.
+ *  2. Self-heals a dropped arrival task (Cloud Tasks delivery, like any
+ *     queue, isn't 100% guaranteed) the same way recomputeLeaderboardSafetyNet
+ *     self-heals a dropped leaderboard trigger: if pollGate.js says
+ *     something's live right now but a chain isn't running, start it
+ *     directly rather than waiting for the next arrival.
+ *
+ * This function is the only recurring, always-on schedule left in this
+ * file — 4 invocations a day, each just two cheap Firestore range queries
+ * plus (almost always) zero task enqueues, is the entire idle-day cost.
+ */
+exports.planKickoffTasks = onSchedule({ schedule: "every 6 hours", region: REGION }, async () => {
+  const nowMs = Date.now();
+  const nowIso = new Date(nowMs).toISOString();
+  const horizonIso = new Date(nowMs + PLANNER_LOOKAHEAD_MS).toISOString();
+
+  const [upcoming, recentFixtures] = await Promise.all([
+    getUpcomingFixtures(db, nowIso, horizonIso),
+    getRecentFixtures(db, nowIso),
+  ]);
+
+  await Promise.all(
+    fixturesNeedingArrival(upcoming, nowMs).map(async (fixture) => {
+      const kickoffMs = new Date(fixture.kickoffUtc).getTime();
+      try {
+        await taskQueue("handleFixtureArrival").enqueue(
+          {},
+          { id: `arrival-${fixture.id}`, scheduleTime: new Date(kickoffMs - ARRIVAL_LEAD_MS) }
+        );
+      } catch (err) {
+        if (err.code !== "functions/task-already-exists") throw err;
+      }
+    })
+  );
+
+  if (isWithinLiveWindow(nowMs, recentFixtures)) {
+    await Promise.all([
+      ensureChainRunning("fixtures", "fixturesPollTick"),
+      ensureChainRunning("results", "resultsPollTick"),
+    ]);
+  }
+});

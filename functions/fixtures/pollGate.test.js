@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { shouldPoll, isWithinLiveWindow, LIVE_WINDOW_MS, SPARSE_INTERVAL_MS } from "./pollGate.js";
+import { isWithinLiveWindow, LIVE_WINDOW_MS } from "./pollGate.js";
 
 const NOW = new Date("2026-09-08T18:00:00Z").getTime();
 const fixture = (kickoffUtc) => ({ kickoffUtc });
@@ -27,23 +27,5 @@ describe("isWithinLiveWindow", () => {
     const longAgo = new Date(NOW - LIVE_WINDOW_MS - 60_000).toISOString();
     const recent = new Date(NOW - 60_000).toISOString();
     expect(isWithinLiveWindow(NOW, [fixture(longAgo), fixture(recent)])).toBe(true);
-  });
-});
-
-describe("shouldPoll", () => {
-  it("polls when inside a live window, regardless of how recently synced", () => {
-    expect(shouldPoll(NOW, [fixture("2026-09-08T17:45:00Z")], NOW - 1000)).toBe(true);
-  });
-
-  it("does not poll when nothing is live and the sparse interval hasn't elapsed", () => {
-    expect(shouldPoll(NOW, [], NOW - 1000)).toBe(false);
-  });
-
-  it("polls once the sparse interval has elapsed, even with nothing live", () => {
-    expect(shouldPoll(NOW, [], NOW - SPARSE_INTERVAL_MS)).toBe(true);
-  });
-
-  it("polls when never synced before (lastSyncedAtMs is null)", () => {
-    expect(shouldPoll(NOW, [], null)).toBe(true);
   });
 });
