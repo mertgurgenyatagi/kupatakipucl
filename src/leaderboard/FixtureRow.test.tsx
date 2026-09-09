@@ -107,4 +107,26 @@ describe("FixtureRow", () => {
     );
     expect(screen.getByText("0 - 0")).toBeInTheDocument();
   });
+
+  it("labels a live score CANLI", () => {
+    render(
+      <FixtureRow fixture={{ ...fixture, status: "IN_PLAY", homeGoals: 2, awayGoals: 1 }} results={{}} />
+    );
+    expect(screen.getByText("CANLI")).toBeInTheDocument();
+  });
+
+  // The Matches page lists a whole round, finished matches included — unlike
+  // the drawer and Home's preview, which only ever get upcoming fixtures.
+  it("shows the final score of a finished match, not its kickoff time", () => {
+    render(
+      <FixtureRow
+        fixture={{ ...fixture, status: "FINISHED", homeGoals: 2, awayGoals: 3 }}
+        results={{}}
+      />
+    );
+    expect(screen.getByText("2 - 3")).toBeInTheDocument();
+    expect(screen.queryByText("CANLI")).not.toBeInTheDocument();
+    // 18:45 UTC is 21:45 in Istanbul — the kickoff time must be gone.
+    expect(screen.queryByText("21:45")).not.toBeInTheDocument();
+  });
 });

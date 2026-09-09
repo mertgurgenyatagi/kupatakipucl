@@ -90,6 +90,14 @@ export function FixtureRow({
   const away = TEAM_BY_ID[fixture.awayTeamId];
   const kickoff = new Date(fixture.kickoffUtc);
   const live = isFixtureLive(fixture);
+  // Same "decided" test as MatchupPopup's MatchupCenter, rankHistory.ts and
+  // functions/fixtures' standings.js — both goals present, independent of
+  // `status`. This row used to show a score only while a match was *live*,
+  // which was fine for the two upcoming-only widgets it was built for
+  // (getUpcomingFixtures never yields a FINISHED fixture) but meant the
+  // Matches page — which lists a whole round, played or not — rendered a
+  // finished match as its kickoff time with no result at all (2026-09-09).
+  const decided = fixture.homeGoals !== null && fixture.awayGoals !== null;
 
   function handleMatchClick() {
     onSelectFixture?.(fixture.id);
@@ -136,10 +144,20 @@ export function FixtureRow({
         </button>
 
         <span className="flex flex-col items-center justify-center leading-tight">
-          {live ? (
-            <span className="font-mono text-base font-bold text-color_remove tnum">
-              {fixture.homeGoals} - {fixture.awayGoals}
-            </span>
+          {decided ? (
+            <>
+              <span
+                className={cn(
+                  "font-mono text-base font-bold tnum",
+                  live ? "text-color_remove" : "text-color_text"
+                )}
+              >
+                {fixture.homeGoals} - {fixture.awayGoals}
+              </span>
+              <span className="font-mono text-xs text-color_textsecondary tnum">
+                {live ? "CANLI" : DATE_FMT.format(kickoff)}
+              </span>
+            </>
           ) : (
             <>
               <span className="font-mono text-sm text-color_text tnum">{DATE_FMT.format(kickoff)}</span>

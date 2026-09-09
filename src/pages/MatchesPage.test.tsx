@@ -152,6 +152,16 @@ describe("MatchesPage", () => {
     expect(screen.getByRole("tab", { name: /1\. Hafta/ })).toHaveAttribute("aria-selected", "false");
   });
 
+  it("shows final scores for a round that has been played", async () => {
+    mockUseFixtures.mockReturnValue({
+      fixtures: [fixture({ id: "md1-a", order: 1, status: "FINISHED", homeGoals: 2, awayGoals: 3 })],
+      loading: false,
+    });
+    renderPage();
+    await act(async () => {});
+    expect(screen.getByText("2 - 3")).toBeInTheDocument();
+  });
+
   it("gives a knockout round its own tab, named for the round", async () => {
     mockUseFixtures.mockReturnValue({
       fixtures: [...FIXTURES, fixture({ id: "qf", stage: "QUARTER_FINALS", matchday: null, order: 200 })],
