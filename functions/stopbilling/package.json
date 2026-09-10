@@ -2,6 +2,9 @@
   "name": "stopbilling",
   "version": "1.0.0",
   "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
   "dependencies": {
     "@google-cloud/billing": "^4.4.0",
     "@google-cloud/firestore": "^9.1.0",

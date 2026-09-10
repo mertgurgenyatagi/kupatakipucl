@@ -198,9 +198,51 @@ drained now, so the *next* re-link should be clean.
 
 **Budget raised to 10 TRY and billing re-linked again, 2026-09-10 — Mert's
 own decision, not proposed here.** Same `kupatakipucl-billing` budget,
-same custom period and thresholds, amount only. Re-link confirmed
-(`billingEnabled: true`); as of this writing it's too soon to say whether
-it holds past the next notification cycle.
+same custom period and thresholds, amount only.
+
+**Outage #5's real cause turned out bigger than first diagnosed: outage #6,
+same day.** The first write-up above treated outage #5 as a one-time
+backlog artifact. It recurred at least twice more over the next 90 minutes
+(13:13, 13:54), each time from a *different* stale message, still reporting
+the pre-raise `budget: 1`. Direct log evidence at 13:13:07 nailed the real
+mechanism: a fresh, correct `budget: 2` notification was processed cleanly,
+and 0.35 seconds later a stale `budget: 1` notification arrived and
+disabled billing anyway. Pub/Sub gives no ordering guarantee — the
+`actionGuard.js` guard from the first fix only reasoned about whether
+*cost* had moved, never whether the *budget figure itself* was still
+trustworthy, so an old, out-of-order message could always re-trigger it.
+
+**Fixed properly this time**, with a test written first that reproduces
+the exact 13:13:07 sequence (`actionGuard.test.js`): `stopbilling/state`
+now also tracks `highestKnownBudget`, the highest budget figure ever seen
+in a real message. Any message reporting a lower one is ignored outright,
+regardless of cost — a real budget doesn't spontaneously drop, so a lower
+figure is definitionally stale. Deployed (revision `stopbilling-00010-ffx`)
+and confirmed live: its first real invocation log includes
+`highestKnownBudget=null` (the new field), proving the new code is what's
+running, not a cached old revision.
+
+**A red herring along the way, worth recording so it isn't repeated:** the
+first redeploy attempt (revision `stopbilling-00009-5pc`) failed outright —
+container never bound to its port within the 4-minute startup probe, zero
+stdout/stderr. Buildpacks had silently picked `nodejs24` for this build
+where the prior working revision used `nodejs20` (this function's
+`package.json` never pinned an `engines.node`, unlike
+`functions/fixtures`'s). Pinned it to `"20"` and redeployed — **but the
+resulting revision still built on `nodejs24`** (confirmed via
+`gcloud run revisions describe`), and started fine anyway. So the Node
+version was never actually the cause; the pin is harmless and left in
+place, but the real explanation for revision 00009's failure is
+undiagnosed — most likely the same kind of transient Cloud Run/Buildpacks
+flakiness already seen elsewhere today, not a reproducible bug. Don't trust
+a "fix" that didn't actually take effect just because the next attempt
+happened to work.
+
+As of this writing: billing is on, the real fix is deployed and confirmed
+processing live notifications correctly, and the specific backlog that
+caused outages #5/#6 should be fully drained by now — but given how many
+times "should be fine now" has been wrong today, treat this as
+well-evidenced, not guaranteed.
 
 The later phases are explicitly not ready. Knockout in particular is
 unfinished and was deprioritised because it is months away. Section 11 lists

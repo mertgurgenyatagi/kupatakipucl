@@ -28,11 +28,33 @@
 //    happened since the last action. Act again.
 //  - incoming cost is equal (or Google re-reports the same stale total) →
 //    nothing new happened. Stand down.
+//
+// Second guard added 2026-09-10, same day, after the above still let outage
+// #6 through: Pub/Sub gives no ordering guarantee, and while draining a
+// backlog from an earlier outage, a message can carry a budgetAmount that
+// was already superseded by the time it arrives — e.g. a stale "budget: 1"
+// notification generated before Mert raised the budget to 2, delivered
+// *after* a fresh "budget: 2" notification had already come through
+// (observed directly, 2026-09-10 13:13:07, 0.35s apart). The cost-based
+// checks above have no way to recognise that; they only reason about
+// whether cost moved, never whether the budget figure itself is trustworthy.
+// `highestKnownBudget` (also persisted in stopbilling/state) tracks the
+// highest budgetAmount ever seen in a real message. A message reporting a
+// lower budget than that is definitionally stale — real budget amounts
+// don't spontaneously drop — and is ignored outright, regardless of cost.
 
 /** True if this invocation should disable billing, given the incoming
- *  notification, the project's current billing state, and the cost this
- *  function last actually acted on (null if it has never acted). */
-function shouldDisableBilling({ costAmount, budgetAmount, billingEnabled, lastActionedCost }) {
+ *  notification, the project's current billing state, the cost this
+ *  function last actually acted on (null if it has never acted), and the
+ *  highest budgetAmount ever seen in a real message (null if none yet). */
+function shouldDisableBilling({
+  costAmount,
+  budgetAmount,
+  billingEnabled,
+  lastActionedCost,
+  highestKnownBudget,
+}) {
+  if (highestKnownBudget != null && budgetAmount < highestKnownBudget) return false;
   if (costAmount <= budgetAmount) return false;
   if (!billingEnabled) return false;
   if (lastActionedCost == null) return true;
