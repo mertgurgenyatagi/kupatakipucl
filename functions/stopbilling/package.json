@@ -4,6 +4,7 @@
   "main": "index.js",
   "dependencies": {
     "@google-cloud/billing": "^4.4.0",
+    "@google-cloud/firestore": "^9.1.0",
     "@google-cloud/functions-framework": "^3.4.0"
   }
 }

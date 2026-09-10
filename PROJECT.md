@@ -45,12 +45,15 @@ participants**. Turkish-only, permanently — there is no i18n layer and none is
 planned.
 
 **Billing killswitch fired for real, 2026-09-09 — the first live matchday.
-Three outages that day, the last ending once Mert re-linked billing
-~22:00 UTC after the Cloud Tasks fix (§6) was ready to deploy.**
+Four outages that day; the fourth left billing disabled overnight. The
+repeat-trip mechanism was diagnosed and fixed 2026-09-10, and a fifth,
+mechanically different trip happened the same day the fix was deployed
+(below) — not a repeat of the same bug, but not fully resolved either.**
 `functions/stopbilling` (§6) unlinked the
 project's billing account at 03:48 UTC after month-to-date cost crossed the
-budget (**set to 1** currency unit — Mert's deliberate choice, kept
-deliberately tiny). That took every Cloud Function offline — both
+budget (**2 Turkish Lira** — Mert's deliberate choice, kept deliberately
+tiny; an earlier revision of this document said "1," which was correct at
+the time — see outage #2). That took every Cloud Function offline — both
 `functions/fixtures` syncs and all three `functions/leaderboard` recomputes.
 
 1. **03:48 UTC** — first trip. Root cause: a write storm in
@@ -72,8 +75,25 @@ deliberately tiny). That took every Cloud Function offline — both
    `firebase deploy` and the Secret Manager access needed to manually patch
    today's scores), and was re-linked by Mert ~22:00 UTC once it was ready.
    Deployed the same session — see §6 for a region gotcha hit along the way
-   (Cloud Tasks doesn't support `europe-west8`) and what has and hasn't
-   been confirmed working since.
+   (Cloud Tasks doesn't support `europe-west8`).
+4. **22:12 UTC** — tripped a **fourth** time, ~12 minutes after the re-link
+   above, confirmed in `stopbilling`'s own logs: `Cost 1.65 exceeded budget
+   1 — disabling billing`. Not a new bug and not the Cloud Tasks fix
+   failing — that deploy was already correct. This was the *same*
+   already-over month-to-date total (still counting from September 1st)
+   being re-reported by Google's own budget notification, which fires
+   multiple times a day regardless of whether anything new actually
+   happened. `stopbilling` had no memory of its own, so it could not tell a
+   stale echo of an overage it had already acted on apart from genuine new
+   spend, and reacted identically both times. Billing was left disabled
+   overnight.
+5. **2026-09-10, ~12:23** — a fifth trip, the day after the other four and
+   right after the repeat-trip fix (below) deployed. **Not the same bug**:
+   `lastActionedCost` was unset (this was the fix's first action ever), and
+   the message that tripped it carried a stale `budgetAmount: 1` from
+   before the budget was raised — a backlog of Pub/Sub notifications from
+   the ~14 hours billing was down, replayed the moment the service could
+   run again. Full trace in the "Status as of 2026-09-10" note below.
 
 Root cause of outage #1, diagnosed the same day: not a `stopbilling` bug —
 it worked exactly as designed — but a write storm in `functions/fixtures`.
@@ -87,6 +107,94 @@ but was not, on its own, sufficient (outage #3 above). Mert's standing
 instruction after this: fix the cost, never propose raising the budget as
 the first move; re-linking billing or changing the budget are his decisions
 to make, not something to do proactively.
+
+**Repeat-trip cycle diagnosed and fixed, 2026-09-10.** The mechanism behind
+outages #2 and #4, confirmed directly against Google's own budget
+notification docs rather than inferred: a Cloud Billing budget alert
+reports Google's real, current month-to-date cost multiple times a day for
+as long as that figure stays over budget — it is not a one-shot "something
+changed" signal. Once a calendar month's cost has crossed the budget, no
+amount of the app behaving correctly changes that historical fact; only the
+calendar rolling into a new month resets it natively. `stopbilling` had no
+memory of its own to tell "the same overage I already handled" apart from
+"new danger," so a deliberate re-link got caught by the next stale
+notification regardless of whether anything was actually still spending.
+
+Two fixes, both scoped deliberately to *only* the repeat-trip mechanism —
+neither touches the budget amount, which stays Mert's call (standing
+instruction above):
+
+1. **`stopbilling` now remembers what it last acted on**
+   (`functions/stopbilling/actionGuard.js`). It persists `lastActionedCost`
+   in Firestore (`stopbilling/state`) and only disables billing again if
+   the incoming cost has genuinely moved since — up (real new spend) or
+   down (a new billing period started, since month-to-date cost can't
+   otherwise decrease). An exact repeat of an already-actioned figure is
+   now a no-op. Pure predicate, unit-tested (`actionGuard.test.js`), same
+   thin-`index.js`-plus-pure-guard-module shape as `functions/fixtures/pollGate.js`
+   and `functions/leaderboard/recomputeGuard.js`. Needs
+   `roles/datastore.user` on `stopbilling-sa` (granted 2026-09-10). Confirmed
+   the chicken-and-egg first: `gcloud run deploy` needs Cloud Build +
+   Artifact Registry, both of which refused to run while billing was
+   disabled. **Deployed 2026-09-10 once Mert re-linked billing** — revision
+   `stopbilling-00008-2cl`, serving 100% of traffic. Exercised against real
+   notifications within the hour (outage #5, below) and behaved exactly as
+   designed given what it received — it does not, on its own, prevent a
+   *backlog* of pre-fix messages from containing a genuine (if stale)
+   first-ever overage. The specific outage #2/#4 pattern — the same
+   unchanged cost figure re-disabling billing after a deliberate re-link —
+   has not recurred.
+2. **The live budget's time window was reset in place**, via
+   `gcloud billing budgets update` (a billing-account-level call, so it
+   didn't need kupatakipucl's own billing enabled). Of the two budgets on
+   the billing account, only `kupatakipucl-billing` reaches `stopbilling`
+   (its `notificationsRule.pubsubTopic` points at the `billing-alerts`
+   topic); a second, Firebase-auto-created budget has no Pub/Sub wiring at
+   all and was left untouched. `kupatakipucl-billing` was switched from a
+   recurring calendar-month period to a custom period starting 2026-09-10,
+   so "month-to-date" stopped meaning "since September 1st" and started
+   meaning "since this fix landed" — which is what makes the *next* re-link
+   safe even before fix #1 above actually ships. One gap found and **not**
+   fixed: this budget's project scope was empty (account-wide, not
+   kupatakipucl-specific) — adding an explicit project filter via `update`
+   consistently returned `INVALID_ARGUMENT` for reasons not diagnosed.
+   Harmless today (nothing else is linked to this billing account) but
+   worth another look if that ever changes.
+
+**Status as of 2026-09-10: billing was re-linked by Mert, held for about 90
+seconds, then went disabled again — outage #5 — but confirmed to be a
+one-time backlog artifact, not a repeat of the outage #2/#4 bug.** Full
+trace, read directly from `stopbilling`'s own logs (all timestamps
+2026-09-10): re-link → new revision `stopbilling-00008-2cl` cold-starts at
+12:23:19 → over the next ~57 seconds it drains a backlog of Pub/Sub
+messages that had queued up, undelivered, for the ~14 hours billing was
+down — Pub/Sub redelivers on a subscriber's return, and a Cloud Run service
+can't run at all without billing, so nothing from outage #4 onward had
+been processed until now. Some of those backlogged messages were generated
+*before* the budget was raised from 1 to 2 (§1), so they carry a stale
+`budgetAmount: 1` baked into their payload. At 12:23:32 the first such
+stale message (`cost=1.67`) was processed: `lastActionedCost` was still
+unset (this revision had never acted before), so `actionGuard.js` correctly
+treated it as a first-ever trip against *that message's own* budget figure
+and disabled billing — technically correct given only what that one message
+said, but not what anyone would have wanted. Every backlogged message after
+that (several more, both stale-budget and current-budget) correctly
+no-op'd, either because cost was within budget or because billing was
+already off — exactly as designed. No further budget notification has
+arrived in the ~20 minutes since the backlog finished draining (confirmed:
+`stopbilling`'s logs are silent since 12:24:16 apart from unrelated manual
+test invocations of another function returning expected
+billing-disabled errors).
+
+**Conclusion:** the repeat-trip *bug* (outages #2/#4: an unchanged stale
+cost figure re-disabling billing on every re-link) is genuinely fixed — this
+was not that. What outage #5 exposed instead is a fix-adjacent edge case
+neither planned change accounts for: **after any outage, the first re-link
+also has to drain whatever Pub/Sub backlog built up while nothing could
+run, and that backlog can itself contain a stale genuine-at-the-time
+overage** with no prior action recorded to compare it against. Not fixed as
+of this writing — flagged here rather than guessed at. The backlog is
+drained now, so the *next* re-link should be clean.
 
 The later phases are explicitly not ready. Knockout in particular is
 unfinished and was deprioritised because it is months away. Section 11 lists
@@ -102,9 +210,9 @@ from code:
 | Frontend hosting | **Live** at `https://kupatakipucl.com` via GitHub Pages, published from GitHub Actions. See §9 and DEPLOY.md. |
 | Firebase Auth authorized domains | `localhost`, `kupatakipucl.firebaseapp.com`, `kupatakipucl.web.app`, **`kupatakipucl.com`**, **`www.kupatakipucl.com`** — the last two added 2026-08-27. |
 | `tournamentState` collection | `current.phase` = **`leaguephase`**, hand-set 2026-09-08 (§11 #18). |
-| Leaderboard Cloud Functions | Deployed in `europe-west8`, since 2026-08-07. Billing re-linked by Mert 2026-09-09 ~22:00 UTC, ending the third outage (§1) — back to ACTIVE, unchanged code. |
-| `functions/fixtures` (now 4 functions: `planKickoffTasks`, `handleFixtureArrival`, `fixturesPollTick`, `resultsPollTick` — was 2) | Redeployed 2026-09-09 ~22:02 UTC with the Cloud Tasks rearchitecture (§6) once billing came back. `planKickoffTasks` stayed on `europe-west8`; the three task-dispatched functions moved to `europe-west6` — Cloud Tasks doesn't support `europe-west8` at all, found at deploy time (§6). **Not yet confirmed against a real live tick** — first manual trigger of `planKickoffTasks` hit a transient "no available instance" 429 that also briefly hit the unrelated, previously-fine `recomputeLeaderboardSafetyNet`, pointing at project-wide Cloud Run capacity still settling after today's repeated billing/API churn rather than a bug in the new code; being retried. |
-| `stopbilling` Cloud Run service | **Deployed**, since 2026-07-20. Fired for real 2026-09-09 — three times in one day (§1); behaved exactly as designed each time. |
+| Leaderboard Cloud Functions | Deployed in `europe-west8`, since 2026-08-07. Billing re-linked by Mert 2026-09-10; all three read **ACTIVE** and `recomputeLeaderboardSafetyNet` completed one real successful scheduled run before outage #5 (§1) took billing down again. Unchanged code, nothing wrong with it — just waiting on the next re-link like everything else here. |
+| `functions/fixtures` (now 4 functions: `planKickoffTasks`, `handleFixtureArrival`, `fixturesPollTick`, `resultsPollTick` — was 2) | Deployed 2026-09-09 with the Cloud Tasks rearchitecture (§6). `planKickoffTasks` stayed on `europe-west8`; the three task-dispatched functions moved to `europe-west6` — Cloud Tasks doesn't support `europe-west8` at all, found at deploy time (§6). All 4 read **ACTIVE** and all 3 Cloud Tasks queues read **RUNNING** as of 2026-09-10, briefly, between the 2026-09-10 re-link and outage #5 (§1). `planKickoffTasks` itself is **still not confirmed by a real invocation** — manual attempts during that window 403'd, consistent with billing already trending back toward disabled rather than a bug in the function; its own `every 6 hours` schedule will exercise it regardless once billing holds. First real matchday activity is still the actual test. |
+| `stopbilling` Cloud Run service | **Deployed**, since 2026-07-20 — running the 2026-09-10 `actionGuard.js` fix as of revision `stopbilling-00008-2cl`. Fired for real 2026-09-09 — **four** times in one day (§1) — plus a **fifth**, mechanically different trip on 2026-09-10 right after this fix deployed (a Pub/Sub backlog artifact, not the same bug — full account in §1's "Status" note). The repeat-trip bug (#2, #4) is confirmed fixed; the backlog-on-restart edge case #5 exposed is not yet addressed. |
 | Realtime Database | Provisioned, `europe-west1`. |
 | Firestore region | `europe-west8`. |
 
@@ -669,6 +777,7 @@ permanently single-theme dark; the `.dark` class exists only so shadcn's own
 | `lobbies/{id}/messages/{id}` | auto | `Message` + optional `system` |
 | `lobbyInvites/{id}` | auto | `lobbyId, createdByUid, createdAt, expiresAt` |
 | `devConfig/state`, `devMatches/{fixtureId}` | — | dev-panel state |
+| `stopbilling/state` | — | `lastActionedCost, lastActionedAt` — written only by the `stopbilling` Cloud Run service, added 2026-09-10 (§6) |
 
 Note the knockout field naming is off by one round: `quarterFinalists` holds the
 **Round of 16 winners**, and so on up.
@@ -993,30 +1102,42 @@ secret (`FOOTBALL_DATA_TOKEN`, set via `firebase functions:secrets:set`).
 A budget killswitch. Subscribed to a Pub/Sub billing-alert topic; when reported
 cost exceeds budget it **unlinks the billing account** from the project. Needs
 `cloudbilling.googleapis.com` enabled and a dedicated service account with
-`roles/billing.projectManager` + `roles/browser`.
+`roles/billing.projectManager` + `roles/browser` + **`roles/datastore.user`**
+(added 2026-09-10, for the state doc below).
 
-**Fired for real for the first time, 2026-09-09 — three times that same day**
-— see §1 for the full incident. Worked exactly as designed each time: cost
-crossed the budget (set to 1) and it unlinked billing within seconds. The
-root cause of the first trip was a write storm elsewhere (§6's write-diffing
-writeup), not a `stopbilling` bug. One operational fact this surfaced:
-**once a given month's cost has exceeded the budget, billing cannot be kept
-re-linked for the rest of that month** — the next Pub/Sub budget
-notification (roughly every 30–40 minutes, observed) sees the same
-already-over month-to-date figure and unlinks it again. A re-link at 11:49
-that day held for exactly 2 minutes; raising the budget himself (Mert's
-call, not automated — see §1's "fix the cost first" framing for why that's
-the last resort, not the first move) bought a longer window, but **not
-durably** — a live sync succeeded at 20:04 and billing tripped again at
-20:10, this time root-caused to the sync schedule's own 24/7 baseline
-cadence rather than the original write storm (§6's `functions/fixtures`
-"Live scheduling" writeup covers the fix — a Cloud Tasks rearchitecture, not
-just a wider interval). Billing re-linked ~22:00 UTC once that fix was
-ready to deploy, ending the third outage.
+**Fired for real for the first time, 2026-09-09 — four times that same
+day** — see §1 for the full incident, including the 2026-09-10 diagnosis of
+why outages #2 and #4 (a re-link immediately re-tripped) happened and what
+stops it now. It worked exactly as designed every time in the narrow sense
+— cost crossed the budget and it unlinked billing within seconds — but the
+original version had no memory of its own, so it could not tell a stale
+re-notification of an overage it had already handled apart from genuine new
+spend. Also surfaced (§1): **once a given month's cost has exceeded the
+budget, billing cannot be kept re-linked for the rest of that month** on
+Google's side alone — the next Pub/Sub budget notification (roughly every
+15–40 minutes, observed) reports the same already-over month-to-date figure
+regardless of whether anything new happened. `stopbilling` used to treat
+that identically to a real new problem.
 
-Deploy with `gcloud run deploy` from the CLI. Its README warns specifically
-against the Cloud Run console's "Edit & deploy new revision" flow, which has
-silently reverted the service to a placeholder image before.
+**`actionGuard.js`, added 2026-09-10**, fixes that: a pure, unit-tested
+`shouldDisableBilling` predicate compares incoming cost against
+`lastActionedCost` (Firestore, `stopbilling/state`) and only acts on a
+figure it hasn't already acted on — up (new spend) or down (new billing
+period) moves it, an exact repeat doesn't. Same thin-`index.js`-plus-
+pure-guard-module shape as `pollGate.js`/`recomputeGuard.js` elsewhere in
+this codebase. **Deployed 2026-09-10** (revision `stopbilling-00008-2cl`,
+once billing was re-linked — see below) — confirmed serving 100% of
+traffic with a clean startup and no errors in its logs.
+
+Deploy with `gcloud run deploy` from the CLI (documented in the folder's own
+README). Its README warns specifically against the Cloud Run console's
+"Edit & deploy new revision" flow, which has silently reverted the service
+to a placeholder image before. One more operational fact learned
+2026-09-10: this deploy path needs Cloud Build + Artifact Registry, both of
+which require the *project's own* billing to be enabled — so this function
+could not deploy a fix for itself while billing was down; it had to wait
+for the re-link like everything else, same as `functions/fixtures` and
+`functions/leaderboard`.
 
 The scoring function is **duplicated by hand** between
 `src/leaderboard/scoring.ts` and `functions/leaderboard/index.js`, with a
