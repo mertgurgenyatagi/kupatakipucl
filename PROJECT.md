@@ -196,6 +196,12 @@ overage** with no prior action recorded to compare it against. Not fixed as
 of this writing — flagged here rather than guessed at. The backlog is
 drained now, so the *next* re-link should be clean.
 
+**Budget raised to 10 TRY and billing re-linked again, 2026-09-10 — Mert's
+own decision, not proposed here.** Same `kupatakipucl-billing` budget,
+same custom period and thresholds, amount only. Re-link confirmed
+(`billingEnabled: true`); as of this writing it's too soon to say whether
+it holds past the next notification cycle.
+
 The later phases are explicitly not ready. Knockout in particular is
 unfinished and was deprioritised because it is months away. Section 11 lists
 every known gap, sorted by when it actually starts to matter.
