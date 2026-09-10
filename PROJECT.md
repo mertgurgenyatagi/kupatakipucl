@@ -45,8 +45,9 @@ participants**. Turkish-only, permanently — there is no i18n layer and none is
 planned.
 
 **Billing killswitch fired for real, 2026-09-09 — the first live matchday.
-Three outages so far, not two — status below is current as of this
-writing, not resolved.** `functions/stopbilling` (§6) unlinked the
+Three outages that day, the last ending once Mert re-linked billing
+~22:00 UTC after the Cloud Tasks fix (§6) was ready to deploy.**
+`functions/stopbilling` (§6) unlinked the
 project's billing account at 03:48 UTC after month-to-date cost crossed the
 budget (**set to 1** currency unit — Mert's deliberate choice, kept
 deliberately tiny). That took every Cloud Function offline — both
@@ -65,15 +66,14 @@ deliberately tiny). That took every Cloud Function offline — both
    outage #1 (below) cut the cost of a tick doing real work, but never
    touched the schedule's own baseline cadence, which fires 24/7 regardless
    of match activity. First response was a stopgap (widen the interval);
-   the actual fix, deployed the next day, replaces the recurring schedule
-   entirely with a Cloud Tasks-based design — see §6's `functions/fixtures`
-   "Live scheduling" writeup. **As of this writing, billing is still
-   disabled and the fix is written but not deployed** (deploying itself
-   needs billing enabled, and it hasn't run against a real matchday yet —
-   see §6 for what has and hasn't been verified). Manually running the sync
-   locally to patch today's scores was also attempted and blocked the same
-   way — the football-data.org token lives in Secret Manager, which also
-   requires billing to even query.
+   the actual fix replaces the recurring schedule entirely with a Cloud
+   Tasks-based design — see §6's `functions/fixtures` "Live scheduling"
+   writeup. Billing stayed down while the fix was built (blocking both
+   `firebase deploy` and the Secret Manager access needed to manually patch
+   today's scores), and was re-linked by Mert ~22:00 UTC once it was ready.
+   Deployed the same session — see §6 for a region gotcha hit along the way
+   (Cloud Tasks doesn't support `europe-west8`) and what has and hasn't
+   been confirmed working since.
 
 Root cause of outage #1, diagnosed the same day: not a `stopbilling` bug —
 it worked exactly as designed — but a write storm in `functions/fixtures`.
@@ -102,8 +102,8 @@ from code:
 | Frontend hosting | **Live** at `https://kupatakipucl.com` via GitHub Pages, published from GitHub Actions. See §9 and DEPLOY.md. |
 | Firebase Auth authorized domains | `localhost`, `kupatakipucl.firebaseapp.com`, `kupatakipucl.web.app`, **`kupatakipucl.com`**, **`www.kupatakipucl.com`** — the last two added 2026-08-27. |
 | `tournamentState` collection | `current.phase` = **`leaguephase`**, hand-set 2026-09-08 (§11 #18). |
-| Leaderboard Cloud Functions | Deployed in `europe-west8`, since 2026-08-07. **Offline as of this writing** — billing disabled since 2026-09-09 20:10 UTC, third outage of the day (§1). |
-| `functions/fixtures` (now 4 functions, was 2) | Deployed, `europe-west8`, last redeployed 2026-09-09 with the `stage` field, the `LEAGUE_STAGE` filter, the undrawn-knockout-fixture skip, and write-diffing (§6). **Offline as of this writing**, same outage — the 2026-09-10 Cloud Tasks rearchitecture (§6) is written but not yet deployed or run against a real matchday, since deploying itself needs billing enabled. |
+| Leaderboard Cloud Functions | Deployed in `europe-west8`, since 2026-08-07. Billing re-linked by Mert 2026-09-09 ~22:00 UTC, ending the third outage (§1) — back to ACTIVE, unchanged code. |
+| `functions/fixtures` (now 4 functions: `planKickoffTasks`, `handleFixtureArrival`, `fixturesPollTick`, `resultsPollTick` — was 2) | Redeployed 2026-09-09 ~22:02 UTC with the Cloud Tasks rearchitecture (§6) once billing came back. `planKickoffTasks` stayed on `europe-west8`; the three task-dispatched functions moved to `europe-west6` — Cloud Tasks doesn't support `europe-west8` at all, found at deploy time (§6). **Not yet confirmed against a real live tick** — first manual trigger of `planKickoffTasks` hit a transient "no available instance" 429 that also briefly hit the unrelated, previously-fine `recomputeLeaderboardSafetyNet`, pointing at project-wide Cloud Run capacity still settling after today's repeated billing/API churn rather than a bug in the new code; being retried. |
 | `stopbilling` Cloud Run service | **Deployed**, since 2026-07-20. Fired for real 2026-09-09 — three times in one day (§1); behaved exactly as designed each time. |
 | Realtime Database | Provisioned, `europe-west1`. |
 | Firestore region | `europe-west8`. |
@@ -1011,9 +1011,8 @@ durably** — a live sync succeeded at 20:04 and billing tripped again at
 20:10, this time root-caused to the sync schedule's own 24/7 baseline
 cadence rather than the original write storm (§6's `functions/fixtures`
 "Live scheduling" writeup covers the fix — a Cloud Tasks rearchitecture, not
-just a wider interval — not yet deployed or run against a real matchday as
-of this writing, since deploying needs billing enabled, the same thing
-that's down).
+just a wider interval). Billing re-linked ~22:00 UTC once that fix was
+ready to deploy, ending the third outage.
 
 Deploy with `gcloud run deploy` from the CLI. Its README warns specifically
 against the Cloud Run console's "Edit & deploy new revision" flow, which has

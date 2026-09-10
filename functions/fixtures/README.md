@@ -106,15 +106,34 @@ logic (unit-tested, `kickoffPlanner.test.js`); `pollGate.js` holds the pure
 decision and the planner's self-heal check (`pollGate.test.js`). Everything
 that touches Cloud Tasks or a Firestore transaction lives in `index.js`
 and `syncControl.js` and is deliberately thin — kept simple enough to
-review by inspection, since **this has not been integration-tested against
-a live matchday**: billing was disabled while this was built (PROJECT.md
-§1), which blocks both a real `firebase deploy` and the Secret Manager
-access `syncFixtures`/`syncResults` need to actually call football-data.org.
-It has been checked to load cleanly under `firebase emulators:start --only
-functions` (all four functions register, their Cloud Tasks queues
-auto-create) — that's structural validation, not a proof the chain logic
-is bug-free under real task delivery. Worth watching closely the first time
-it runs live.
+review by inspection.
+
+**Region: the three `onTaskDispatched` functions run in `europe-west6`
+(Zurich), not `europe-west8` like everything else in this app.** Discovered
+at first deploy attempt, 2026-09-09: Cloud Tasks doesn't support
+`europe-west8` (Milan) as a location at all — `gcloud tasks locations list`
+doesn't include it. `europe-west6` is the closest supported region.
+`planKickoffTasks` itself stays on `europe-west8` (it's a plain
+`onSchedule`, no Cloud Tasks involved); only `TASK_REGION` in `index.js`
+(the three task-dispatched functions, and the `taskQueue()` helper that
+addresses them) uses `europe-west6`. Worth knowing if this ever needs
+redeploying by hand: get the region wrong and the deploy fails with
+`Location '...' is not a valid location`, and — found the hard way —
+Firebase's own `functions:delete` for a task-queue function also fails if
+its Cloud Tasks queue is already broken (tries to pause the queue before
+deleting the function, 400s on the same invalid-location error, and aborts
+before reaching the function). `gcloud functions delete <name> --gen2
+--region=<region>` bypasses that and deletes the underlying Cloud Run
+resource directly.
+
+Before this deployed, the only verification available was `firebase
+emulators:start --only functions` loading all four functions cleanly and
+auto-creating their Cloud Tasks queues — structural validation, not proof
+the chain logic is bug-free under real task delivery. Deployed for real
+2026-09-09 (region fixed on the second attempt, above) once billing was
+back; 2026-09-09's own Matchday 1 was already in progress by then, so it's
+being watched closely as the first real run rather than a clean first
+matchday.
 
 football-data.org's Free tier caps at 10 requests/**minute**, so none of
 this — then or now — was ever about protecting the API cap; it's entirely

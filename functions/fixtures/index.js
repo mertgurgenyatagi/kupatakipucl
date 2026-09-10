@@ -21,6 +21,17 @@ initializeApp();
 const db = getFirestore();
 
 const REGION = "europe-west8";
+/**
+ * Cloud Tasks does not support europe-west8 (Milan) as a location at all —
+ * discovered at deploy time 2026-09-09 ("Location 'europe-west8' is not a
+ * valid location"), not caught earlier since nothing before this change
+ * used Cloud Tasks. europe-west6 (Zurich) is the closest supported region.
+ * Only the three onTaskDispatched functions and taskQueue() below use this;
+ * planKickoffTasks stays on REGION since onSchedule doesn't touch Cloud
+ * Tasks and REGION is what every other trigger in this codebase is pinned
+ * to (matches Firestore's own region).
+ */
+const TASK_REGION = "europe-west6";
 const FOOTBALL_DATA_TOKEN = defineSecret("FOOTBALL_DATA_TOKEN");
 
 /**
@@ -36,11 +47,12 @@ const LIVE_TICK_INTERVAL_SECONDS = 120;
 
 /**
  * Firebase Admin's task-queue client needs a region-qualified function name
- * for anything not in the default us-central1 — same reason every
- * onSchedule/Firestore trigger in this codebase pins europe-west8.
+ * for anything not in the default us-central1 — TASK_REGION here, not
+ * REGION, since every function this ever calls (handleFixtureArrival,
+ * fixturesPollTick, resultsPollTick) is deployed there.
  */
 function taskQueue(functionName) {
-  return getFunctions().taskQueue(`locations/${REGION}/functions/${functionName}`);
+  return getFunctions().taskQueue(`locations/${TASK_REGION}/functions/${functionName}`);
 }
 
 /**
@@ -180,7 +192,7 @@ async function continueOrStopChain(chainKey, tickFunctionName) {
  * fixtures kick off close together (a whole matchday's worth of arrivals
  * only actually starts one chain of each kind).
  */
-exports.handleFixtureArrival = onTaskDispatched({ region: REGION }, async () => {
+exports.handleFixtureArrival = onTaskDispatched({ region: TASK_REGION }, async () => {
   await Promise.all([
     ensureChainRunning("fixtures", "fixturesPollTick"),
     ensureChainRunning("results", "resultsPollTick"),
@@ -197,7 +209,7 @@ exports.handleFixtureArrival = onTaskDispatched({ region: REGION }, async () => 
  * cost driver behind the 2026-09-09 budget killswitch (PROJECT.md §1/§6):
  * between kickoffs, nothing is scheduled at all.
  */
-exports.fixturesPollTick = onTaskDispatched({ region: REGION, secrets: [FOOTBALL_DATA_TOKEN] }, async () => {
+exports.fixturesPollTick = onTaskDispatched({ region: TASK_REGION, secrets: [FOOTBALL_DATA_TOKEN] }, async () => {
   await syncFixtures();
   await continueOrStopChain("fixtures", "fixturesPollTick");
 });
@@ -205,7 +217,7 @@ exports.fixturesPollTick = onTaskDispatched({ region: REGION, secrets: [FOOTBALL
 /** Same idea as fixturesPollTick, for results — a fully independent chain
  *  and control doc, same reasoning as the two sync functions always having
  *  been kept separate: a bug in one still can't take the other down. */
-exports.resultsPollTick = onTaskDispatched({ region: REGION, secrets: [FOOTBALL_DATA_TOKEN] }, async () => {
+exports.resultsPollTick = onTaskDispatched({ region: TASK_REGION, secrets: [FOOTBALL_DATA_TOKEN] }, async () => {
   await syncResults();
   await continueOrStopChain("results", "resultsPollTick");
 });
