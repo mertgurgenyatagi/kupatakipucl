@@ -1146,6 +1146,25 @@ secret (`FOOTBALL_DATA_TOKEN`, set via `firebase functions:secrets:set`).
 `firebase.json`'s `functions` key is an array of two codebases (`leaderboard`,
 `fixtures`). Deploy: `firebase deploy --only functions:fixtures`.
 
+**Off-season sync pause, added 2026-09-11.** Matchday 1 finished 2026-09-10;
+Matchday 2 isn't until mid-October — a ~5-week gap with nothing for this
+pipeline to do. Rather than trust that `planKickoffTasks`'s own lookahead
+naturally costs ~nothing with no fixtures in its window (true, but not
+*zero*, and not independently verifiable without checking), Mert asked for
+an explicit, verifiable off switch. No code involved: `scripts/stop-sync.bat`
+and `scripts/resume-sync.bat` just call `gcloud scheduler jobs
+pause`/`resume` directly on `firebase-schedule-planKickoffTasks-europe-west8`
+and `firebase-schedule-recomputeLeaderboardSafetyNet-europe-west8` (the
+leaderboard safety net's own 5-minute idle check, §6 above — technically a
+different function, included because it's the bigger recurring cost of the
+two over a 5-week window and there's no reason to leave it ticking with
+nothing live). Paused while nothing is scheduled, this is genuinely zero
+cost, not near-zero — `planKickoffTasks` never wakes up at all. The real
+leaderboard recompute triggers (`onDocumentWritten` on predictions/results)
+are untouched, so nothing breaks if someone still edits a prediction during
+the gap; only the periodic self-heal check stops. Manual only, no
+auto-resume — run `resume-sync.bat` when Matchday 2 approaches.
+
 ### `functions/stopbilling` — Cloud Run, `europe-west8`
 A budget killswitch. Subscribed to a Pub/Sub billing-alert topic; when reported
 cost exceeds budget it **unlinks the billing account** from the project. Needs
